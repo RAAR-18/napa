@@ -32,5 +32,6 @@ docs/
 
 ## Estado del proyecto
 
+En construcción. Fase actual: documentación de diseño (casos de uso, historias de usuario, requerimientos). 
 
 
