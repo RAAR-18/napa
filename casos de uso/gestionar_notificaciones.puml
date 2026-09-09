@@ -1,0 +1,23 @@
+@startuml
+
+left to right direction
+
+actor "Cliente" as c
+actor "Vendedor" as v
+actor "Domiciliario" as d
+actor "Administrador" as adm
+actor "Usuario" as u
+
+rectangle "Gestionar notificaciones" {
+    usecase "Consultar notificaciones" as UC1
+    usecase "Configurar preferencias de notificación" as UC2
+}
+
+c --|> u
+d --|> u
+v --|> u
+adm --|> u
+
+u --> UC1
+u --> UC2
+@enduml

@@ -1,0 +1,24 @@
+@startuml
+
+left to right direction
+
+actor "Cliente" as c
+actor "Vendedor" as v
+actor "Domiciliario" as d
+actor "Administrador" as adm
+
+rectangle "Gestionar reportes" {
+    usecase "Reportar problema" as UC1
+    usecase "Consultar reportes" as UC2
+    usecase "Resolver reporte" as UC3
+}
+
+c --> UC1
+
+v --> UC1
+
+d --> UC1
+
+UC2 <-- adm
+UC3 <-- adm
+@enduml

@@ -1,0 +1,58 @@
+@startuml
+
+left to right direction
+
+actor "Cliente" as c
+actor "Vendedor" as v
+actor "Domiciliario" as d
+actor "Administrador" as adm
+
+rectangle "Gestionar cometarios y calificaciones" {
+    usecase "Calificar y comentar emprendimiento" as UC1
+    usecase "Calificar y comentar Producto" as UC2
+    usecase "Calificar y comentar domiciliario" as UC3
+    usecase "Calificar y comentar cliente" as UC4
+    usecase "Consultar calificaciones y comentarios de un emprendimiento" as UC5
+    usecase "Consultar calificaciones y comentarios de un producto" as UC6
+    usecase "Consultar calificaciones y comentarios de un domiciliario" as UC7
+    usecase "Consultar calificaciones y comentarios de un cliente" as UC8
+    usecase "Eliminar comentario" as UC9
+    usecase "Editar comentario" as UC10
+}
+
+c --> UC1
+c --> UC2
+c --> UC3
+c --> UC5
+c --> UC6
+c --> UC7
+c --> UC8
+c --> UC9
+c --> UC10
+
+v --> UC3
+v --> UC4
+v --> UC5
+v --> UC6
+v --> UC7
+v --> UC8
+v --> UC9
+v --> UC10
+
+
+UC1 <-- d
+UC4 <-- d
+UC5 <-- d
+UC7 <-- d
+UC8 <-- d
+UC9 <-- d
+UC10 <-- d
+
+UC9 <-- adm
+UC10 <-- adm
+UC5 <-- adm
+UC6 <-- adm
+UC7 <-- adm
+UC8 <-- adm
+
+@enduml
