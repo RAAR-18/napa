@@ -22,7 +22,6 @@ rectangle "Gestionar domicilios" {
     usecase "Consultar información del domiciliario" as UC23
     usecase "Publicar domicilio" as UC24
     usecase "Ingresar código de confirmación" as UC25
-    usecase "Actualizar estado del domicilio" as UC26
     usecase "Ver código de confirmación" as UC27
 }
 
@@ -40,7 +39,8 @@ d --> UC6
 d --> UC7
 d --> UC8
 d --> UC13
-d --> UC26
+d --> UC19
+d --> UC17
 
 UC2 <-- adm
 UC4 <-- adm
@@ -51,6 +51,4 @@ UC7 .> UC13: <<include>>
 UC7 <. UC6: <<extend>>
 UC6 <. UC8: <<extend>>
 
-UC26 .> UC17: <<include>>
-UC26 .> UC19: <<include>>
 @enduml

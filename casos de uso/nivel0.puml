@@ -17,6 +17,7 @@ rectangle "Ñapa" {
     usecase "Gestionar reportes" as UC7
     usecase "Gestionar notificaciones" as UC8
     usecase "Gestionar cuenta" as UC9
+    usecase "Gestionar pagos" as UC10
 }
 
 UC1 <-- v
@@ -26,6 +27,7 @@ UC7 <-- v
 UC8 <-- v
 UC9 <-- v
 UC6 <-- v
+UC10 <-- v
 
 c --> UC1
 c --> UC5
@@ -34,15 +36,18 @@ c --> UC7
 c --> UC8
 c --> UC9
 c --> UC6
+c --> UC10
 
 adm --> UC4
 adm --> UC7
 adm --> UC8
+adm --> UC10
 
 UC2 <-- d
 UC7 <-- d
 UC8 <-- d
 UC9 <-- d
 UC6 <-- d
+UC10 <-- d
 
 @enduml
