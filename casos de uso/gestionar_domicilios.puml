@@ -1,0 +1,50 @@
+@startuml
+
+left to right direction
+
+actor "Vendedor" as v
+actor "Cliente" as c
+actor "Domiciliario" as d
+actor "Administrador" as adm
+
+rectangle "Gestionar domicilios" {
+    usecase "Consultar domicilios" as UC2
+    usecase "Editar domicilio" as UC3
+    usecase "Cancelar domicilio" as UC4
+    usecase "Listar domicilios" as UC5
+    usecase "Ver domicilios disponibles" as UC6
+    usecase "Aceptar domicilio" as UC7
+    usecase "Rechazar domicilio" as UC8
+    usecase "Consultar estado del domicilio" as UC10
+    usecase "Consultar información del domicilio" as UC13
+    usecase "Marcar domicilio como recogido y en camino" as UC17
+    usecase "Consultar información del domiciliario" as UC23
+    usecase "Publicar domicilio" as UC24
+    usecase "Ingresar código de confirmación" as UC25
+    usecase "Actualizar estado del domicilio" as UC26
+}
+
+c --> UC10
+
+UC10 <-- v
+UC24 <-- v
+UC3 <-- v
+UC5 <-- v
+
+d --> UC6
+d --> UC7
+d --> UC8
+d --> UC13
+d --> UC26
+
+UC2 <-- adm
+UC4 <-- adm
+
+UC25 <. UC19: <<include>>
+UC7 .> UC13: <<include>>
+UC7 <. UC6: <<extend>>
+UC6 <. UC8: <<extend>>
+
+UC26 .> UC17: <<include>>
+UC26 .> UC19: <<include>>
+@enduml

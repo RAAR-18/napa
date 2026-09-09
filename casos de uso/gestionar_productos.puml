@@ -1,0 +1,27 @@
+@startuml
+
+left to right direction
+
+actor "Vendedor" as v
+
+rectangle "Gestionar productos" {
+    usecase "Añadir producto" as UC1
+    usecase "Listar productos" as UC2
+    usecase "Editar producto" as UC3
+    usecase "Actualizar cantidad producto" as UC4
+    usecase "Eliminar producto" as UC5
+    usecase "Consultar predicción de demanda" as UC6
+}
+
+v --> UC1
+v --> UC2
+v --> UC3
+v --> UC4
+v --> UC5
+v --> UC6
+
+UC3 .> UC2 : <<extend>>
+UC5 .> UC2 : <<extend>>
+UC4 .> UC2 : <<extend>>
+
+@enduml

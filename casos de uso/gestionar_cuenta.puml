@@ -1,0 +1,32 @@
+@startuml
+
+left to right direction
+
+actor "Vendedor" as v
+actor "Cliente" as c
+actor "Domiciliario" as d
+actor Usuario as u
+actor Administrador as adm
+
+rectangle "Gestionar cuenta" {
+  usecase "Crear una cuenta" as UC1
+  usecase "Editar mi cuenta" as UC2
+  usecase "Cambiar contraseña" as UC3
+  usecase "Iniciar sesion en mi cuenta" as UC4
+  usecase "Eliminar mi cuenta" as UC5
+}
+
+c --|> u
+d --|> u
+v --|> u
+
+u --> UC1
+u --> UC2
+u --> UC3
+u --> UC4
+u --> UC5
+
+UC4 <-- adm
+UC3 <-- adm
+
+@enduml

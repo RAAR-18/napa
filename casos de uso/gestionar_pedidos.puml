@@ -1,0 +1,39 @@
+@startuml
+
+left to right direction
+
+actor "Vendedor" as v
+actor "Cliente" as c
+
+rectangle "Gestionar pedidos" {
+    usecase "Realizar pedido" as UC1
+    usecase "Consultar estado del pedido" as UC2
+    usecase "Contactar vendedor o domiciliario" as UC3
+    usecase "Listar pedidos" as UC5
+    usecase "Consultar pedido" as UC6
+    usecase "Aceptar/rechazar pedido" as UC7
+    usecase "Seleccionar metodo de pago" as UC8
+    usecase "Seleccionar modalidad de entrega" as UC9
+    usecase "Seleccionar productos" as UC10
+    usecase "Ver informacion del cliente" as UC11
+}
+
+c --> UC1
+c --> UC2
+c --> UC3
+
+UC5 <-- v
+UC6 <-- v
+UC7 <-- v
+UC11 <-- v
+
+UC1 .> UC7 : <<include>>
+UC1 .> UC8 : <<include>>
+UC9 <. UC1 : <<include>>
+UC10 .> UC1 : <<include>>
+UC6 .> UC5 : <<extend>>
+UC3 .> UC2 : <<extend>>
+UC7 .> UC5 : <<extend>>
+UC11 .> UC5 : <<extend>>
+UC11 .> UC6 : <<extend>>
+@enduml

@@ -1,0 +1,48 @@
+@startuml
+
+left to right direction
+
+actor "Vendedor" as v
+actor "Cliente" as c
+actor "Domiciliario" as d
+actor "Administrador" as adm
+
+rectangle "Ñapa" {
+    usecase "Gestionar pedidos" as UC1
+    usecase "Gestionar domicilios" as UC2
+    usecase "Gestionar productos" as UC3
+    usecase "Gestionar usuarios" as UC4
+    usecase "Gestionar emprendimientos" as UC5
+    usecase "Gestionar comentarios y calificaciones" as UC6
+    usecase "Gestionar reportes" as UC7
+    usecase "Gestionar notificaciones" as UC8
+    usecase "Gestionar cuenta" as UC9
+}
+
+UC1 <-- v
+UC3 <-- v
+UC5 <-- v
+UC7 <-- v
+UC8 <-- v
+UC9 <-- v
+UC6 <-- v
+
+c --> UC1
+c --> UC5
+c --> UC2
+c --> UC7
+c --> UC8
+c --> UC9
+c --> UC6
+
+adm --> UC4
+adm --> UC7
+adm --> UC8
+
+UC2 <-- d
+UC7 <-- d
+UC8 <-- d
+UC9 <-- d
+UC6 <-- d
+
+@enduml
