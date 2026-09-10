@@ -18,7 +18,7 @@ rectangle "Gestionar domicilios" {
     usecase "Consultar estado del domicilio" as UC10
     usecase "Consultar información del domicilio" as UC13
     usecase "Marcar domicilio como recogido y en camino" as UC17
-    usecase "Marcar domicilio como entregado" as UC19
+    usecase "Confirmar entrega" as UC19
     usecase "Consultar información del domiciliario" as UC23
     usecase "Publicar domicilio" as UC24
     usecase "Ingresar código de confirmación" as UC25
