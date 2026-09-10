@@ -1,0 +1,55 @@
+# Requerimientos Funcionales
+
+- **RF01 – Registro de usuario**: El sistema deberá permitir a una persona registrarse proporcionando sus datos básicos y seleccionando el rol que desempeñará: vendedor, cliente o domiciliario.
+- **RF02 – Validación de registro**: El sistema deberá verificar que el correo electrónico o número de teléfono utilizado para el registro no se encuentre registrado previamente.
+- **RF03 – Inicio de sesión**: El sistema deberá permitir a los usuarios registrados iniciar sesión mediante correo electrónico o teléfono y contraseña.
+- **RF04 – Gestión de datos personales**: El sistema deberá permitir a los usuarios registrados editar su nombre, teléfono, foto y ubicación.
+- **RF05 – Eliminación de cuenta**: El sistema deberá permitir a los usuarios eliminar su cuenta.
+- **RF06 – Cambio de contraseña**: El sistema deberá permitir a los usuarios cambiar su contraseña y cerrar las demás sesiones activas.
+- **RF07 – Creación de emprendimiento**: El sistema deberá permitir a los vendedores crear un emprendimiento indicando nombre, tipo de producto, ubicación y descripción.
+- **RF08 – Edición de emprendimiento**: El sistema deberá permitir a los vendedores modificar la ubicación, horario y descripción de su emprendimiento.
+- **RF09 – Eliminación de emprendimiento**: El sistema deberá permitir a los vendedores eliminar su emprendimiento cuando no existan pedidos pendientes.
+- **RF10 – Registro de productos**: El sistema deberá permitir a los vendedores publicar productos indicando nombre, precio, descripción y cantidad disponible.
+- **RF11 – Edición de productos**: El sistema deberá permitir a los vendedores modificar el nombre, precio y descripción de sus productos.
+- **RF12 – Actualización del estado del producto**: El sistema deberá permitir a los vendedores actualizar la cantidad disponible de un producto y marcarlo como agotado.
+- **RF13 – Actualización automática de agotamiento**: El sistema deberá marcar automáticamente un producto como agotado cuando su cantidad disponible llegue a cero.
+- **RF14 – Eliminación de productos**: El sistema deberá permitir a los vendedores eliminar productos que no tengan pedidos pendientes.
+- **RF15 – Listado de productos del vendedor**: El sistema deberá permitir a los vendedores consultar todos sus productos publicados junto con su precio y disponibilidad actual.
+- **RF16 – Predicción de demanda**: El sistema deberá permitir a los vendedores consultar una estimación de demanda basada en pedidos anticipados e historial de ventas.
+- **RF17 – Notificación de confirmación de pedido**: El sistema deberá notificar al cliente cuando su pedido quede confirmado contra el inventario disponible. *(Redactado de nuevo — antes hablaba de "aceptado o rechazado")*
+- **RF18 – Consulta de pedido**: El sistema deberá permitir a los vendedores consultar el detalle de un pedido, incluyendo productos, cantidades y cliente.
+- **RF19 – Listado de pedidos**: El sistema deberá permitir a los vendedores consultar sus pedidos agrupados por estado.
+- **RF20 – Entrega del pedido al domiciliario**: El sistema deberá permitir al vendedor marcar un pedido aceptado como listo para ser recogido por un domiciliario.
+- **RF21 – Listado de emprendimientos**: El sistema deberá permitir a los clientes consultar los emprendimientos activos registrados en la plataforma.
+- **RF22 – Consulta de emprendimientos por ubicación**: El sistema deberá permitir a los clientes buscar emprendimientos cercanos a su ubicación o a una ubicación seleccionada.
+- **RF23 – Ordenamiento por cercanía**: El sistema deberá ordenar los emprendimientos según la distancia respecto a la ubicación seleccionada.
+- **RF24 – Consulta del catálogo**: El sistema deberá permitir a los clientes consultar los productos disponibles de un emprendimiento específico.
+- **RF25 – Realización de pedidos**: El sistema deberá permitir a los clientes seleccionar productos y cantidades para crear un pedido.
+- **RF26 – Selección de modalidad de pedido**: El sistema deberá permitir al cliente indicar si desea recoger el pedido o recibirlo mediante domicilio.
+- **RF27 – Registro del pedido**: El sistema deberá registrar los pedidos nuevos en estado pendiente hasta que sean aceptados o rechazados por el vendedor.
+- **RF28 – Consulta del estado del domicilio**: El sistema deberá permitir a los clientes consultar el estado actualizado de sus domicilios.
+- **RF29 – Contacto con vendedor o domiciliario**: El sistema deberá permitir al cliente contactar al vendedor o domiciliario asignado mediante chat o llamada.
+- **RF30 – Finalización del pedido**: El sistema deberá permitir al cliente confirmar la recepción de un pedido y finalizarlo.
+- **RF31 – Selección del método de pago**: El sistema deberá permitir al cliente seleccionar el método de pago al realizar el pedido.
+- **RF32 – Cálculo del costo de envío**: El sistema deberá calcular y mostrar el costo del domicilio antes de confirmar el pedido.
+- **RF33 – Registro de domicilio**: El sistema deberá permitir al vendedor registrar/publicar un domicilio para un pedido que se encuentre listo para despachar, definiendo la tarifa correspondiente.
+- **RF34 – Publicación de domicilio disponible**: El sistema deberá publicar los domicilios registrados como disponibles para los domiciliarios.
+- **RF35 – Edición de domicilio**: El sistema deberá permitir al vendedor modificar la dirección y las notas de entrega de un domicilio que aún no haya sido aceptado.
+- **RF36 – Cancelación de domicilio por administrador**: El sistema deberá permitir al administrador cancelar un domicilio indicando el motivo.
+- **RF37 – Consulta detallada de domicilio**: El sistema deberá permitir al administrador consultar la información del pedido, cliente y domiciliario asociados a un domicilio.
+- **RF38 – Listado de domicilios del vendedor**: El sistema deberá permitir al vendedor consultar sus domicilios y filtrarlos por estado y fecha.
+- **RF39 – Listado general de domicilios**: El sistema deberá permitir al administrador consultar los domicilios registrados y filtrarlos por estado y fecha.
+- **RF40 – Consulta de domicilios disponibles**: El sistema deberá permitir a los domiciliarios consultar los domicilios disponibles mostrando información básica como origen, destino y costo.
+- **RF41 – Aceptación de domicilio**: El sistema deberá permitir al domiciliario aceptar un domicilio disponible.
+- **RF42 – Rechazo de domicilio**: El sistema deberá permitir al domiciliario rechazar un domicilio sin eliminarlo de la lista de disponibilidad para otros domiciliarios.
+- **RF43 – Asignación de domicilio**: El sistema deberá asignar el domicilio al domiciliario que lo acepte y notificar al cliente y al vendedor.
+- **RF44 – Actualización del estado del domicilio**: El sistema deberá permitir al domiciliario actualizar el estado del domicilio a medida que avanza la entrega.
+- **RF45 – Confirmación de entrega**: El sistema deberá permitir al domiciliario confirmar la entrega de un domicilio ingresando el código de confirmación y registrando la fecha y hora correspondiente.
+- **RF46 – Consulta del estado del domicilio por vendedor**: El sistema deberá permitir al vendedor consultar el estado actualizado de los domicilios asociados a sus pedidos.
+
+## Pendientes
+
+- RF de Gestionar Pagos
+- RF de Gestionar Comentarios y Calificaciones 
+- RF de Gestionar Reportes 
+- RF de Gestionar Notificaciones 
