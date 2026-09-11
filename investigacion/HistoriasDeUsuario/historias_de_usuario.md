@@ -1,313 +1,210 @@
-# Historias de Usuario
+# Historias de Usuario — Ñapa
 
-## HU01 – Registro de usuario
-
-**Como** persona interesada en usar la plataforma, **quiero** registrarme indicando mis datos básicos y el rol que voy a desempeñar (vendedor, cliente o domiciliario), **para** poder acceder a las funcionalidades correspondientes a cada rol.
-
-**Criterio de aceptación:** Dado que el correo o teléfono no está registrado, cuando completo el formulario de registro con datos válidos y confirmo la contraseña, entonces el sistema crea mi cuenta y me permite iniciar sesión.
+> Backlog de historias de usuario derivadas de los casos de uso del sistema **Ñapa**.
 
 ---
 
-## HU02 – Editar Datos de Usuario
+## Índice
 
-**Como** usuario registrado, **quiero** editar mis datos personales (nombre, teléfono, foto, ubicación), **para** mantener mi información actualizada.
-
-**Criterio de aceptación:** Dado que tengo una cuenta activa, cuando modifico uno o varios de mis datos personales, entonces el sistema guarda los cambios y los refleja en mi perfil.
-
----
-
-## HU03 – Eliminar cuenta
-
-### Historia sin descripción ni criterios de aceptación definidos
-
-#### Definición pendiente
-
-Definición pendiente en el documento original.
+- [1. Comentarios y calificaciones](#1--gestionar-comentarios-y-calificaciones)
+- [2. Cuenta](#2--gestionar-cuenta)
+- [3. Domicilios](#3--gestionar-domicilios)
+- [4. Emprendimientos](#4--gestionar-emprendimientos)
+- [5. Notificaciones](#5--gestionar-notificaciones)
+- [6. Pagos](#6--gestionar-pagos)
+- [7. Pedidos](#7--gestionar-pedidos)
+- [8. Productos](#8--gestionar-productos)
+- [9. Reportes](#9--gestionar-reportes)
+- [10. Usuarios](#10--gestionar-usuarios)
 
 ---
 
-## HU04 – Iniciar sesión
+## Resumen
 
-**Como** usuario registrado, **quiero** iniciar sesión con mi correo/teléfono y contraseña, **para** acceder de forma segura a mi cuenta.
-
-**Criterio de aceptación:** Dado que tengo una cuenta previamente registrada, cuando ingreso mis credenciales correctas, entonces el sistema me autentica y me redirige a mi panel según mi rol.
-
----
-
-## HU05 – Cambiar contraseña
-
-**Como** usuario registrado, **quiero** poder cambiar mi contraseña, **para** mantener la seguridad de mi cuenta.
-
-**Criterio de aceptación:** Dado que conozco mi contraseña actual o tengo acceso a recuperación, cuando ingreso la contraseña actual y una nueva contraseña válida, entonces el sistema actualiza la contraseña y cierra las demás sesiones activas.
-
----
-
-## HU06 – Crear emprendimiento
-
-**Como** vendedor, **quiero** crear mi emprendimiento con nombre, tipo de producto, ubicación y descripción, **para** que los clientes puedan encontrarme en la plataforma.
-
-**Criterio de aceptación:** Dado que estoy registrado como vendedor y no tengo un emprendimiento activo, cuando completo el formulario de creación con la información obligatoria, entonces el emprendimiento queda publicado y visible para los clientes.
+| Módulo | Historias |
+|---|:---:|
+| Comentarios y calificaciones | 22 |
+| Cuenta | 7 |
+| Domicilios | 17 |
+| Emprendimientos | 7 |
+| Notificaciones | 2 |
+| Pagos | 8 |
+| Pedidos | 9 |
+| Productos | 6 |
+| Reportes | 5 |
+| Usuarios | 4 |
+| **Total** | **87** |
 
 ---
 
-## HU07 – Editar emprendimiento
+# 1. Gestionar comentarios y calificaciones
 
-**Como** vendedor, **quiero** editar la información de mi emprendimiento (ubicación, horario, descripción), **para** mantenerla actualizada según mi actividad diaria.
-
-**Criterio de aceptación:** Dado que tengo un emprendimiento creado, cuando modifico uno o varios campos del emprendimiento, entonces el sistema guarda los cambios y los muestra a los clientes de inmediato.
-
----
-
-## HU08 – Eliminar emprendimiento
-
-**Como** vendedor, **quiero** eliminar mi emprendimiento si dejo de operar, **para** que ya no aparezca visible a los clientes.
-
-**Criterio de aceptación:** Dado que tengo un emprendimiento sin pedidos pendientes, cuando confirmo la eliminación, entonces el sistema oculta el emprendimiento y su catálogo visible para los clientes.
-
----
-
-## HU09 – Añadir producto
-
-**Como** vendedor, **quiero** publicar un producto con nombre, precio, descripción y cantidad disponible, **para** que los clientes cercanos puedan verlo y pedirlo.
-
-**Criterio de aceptación:** Dado que tengo un emprendimiento creado, cuando registro un producto con nombre, precio y cantidad válidos, entonces el producto aparece de inmediato en el listado de productos de mi emprendimiento.
-
----
-
-## HU10 – Editar producto
-
-**Como** vendedor, **quiero** editar los datos de un producto ya publicado (precio, nombre, descripción), **para** corregir errores o ajustar precios.
-
-**Criterio de aceptación:** Dado que tengo un producto publicado, cuando modifico uno o varios campos del producto, entonces el sistema actualiza la información visible para los clientes.
+| ID | Historia de usuario |
+|---|---|
+| HU-01 | Como cliente, quiero calificar y comentar un emprendimiento, para expresar mi experiencia con él. |
+| HU-02 | Como cliente, quiero calificar y comentar un producto, para expresar mi opinión sobre el producto adquirido. |
+| HU-03 | Como cliente, quiero calificar y comentar un domiciliario, para valorar la calidad del servicio recibido. |
+| HU-04 | Como vendedor, quiero calificar y comentar un domiciliario, para valorar su servicio de entrega. |
+| HU-05 | Como domiciliario, quiero calificar y comentar un emprendimiento, para expresar mi experiencia con el establecimiento. |
+| HU-06 | Como domiciliario, quiero calificar y comentar un cliente, para valorar mi experiencia durante el servicio. |
+| HU-07 | Como cliente, quiero consultar las calificaciones y comentarios de un emprendimiento, para conocer las experiencias de otros usuarios. |
+| HU-08 | Como cliente, quiero consultar las calificaciones y comentarios de un producto, para conocer la opinión de otros compradores. |
+| HU-09 | Como cliente, quiero consultar las calificaciones y comentarios de un domiciliario, para conocer la calidad de su servicio. |
+| HU-10 | Como cliente, quiero consultar las calificaciones y comentarios de un cliente, para conocer su reputación dentro de la plataforma. |
+| HU-11 | Como vendedor, quiero consultar las calificaciones y comentarios de un emprendimiento, para conocer la percepción de los usuarios. |
+| HU-12 | Como vendedor, quiero consultar las calificaciones y comentarios de un producto, para conocer la opinión de los clientes. |
+| HU-13 | Como vendedor, quiero consultar las calificaciones y comentarios de un domiciliario, para evaluar su servicio. |
+| HU-14 | Como vendedor, quiero consultar las calificaciones y comentarios de un cliente, para conocer su reputación. |
+| HU-15 | Como domiciliario, quiero consultar las calificaciones y comentarios de un emprendimiento, para conocer las experiencias de otros usuarios. |
+| HU-16 | Como domiciliario, quiero consultar las calificaciones y comentarios de un domiciliario, para conocer su reputación. |
+| HU-17 | Como domiciliario, quiero consultar las calificaciones y comentarios de un cliente, para conocer su reputación. |
+| HU-18 | Como administrador, quiero consultar las calificaciones y comentarios, para supervisar la información publicada en la plataforma. |
+| HU-19 | Como usuario, quiero eliminar mis comentarios, para retirar contenido que ya no deseo mantener publicado. |
+| HU-20 | Como usuario, quiero editar mis comentarios, para corregir o actualizar la información que publiqué. |
+| HU-21 | Como administrador, quiero eliminar comentarios, para retirar contenido que incumpla las reglas de la plataforma. |
+| HU-22 | Como administrador, quiero editar comentarios, para gestionar contenido que requiera modificaciones. |
 
 ---
 
-## HU11 – Actualizar estado de producto
+# 2. Gestionar cuenta
 
-**Como** vendedor, **quiero** actualizar rápidamente la cantidad disponible de un producto o marcarlo como agotado, **para** evitar que los clientes pidan algo que ya no tengo.
-
-**Criterio de aceptación:** Dado que tengo un producto publicado, cuando cambio la cantidad disponible o la marco en cero, entonces el sistema actualiza el estado del producto y lo marca como agotado si la cantidad llega a cero.
-
----
-
-## HU12 – Consultar predicción de demanda
-
-**Como** vendedor, **quiero** ver una estimación de cuánto producto podría vender según pedidos anticipados e histórico de ventas, **para** comprar o preparar solo lo necesario y reducir pérdidas por productos perecederos.
-
-**Criterio de aceptación:** Dado que cuento con un historial mínimo de ventas y pedidos registrados, cuando consulto la sección de predicción de demanda, entonces el sistema muestra una estimación basada en inteligencia artificial sobre el comportamiento esperado de ventas.
+| ID | Historia de usuario |
+|---|---|
+| HU-23 | Como usuario, quiero crear una cuenta, para poder utilizar los servicios de la plataforma. |
+| HU-24 | Como usuario, quiero editar mi cuenta, para mantener actualizada mi información personal. |
+| HU-25 | Como usuario, quiero cambiar mi contraseña, para mantener segura mi cuenta. |
+| HU-26 | Como usuario, quiero iniciar sesión en mi cuenta, para acceder a las funcionalidades correspondientes a mi perfil. |
+| HU-27 | Como usuario, quiero eliminar mi cuenta, para dejar de utilizar la plataforma. |
+| HU-28 | Como administrador, quiero iniciar sesión en mi cuenta, para acceder a las funciones administrativas. |
+| HU-29 | Como administrador, quiero cambiar mi contraseña, para mantener segura mi cuenta administrativa. |
 
 ---
 
-## HU13 – Eliminar producto
+# 3. Gestionar domicilios
 
-**Como** vendedor, **quiero** eliminar un producto que ya no voy a vender, **para** que no siga apareciendo en mi catálogo.
-
-**Criterio de aceptación:** Dado que tengo un producto publicado sin pedidos pendientes, cuando confirmo la eliminación del producto, entonces el sistema lo retira del catálogo visible para todos los clientes.
-
----
-
-## HU14 – Listar productos
-
-**Como** vendedor, **quiero** ver el listado completo de mis productos publicados, **para** gestionarlos fácilmente desde un solo lugar.
-
-**Criterio de aceptación:** Dado que tengo al menos un producto publicado, cuando ingreso a la sección de mis productos, entonces el sistema muestra todos mis productos con su precio y disponibilidad actual.
-
----
-
-## HU15 – Aceptar/rechazar pedido
-
-**Como** vendedor, **quiero** aceptar o rechazar un pedido entrante, **para** confirmar solo los pedidos que puedo cumplir con el inventario que tengo.
-
-**Criterio de aceptación:** Dado que recibí un pedido en estado pendiente, cuando reviso el pedido y decido aceptarlo o rechazarlo, entonces el sistema actualiza el estado del pedido y notifica al cliente.
-
----
-
-## HU16 – Consultar pedido
-
-**Como** vendedor, **quiero** consultar el detalle de un pedido (productos, cantidades, cliente), **para** prepararlo correctamente.
-
-**Criterio de aceptación:** Dado que tengo un pedido pendiente o aceptado, cuando selecciono el pedido desde mi listado, entonces el sistema muestra el detalle completo del pedido.
+| ID | Historia de usuario |
+|---|---|
+| HU-30 | Como administrador, quiero consultar domicilios, para supervisar los servicios de entrega registrados. |
+| HU-31 | Como vendedor, quiero editar un domicilio, para actualizar la información del servicio cuando sea necesario. |
+| HU-32 | Como administrador, quiero cancelar un domicilio, para gestionar servicios que deban ser cancelados. |
+| HU-33 | Como vendedor, quiero listar los domicilios, para consultar los servicios de entrega asociados. |
+| HU-34 | Como domiciliario, quiero ver los domicilios disponibles, para seleccionar aquellos que puedo realizar. |
+| HU-35 | Como domiciliario, quiero aceptar un domicilio, para realizar el servicio de entrega seleccionado. |
+| HU-36 | Como domiciliario, quiero rechazar un domicilio, para indicar que no puedo realizar ese servicio. |
+| HU-37 | Como cliente, quiero consultar el estado de mi domicilio, para conocer el avance de mi entrega. |
+| HU-38 | Como vendedor, quiero consultar el estado de un domicilio, para conocer el avance de la entrega. |
+| HU-39 | Como domiciliario, quiero consultar la información del domicilio, para conocer los datos necesarios para realizar la entrega. |
+| HU-40 | Como vendedor, quiero publicar un domicilio, para poner un servicio de entrega a disposición de los domiciliarios. |
+| HU-41 | Como domiciliario, quiero marcar un domicilio como recogido y en camino, para informar que el pedido ya fue recogido y está siendo transportado. |
+| HU-42 | Como domiciliario, quiero confirmar la entrega, para registrar que el pedido fue entregado al cliente. |
+| HU-43 | Como cliente, quiero consultar la información del domiciliario, para conocer quién realizará mi entrega. |
+| HU-44 | Como vendedor, quiero consultar la información del domiciliario, para conocer los datos del encargado de la entrega. |
+| HU-45 | Como domiciliario, quiero ingresar el código de confirmación, para validar la entrega del pedido. |
+| HU-46 | Como cliente, quiero ver el código de confirmación, para proporcionarlo al domiciliario al recibir mi pedido. |
 
 ---
 
-## HU17 – Listar pedidos
+# 4. Gestionar emprendimientos
 
-**Como** vendedor, **quiero** ver la lista de todos mis pedidos (pendientes, aceptados, entregados), **para** organizar mi jornada de venta.
-
-**Criterio de aceptación:** Dado que tengo pedidos registrados en la plataforma, cuando ingreso a la sección de pedidos, entonces el sistema muestra los pedidos agrupados por estado.
-
----
-
-## HU18 – Entregar pedido al domiciliario
-
-**Como** vendedor, **quiero** marcar un pedido como listo para entregar al domiciliario, **para** no tener que abandonar mi punto de venta para hacer la entrega.
-
-**Criterio de aceptación:** Dado que un pedido fue aceptado y requiere domicilio, cuando marco el pedido como listo para recoger, entonces el sistema lo publica como domicilio disponible para los domiciliarios.
+| ID | Historia de usuario |
+|---|---|
+| HU-47 | Como vendedor, quiero crear un emprendimiento, para ofrecer mis productos en la plataforma. |
+| HU-48 | Como vendedor, quiero editar mi emprendimiento, para mantener actualizada su información. |
+| HU-49 | Como vendedor, quiero eliminar mi emprendimiento, para dejar de ofrecerlo en la plataforma. |
+| HU-50 | Como cliente, quiero listar los emprendimientos, para conocer las opciones disponibles. |
+| HU-51 | Como cliente, quiero consultar un emprendimiento, para conocer su información y oferta. |
+| HU-52 | Como cliente, quiero listar los productos de un emprendimiento, para conocer los productos que ofrece. |
+| HU-53 | Como cliente, quiero ver la información del vendedor, para conocer quién está detrás del emprendimiento. |
 
 ---
 
-## HU19 – Listar emprendimientos
+# 5. Gestionar notificaciones
 
-**Como** cliente, **quiero** ver el listado de emprendimientos disponibles en la plataforma, **para** explorar qué vendedores existen y cuáles están cerca de mí.
+| ID | Historia de usuario |
+|---|---|
+| HU-54 | Como usuario, quiero consultar mis notificaciones, para conocer las novedades y eventos relacionados con mi cuenta. |
+| HU-55 | Como usuario, quiero configurar mis preferencias de notificación, para decidir qué tipos de notificaciones deseo recibir. |
 
-**Criterio de aceptación:** Dado que existen emprendimientos activos registrados, cuando ingreso a la sección de emprendimientos, entonces el sistema muestra el listado con nombre, categoría y ubicación de cada uno.
-
----
-
-## HU20 – Consultar emprendimientos
-
-**Como** cliente, **quiero** consultar emprendimientos por ubicación, ya sea cercanos a mí o en una zona distinta que yo elija, **para** descubrir vendedores tanto cerca de mí como en otros sectores de mi interés.
-
-**Criterios de aceptación:** Dado que estoy en la sección de emprendimientos, cuando consulto sin aplicar ningún filtro de ubicación, entonces el sistema muestra por defecto los emprendimientos ordenados de más cercano a más lejano según mi ubicación actual; y dado que quiero explorar otra zona, cuando ingreso o selecciono una ubicación distinta a la mía, entonces el sistema muestra los emprendimientos cercanos a esa ubicación indicada.
+> Estas historias aplican a los diferentes tipos de usuario definidos en el sistema: **cliente, vendedor, domiciliario y administrador**.
 
 ---
 
-## HU21 – Listar productos de un emprendimiento
+# 6. Gestionar pagos
 
-**Como** cliente, **quiero** ver los productos de un emprendimiento específico, con precio y cantidad, **para** decidir qué comprar.
-
-**Criterio de aceptación:** Dado que selecciono un emprendimiento del listado, cuando ingreso a su catálogo de productos, entonces el sistema muestra únicamente los productos con disponibilidad.
-
----
-
-## HU22 – Realizar pedido
-
-**Como** cliente, **quiero** armar un pedido seleccionando productos y cantidades, **para** comprarle a un vendedor sin tener que estar físicamente en su punto de venta.
-
-**Criterio de aceptación:** Dado que seleccioné al menos un producto disponible, cuando confirmo el pedido indicando si es para recoger o a domicilio, entonces el pedido queda en estado pendiente hasta que el vendedor lo acepte.
-
----
-
-## HU23 – Consultar estado del domicilio
-
-**Como** cliente, **quiero** consultar en qué estado va mi pedido o domicilio (aceptado, en camino, entregado), **para** saber cuándo lo voy a recibir.
-
-**Criterio de aceptación:** Dado que tengo un pedido con domicilio en curso, cuando consulto el estado desde mi historial de pedidos, entonces el sistema muestra el estado actualizado del domicilio.
+| ID | Historia de usuario |
+|---|---|
+| HU-56 | Como cliente, quiero seleccionar un método de pago, para elegir cómo pagar mis compras. |
+| HU-57 | Como cliente, quiero consultar mi historial de pagos, para revisar las transacciones realizadas. |
+| HU-58 | Como vendedor, quiero confirmar el pago de un pedido, para registrar que el pedido ha sido pagado. |
+| HU-59 | Como vendedor, quiero consultar el historial de pagos, para revisar las transacciones relacionadas con mis pedidos. |
+| HU-60 | Como domiciliario, quiero confirmar el pago del domicilio, para registrar el pago correspondiente al servicio de entrega. |
+| HU-61 | Como domiciliario, quiero consultar el historial de pagos, para revisar los pagos asociados a mis servicios. |
+| HU-62 | Como administrador, quiero consultar el historial de pagos, para supervisar las transacciones de la plataforma. |
+| HU-63 | Como administrador, quiero configurar la tarifa mínima del domicilio, para establecer el valor mínimo permitido para los servicios de entrega. |
 
 ---
 
-## HU24 – Contactar vendedor o domiciliario
+# 7. Gestionar pedidos
 
-**Como** cliente, **quiero** poder contactar al vendedor o domiciliario asignado a mi pedido, **para** resolver dudas o coordinar entregas.
-
-**Criterio de aceptación:** Dado que tengo un pedido activo con vendedor o domiciliario asignado, cuando toco la opción de contacto, entonces el sistema abre un canal de comunicación (chat o llamada) con la persona correspondiente.
-
----
-
-## HU25 – Finalizar pedido
-
-**Como** cliente, **quiero** confirmar que recibí mi pedido correspondiente, **para** cerrar el ciclo de compra.
-
-**Criterio de aceptación:** Dado que mi pedido fue marcado como entregado por el domiciliario o vendedor, cuando confirmo la recepción en la aplicación, entonces el sistema marca el pedido como finalizado y archiva en mi historial.
-
----
-
-## HU26 – Solicitar domicilio
-
-**Como** cliente, **quiero** solicitar un domicilio para mi pedido seleccionando el pedido, el método de pago y viendo el costo del envío, **para** recibir mi pedido en la dirección que indique.
-
-**Criterio de aceptación:** Dado que tengo un pedido aceptado por el vendedor, cuando selecciono el pedido, elijo un método de pago y confirmo, entonces el sistema calcula el costo del domicilio, lo muestra antes de confirmar y registra la solicitud.
+| ID | Historia de usuario |
+|---|---|
+| HU-64 | Como cliente, quiero realizar un pedido, para comprar productos de un emprendimiento. |
+| HU-65 | Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de mi compra. |
+| HU-66 | Como cliente, quiero contactar al vendedor o domiciliario, para comunicarme con ellos cuando tenga alguna inquietud sobre mi pedido. |
+| HU-67 | Como vendedor, quiero listar mis pedidos, para consultar los pedidos recibidos. |
+| HU-68 | Como vendedor, quiero consultar un pedido, para conocer todos sus detalles. |
+| HU-69 | Como cliente, quiero seleccionar un método de pago al realizar un pedido, para definir cómo realizaré el pago. |
+| HU-70 | Como cliente, quiero seleccionar la modalidad de entrega, para elegir cómo recibir mi pedido. |
+| HU-71 | Como cliente, quiero seleccionar los productos, para definir los artículos que deseo comprar. |
+| HU-72 | Como vendedor, quiero consultar la información del cliente, para conocer los datos necesarios para gestionar su pedido. |
 
 ---
 
-## HU27 – Registrar domicilio
+# 8. Gestionar productos
 
-**Como** vendedor, **quiero** registrar un domicilio para un pedido que ya preparé, **para** que quede disponible para que un domiciliario lo tome.
-
-**Criterio de aceptación:** Dado que tengo un pedido listo para despachar, cuando registro el domicilio con la dirección de entrega, entonces el sistema lo publica como domicilio disponible.
-
----
-
-## HU28 – Editar domicilio
-
-**Como** vendedor, **quiero** editar los datos de un domicilio ya registrado (dirección, notas de entrega), **para** corregir información antes de que sea aceptado por un domiciliario.
-
-**Criterio de aceptación:** Dado que registré un domicilio que aún no ha sido aceptado, cuando modifico sus datos, entonces el sistema guarda los cambios y los refleja para los domiciliarios disponibles.
+| ID | Historia de usuario |
+|---|---|
+| HU-73 | Como vendedor, quiero añadir un producto, para ofrecerlo a los clientes. |
+| HU-74 | Como vendedor, quiero listar mis productos, para consultar los productos que tengo disponibles. |
+| HU-75 | Como vendedor, quiero editar un producto, para actualizar su información. |
+| HU-76 | Como vendedor, quiero actualizar la cantidad de un producto, para mantener actualizado mi inventario. |
+| HU-77 | Como vendedor, quiero eliminar un producto, para dejar de ofrecerlo. |
+| HU-78 | Como vendedor, quiero consultar la predicción de demanda de un producto, para tomar mejores decisiones sobre mi inventario. |
 
 ---
 
-## HU29 – Cancelar domicilio
+# 9. Gestionar reportes
 
-**Como** cliente, **quiero** cancelar un domicilio solicitado indicando el motivo, **para** informar que ya no necesito el envío.
-
-**Criterio de aceptación:** Dado que tengo un domicilio en curso que aún no ha sido entregado, cuando lo cancelo e indico el motivo, entonces el sistema notifica la cancelación al vendedor y al domiciliario (si ya fue asignado).
-
----
-
-## HU30 – Cancelar domicilio
-
-**Como** administrador, **quiero** cancelar un domicilio indicando el motivo, **para** resolver casos excepcionales o reportes de mal uso de la plataforma.
-
-**Criterio de aceptación:** Dado que identifico un domicilio problemático, cuando lo cancelo e indico el motivo, entonces el sistema notifica la cancelación a las partes involucradas.
+| ID | Historia de usuario |
+|---|---|
+| HU-79 | Como cliente, quiero reportar un problema, para informar situaciones que requieran atención. |
+| HU-80 | Como vendedor, quiero reportar un problema, para informar inconvenientes relacionados con la plataforma o sus servicios. |
+| HU-81 | Como domiciliario, quiero reportar un problema, para informar inconvenientes ocurridos durante mi actividad. |
+| HU-82 | Como administrador, quiero consultar los reportes, para identificar y revisar los problemas informados por los usuarios. |
+| HU-83 | Como administrador, quiero resolver un reporte, para dar solución a los problemas informados. |
 
 ---
 
-## HU31 – Consultar domicilio
+# 10. Gestionar usuarios
 
-**Como** administrador, **quiero** consultar el detalle de un domicilio, incluyendo la información del pedido, del cliente y del domiciliario, **para** hacer seguimiento o resolver disputas.
-
-**Criterio de aceptación:** Dado que existe un domicilio registrado, cuando lo consulto, entonces el sistema muestra la información completa del pedido, del cliente y del domiciliario asociados.
-
----
-
-## HU32 – Listar domicilios
-
-**Como** vendedor, **quiero** ver el listado de mis domicilios, con filtros por estado y por fecha, **para** hacer seguimiento a mis envíos.
-
-**Criterios de aceptación:** Dado que tengo domicilios registrados, cuando consulto el listado y aplico un filtro de estado o de fecha, entonces el sistema muestra solo los domicilios que cumplen el filtro.
+| ID | Historia de usuario |
+|---|---|
+| HU-84 | Como administrador, quiero consultar un usuario, para revisar su información. |
+| HU-85 | Como administrador, quiero editar un usuario, para actualizar o corregir su información. |
+| HU-86 | Como administrador, quiero eliminar un usuario, para gestionar las cuentas que ya no deben permanecer en la plataforma. |
+| HU-87 | Como administrador, quiero listar todos los usuarios, para tener una visión general de las cuentas registradas. |
 
 ---
 
-## HU33 – Listar domicilios
+## Actores del sistema
 
-**Como** administrador, **quiero** ver el listado general de domicilios, con filtros por estado y por fecha, **para** supervisar la operación de la plataforma.
-
-**Criterio de aceptación:** Dado que existen domicilios registrados en el sistema, cuando consulto el listado y aplico filtros, entonces el sistema muestra los domicilios correspondientes.
-
----
-
-## HU35 – Ver domicilios disponibles
-
-**Como** domiciliario, **quiero** ver los domicilios disponibles para tomar, **para** elegir cuál voy a realizar.
-
-**Criterio de aceptación:** Dado que existen domicilios sin asignar, cuando consulto la lista de disponibles, entonces el sistema los muestra con su información básica (origen, destino, costo).
+| Actor | Descripción |
+|---|---|
+| **Usuario** | Actor base que representa las funcionalidades comunes de los usuarios de la plataforma. |
+| **Cliente** | Usuario que consulta emprendimientos, realiza pedidos y utiliza los servicios de la plataforma. |
+| **Vendedor** | Usuario que administra emprendimientos y productos y gestiona pedidos. |
+| **Domiciliario** | Usuario encargado de realizar los servicios de entrega. |
+| **Administrador** | Usuario encargado de la administración y supervisión de la plataforma. |
 
 ---
 
-## HU36 – Aceptar domicilio
-
-**Como** domiciliario, **quiero** aceptar un domicilio disponible viendo antes la información del pedido y la dirección de entrega, **para** comprometerme a realizarlo con la información necesaria.
-
-**Criterio de aceptación:** Dado que hay un domicilio disponible, cuando consulto la información del pedido y la dirección de entrega y confirmo la aceptación, entonces el sistema me lo asigna y notifica la aceptación al cliente y al vendedor.
-
----
-
-## HU37 – Rechazar domicilio
-
-**Como** domiciliario, **quiero** rechazar un domicilio que se me presentó como disponible, **para** que deje de aparecer en mi lista, sin afectar su disponibilidad para los demás domiciliarios.
-
-**Criterio de aceptación:** Dado que tengo un domicilio disponible en mi lista, cuando lo rechazo, entonces el sistema lo oculta únicamente de mi lista y este permanece visible y disponible para el resto de los domiciliarios.
-
----
-
-## HU38 – Actualizar estado del domicilio
-
-**Como** domiciliario, **quiero** actualizar el estado de un domicilio que acepté (aceptado, pedido recogido, en camino), **para** que el cliente y el vendedor sepan en qué va la entrega.
-
-**Criterio de aceptación:** Dado que tengo un domicilio asignado, cuando marco su avance (recogido o en camino), entonces el sistema actualiza el estado visible para el cliente y el vendedor en tiempo real.
-
----
-
-## HU39 – Confirmar entrega
-
-**Como** domiciliario, **quiero** confirmar la entrega de un domicilio validando que se realizó correctamente, **para** cerrar formalmente el domicilio con fecha y hora de entrega registradas.
-
-**Criterio de aceptación:** Dado que llegué a la dirección del cliente con el pedido, cuando confirmo la entrega, entonces el sistema valida la confirmación.
-
----
-
-## HU40 – Consultar estado del domicilio
-
-**Como** vendedor, **quiero** consultar el estado de los domicilios de mis pedidos, **para** hacer seguimiento a lo que ya despaché.
-
-**Criterio de aceptación:** Dado que tengo pedidos con domicilio en curso, cuando consulto su estado, entonces el sistema muestra el estado actualizado de cada uno.

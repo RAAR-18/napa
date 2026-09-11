@@ -1,27 +1,30 @@
 # Requerimientos No Funcionales
 
 - **RNF01 – Seguridad**: El sistema deberá almacenar las contraseñas de los usuarios utilizando mecanismos seguros de cifrado o hash.
-- **RNF02 – Autenticación**: El sistema deberá validar las credenciales de los usuarios antes de permitir el acceso a sus cuentas.
-- **RNF03 – Autorización**: El sistema deberá restringir el acceso a las funcionalidades según el rol del usuario.
+- **RNF02 – Autenticación**: El sistema deberá validar las credenciales de los usuarios y del administrador antes de permitir el acceso a sus cuentas.
+- **RNF03 – Autorización**: El sistema deberá restringir el acceso a las funcionalidades según el rol del usuario (cliente, vendedor, domiciliario o administrador).
 - **RNF04 – Privacidad**: El sistema deberá proteger la información personal de los usuarios y permitir su acceso únicamente a usuarios autorizados.
-- **RNF05 – Integridad de datos**: El sistema deberá garantizar la consistencia de la información de usuarios, productos, emprendimientos, pedidos y domicilios.
+- **RNF05 – Integridad de datos**: El sistema deberá garantizar la consistencia de la información de usuarios, emprendimientos, productos, pedidos, domicilios, pagos, comentarios y reportes.
 - **RNF06 – Disponibilidad**: El sistema deberá estar disponible para los usuarios durante el horario establecido de operación.
 - **RNF07 – Rendimiento**: Las operaciones principales del sistema deberán responder en un tiempo máximo de 3 segundos bajo condiciones normales de funcionamiento.
 - **RNF08 – Concurrencia**: El sistema deberá controlar operaciones simultáneas sobre productos y domicilios para evitar inconsistencias.
 - **RNF09 – Usabilidad**: La interfaz deberá ser intuitiva y permitir que los usuarios comprendan fácilmente las funcionalidades disponibles según su rol.
 - **RNF10 – Accesibilidad**: El sistema deberá utilizar una interfaz que facilite su uso por personas con diferentes capacidades y dispositivos.
 - **RNF11 – Compatibilidad**: El sistema deberá funcionar correctamente en dispositivos móviles, tabletas y computadores.
-- **RNF12 – Escalabilidad**: El sistema deberá permitir el crecimiento en número de usuarios, emprendimientos, productos, pedidos y domicilios sin afectar significativamente su funcionamiento.
+- **RNF12 – Escalabilidad**: El sistema deberá permitir el crecimiento en número de usuarios, emprendimientos, productos, pedidos, domicilios, pagos y comentarios sin afectar significativamente su funcionamiento.
 - **RNF13 – Mantenibilidad**: El sistema deberá estar desarrollado mediante una arquitectura modular que facilite la modificación, actualización y mantenimiento de sus componentes.
 - **RNF14 – Extensibilidad**: El sistema deberá permitir incorporar nuevos roles, funcionalidades y tipos de servicios sin requerir modificaciones extensas en los componentes existentes.
 - **RNF15 – Fiabilidad**: El sistema deberá manejar errores y excepciones de manera controlada sin provocar pérdida o corrupción de información.
 - **RNF16 – Trazabilidad**: El sistema deberá registrar las fechas de creación y última actualización de las entidades que requieran seguimiento.
-- **RNF17 – Actualización de información**: Los cambios realizados sobre productos, pedidos y domicilios deberán reflejarse oportunamente para los usuarios involucrados.
-- **RNF18 – Notificaciones**: El sistema deberá entregar oportunamente las notificaciones relacionadas con cambios en pedidos, domicilios y asignaciones.
+- **RNF17 – Actualización de información**: Los cambios realizados sobre productos, pedidos, domicilios y pagos deberán reflejarse oportunamente para los usuarios involucrados.
+- **RNF18 – Notificaciones**: El sistema deberá entregar oportunamente las notificaciones relacionadas con cambios en pedidos, domicilios, pagos y reportes.
 - **RNF19 – Interoperabilidad**: El sistema deberá permitir la integración con servicios externos necesarios para funcionalidades como mapas, comunicación, pagos o inteligencia artificial.
 - **RNF20 – Recuperación**: El sistema deberá contar con mecanismos que permitan recuperar la información ante fallos del sistema o pérdida de datos.
-- **RNF21 – Auditoría**: El sistema deberá permitir identificar las operaciones relevantes realizadas sobre pedidos y domicilios.
+- **RNF21 – Auditoría**: El sistema deberá permitir identificar las operaciones relevantes realizadas sobre pedidos, domicilios, pagos y reportes.
 - **RNF22 – Localización**: El sistema deberá utilizar la información de ubicación de manera consistente para calcular distancias y mostrar emprendimientos cercanos.
-- **RNF23 – Consistencia de estados**: El sistema deberá garantizar que los estados de productos, pedidos y domicilios solo puedan cambiar mediante transiciones válidas.
+- **RNF23 – Consistencia de estados**: El sistema deberá garantizar que los estados de productos, pedidos, domicilios, pagos y reportes solo puedan cambiar mediante transiciones válidas.
 - **RNF24 – Protección ante errores**: El sistema deberá mostrar mensajes claros al usuario cuando una operación no pueda completarse.
 - **RNF25 – Arquitectura**: El sistema deberá mantener una separación clara de responsabilidades entre sus diferentes componentes y capas para facilitar su evolución.
+- **RNF26 – Moderación de contenido**: El sistema deberá proveer mecanismos que permitan controlar y moderar el contenido generado por los usuarios (comentarios y calificaciones) para prevenir contenido ofensivo, fraudulento o abusivo.
+- **RNF27 – Integridad transaccional de pagos**: El sistema deberá garantizar que las operaciones de pago se procesen y registren de forma íntegra, evitando pagos duplicados, incompletos o con pérdida de información transaccional.
+- **RNF28 – Confidencialidad de datos de pago**: El sistema deberá proteger la información sensible relacionada con los métodos y datos de pago de los usuarios conforme a buenas prácticas de seguridad.
