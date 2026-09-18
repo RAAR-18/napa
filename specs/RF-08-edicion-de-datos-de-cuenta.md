@@ -28,9 +28,9 @@ Como usuario registrado, quiero editar mis datos personales (nombre, teléfono, 
 
 ### Edge Cases
 
-- ¿Qué ocurre si el usuario intenta editar su correo o teléfono a uno ya usado por otra cuenta?
-- ¿Cómo maneja el sistema la carga de una foto de perfil con formato o tamaño no soportado?
-- ¿Qué pasa si la ubicación proporcionada no puede ser validada por el proveedor de mapas?
+- **¿Qué ocurre si el usuario intenta editar su correo o teléfono a uno ya usado por otra cuenta?** Se rechaza e indica que ya está en uso; se conserva el valor anterior.
+- **¿Cómo maneja el sistema la carga de una foto de perfil con formato o tamaño no soportado?** Solo se aceptan imágenes JPG o PNG de hasta 5 MB; cualquier otra se rechaza con un mensaje y se conserva la foto anterior.
+- **¿Qué pasa si la ubicación proporcionada no puede ser validada por el proveedor de mapas?** No se guarda esa ubicación y se pide elegirla en el mapa o escribir otra dirección; los demás campos sí se pueden guardar.
 
 ## Requirements *(mandatory)*
 
@@ -43,6 +43,25 @@ Como usuario registrado, quiero editar mis datos personales (nombre, teléfono, 
 ### Key Entities
 
 - **Cuenta**: Datos personales editables del usuario (nombre, teléfono, foto, ubicación).
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Nombre | No | Texto de 2 a 80 caracteres. |
+| Teléfono | No | 10 dígitos y no registrado en otra cuenta. |
+| Foto de perfil | No | Imagen JPG o PNG de hasta 5 MB. |
+| Ubicación | No | Dirección o punto en el mapa, dentro de la cobertura de Santa Marta. |
+
+**Datos que asigna el sistema**
+
+- Fecha de última actualización.
+
+**Datos que se muestran o filtran**
+
+- Debe modificarse al menos un campo para poder guardar.
 
 ## Success Criteria *(mandatory)*
 

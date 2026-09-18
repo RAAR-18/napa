@@ -39,9 +39,9 @@ Como vendedor de punto fijo, quiero consultar la información del domiciliario, 
 
 ### Edge Cases
 
-- ¿Qué sucede si se consulta la información del domiciliario antes de que un domicilio haya sido aceptado?
-- ¿Cómo se maneja la consulta si el domiciliario cambia (por ejemplo, tras una reasignación)?
-- ¿Qué datos sensibles del domiciliario deben quedar ocultos al cliente y al vendedor?
+- **¿Qué sucede si se consulta la información del domiciliario antes de que un domicilio haya sido aceptado?** Muestra "Aún no hay domiciliario asignado".
+- **¿Cómo se maneja la consulta si el domiciliario cambia (por ejemplo, tras una reasignación)?** No hay reasignación dentro de una misma entrega: se muestra el domiciliario asignado hasta que el domicilio finalice o se cancele.
+- **¿Qué datos sensibles del domiciliario deben quedar ocultos al cliente y al vendedor?** Solo se muestran nombre, foto y calificación; el teléfono y el documento permanecen ocultos y la comunicación se hace por el canal de contacto de la plataforma (RF-50).
 
 ## Requirements *(mandatory)*
 
@@ -54,6 +54,15 @@ Como vendedor de punto fijo, quiero consultar la información del domiciliario, 
 ### Key Entities
 
 - **Domiciliario**: Usuario con datos públicos (nombre, foto, calificación) visibles para cliente y vendedor una vez asignado a un domicilio.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno.
+
+**Datos que se muestran o filtran**
+
+- Nombre, foto y calificación del domiciliario asignado.
+- Se ocultan teléfono y documento.
 
 ## Success Criteria *(mandatory)*
 

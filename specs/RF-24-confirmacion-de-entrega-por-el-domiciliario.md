@@ -10,7 +10,7 @@
 
 Como domiciliario, quiero confirmar la entrega del pedido, para registrar que lo llevé al punto de destino.
 
-**Why this priority**: Cierra la parte operativa del domiciliario y habilita la confirmación del cliente y el cobro en efectivo, por lo que se clasifica como P1.
+**Why this priority**: Cierra la parte operativa del domiciliario y habilita la confirmación de llegada del cliente, por lo que se clasifica como P1.
 
 **Independent Test**: Puede probarse con un domicilio en camino, confirmando la entrega y verificando que el estado pasa a entregado y que el cliente es notificado para confirmar la llegada.
 
@@ -26,16 +26,16 @@ Como domiciliario, quiero confirmar la entrega del pedido, para registrar que lo
    - **When** intento confirmar la entrega
    - **Then** el sistema rechaza la operación e indica el estado actual
 
-3. **Scenario**: Registro del cobro posterior
-   - **Given** confirmé la entrega del pedido
+3. **Scenario**: Recordatorio del pago del domicilio
+   - **Given** confirmé la entrega del pedido y el pago del domicilio sigue pendiente
    - **When** reviso las acciones disponibles
-   - **Then** el sistema me permite registrar el pago en efectivo del domicilio (RF-43)
+   - **Then** el sistema me recuerda confirmar el pago del domicilio (RF-44)
 
 ### Edge Cases
 
-- ¿Se valida que la ubicación del domiciliario esté cerca del punto B al confirmar la entrega?
-- ¿Qué ocurre si el cliente no se encuentra en el punto de destino?
-- ¿Cómo se maneja una doble confirmación enviada por reintentos de conexión?
+- **¿Se valida que la ubicación del domiciliario esté cerca del punto B al confirmar la entrega?** Sí, como advertencia: si está a más de 300 m del punto B el sistema avisa, no bloquea (el GPS puede ser impreciso) y deja registro.
+- **¿Qué ocurre si el cliente no se encuentra en el punto de destino?** El domiciliario intenta contactarlo; si no responde en 10 minutos puede reportar el problema (RF-61) para que el administrador decida.
+- **¿Cómo se maneja una doble confirmación enviada por reintentos de conexión?** La segunda confirmación se ignora e informa que la entrega ya fue confirmada.
 
 ## Requirements *(mandatory)*
 
@@ -44,11 +44,19 @@ Como domiciliario, quiero confirmar la entrega del pedido, para registrar que lo
 - **FR-001**: El sistema DEBE permitir al domiciliario asignado confirmar la entrega únicamente cuando el domicilio esté en estado "en camino".
 - **FR-002**: El sistema DEBE cambiar el estado del domicilio a "entregado", registrar el evento en la trazabilidad y notificar al cliente.
 - **FR-003**: El sistema DEBE impedir que la entrega se confirme más de una vez.
-- **FR-004**: El sistema DEBE habilitar el registro del pago en efectivo del domicilio a partir del estado "entregado" (RF-43).
+- **FR-004**: El sistema DEBE recordar al domiciliario confirmar el pago del domicilio si aún está pendiente (RF-44).
 
 ### Key Entities
 
 - **Domicilio**: Transición de esta funcionalidad: en camino → entregado (pendiente de confirmación del cliente).
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El domiciliario confirma la entrega en el punto de destino.
+
+**Datos que asigna el sistema**
+
+- Estado "entregado", fecha, hora y ubicación del dispositivo (advertencia si está a más de 300 m del punto B).
 
 ## Success Criteria *(mandatory)*
 

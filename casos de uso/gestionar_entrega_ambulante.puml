@@ -24,7 +24,8 @@ note right of UC1
 end note
 
 note right of UC4
-  Cobro en efectivo al entregar el pedido.
+  Efectivo o transferencia, según el método
+  que eligió el cliente.
 end note
 
 @enduml

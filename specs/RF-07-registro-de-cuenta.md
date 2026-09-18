@@ -29,9 +29,9 @@ Como persona interesada en usar la plataforma, quiero registrarme indicando mis 
 
 ### Edge Cases
 
-- ¿Qué ocurre si la contraseña y su confirmación no coinciden?
-- ¿Qué sucede si el usuario no selecciona ningún rol durante el registro?
-- ¿Cómo maneja el sistema un registro interrumpido a medio completar (datos parciales)?
+- **¿Qué ocurre si la contraseña y su confirmación no coinciden?** El registro se bloquea con un mensaje en el campo de confirmación y no se crea la cuenta.
+- **¿Qué sucede si el usuario no selecciona ningún rol durante el registro?** El registro se bloquea: el rol es obligatorio y no hay ningún rol seleccionado por defecto.
+- **¿Cómo maneja el sistema un registro interrumpido a medio completar (datos parciales)?** No se crea la cuenta ni se guardan datos parciales en el servidor; el formulario conserva lo digitado en el dispositivo mientras siga abierto.
 
 ## Requirements *(mandatory)*
 
@@ -46,6 +46,25 @@ Como persona interesada en usar la plataforma, quiero registrarme indicando mis 
 ### Key Entities
 
 - **Cuenta**: Representa a un usuario registrado, con datos básicos, credenciales y un rol asignado (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario).
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Nombre completo | Sí | Texto de 2 a 80 caracteres. |
+| Correo electrónico | Condicional | Obligatorio si no se ingresa teléfono; formato de correo válido y no registrado. |
+| Teléfono | Condicional | Obligatorio si no se ingresa correo; 10 dígitos y no registrado. |
+| Contraseña | Sí | Mínimo 8 caracteres, con letras y números. |
+| Confirmación de contraseña | Sí | Idéntica a la contraseña. |
+| Rol | Sí | Uno de: cliente, vendedor ambulante, vendedor de punto fijo o domiciliario. |
+| Autorización de tratamiento de datos | Sí | Aceptación expresa (Ley 1581 de 2012). |
+
+**Datos que asigna el sistema**
+
+- Identificador de la cuenta, fecha de creación y estado "activa".
+- Contraseña almacenada con hash (RNF01).
 
 ## Success Criteria *(mandatory)*
 

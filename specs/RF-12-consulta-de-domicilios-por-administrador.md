@@ -29,9 +29,9 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 
 ### Edge Cases
 
-- ¿Qué sucede cuando no existen domicilios registrados en el sistema?
-- ¿Cómo se muestra un domicilio que fue cancelado, o que recibió ofertas de precio que el cliente rechazó?
-- ¿Qué ocurre si el administrador consulta un domicilio que fue eliminado o archivado?
+- **¿Qué sucede cuando no existen domicilios registrados en el sistema?** Muestra el mensaje "No hay domicilios registrados".
+- **¿Cómo se muestra un domicilio que fue cancelado, o que recibió ofertas de precio que el cliente rechazó?** Un domicilio cancelado muestra su motivo y fecha de cancelación; el detalle lista además las ofertas recibidas con su estado, incluidas las rechazadas.
+- **¿Qué ocurre si el administrador consulta un domicilio que fue eliminado o archivado?** Los domicilios no se eliminan; el archivado es una acción personal de cada domiciliario y no cambia lo que ve el administrador.
 
 ## Requirements *(mandatory)*
 
@@ -44,6 +44,15 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 ### Key Entities
 
 - **Domicilio**: Representa un servicio de entrega asociado a un pedido; incluye estado, origen, destino, costo, vendedor, cliente y domiciliario asignado.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El administrador puede filtrar por estado y por rango de fechas, y abrir el detalle de un domicilio.
+
+**Datos que se muestran o filtran**
+
+- Estado, origen, destino y costo de cada domicilio.
+- Detalle: vendedor, cliente, domiciliario, ofertas con su estado, trazabilidad y motivo de cancelación.
 
 ## Success Criteria *(mandatory)*
 

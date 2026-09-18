@@ -50,9 +50,9 @@ Como vendedor de punto fijo, quiero confirmar que el domiciliario ya va en camin
 
 ### Edge Cases
 
-- ¿Qué sucede si el vendedor no confirma la salida del domiciliario en un tiempo razonable?
-- ¿Cómo se resuelve un desacuerdo, por ejemplo si el domiciliario dice haber recogido el pedido y el vendedor lo niega?
-- ¿Qué ocurre si el domiciliario confirma la recogida pero el pedido entregado no corresponde?
+- **¿Qué sucede si el vendedor no confirma la salida del domiciliario en un tiempo razonable?** A los 10 minutos se le envía un recordatorio; a los 15 minutos el domicilio pasa automáticamente a "en camino" y se registra como confirmación automática, salvo que exista un reporte abierto sobre el domicilio.
+- **¿Cómo se resuelve un desacuerdo, por ejemplo si el domiciliario dice haber recogido el pedido y el vendedor lo niega?** Cualquiera de las partes crea un reporte (RF-61) y el administrador puede cancelar el domicilio (RF-13); mientras tanto el domicilio no avanza.
+- **¿Qué ocurre si el domiciliario confirma la recogida pero el pedido entregado no corresponde?** El domiciliario no debe confirmar la recogida: reporta el problema y el domicilio permanece en "asignado" hasta que se resuelva o se cancele.
 
 ## Requirements *(mandatory)*
 
@@ -67,6 +67,15 @@ Como vendedor de punto fijo, quiero confirmar que el domiciliario ya va en camin
 
 - **Domicilio**: Transiciones de esta funcionalidad: asignado → recogido → en camino.
 - **Evento de trazabilidad**: Registro con estado, fecha, hora y usuario que lo originó.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El domiciliario confirma la recogida y, después, el vendedor de punto fijo confirma la salida.
+
+**Datos que asigna el sistema**
+
+- Estados "recogido" y "en camino", con fecha, hora y usuario que confirma cada uno.
+- Confirmación automática a los 15 minutos si el vendedor no responde y no hay reporte abierto.
 
 ## Success Criteria *(mandatory)*
 

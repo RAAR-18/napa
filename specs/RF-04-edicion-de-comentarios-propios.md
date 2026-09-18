@@ -28,9 +28,9 @@ Como usuario, quiero editar los comentarios que he publicado, para corregir o ac
 
 ### Edge Cases
 
-- ¿Qué ocurre si el usuario intenta editar un comentario que ya fue eliminado por un administrador?
-- ¿El sistema conserva un historial de ediciones o solo el estado más reciente?
-- ¿Qué sucede si la edición deja el comentario vacío?
+- **¿Qué ocurre si el usuario intenta editar un comentario que ya fue eliminado por un administrador?** No puede editarlo: el sistema informa que el comentario fue retirado por moderación.
+- **¿El sistema conserva un historial de ediciones o solo el estado más reciente?** Sí. Se guarda cada versión con su fecha, visible solo para el administrador; los demás usuarios ven la versión vigente marcada como "editado".
+- **¿Qué sucede si la edición deja el comentario vacío?** Se rechaza: el comentario debe tener entre 1 y 500 caracteres; si el usuario quiere retirarlo debe eliminarlo (RF-05).
 
 ## Requirements *(mandatory)*
 
@@ -43,6 +43,20 @@ Como usuario, quiero editar los comentarios que he publicado, para corregir o ac
 ### Key Entities
 
 - **Comentario**: Contenido textual y calificación editable únicamente por su autor original.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Comentario | Sí | Texto de 1 a 500 caracteres; solo el autor del comentario puede editarlo. |
+| Calificación | No | Número entero de 1 a 5, si se desea modificar. |
+
+**Datos que asigna el sistema**
+
+- Fecha de edición y versión anterior (historial).
+- Marca "editado".
 
 ## Success Criteria *(mandatory)*
 

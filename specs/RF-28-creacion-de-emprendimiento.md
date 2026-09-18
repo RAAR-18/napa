@@ -29,9 +29,9 @@ Como vendedor, quiero crear mi emprendimiento indicando nombre, tipo de producto
 
 ### Edge Cases
 
-- ¿Qué sucede si el vendedor deja campos obligatorios (nombre, ubicación) vacíos?
-- ¿Cómo maneja el sistema una ubicación inválida o fuera de la cobertura del servicio?
-- ¿Qué ocurre si el vendedor intenta crear un emprendimiento con un nombre ya usado por otro emprendimiento en la misma zona?
+- **¿Qué sucede si el vendedor deja campos obligatorios (nombre, ubicación) vacíos?** No se crea el emprendimiento y se señalan los campos obligatorios.
+- **¿Cómo maneja el sistema una ubicación inválida o fuera de la cobertura del servicio?** La rechaza y pide una ubicación dentro de la cobertura de Santa Marta.
+- **¿Qué ocurre si el vendedor intenta crear un emprendimiento con un nombre ya usado por otro emprendimiento en la misma zona?** Se rechaza: el nombre debe ser único dentro del mismo barrio; en barrios distintos puede repetirse.
 
 ## Requirements *(mandatory)*
 
@@ -43,11 +43,29 @@ Como vendedor, quiero crear mi emprendimiento indicando nombre, tipo de producto
 - **FR-004**: El sistema DEBE publicar el emprendimiento como visible para los clientes inmediatamente después de su creación.
 - **FR-005**: El sistema DEBE interpretar la ubicación según el rol del vendedor: la dirección del punto fijo para un vendedor de punto fijo, o la zona habitual de venta para un vendedor ambulante.
 - **FR-006**: El sistema DEBE asociar al emprendimiento el tipo de vendedor (ambulante o de punto fijo) definido en su cuenta, sin solicitarlo de nuevo en el formulario.
+- **FR-007**: El sistema DEBE crear el emprendimiento en estado "abierto".
 
 ### Key Entities
 
 - **Emprendimiento**: Representa el negocio del vendedor en la plataforma; incluye nombre, tipo de producto, ubicación, descripción, tipo de vendedor (ambulante o de punto fijo) y estado (activo/inactivo).
 - **Vendedor**: Usuario propietario de un emprendimiento.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Nombre del emprendimiento | Sí | Texto de 3 a 60 caracteres; único dentro del mismo barrio. |
+| Tipo de producto | Sí | Una categoría de la lista: frutas y verduras, pescado y mariscos, alimentos preparados, bebidas, snacks u otros. |
+| Ubicación | Sí | Punto fijo: dirección exacta y punto en el mapa. Ambulante: barrio o zona habitual de venta. Dentro de la cobertura de Santa Marta. |
+| Descripción | No | Texto de hasta 300 caracteres. |
+| Horario de atención | No | Hora de apertura y de cierre. |
+
+**Datos que asigna el sistema**
+
+- Vendedor propietario y tipo de vendedor (ambulante o de punto fijo), tomado de su cuenta.
+- Estado "abierto" y fecha de creación.
 
 ## Success Criteria *(mandatory)*
 

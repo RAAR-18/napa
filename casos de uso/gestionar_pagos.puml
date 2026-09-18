@@ -24,9 +24,10 @@ d --> UC4
 adm --> UC4
 
 note right of UC1
-  El pago es siempre en efectivo:
-  la plataforma no procesa transferencias
-  ni pagos electrónicos.
+  El cliente elige efectivo o transferencia al hacer
+  el pedido (los domicilios solo admiten transferencia).
+  La plataforma no procesa el dinero: registra el
+  método elegido y la confirmación del pago.
 end note
 
 @enduml

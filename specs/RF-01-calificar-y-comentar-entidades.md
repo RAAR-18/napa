@@ -46,37 +46,61 @@ Como cliente, quiero calificar y comentar al domiciliario que realizó mi entreg
 
 ---
 
-### User Story 3 - Vendedor, domiciliario y cliente se califican entre sí (Priority: P2)
+### User Story 3 - Vendedor de punto fijo califica al domiciliario (Priority: P2)
 
-Como vendedor de punto fijo, quiero calificar y comentar al domiciliario que gestionó una entrega; como vendedor (ambulante o de punto fijo), quiero calificar y comentar al cliente con quien concreté una venta; y como domiciliario, quiero calificar al emprendimiento y al cliente con quienes interactué, para registrar mi experiencia del servicio.
+Como vendedor de punto fijo, quiero calificar y comentar al domiciliario que gestionó una entrega, para valorar su servicio.
 
 **Why this priority**: Refuerza la reputación bidireccional del ecosistema de domicilios, pero no bloquea el flujo principal de compra.
 
-**Independent Test**: Puede probarse completando un domicilio y verificando que tanto el vendedor como el domiciliario puedan calificar a la contraparte correspondiente.
+**Independent Test**: Puede probarse completando un domicilio y verificando que el vendedor de punto fijo pueda calificar al domiciliario que lo realizó.
 
 **Acceptance Scenarios**:
 
 1. **Scenario**: Vendedor califica al domiciliario
-   - **Given** un domicilio de mi pedido fue entregado
+   - **Given** un domicilio de mi pedido fue finalizado
    - **When** asigno una calificación y comentario al domiciliario que lo realizó
    - **Then** el sistema registra la calificación asociada al domiciliario
 
-2. **Scenario**: Domiciliario califica al emprendimiento y al cliente
-   - **Given** entregué un domicilio recogido en un emprendimiento y destinado a un cliente
-   - **When** asigno calificación y comentario al emprendimiento y/o al cliente
-   - **Then** el sistema registra ambas calificaciones de forma independiente
+---
 
-3. **Scenario**: Vendedor califica al cliente
+### User Story 4 - Vendedor califica al cliente (Priority: P2)
+
+Como vendedor (ambulante o de punto fijo), quiero calificar y comentar al cliente con quien concreté una venta, para valorar mi experiencia durante la venta o la entrega.
+
+**Why this priority**: Completa la reputación de los clientes frente a los vendedores, pero no bloquea el flujo principal de compra.
+
+**Independent Test**: Puede probarse entregando un pedido (entrega directa, retiro de reserva o domicilio) y verificando que el vendedor pueda calificar al cliente.
+
+**Acceptance Scenarios**:
+
+1. **Scenario**: Vendedor califica al cliente
    - **Given** un pedido mío fue entregado a un cliente (por entrega directa, retiro de reserva o domicilio)
    - **When** asigno una calificación y comentario a ese cliente
    - **Then** el sistema registra la calificación asociada al cliente
 
+---
+
+### User Story 5 - Domiciliario califica al emprendimiento y al cliente (Priority: P2)
+
+Como domiciliario, quiero calificar y comentar al emprendimiento y al cliente con quienes interactué, para registrar mi experiencia del servicio.
+
+**Why this priority**: Refuerza la reputación bidireccional del ecosistema de domicilios, pero no bloquea el flujo principal de compra.
+
+**Independent Test**: Puede probarse completando un domicilio y verificando que el domiciliario pueda calificar al emprendimiento y al cliente.
+
+**Acceptance Scenarios**:
+
+1. **Scenario**: Domiciliario califica al emprendimiento y al cliente
+   - **Given** entregué un domicilio recogido en un emprendimiento y destinado a un cliente
+   - **When** asigno calificación y comentario al emprendimiento y/o al cliente
+   - **Then** el sistema registra ambas calificaciones de forma independiente
+
 ### Edge Cases
 
-- ¿Qué ocurre si un usuario intenta calificar un pedido o domicilio que aún no ha finalizado/entregado?
-- ¿Cómo maneja el sistema un intento de calificar dos veces la misma entidad para el mismo pedido/domicilio?
-- ¿Qué sucede si el usuario intenta calificar una entidad con la que nunca tuvo interacción registrada (sin pedido/domicilio de por medio)?
-- ¿Cómo se limita el rango de la calificación (por ejemplo, fuera de escala) y qué pasa si se envía un valor inválido?
+- **¿Qué ocurre si un usuario intenta calificar un pedido o domicilio que aún no ha finalizado/entregado?** El sistema no habilita la calificación hasta que el pedido esté entregado o el domicilio finalizado; el botón para calificar solo aparece desde ese momento.
+- **¿Cómo maneja el sistema un intento de calificar dos veces la misma entidad para el mismo pedido/domicilio?** Lo rechaza e informa que ya calificó esa entidad en esa interacción; el usuario puede editar su comentario (RF-04) pero no crear otro.
+- **¿Qué sucede si el usuario intenta calificar una entidad con la que nunca tuvo interacción registrada (sin pedido/domicilio de por medio)?** No lo permite: toda calificación exige un pedido o domicilio real entre las partes.
+- **¿Cómo se limita el rango de la calificación (por ejemplo, fuera de escala) y qué pasa si se envía un valor inválido?** La calificación es un número entero de 1 a 5 estrellas; un valor vacío o fuera de ese rango se rechaza y se pide corregirlo.
 
 ## Requirements *(mandatory)*
 
@@ -94,6 +118,22 @@ Como vendedor de punto fijo, quiero calificar y comentar al domiciliario que ges
 
 - **Calificación**: Valor numérico (ej. estrellas) y comentario textual, asociado a un autor, una entidad calificada (emprendimiento, producto, domiciliario o cliente) y una interacción de origen (pedido o domicilio).
 - **Interacción**: Pedido o domicilio que habilita la posibilidad de calificar a las partes involucradas.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Entidad a calificar | Sí | Emprendimiento, producto, domiciliario o cliente, según el rol; debe existir una interacción finalizada (pedido entregado o domicilio finalizado) con el autor. |
+| Calificación | Sí | Número entero de 1 a 5 estrellas. |
+| Comentario | Sí | Texto de 1 a 500 caracteres. |
+
+**Datos que asigna el sistema**
+
+- Autor: el usuario en sesión.
+- Interacción de origen (pedido o domicilio).
+- Fecha y hora de publicación.
 
 ## Success Criteria *(mandatory)*
 
