@@ -45,9 +45,9 @@ Como administrador, quiero cambiar mi contraseña, para mantener segura mi cuent
 
 ### Edge Cases
 
-- ¿Qué ocurre si la nueva contraseña no cumple los requisitos mínimos de seguridad (longitud, complejidad)?
-- ¿Cómo se maneja el cambio de contraseña mediante recuperación cuando el usuario no recuerda la contraseña actual?
-- ¿Qué pasa si el usuario intenta reutilizar su contraseña actual como "nueva" contraseña?
+- **¿Qué ocurre si la nueva contraseña no cumple los requisitos mínimos de seguridad (longitud, complejidad)?** Se rechaza y se muestran los requisitos: mínimo 8 caracteres, con letras y números.
+- **¿Cómo se maneja el cambio de contraseña mediante recuperación cuando el usuario no recuerda la contraseña actual?** Mediante un código enviado al correo o teléfono registrado, válido por 15 minutos, sin exigir la contraseña actual.
+- **¿Qué pasa si el usuario intenta reutilizar su contraseña actual como "nueva" contraseña?** Se rechaza: la nueva contraseña debe ser distinta de la actual.
 
 ## Requirements *(mandatory)*
 
@@ -61,6 +61,22 @@ Como administrador, quiero cambiar mi contraseña, para mantener segura mi cuent
 ### Key Entities
 
 - **Cuenta**: Contiene la contraseña (almacenada de forma segura) y las sesiones activas asociadas.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Contraseña actual | Condicional | Obligatoria, salvo que el cambio se haga por recuperación. |
+| Código de recuperación | Condicional | Solo en recuperación: código de 6 dígitos enviado al correo o teléfono, válido por 15 minutos. |
+| Nueva contraseña | Sí | Mínimo 8 caracteres, con letras y números, y distinta de la actual. |
+| Confirmación de la nueva contraseña | Sí | Idéntica a la nueva contraseña. |
+
+**Datos que asigna el sistema**
+
+- Cierre de las demás sesiones activas.
+- Fecha del cambio.
 
 ## Success Criteria *(mandatory)*
 

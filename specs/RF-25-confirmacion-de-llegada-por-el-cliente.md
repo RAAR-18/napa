@@ -29,12 +29,12 @@ Como cliente, quiero confirmar la llegada de mi pedido, para dar por finalizado 
 3. **Scenario**: Desacuerdo con la entrega
    - **Given** el domiciliario marcó el pedido como entregado pero no lo recibí
    - **When** informo el problema
-   - **Then** el sistema me permite crear un reporte (RF-60) y mantiene el domicilio sin finalizar hasta su resolución
+   - **Then** el sistema me permite crear un reporte (RF-61) y mantiene el domicilio sin finalizar hasta su resolución
 
 ### Edge Cases
 
-- ¿Qué sucede si el cliente no confirma la llegada en un tiempo prolongado? ¿Se finaliza automáticamente?
-- ¿Qué ocurre si el cliente confirma la llegada dos veces desde dispositivos distintos?
+- **¿Qué sucede si el cliente no confirma la llegada en un tiempo prolongado? ¿Se finaliza automáticamente?** A las 24 horas, si no hay un reporte abierto, el sistema finaliza el domicilio automáticamente.
+- **¿Qué ocurre si el cliente confirma la llegada dos veces desde dispositivos distintos?** La segunda confirmación se ignora e informa que el domicilio ya está finalizado.
 
 ## Requirements *(mandatory)*
 
@@ -42,12 +42,20 @@ Como cliente, quiero confirmar la llegada de mi pedido, para dar por finalizado 
 
 - **FR-001**: El sistema DEBE permitir al cliente confirmar la llegada únicamente cuando el domicilio esté en estado "entregado".
 - **FR-002**: El sistema DEBE cambiar el estado del domicilio a "finalizado" y registrar el evento en la trazabilidad.
-- **FR-003**: El sistema DEBE permitir al cliente informar un desacuerdo con la entrega mediante un reporte (RF-60).
+- **FR-003**: El sistema DEBE permitir al cliente informar un desacuerdo con la entrega mediante un reporte (RF-61).
 - **FR-004**: El sistema DEBE habilitar las calificaciones entre las partes una vez el domicilio esté finalizado (RF-01).
 
 ### Key Entities
 
 - **Domicilio**: Transición de esta funcionalidad: entregado → finalizado.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El cliente confirma la llegada de su pedido.
+
+**Datos que asigna el sistema**
+
+- Estado "finalizado", fecha y hora; finalización automática a las 24 horas si el cliente no confirma y no hay reporte abierto.
 
 ## Success Criteria *(mandatory)*
 

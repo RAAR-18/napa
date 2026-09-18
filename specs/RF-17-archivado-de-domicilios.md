@@ -60,9 +60,9 @@ Como domiciliario, quiero consultar mis domicilios archivados, para restaurar un
 
 ### Edge Cases
 
-- ¿Los domicilios archivados se eliminan de la lista de archivados cuando dejan de estar disponibles?
-- ¿Existe un límite de domicilios archivados por domiciliario?
-- ¿Qué ocurre con las ofertas de precio que el domiciliario ya había hecho sobre un domicilio que luego archiva?
+- **¿Los domicilios archivados se eliminan de la lista de archivados cuando dejan de estar disponibles?** No de inmediato: permanecen en archivados con la etiqueta "no disponible" durante 7 días y luego se eliminan de la lista.
+- **¿Existe un límite de domicilios archivados por domiciliario?** No hay límite.
+- **¿Qué ocurre con las ofertas de precio que el domiciliario ya había hecho sobre un domicilio que luego archiva?** La oferta pendiente sigue vigente: archivar solo oculta el domicilio de su lista.
 
 ## Requirements *(mandatory)*
 
@@ -77,6 +77,18 @@ Como domiciliario, quiero consultar mis domicilios archivados, para restaurar un
 ### Key Entities
 
 - **Domicilio archivado**: Relación entre un domiciliario y un domicilio que este decidió ocultar; incluye fecha de archivado.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El domiciliario selecciona el domicilio y lo archiva o lo restaura.
+
+**Datos que asigna el sistema**
+
+- Fecha de archivado y domiciliario que archiva (acción personal).
+
+**Datos que se muestran o filtran**
+
+- Lista de archivados: información básica, estado actual y etiqueta "no disponible" si ya no puede tomarse.
 
 ## Success Criteria *(mandatory)*
 

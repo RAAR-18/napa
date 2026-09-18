@@ -28,9 +28,9 @@ Como usuario registrado, quiero eliminar mi cuenta, para dejar de utilizar la pl
 
 ### Edge Cases
 
-- ¿Qué ocurre con los emprendimientos, productos o historial de pedidos asociados a una cuenta eliminada?
-- ¿El sistema conserva la información por un período antes de eliminarla definitivamente, para permitir arrepentimiento?
-- ¿Qué pasa con las calificaciones y comentarios publicados por una cuenta que se elimina?
+- **¿Qué ocurre con los emprendimientos, productos o historial de pedidos asociados a una cuenta eliminada?** Con pedidos, reservas o domicilios pendientes no se permite eliminar; al eliminar, el emprendimiento y sus productos se ocultan y el historial de pedidos se conserva, anonimizado, para las otras partes.
+- **¿El sistema conserva la información por un período antes de eliminarla definitivamente, para permitir arrepentimiento?** La cuenta se desactiva de inmediato y sus datos personales se anonimizan a los 30 días; durante ese plazo solo un administrador puede restaurarla. El usuario no puede reactivarla desde la aplicación.
+- **¿Qué pasa con las calificaciones y comentarios publicados por una cuenta que se elimina?** Permanecen visibles con el autor como "Usuario eliminado", para no alterar la reputación de terceros.
 
 ## Requirements *(mandatory)*
 
@@ -43,6 +43,19 @@ Como usuario registrado, quiero eliminar mi cuenta, para dejar de utilizar la pl
 ### Key Entities
 
 - **Cuenta**: Registro del usuario cuyo ciclo de vida incluye un estado de eliminación/desactivación.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Contraseña actual | Sí | Debe coincidir con la almacenada. |
+| Confirmación de eliminación | Sí | Aceptación expresa de que la acción desactiva la cuenta. |
+
+**Datos que asigna el sistema**
+
+- Fecha de desactivación y de anonimización (30 días después).
 
 ## Success Criteria *(mandatory)*
 

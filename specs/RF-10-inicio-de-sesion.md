@@ -45,9 +45,9 @@ Como administrador, quiero iniciar sesión en mi cuenta, para acceder a las func
 
 ### Edge Cases
 
-- ¿Qué ocurre tras varios intentos consecutivos fallidos de inicio de sesión sobre la misma cuenta?
-- ¿Cómo maneja el sistema el inicio de sesión desde un dispositivo o ubicación no habitual?
-- ¿Qué sucede si la cuenta fue eliminada o inhabilitada y se intenta iniciar sesión con sus credenciales?
+- **¿Qué ocurre tras varios intentos consecutivos fallidos de inicio de sesión sobre la misma cuenta?** Tras 5 intentos fallidos consecutivos la cuenta se bloquea por 15 minutos y se notifica al titular.
+- **¿Cómo maneja el sistema el inicio de sesión desde un dispositivo o ubicación no habitual?** Con credenciales válidas se permite el acceso y se notifica al titular que hubo un inicio de sesión desde un dispositivo nuevo.
+- **¿Qué sucede si la cuenta fue eliminada o inhabilitada y se intenta iniciar sesión con sus credenciales?** Se rechaza con el mensaje "cuenta no disponible", sin revelar más datos; si fue inhabilitada por un administrador se indica que debe contactar a soporte.
 
 ## Requirements *(mandatory)*
 
@@ -61,6 +61,19 @@ Como administrador, quiero iniciar sesión en mi cuenta, para acceder a las func
 ### Key Entities
 
 - **Sesión**: Representa el acceso autenticado de un usuario o administrador, vinculada a su cuenta y su rol.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Correo o teléfono | Sí | Debe corresponder a una cuenta activa. |
+| Contraseña | Sí | Debe coincidir con la almacenada; 5 fallos consecutivos bloquean la cuenta 15 minutos. |
+
+**Datos que asigna el sistema**
+
+- Sesión y panel según el rol de la cuenta.
 
 ## Success Criteria *(mandatory)*
 

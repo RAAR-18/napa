@@ -50,9 +50,9 @@ Como vendedor de punto fijo, quiero consultar el estado de un domicilio, para co
 
 ### Edge Cases
 
-- ¿Cómo se muestra la trazabilidad cuando el domiciliario aún no ha actualizado su avance?
-- ¿Qué ocurre si el domiciliario desactiva la ubicación durante el trayecto?
-- ¿Hasta cuándo permanece consultable la trazabilidad de un domicilio finalizado?
+- **¿Cómo se muestra la trazabilidad cuando el domiciliario aún no ha actualizado su avance?** Muestra el último estado con su hora y el texto "sin novedades desde hace X minutos".
+- **¿Qué ocurre si el domiciliario desactiva la ubicación durante el trayecto?** Se muestra la última ubicación conocida con su hora y se avisa que no está actualizada.
+- **¿Hasta cuándo permanece consultable la trazabilidad de un domicilio finalizado?** Durante 12 meses después de finalizado.
 
 ## Requirements *(mandatory)*
 
@@ -69,6 +69,16 @@ Como vendedor de punto fijo, quiero consultar el estado de un domicilio, para co
 
 - **Trazabilidad**: Cronología de eventos de un domicilio; cada evento registra estado, fecha, hora y usuario que lo originó.
 - **Domicilio**: Estados: disponible, asignado, recogido, en camino, entregado, finalizado y cancelado.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno.
+
+**Datos que se muestran o filtran**
+
+- Cronología: estado, fecha, hora y usuario que originó cada evento.
+- Ubicación aproximada del domiciliario mientras el domicilio está en camino.
+- Motivo, si el domicilio fue cancelado.
 
 ## Success Criteria *(mandatory)*
 

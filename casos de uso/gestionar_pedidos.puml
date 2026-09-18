@@ -14,36 +14,38 @@ rectangle "Gestionar pedidos" {
     usecase "Realizar pedido" as UC1
     usecase "Seleccionar productos" as UC2
     usecase "Seleccionar modalidad de entrega" as UC3
-    usecase "Indicar ubicación de entrega" as UC4
-    usecase "Consultar disponibilidad prevista" as UC5
-    usecase "Listar mis pedidos" as UC6
-    usecase "Consultar estado del pedido" as UC7
-    usecase "Contactar vendedor o domiciliario" as UC8
-    usecase "Listar pedidos recibidos" as UC9
-    usecase "Consultar detalle del pedido" as UC10
-    usecase "Ver información del cliente" as UC11
-    usecase "Aceptar pedido" as UC12
-    usecase "Rechazar pedido" as UC13
+    usecase "Seleccionar método de pago" as UC4
+    usecase "Indicar ubicación de entrega" as UC5
+    usecase "Consultar disponibilidad prevista" as UC6
+    usecase "Listar mis pedidos" as UC7
+    usecase "Consultar estado del pedido" as UC8
+    usecase "Contactar vendedor o domiciliario" as UC9
+    usecase "Listar pedidos recibidos" as UC10
+    usecase "Consultar detalle del pedido" as UC11
+    usecase "Ver información del cliente" as UC12
+    usecase "Aceptar pedido" as UC13
+    usecase "Rechazar pedido" as UC14
 }
 
 c --> UC1
-c --> UC6
+c --> UC7
 
-UC9 <-- v
+UC10 <-- v
 
 UC1 .> UC2 : <<include>>
 UC1 .> UC3 : <<include>>
-UC4 .> UC1 : <<extend>>
+UC1 .> UC4 : <<include>>
 UC5 .> UC1 : <<extend>>
+UC6 .> UC1 : <<extend>>
 
-UC7 .> UC6 : <<extend>>
 UC8 .> UC7 : <<extend>>
+UC9 .> UC8 : <<extend>>
 
-UC10 .> UC9 : <<extend>>
-UC11 .> UC9 : <<extend>>
 UC11 .> UC10 : <<extend>>
 UC12 .> UC10 : <<extend>>
-UC13 .> UC10 : <<extend>>
+UC12 .> UC11 : <<extend>>
+UC13 .> UC11 : <<extend>>
+UC14 .> UC11 : <<extend>>
 
 note right of UC3
   Ambulante: entrega directa o reserva.
@@ -51,17 +53,24 @@ note right of UC3
 end note
 
 note right of UC4
+  Ambulante: efectivo o transferencia.
+  Punto fijo: efectivo o transferencia en reserva;
+  solo transferencia en domicilio.
+end note
+
+note right of UC5
   Solo en entrega directa, reserva con
   vendedor ambulante y domicilio.
 end note
 
-note right of UC5
+note right of UC6
   Solo cuando la modalidad es reserva
   (pedido para el día siguiente).
 end note
 
 note bottom of UC1
-  El pago es siempre en efectivo.
+  Un emprendimiento cerrado no recibe pedidos de
+  entrega directa ni de domicilio; sí reservas.
 end note
 
 @enduml

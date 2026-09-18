@@ -33,9 +33,9 @@ Como domiciliario, quiero ver un mapa interactivo con la ruta hacia el punto de 
 
 ### Edge Cases
 
-- ¿Qué ocurre si el punto B no puede resolverse en el mapa por una dirección ambigua?
-- ¿Cómo se comporta el mapa si el domiciliario pierde la señal durante el trayecto?
-- ¿Se muestra la ruta completa (posición actual → A → B) o solo el tramo pendiente?
+- **¿Qué ocurre si el punto B no puede resolverse en el mapa por una dirección ambigua?** Se muestra la dirección en texto y la coordenada registrada por el cliente, y el domiciliario puede contactarlo.
+- **¿Cómo se comporta el mapa si el domiciliario pierde la señal durante el trayecto?** Conserva la última ruta cargada y retoma la posición cuando vuelve la señal (RNF28).
+- **¿Se muestra la ruta completa (posición actual → A → B) o solo el tramo pendiente?** Se muestra la ruta completa (posición actual → A → B), resaltando el tramo pendiente.
 
 ## Requirements *(mandatory)*
 
@@ -50,6 +50,15 @@ Como domiciliario, quiero ver un mapa interactivo con la ruta hacia el punto de 
 
 - **Ruta**: Trayecto calculado desde la ubicación del domiciliario hasta el punto A y desde este hasta el punto B.
 - **Domicilio**: Debe estar asignado al domiciliario que consulta el mapa.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Requiere permiso de ubicación del dispositivo.
+
+**Datos que se muestran o filtran**
+
+- Posición actual del domiciliario, punto A, punto B y ruta completa (tramo pendiente resaltado).
+- Direcciones en texto como respaldo.
 
 ## Success Criteria *(mandatory)*
 

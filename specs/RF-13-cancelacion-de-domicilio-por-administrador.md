@@ -28,9 +28,9 @@ Como administrador, quiero cancelar un domicilio indicando el motivo, para resol
 
 ### Edge Cases
 
-- ¿Qué sucede si el domicilio ya fue entregado antes de que el administrador intente cancelarlo?
-- ¿Cómo se maneja la cancelación cuando el domicilio ya tiene un pago confirmado?
-- ¿Qué ocurre si el domiciliario ya está en camino al momento de la cancelación?
+- **¿Qué sucede si el domicilio ya fue entregado antes de que el administrador intente cancelarlo?** No puede cancelarlo: en estado entregado o finalizado el sistema informa que el domicilio ya concluyó.
+- **¿Cómo se maneja la cancelación cuando el domicilio ya tiene un pago confirmado?** Se cancela igualmente; el pago confirmado queda marcado para revisión y el administrador coordina la devolución fuera de la plataforma.
+- **¿Qué ocurre si el domiciliario ya está en camino al momento de la cancelación?** Se puede cancelar: el sistema notifica de inmediato a las tres partes y el domiciliario deja de ver la ruta.
 
 ## Requirements *(mandatory)*
 
@@ -43,6 +43,19 @@ Como administrador, quiero cancelar un domicilio indicando el motivo, para resol
 ### Key Entities
 
 - **Domicilio**: Entidad cancelable por el administrador; registra motivo y fecha de cancelación.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Motivo de la cancelación | Sí | Texto de 10 a 300 caracteres. |
+
+**Datos que asigna el sistema**
+
+- Estado "cancelado", fecha y administrador que cancela.
+- Notificación a cliente, vendedor y domiciliario asignado.
 
 ## Success Criteria *(mandatory)*
 

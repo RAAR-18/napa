@@ -33,9 +33,9 @@ Como domiciliario, quiero aceptar un domicilio con la tarifa publicada, para asi
 
 ### Edge Cases
 
-- ¿Existe un límite de domicilios que un domiciliario puede tener asignados al mismo tiempo?
-- ¿Qué ocurre si el domicilio es cancelado por el administrador justo antes de ser aceptado?
-- ¿Puede un domiciliario aceptar un domicilio que había archivado sin restaurarlo primero?
+- **¿Existe un límite de domicilios que un domiciliario puede tener asignados al mismo tiempo?** Sí: un domiciliario puede tener hasta 3 domicilios asignados en curso; al intentar aceptar un cuarto, el sistema lo rechaza con un mensaje.
+- **¿Qué ocurre si el domicilio es cancelado por el administrador justo antes de ser aceptado?** El sistema informa que el domicilio ya no está disponible.
+- **¿Puede un domiciliario aceptar un domicilio que había archivado sin restaurarlo primero?** Sí, desde su lista de archivados puede abrir la información del domicilio y aceptarlo, y deja de estar archivado.
 
 ## Requirements *(mandatory)*
 
@@ -51,6 +51,16 @@ Como domiciliario, quiero aceptar un domicilio con la tarifa publicada, para asi
 
 - **Domicilio**: Pasa de "disponible" a "asignado"; su ganancia vigente es la tarifa publicada.
 - **Domiciliario**: Usuario que se compromete a realizar la entrega.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El domiciliario acepta el domicilio con la tarifa publicada.
+
+**Datos que asigna el sistema**
+
+- Domiciliario asignado, estado "asignado" y fecha.
+- Ganancia vigente igual a la tarifa publicada.
+- Vencimiento de las ofertas pendientes de otros domiciliarios.
 
 ## Success Criteria *(mandatory)*
 

@@ -1,6 +1,6 @@
 # Requerimientos Funcionales
 
-> Derivados del backlog de 102 historias de usuario (`investigacion/HistoriasDeUsuario/historias_de_usuario.md`), organizados por módulo. Entre paréntesis se indican las historias de usuario (HU) que sustentan cada requerimiento. Cada requerimiento tiene su especificación detallada en `specs/`.
+> Derivados del backlog de 104 historias de usuario (`investigacion/HistoriasDeUsuario/historias_de_usuario.md`), organizados por módulo. Entre paréntesis se indican las historias de usuario (HU) que sustentan cada requerimiento. Cada requerimiento tiene su especificación detallada en `specs/`.
 
 ## Reglas generales del dominio
 
@@ -9,7 +9,7 @@
 - **Pedido e ítems**: un pedido tiene uno o varios ítems (producto y cantidad).
 - **Reservas**: se hacen para el día siguiente y se validan contra la disponibilidad prevista del vendedor (predicción de demanda e inventario).
 - **Domicilio**: solo lleva un pedido del punto A (punto fijo) al punto B (ubicación del cliente); **no puede editarse**. Lo publica el vendedor de punto fijo, lo toman los domiciliarios y se cierra con la confirmación del domiciliario y del cliente.
-- **Pago**: siempre en **efectivo**. La plataforma no procesa transferencias ni pagos electrónicos; solo registra la confirmación de cada cobro.
+- **Pago**: el cliente elige el método al hacer el pedido, según el vendedor y la modalidad: el vendedor ambulante acepta efectivo o transferencia (entrega directa y reserva); el vendedor de punto fijo acepta efectivo o transferencia en las reservas con retiro y **solo transferencia** en los domicilios. La plataforma no procesa el dinero: registra el método elegido y la confirmación de cada pago.
 - **Granularidad**: cada requerimiento corresponde a una pantalla o acción del usuario. Los filtros, ordenamientos y validaciones son funcionalidad del requerimiento y no requerimientos aparte.
 
 ## 1. Gestionar comentarios y calificaciones
@@ -52,67 +52,68 @@
 
 - **RF-28 – Creación de emprendimiento**: El sistema deberá permitir al vendedor (ambulante o de punto fijo) crear un emprendimiento para ofrecer sus productos en la plataforma, registrando su ubicación según el tipo de venta. (HU-53)
 - **RF-29 – Edición de emprendimiento**: El sistema deberá permitir al vendedor editar la información de su emprendimiento. (HU-54)
-- **RF-30 – Eliminación de emprendimiento**: El sistema deberá permitir al vendedor eliminar su emprendimiento. (HU-55)
-- **RF-31 – Listado de emprendimientos**: El sistema deberá permitir al cliente consultar el listado de emprendimientos disponibles. (HU-56)
-- **RF-32 – Consulta de emprendimiento**: El sistema deberá permitir al cliente consultar la información y oferta de un emprendimiento específico. (HU-57)
-- **RF-33 – Listado de productos de un emprendimiento**: El sistema deberá permitir al cliente consultar los productos ofrecidos por un emprendimiento. (HU-58)
-- **RF-34 – Consulta de información del vendedor**: El sistema deberá permitir al cliente consultar la información del vendedor asociado a un emprendimiento. (HU-59)
+- **RF-30 – Cambio de estado del emprendimiento**: El sistema deberá permitir al vendedor (ambulante o de punto fijo) cambiar el estado de su emprendimiento de abierto a cerrado y viceversa; un emprendimiento cerrado no recibe nuevos pedidos de entrega directa ni de domicilio. (HU-55)
+- **RF-31 – Eliminación de emprendimiento**: El sistema deberá permitir al vendedor eliminar su emprendimiento. (HU-56)
+- **RF-32 – Listado de emprendimientos**: El sistema deberá permitir al cliente consultar el listado de emprendimientos disponibles. (HU-57)
+- **RF-33 – Consulta de emprendimiento**: El sistema deberá permitir al cliente consultar la información y oferta de un emprendimiento específico. (HU-58)
+- **RF-34 – Listado de productos de un emprendimiento**: El sistema deberá permitir al cliente consultar los productos ofrecidos por un emprendimiento. (HU-59)
+- **RF-35 – Consulta de información del vendedor**: El sistema deberá permitir al cliente consultar la información del vendedor asociado a un emprendimiento. (HU-60)
 
 ## 5. Gestionar entregas del vendedor ambulante
 
-- **RF-35 – Consulta de ubicación de entrega**: El sistema deberá permitir al vendedor ambulante consultar en un mapa la ubicación de entrega de un pedido aceptado (entrega directa o reserva). (HU-60)
-- **RF-36 – Inicio de entrega directa**: El sistema deberá permitir al vendedor ambulante iniciar la entrega de un pedido aceptado, notificando al cliente que va en camino. (HU-61)
-- **RF-37 – Confirmación de entrega directa**: El sistema deberá permitir al vendedor ambulante confirmar la entrega del pedido al cliente, incluyendo la confirmación del cobro en efectivo. (HU-62)
+- **RF-36 – Consulta de ubicación de entrega**: El sistema deberá permitir al vendedor ambulante consultar en un mapa la ubicación de entrega de un pedido aceptado (entrega directa o reserva). (HU-61)
+- **RF-37 – Inicio de entrega directa**: El sistema deberá permitir al vendedor ambulante iniciar la entrega de un pedido aceptado, notificando al cliente que va en camino. (HU-62)
+- **RF-38 – Confirmación de entrega directa**: El sistema deberá permitir al vendedor ambulante confirmar la entrega del pedido al cliente, incluyendo la confirmación del pago recibido. (HU-63)
 
 ## 6. Gestionar notificaciones
 
-- **RF-38 – Consulta de notificaciones**: El sistema deberá permitir a los usuarios (cliente, vendedor, domiciliario, administrador) consultar sus notificaciones. (HU-63)
-- **RF-39 – Configuración de preferencias de notificación**: El sistema deberá permitir a los usuarios configurar qué tipos de notificaciones desean recibir. (HU-64)
+- **RF-39 – Consulta de notificaciones**: El sistema deberá permitir a los usuarios (cliente, vendedor, domiciliario, administrador) consultar sus notificaciones. (HU-64)
+- **RF-40 – Configuración de preferencias de notificación**: El sistema deberá permitir a los usuarios configurar qué tipos de notificaciones desean recibir. (HU-65)
 
 ## 7. Gestionar pagos
 
-- **RF-40 – Consulta de historial de pagos**: El sistema deberá permitir al cliente, al vendedor y al domiciliario consultar su historial de pagos en efectivo. (HU-65, HU-67, HU-69)
-- **RF-41 – Consulta de historial general de pagos**: El sistema deberá permitir al administrador consultar el historial de pagos de la plataforma. (HU-70)
-- **RF-42 – Confirmación de pago en efectivo del pedido**: El sistema deberá permitir al vendedor (ambulante o de punto fijo) confirmar que recibió el pago en efectivo de un pedido. (HU-66)
-- **RF-43 – Confirmación de pago en efectivo del domicilio**: El sistema deberá permitir al domiciliario confirmar que recibió en efectivo el pago del servicio de domicilio. (HU-68)
-- **RF-44 – Configuración de tarifa mínima de domicilio**: El sistema deberá permitir al administrador configurar el valor mínimo permitido para los servicios de domicilio (tarifa mínima), que aplica a la tarifa publicada y a las ofertas de los domiciliarios. (HU-71)
+- **RF-41 – Consulta de historial de pagos**: El sistema deberá permitir al cliente, al vendedor y al domiciliario consultar su historial de pagos. (HU-66, HU-68, HU-70)
+- **RF-42 – Consulta de historial general de pagos**: El sistema deberá permitir al administrador consultar el historial de pagos de la plataforma. (HU-71)
+- **RF-43 – Confirmación de pago del pedido**: El sistema deberá permitir al vendedor (ambulante o de punto fijo) confirmar que recibió el pago de un pedido, ya sea en efectivo o por transferencia. (HU-67)
+- **RF-44 – Confirmación de pago del domicilio**: El sistema deberá permitir al domiciliario confirmar que recibió el pago del servicio de domicilio. (HU-69)
+- **RF-45 – Configuración de tarifa mínima de domicilio**: El sistema deberá permitir al administrador configurar el valor mínimo permitido para los servicios de domicilio (tarifa mínima), que aplica a la tarifa publicada y a las ofertas de los domiciliarios. (HU-72)
 
 ## 8. Gestionar pedidos
 
-- **RF-45 – Realización de pedido**: El sistema deberá permitir al cliente realizar un pedido seleccionando los productos y cantidades de un emprendimiento, la modalidad de entrega disponible según el tipo de vendedor (entrega directa o reserva con vendedor ambulante; reserva o domicilio con vendedor de punto fijo) y la ubicación de entrega cuando aplique, quedando el pedido en estado pendiente hasta la respuesta del vendedor. El pago es siempre en efectivo. (HU-72 a HU-74, HU-76)
-- **RF-46 – Consulta de disponibilidad prevista para reservas**: El sistema deberá permitir al cliente consultar la disponibilidad prevista de los productos de un emprendimiento para el día siguiente al reservar, y limitar la cantidad reservada a esa disponibilidad. (HU-75)
-- **RF-47 – Listado de pedidos del cliente**: El sistema deberá permitir al cliente consultar el listado de sus pedidos. (HU-77)
-- **RF-48 – Consulta del estado del pedido**: El sistema deberá permitir al cliente consultar el estado actualizado de su pedido según su modalidad de entrega. (HU-78)
-- **RF-49 – Contacto con vendedor o domiciliario**: El sistema deberá permitir al cliente contactar al vendedor o domiciliario asignado a su pedido. (HU-79)
-- **RF-50 – Listado de pedidos del vendedor**: El sistema deberá permitir al vendedor consultar el listado de pedidos recibidos. (HU-80)
-- **RF-51 – Consulta de detalle de pedido**: El sistema deberá permitir al vendedor consultar el detalle completo de un pedido. (HU-81)
-- **RF-52 – Consulta de información del cliente**: El sistema deberá permitir al vendedor consultar la información del cliente asociado a un pedido. (HU-82)
-- **RF-53 – Respuesta del vendedor a un pedido**: El sistema deberá permitir al vendedor aceptar o rechazar un pedido pendiente. Al aceptarlo, se compromete a atenderlo según su modalidad; al rechazarlo, el cliente es notificado. (HU-83, HU-84)
+- **RF-46 – Realización de pedido**: El sistema deberá permitir al cliente realizar un pedido seleccionando los productos y cantidades de un emprendimiento, la modalidad de entrega disponible según el tipo de vendedor (entrega directa o reserva con vendedor ambulante; reserva o domicilio con vendedor de punto fijo) la ubicación de entrega cuando aplique y el método de pago permitido para el vendedor y la modalidad (ambulante: efectivo o transferencia; punto fijo: efectivo o transferencia en la reserva y solo transferencia en el domicilio), quedando el pedido en estado pendiente hasta la respuesta del vendedor. (HU-73 a HU-75, HU-77, HU-78)
+- **RF-47 – Consulta de disponibilidad prevista para reservas**: El sistema deberá permitir al cliente consultar la disponibilidad prevista de los productos de un emprendimiento para el día siguiente al reservar, y limitar la cantidad reservada a esa disponibilidad. (HU-76)
+- **RF-48 – Listado de pedidos del cliente**: El sistema deberá permitir al cliente consultar el listado de sus pedidos. (HU-79)
+- **RF-49 – Consulta del estado del pedido**: El sistema deberá permitir al cliente consultar el estado actualizado de su pedido según su modalidad de entrega. (HU-80)
+- **RF-50 – Contacto con vendedor o domiciliario**: El sistema deberá permitir al cliente contactar al vendedor o domiciliario asignado a su pedido. (HU-81)
+- **RF-51 – Listado de pedidos del vendedor**: El sistema deberá permitir al vendedor consultar el listado de pedidos recibidos. (HU-82)
+- **RF-52 – Consulta de detalle de pedido**: El sistema deberá permitir al vendedor consultar el detalle completo de un pedido. (HU-83)
+- **RF-53 – Consulta de información del cliente**: El sistema deberá permitir al vendedor consultar la información del cliente asociado a un pedido. (HU-84)
+- **RF-54 – Respuesta del vendedor a un pedido**: El sistema deberá permitir al vendedor aceptar o rechazar un pedido pendiente. Al aceptarlo, se compromete a atenderlo según su modalidad; al rechazarlo, el cliente es notificado. (HU-85, HU-86)
 
 ## 9. Gestionar productos
 
-- **RF-54 – Registro de producto**: El sistema deberá permitir al vendedor añadir un producto a su catálogo. (HU-85)
-- **RF-55 – Listado de productos del vendedor**: El sistema deberá permitir al vendedor consultar el listado de sus productos publicados. (HU-86)
-- **RF-56 – Edición de producto**: El sistema deberá permitir al vendedor editar la información de un producto publicado. (HU-87)
-- **RF-57 – Actualización de inventario del producto**: El sistema deberá permitir al vendedor actualizar la cantidad disponible de un producto, marcándolo como agotado cuando llegue a cero. (HU-88)
-- **RF-58 – Eliminación de producto**: El sistema deberá permitir al vendedor eliminar un producto de su catálogo. (HU-89)
-- **RF-59 – Predicción de demanda**: El sistema deberá permitir al vendedor consultar una predicción de demanda de un producto basada en inteligencia artificial, que además alimenta la disponibilidad prevista usada para validar las reservas. (HU-90)
+- **RF-55 – Registro de producto**: El sistema deberá permitir al vendedor añadir un producto a su catálogo. (HU-87)
+- **RF-56 – Listado de productos del vendedor**: El sistema deberá permitir al vendedor consultar el listado de sus productos publicados. (HU-88)
+- **RF-57 – Edición de producto**: El sistema deberá permitir al vendedor editar la información de un producto publicado. (HU-89)
+- **RF-58 – Actualización de inventario del producto**: El sistema deberá permitir al vendedor actualizar la cantidad disponible de un producto, marcándolo como agotado cuando llegue a cero. (HU-90)
+- **RF-59 – Eliminación de producto**: El sistema deberá permitir al vendedor eliminar un producto de su catálogo. (HU-91)
+- **RF-60 – Predicción de demanda**: El sistema deberá permitir al vendedor consultar una predicción de demanda de un producto basada en inteligencia artificial, que además alimenta la disponibilidad prevista usada para validar las reservas. (HU-92)
 
 ## 10. Gestionar reportes
 
-- **RF-60 – Creación de reportes**: El sistema deberá permitir al cliente, vendedor y domiciliario reportar problemas relacionados con la plataforma o sus servicios. (HU-91 a HU-93)
-- **RF-61 – Consulta de reportes por administrador**: El sistema deberá permitir al administrador consultar los reportes registrados por los usuarios. (HU-94)
-- **RF-62 – Resolución de reportes**: El sistema deberá permitir al administrador dar solución y cerrar un reporte. (HU-95)
+- **RF-61 – Creación de reportes**: El sistema deberá permitir al cliente, vendedor y domiciliario reportar problemas relacionados con la plataforma o sus servicios. (HU-93 a HU-95)
+- **RF-62 – Consulta de reportes por administrador**: El sistema deberá permitir al administrador consultar los reportes registrados por los usuarios. (HU-96)
+- **RF-63 – Resolución de reportes**: El sistema deberá permitir al administrador dar solución y cerrar un reporte. (HU-97)
 
-## 11. Gestionar reservas en punto fijo
+## 11. Gestionar reservas
 
-- **RF-63 – Consulta de ubicación del punto de recogida**: El sistema deberá permitir al cliente consultar la ubicación del punto fijo donde debe retirar una reserva aceptada. (HU-96)
-- **RF-64 – Reserva lista para recoger**: El sistema deberá permitir al vendedor de punto fijo marcar una reserva aceptada como lista para recoger, notificando al cliente. (HU-97)
-- **RF-65 – Confirmación de retiro de la reserva**: El sistema deberá permitir al vendedor de punto fijo confirmar el retiro de una reserva por parte del cliente, incluyendo la confirmación del cobro en efectivo. (HU-98)
+- **RF-64 – Consulta de ubicación del punto de recogida**: El sistema deberá permitir al cliente consultar la ubicación del punto fijo donde debe retirar una reserva aceptada. (HU-98)
+- **RF-65 – Reserva lista para recoger**: El sistema deberá permitir al vendedor de punto fijo marcar una reserva aceptada como lista para recoger, notificando al cliente. (HU-99)
+- **RF-66 – Confirmación de retiro de la reserva**: El sistema deberá permitir al vendedor de punto fijo confirmar el retiro de una reserva por parte del cliente, incluyendo la confirmación del pago recibido. (HU-100)
 
 ## 12. Gestionar usuarios
 
-- **RF-66 – Consulta de usuario por administrador**: El sistema deberá permitir al administrador consultar la información de un usuario. (HU-99)
-- **RF-67 – Edición de usuario por administrador**: El sistema deberá permitir al administrador editar o corregir la información de un usuario. (HU-100)
-- **RF-68 – Eliminación de usuario por administrador**: El sistema deberá permitir al administrador eliminar la cuenta de un usuario. (HU-101)
-- **RF-69 – Listado de usuarios**: El sistema deberá permitir al administrador consultar el listado general de usuarios registrados. (HU-102)
+- **RF-67 – Consulta de usuario por administrador**: El sistema deberá permitir al administrador consultar la información de un usuario. (HU-101)
+- **RF-68 – Edición de usuario por administrador**: El sistema deberá permitir al administrador editar o corregir la información de un usuario. (HU-102)
+- **RF-69 – Eliminación de usuario por administrador**: El sistema deberá permitir al administrador eliminar la cuenta de un usuario. (HU-103)
+- **RF-70 – Listado de usuarios**: El sistema deberá permitir al administrador consultar el listado general de usuarios registrados. (HU-104)

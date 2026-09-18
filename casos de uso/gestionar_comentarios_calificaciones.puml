@@ -2,12 +2,18 @@
 
 left to right direction
 
+actor "Usuario" as u
 actor "Cliente" as c
 actor "Vendedor" as v
+actor "Vendedor Ambulante" as va
 actor "Vendedor de Punto Fijo" as vpf
 actor "Domiciliario" as d
 actor "Administrador" as adm
 
+c --|> u
+v --|> u
+d --|> u
+va --|> v
 vpf --|> v
 
 rectangle "Gestionar comentarios y calificaciones" {
@@ -15,52 +21,73 @@ rectangle "Gestionar comentarios y calificaciones" {
     usecase "Calificar y comentar producto" as UC2
     usecase "Calificar y comentar domiciliario" as UC3
     usecase "Calificar y comentar cliente" as UC4
+
     usecase "Consultar calificaciones y comentarios de un emprendimiento" as UC5
     usecase "Consultar calificaciones y comentarios de un producto" as UC6
     usecase "Consultar calificaciones y comentarios de un domiciliario" as UC7
     usecase "Consultar calificaciones y comentarios de un cliente" as UC8
-    usecase "Eliminar comentario" as UC9
-    usecase "Editar comentario" as UC10
+
+    usecase "Editar comentario propio" as UC9
+    usecase "Eliminar comentario propio" as UC10
+
+    usecase "Moderar comentario: editar" as UC11
+    usecase "Moderar comentario: eliminar" as UC12
 }
 
+' Calificar: solo tras una interacción finalizada
 c --> UC1
 c --> UC2
 c --> UC3
+v --> UC4
+vpf --> UC3
+d --> UC1
+d --> UC4
+
+' Consultar
 c --> UC5
 c --> UC6
 c --> UC7
 c --> UC8
-c --> UC9
-c --> UC10
-
-v --> UC4
 v --> UC5
 v --> UC6
 v --> UC8
-v --> UC9
-v --> UC10
-
-vpf --> UC3
 vpf --> UC7
-
-d --> UC1
-d --> UC4
 d --> UC5
 d --> UC7
 d --> UC8
-d --> UC9
-d --> UC10
-
 adm --> UC5
 adm --> UC6
 adm --> UC7
 adm --> UC8
-adm --> UC9
-adm --> UC10
+
+' Gestión de los comentarios propios (cualquier usuario)
+u --> UC9
+u --> UC10
+
+' Moderación (administrador)
+adm --> UC11
+adm --> UC12
+
+note right of UC1
+  Solo se puede calificar tras un pedido entregado
+  o un domicilio finalizado, una vez por interacción
+  y entidad. Escala de 1 a 5 y comentario de hasta
+  500 caracteres.
+end note
 
 note right of UC3
-  Los vendedores de punto fijo son quienes
-  interactúan con los domiciliarios.
+  El cliente califica al domiciliario de su domicilio;
+  el vendedor de punto fijo califica al domiciliario
+  que llevó sus pedidos.
+end note
+
+note right of UC9
+  Cada usuario edita o elimina solo sus comentarios.
+end note
+
+note right of UC11
+  El administrador modera comentarios de cualquier
+  usuario; el autor es notificado con el motivo.
 end note
 
 @enduml

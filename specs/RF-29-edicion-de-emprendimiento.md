@@ -29,9 +29,9 @@ Como vendedor, quiero editar la información de mi emprendimiento (ubicación, h
 
 ### Edge Cases
 
-- ¿Qué sucede si el vendedor cambia la ubicación mientras tiene pedidos o domicilios en curso?
-- ¿Cómo maneja el sistema una edición concurrente sobre el mismo emprendimiento desde dos sesiones del vendedor?
-- ¿Qué ocurre si se intenta editar un emprendimiento que fue eliminado?
+- **¿Qué sucede si el vendedor cambia la ubicación mientras tiene pedidos o domicilios en curso?** Los pedidos ya aceptados conservan la ubicación con la que fueron aceptados; el cambio se aplica a los pedidos nuevos.
+- **¿Cómo maneja el sistema una edición concurrente sobre el mismo emprendimiento desde dos sesiones del vendedor?** Prevalece la última guardada y el sistema avisa si el registro cambió, pidiendo recargar.
+- **¿Qué ocurre si se intenta editar un emprendimiento que fue eliminado?** Se rechaza e informa que el emprendimiento ya no está disponible.
 
 ## Requirements *(mandatory)*
 
@@ -45,6 +45,24 @@ Como vendedor, quiero editar la información de mi emprendimiento (ubicación, h
 ### Key Entities
 
 - **Emprendimiento**: Representa el negocio del vendedor; los campos ubicación, horario y descripción son editables.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Ubicación | No | Igual regla que en la creación; el vendedor ambulante la actualiza cuando cambia de zona. |
+| Horario de atención | No | Hora de apertura y de cierre. |
+| Descripción | No | Texto de hasta 300 caracteres. |
+
+**Datos que asigna el sistema**
+
+- Fecha de última actualización.
+
+**Datos que se muestran o filtran**
+
+- Debe modificarse al menos un campo para poder guardar.
 
 ## Success Criteria *(mandatory)*
 

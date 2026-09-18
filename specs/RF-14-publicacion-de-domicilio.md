@@ -38,10 +38,10 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 
 ### Edge Cases
 
-- ¿Qué sucede si el pedido es cancelado o el domicilio es cancelado por el administrador después de publicado y antes de ser tomado?
-- ¿Cómo se comporta el sistema si la ubicación de entrega indicada por el cliente es incompleta o queda fuera de la zona atendida?
-- ¿Qué ocurre si ningún domiciliario toma el domicilio en un tiempo razonable? ¿Se notifica al vendedor y al cliente?
-- ¿Qué pasa si el vendedor publica el domicilio antes de tener el pedido preparado para entregar?
+- **¿Qué sucede si el pedido es cancelado o el domicilio es cancelado por el administrador después de publicado y antes de ser tomado?** El domicilio pasa a cancelado y deja de aparecer en la lista de disponibles; si ya estaba asignado, se notifica al domiciliario.
+- **¿Cómo se comporta el sistema si la ubicación de entrega indicada por el cliente es incompleta o queda fuera de la zona atendida?** No debería ocurrir: la ubicación se valida al crear el pedido (RF-46). Si el vendedor la considera inviable debe rechazar el pedido, porque el domicilio no puede editarse.
+- **¿Qué ocurre si ningún domiciliario toma el domicilio en un tiempo razonable? ¿Se notifica al vendedor y al cliente?** A los 30 minutos se notifica al vendedor y al cliente; a las 2 horas sin asignación el domicilio y el pedido se cancelan automáticamente y se notifica a ambos.
+- **¿Qué pasa si el vendedor publica el domicilio antes de tener el pedido preparado para entregar?** Está permitido publicar; el vendedor es responsable de tener el pedido listo cuando llegue el domiciliario y, si no lo está, el domiciliario puede reportarlo (RF-61).
 
 ## Requirements *(mandatory)*
 
@@ -49,7 +49,7 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 
 - **FR-001**: El sistema DEBE permitir al vendedor de punto fijo publicar un domicilio únicamente para un pedido propio, con modalidad de domicilio y en estado aceptado.
 - **FR-002**: El sistema DEBE definir como punto A la ubicación del punto fijo y como punto B la ubicación de entrega indicada por el cliente en el pedido, e incluir la persona que recibirá el pedido.
-- **FR-003**: El sistema DEBE asignar al domicilio la tarifa publicada calculada al realizar el pedido, que no puede ser inferior a la tarifa mínima vigente (RF-44).
+- **FR-003**: El sistema DEBE asignar al domicilio la tarifa publicada calculada al realizar el pedido, que no puede ser inferior a la tarifa mínima vigente (RF-45).
 - **FR-004**: El sistema DEBE crear el domicilio en estado "disponible", ponerlo a disposición de los domiciliarios y notificarlos.
 - **FR-005**: El sistema DEBE impedir que un pedido tenga más de un domicilio activo al mismo tiempo.
 - **FR-006**: El sistema DEBE impedir la edición de un domicilio una vez publicado (punto A, punto B, receptor, pedido y tarifa).
@@ -59,6 +59,17 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 - **Domicilio**: Servicio de llevar un pedido del punto A al punto B; nace en estado "disponible" con su tarifa publicada. Estados: disponible, asignado, recogido, en camino, entregado, finalizado y cancelado. No es editable.
 - **Pedido**: Debe tener modalidad de domicilio y estar en estado "aceptado"; puede contener varios ítems.
 - **Vendedor de punto fijo**: Actor que publica el domicilio desde su punto de venta.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno adicional. El vendedor de punto fijo selecciona un pedido de domicilio aceptado y pulsa "Publicar domicilio"; todos los datos provienen del pedido.
+
+**Datos que asigna el sistema**
+
+- Punto A: ubicación del punto fijo del vendedor.
+- Punto B, receptor y sus datos: los indicados por el cliente en el pedido.
+- Tarifa publicada: la calculada al realizar el pedido, no inferior a la tarifa mínima.
+- Estado "disponible" y fecha de publicación.
 
 ## Success Criteria *(mandatory)*
 

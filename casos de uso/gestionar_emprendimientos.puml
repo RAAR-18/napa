@@ -3,28 +3,35 @@
 left to right direction
 
 actor "Vendedor" as v
+actor "Vendedor Ambulante" as va
+actor "Vendedor de Punto Fijo" as vpf
 actor "Cliente" as c
+
+va --|> v
+vpf --|> v
 
 rectangle "Gestionar emprendimientos" {
     usecase "Crear emprendimiento" as UC1
     usecase "Editar emprendimiento" as UC2
-    usecase "Eliminar emprendimiento" as UC3
-    usecase "Listar emprendimientos" as UC4
-    usecase "Consultar emprendimiento" as UC5
-    usecase "Listar productos de un emprendimiento" as UC6
-    usecase "Ver información del vendedor" as UC7
+    usecase "Cambiar estado del emprendimiento" as UC3
+    usecase "Eliminar emprendimiento" as UC4
+    usecase "Listar emprendimientos" as UC5
+    usecase "Consultar emprendimiento" as UC6
+    usecase "Listar productos de un emprendimiento" as UC7
+    usecase "Ver información del vendedor" as UC8
 }
 
 v --> UC1
 v --> UC2
 v --> UC3
+v --> UC4
 
-c --> UC4
+c --> UC5
 
-UC5 .> UC4 : <<extend>>
 UC6 .> UC5 : <<extend>>
-UC7 .> UC4 : <<extend>>
-UC7 .> UC5 : <<extend>>
+UC7 .> UC6 : <<extend>>
+UC8 .> UC5 : <<extend>>
+UC8 .> UC6 : <<extend>>
 
 note right of UC1
   Punto fijo: registra la dirección de su punto.
@@ -36,9 +43,15 @@ note right of UC2
   su ubicación cuando cambia de zona.
 end note
 
-note right of UC5
-  Muestra el tipo de vendedor y las modalidades
-  de entrega que ofrece el emprendimiento.
+note right of UC3
+  Abierto o cerrado. Un emprendimiento cerrado no
+  recibe pedidos de entrega directa ni de domicilio;
+  sí acepta reservas para el día siguiente.
+end note
+
+note right of UC6
+  Muestra el tipo de vendedor, el estado (abierto o
+  cerrado) y las modalidades de entrega que ofrece.
 end note
 
 @enduml

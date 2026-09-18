@@ -1,0 +1,80 @@
+@startuml
+
+left to right direction
+
+actor "Cliente" as c
+actor "Vendedor" as v
+actor "Vendedor Ambulante" as va
+actor "Vendedor de Punto Fijo" as vpf
+
+va --|> v
+vpf --|> v
+
+rectangle "Gestionar reservas" {
+    ' Cliente
+    usecase "Realizar pedido" as UC1 <<Gestionar pedidos>>
+    usecase "Consultar disponibilidad prevista" as UC2 <<Gestionar pedidos>>
+    usecase "Consultar ubicación del punto de recogida" as UC3
+
+    ' Ambos vendedores: deciden si cumplen la reserva
+    usecase "Consultar predicción de demanda" as UC4 <<Gestionar productos>>
+    usecase "Aceptar pedido" as UC5 <<Gestionar pedidos>>
+    usecase "Rechazar pedido" as UC6 <<Gestionar pedidos>>
+
+    ' Vendedor ambulante: entrega la reserva al cliente el día programado
+    usecase "Consultar ubicación de entrega" as UC7 <<Gestionar entregas del vendedor ambulante>>
+    usecase "Iniciar entrega" as UC8 <<Gestionar entregas del vendedor ambulante>>
+    usecase "Confirmar entrega directa" as UC9 <<Gestionar entregas del vendedor ambulante>>
+
+    ' Vendedor de punto fijo: el cliente retira la reserva en el punto
+    usecase "Marcar reserva como lista para recoger" as UC10
+    usecase "Confirmar retiro de la reserva" as UC11
+
+    usecase "Confirmar pago del pedido" as UC12 <<Gestionar pagos>>
+}
+
+c --> UC1
+c --> UC3
+
+v --> UC4
+v --> UC5
+v --> UC6
+
+va --> UC7
+va --> UC8
+va --> UC9
+
+vpf --> UC10
+vpf --> UC11
+
+UC2 .> UC1 : <<extend>>
+UC9 .> UC12 : <<include>>
+UC11 .> UC12 : <<include>>
+
+note right of UC1
+  La reserva es un pedido para el día siguiente.
+  El cliente solo puede reservar lo que el vendedor
+  tendrá según la disponibilidad prevista.
+end note
+
+note right of UC4
+  El vendedor decide si acepta la reserva según lo
+  que tiene o que va a tener al día siguiente.
+end note
+
+note right of UC7
+  Vendedor ambulante: el día programado va hasta
+  donde está el cliente y le entrega la reserva.
+end note
+
+note right of UC3
+  Vendedor de punto fijo: el cliente va hasta el
+  punto fijo y recoge la reserva personalmente.
+end note
+
+note right of UC12
+  Efectivo o transferencia, según el método
+  que eligió el cliente al hacer la reserva.
+end note
+
+@enduml

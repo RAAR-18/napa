@@ -26,7 +26,7 @@ donde lo no vendido en el día se pierde o pierde valor.
 ## Actores principales
 
 - **Cliente**: descubre emprendimientos cercanos y hace pedidos en tres modalidades: entrega directa, reserva o domicilio.
-- **Vendedor**: administra su emprendimiento y sus productos y atiende pedidos. Tiene dos perfiles con flujos distintos:
+- **Vendedor**: administra su emprendimiento (abierto o cerrado) y sus productos y atiende pedidos. Tiene dos perfiles con flujos distintos:
   - **Vendedor ambulante**: atiende *entregas directas* (va hasta donde está el cliente) y *reservas* para el día siguiente con entrega al cliente.
   - **Vendedor de punto fijo**: atiende *reservas* que el cliente retira en el punto fijo y ofrece *domicilios* mediante domiciliarios.
 - **Domiciliario**: toma domicilios disponibles (con la ganancia visible), puede ofertar otro precio, recoge el pedido en el punto fijo y lo lleva al cliente.
@@ -40,7 +40,16 @@ donde lo no vendido en el día se pierde o pierde valor.
 | Reserva (para el día siguiente, según la disponibilidad prevista) | ✅ entrega al cliente | ✅ el cliente retira en el punto fijo |
 | Domicilio (punto A → punto B, no editable) | — | ✅ |
 
-El pago es siempre en **efectivo**: la plataforma no procesa transferencias ni pagos electrónicos.
+## Métodos de pago
+
+| Vendedor | Modalidad | Efectivo | Transferencia |
+|---|---|:---:|:---:|
+| Ambulante | Entrega directa | ✅ | ✅ |
+| Ambulante | Reserva (entrega al cliente) | ✅ | ✅ |
+| Punto fijo | Reserva (el cliente retira) | ✅ | ✅ |
+| Punto fijo | Domicilio | — | ✅ |
+
+La plataforma no procesa el dinero: registra el método elegido y la confirmación del pago.
 
 ## Estado del proyecto
 

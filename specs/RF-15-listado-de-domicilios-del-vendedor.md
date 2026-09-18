@@ -29,9 +29,9 @@ Como vendedor de punto fijo, quiero ver el listado de mis domicilios con filtros
 
 ### Edge Cases
 
-- ¿Qué sucede cuando el vendedor no tiene ningún domicilio registrado?
-- ¿Cómo se comporta el filtro cuando no existen domicilios que cumplan los criterios seleccionados?
-- ¿Qué ocurre si se combinan filtros de estado y fecha simultáneamente sin resultados?
+- **¿Qué sucede cuando el vendedor no tiene ningún domicilio registrado?** Muestra el mensaje "Aún no tienes domicilios".
+- **¿Cómo se comporta el filtro cuando no existen domicilios que cumplan los criterios seleccionados?** Muestra "Sin resultados" con la opción de limpiar los filtros.
+- **¿Qué ocurre si se combinan filtros de estado y fecha simultáneamente sin resultados?** Los filtros se aplican en conjunto (estado y fecha); sin coincidencias se muestra "Sin resultados".
 
 ## Requirements *(mandatory)*
 
@@ -44,6 +44,15 @@ Como vendedor de punto fijo, quiero ver el listado de mis domicilios con filtros
 ### Key Entities
 
 - **Domicilio**: Registro de entrega asociado a un pedido del vendedor, con estado y fecha de creación.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Filtros opcionales: estado y rango de fechas.
+
+**Datos que se muestran o filtran**
+
+- Pedido asociado, estado, domiciliario asignado (si lo hay), tarifa vigente y fechas.
+- Estados: disponible, asignado, recogido, en camino, entregado, finalizado y cancelado.
 
 ## Success Criteria *(mandatory)*
 

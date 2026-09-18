@@ -40,9 +40,9 @@ Como administrador, quiero editar comentarios, para gestionar contenido que requ
 
 ### Edge Cases
 
-- ¿Qué ocurre si el administrador elimina un comentario cuyo autor ya lo había editado recientemente?
-- ¿El sistema notifica al autor original cuando su comentario es editado o eliminado por un administrador?
-- ¿Cómo se distingue, en el historial, entre una eliminación hecha por el autor y una hecha por moderación?
+- **¿Qué ocurre si el administrador elimina un comentario cuyo autor ya lo había editado recientemente?** Se elimina la versión vigente y se conserva el historial con las versiones anteriores para auditoría.
+- **¿El sistema notifica al autor original cuando su comentario es editado o eliminado por un administrador?** Sí, con el motivo que registre el administrador (FR-005).
+- **¿Cómo se distingue, en el historial, entre una eliminación hecha por el autor y una hecha por moderación?** Cada registro guarda la acción (edición o eliminación), el origen (autor o moderación), el usuario que la ejecutó y la fecha.
 
 ## Requirements *(mandatory)*
 
@@ -58,6 +58,21 @@ Como administrador, quiero editar comentarios, para gestionar contenido que requ
 
 - **Comentario**: Contenido sujeto a moderación administrativa además de la edición/eliminación por su propio autor.
 - **Registro de moderación**: Evidencia de la acción administrativa realizada sobre un comentario (quién, cuándo, qué acción).
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Acción | Sí | Editar o eliminar el comentario. |
+| Nuevo texto | Condicional | Obligatorio si la acción es editar; texto de 1 a 500 caracteres. |
+| Motivo | Sí | Texto de 5 a 200 caracteres; se envía al autor. |
+
+**Datos que asigna el sistema**
+
+- Administrador que modera, fecha y origen "moderación".
+- Recálculo del promedio de la entidad.
 
 ## Success Criteria *(mandatory)*
 
