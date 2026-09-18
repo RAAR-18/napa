@@ -32,7 +32,7 @@ su formulación técnica y la evidencia recogida en campo está documentado en [
 **Trabajo:**
 - ☐ Individual
 - ✅ En equipo
-- **Integrantes (5):** Iván Marchena, Eduardo Vergara, Stiven Navarro, Camilo Jiménez, Rafael Acuña - 2022214053. 
+- **Integrantes (5):** Iván Marchena, Eduardo Vergara, Stiven Navarro, Camilo Jiménez, Rafael Acuña. 
 
 ## 2. DESCRIPCIÓN DEL PROBLEMA DE INGENIERÍA
 
@@ -55,7 +55,7 @@ y (4) el domicilio como oportunidad no resuelta — los vendedores no pueden aba
 - **Domiciliario:** persona que genera ingresos adicionales realizando entregas para vendedores de punto fijo que no pueden abandonar su punto de venta, con la posibilidad de ofertar el precio de cada servicio.
 
 **Justificación técnica y social del proyecto:** Técnicamente, el problema es resoluble con un modelo de publicación de disponibilidad en tiempo real, gestión de pedidos e inventario, y un mercado de domicilios
-bajo demanda — sin requerir que el vendedor adopte herramientas complejas (mapa de empatía, Dolor 5: "Publicar → recibir pedido → confirmar → vender"). Socialmente, la solución impacta directamente los ingresos
+bajo demanda sin requerir que el vendedor adopte herramientas complejas (mapa de empatía, Dolor 5: "Publicar → recibir pedido → confirmar → vender"). Socialmente, la solución impacta directamente los ingresos
 de un sector vulnerable de la economía informal santamartense, reduciendo el desperdicio de productos perecederos y ampliando el mercado del vendedor más allá de su ubicación física.
 
 ## 3. RESTRICCIONES Y CONDICIONANTES DEL DISEÑO

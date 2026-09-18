@@ -5,10 +5,12 @@ left to right direction
 actor "Cliente" as c
 actor "Vendedor" as v
 actor "Vendedor de Punto Fijo" as vpf
+actor "vendedor Ambulante" as va
 actor "Domiciliario" as d
 actor "Administrador" as adm
 
 vpf --|> v
+va --|> v
 
 rectangle "Gestionar comentarios y calificaciones" {
     usecase "Calificar y comentar emprendimiento" as UC1
@@ -39,9 +41,8 @@ v --> UC6
 v --> UC8
 v --> UC9
 v --> UC10
-
-vpf --> UC3
-vpf --> UC7
+v --> UC3
+v --> UC7
 
 d --> UC1
 d --> UC4
