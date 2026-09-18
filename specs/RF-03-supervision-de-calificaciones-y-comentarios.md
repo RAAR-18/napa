@@ -2,7 +2,7 @@
 
 **Created**: 2026-09-11
 **Requerimiento funcional**: RF-03
-**Historias de usuario relacionadas**: HU-18
+**Historias de usuario relacionadas**: HU-19
 
 ## User Scenarios & Testing *(mandatory)*
 

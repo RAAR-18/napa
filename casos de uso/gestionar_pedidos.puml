@@ -2,34 +2,66 @@
 
 left to right direction
 
-actor "Vendedor" as v
 actor "Cliente" as c
+actor "Vendedor" as v
+actor "Vendedor Ambulante" as va
+actor "Vendedor de Punto Fijo" as vpf
+
+va --|> v
+vpf --|> v
 
 rectangle "Gestionar pedidos" {
     usecase "Realizar pedido" as UC1
-    usecase "Consultar estado del pedido" as UC2
-    usecase "Contactar vendedor o domiciliario" as UC3
-    usecase "Listar pedidos" as UC5
-    usecase "Consultar pedido" as UC6
-    usecase "Seleccionar metodo de pago" as UC8
-    usecase "Seleccionar modalidad de entrega" as UC9
-    usecase "Seleccionar productos" as UC10
-    usecase "Ver informacion del cliente" as UC11
+    usecase "Seleccionar productos" as UC2
+    usecase "Seleccionar modalidad de entrega" as UC3
+    usecase "Indicar ubicación de entrega" as UC4
+    usecase "Consultar disponibilidad prevista" as UC5
+    usecase "Listar mis pedidos" as UC6
+    usecase "Consultar estado del pedido" as UC7
+    usecase "Contactar vendedor o domiciliario" as UC8
+    usecase "Listar pedidos recibidos" as UC9
+    usecase "Consultar detalle del pedido" as UC10
+    usecase "Ver información del cliente" as UC11
+    usecase "Aceptar pedido" as UC12
+    usecase "Rechazar pedido" as UC13
 }
 
 c --> UC1
-c --> UC2
-c --> UC3
+c --> UC6
 
-UC5 <-- v
-UC6 <-- v
-UC11 <-- v
+UC9 <-- v
 
-UC1 .> UC8 : <<include>>
-UC9 <. UC1 : <<include>>
-UC10 .> UC1 : <<include>>
-UC6 .> UC5 : <<extend>>
-UC3 .> UC2 : <<extend>>
-UC11 .> UC5 : <<extend>>
-UC11 .> UC6 : <<extend>>
+UC1 .> UC2 : <<include>>
+UC1 .> UC3 : <<include>>
+UC4 .> UC1 : <<extend>>
+UC5 .> UC1 : <<extend>>
+
+UC7 .> UC6 : <<extend>>
+UC8 .> UC7 : <<extend>>
+
+UC10 .> UC9 : <<extend>>
+UC11 .> UC9 : <<extend>>
+UC11 .> UC10 : <<extend>>
+UC12 .> UC10 : <<extend>>
+UC13 .> UC10 : <<extend>>
+
+note right of UC3
+  Ambulante: entrega directa o reserva.
+  Punto fijo: reserva (retiro) o domicilio.
+end note
+
+note right of UC4
+  Solo en entrega directa, reserva con
+  vendedor ambulante y domicilio.
+end note
+
+note right of UC5
+  Solo cuando la modalidad es reserva
+  (pedido para el día siguiente).
+end note
+
+note bottom of UC1
+  El pago es siempre en efectivo.
+end note
+
 @enduml

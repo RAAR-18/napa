@@ -1,8 +1,9 @@
 # Feature Specification: Calificar y comentar entidades
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-09-18
 **Requerimiento funcional**: RF-01
-**Historias de usuario relacionadas**: HU-01, HU-02, HU-03, HU-04, HU-05, HU-06
+**Historias de usuario relacionadas**: HU-01, HU-02, HU-03, HU-04, HU-05, HU-06, HU-07
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -45,9 +46,9 @@ Como cliente, quiero calificar y comentar al domiciliario que realizó mi entreg
 
 ---
 
-### User Story 3 - Vendedor y domiciliario se califican mutuamente (Priority: P2)
+### User Story 3 - Vendedor, domiciliario y cliente se califican entre sí (Priority: P2)
 
-Como vendedor, quiero calificar y comentar al domiciliario que gestionó una entrega, y como domiciliario, quiero calificar al emprendimiento y al cliente con quienes interactué, para registrar mi experiencia del servicio.
+Como vendedor de punto fijo, quiero calificar y comentar al domiciliario que gestionó una entrega; como vendedor (ambulante o de punto fijo), quiero calificar y comentar al cliente con quien concreté una venta; y como domiciliario, quiero calificar al emprendimiento y al cliente con quienes interactué, para registrar mi experiencia del servicio.
 
 **Why this priority**: Refuerza la reputación bidireccional del ecosistema de domicilios, pero no bloquea el flujo principal de compra.
 
@@ -65,6 +66,11 @@ Como vendedor, quiero calificar y comentar al domiciliario que gestionó una ent
    - **When** asigno calificación y comentario al emprendimiento y/o al cliente
    - **Then** el sistema registra ambas calificaciones de forma independiente
 
+3. **Scenario**: Vendedor califica al cliente
+   - **Given** un pedido mío fue entregado a un cliente (por entrega directa, retiro de reserva o domicilio)
+   - **When** asigno una calificación y comentario a ese cliente
+   - **Then** el sistema registra la calificación asociada al cliente
+
 ### Edge Cases
 
 - ¿Qué ocurre si un usuario intenta calificar un pedido o domicilio que aún no ha finalizado/entregado?
@@ -78,10 +84,11 @@ Como vendedor, quiero calificar y comentar al domiciliario que gestionó una ent
 
 - **FR-001**: El sistema MUST permitir al cliente calificar y comentar un emprendimiento y los productos asociados a un pedido finalizado.
 - **FR-002**: El sistema MUST permitir al cliente calificar y comentar al domiciliario que entregó su domicilio.
-- **FR-003**: El sistema MUST permitir al vendedor calificar y comentar al domiciliario que gestionó una entrega de sus pedidos.
+- **FR-003**: El sistema MUST permitir al vendedor de punto fijo calificar y comentar al domiciliario que gestionó una entrega de sus pedidos.
 - **FR-004**: El sistema MUST permitir al domiciliario calificar y comentar al emprendimiento y al cliente involucrados en un domicilio que realizó.
 - **FR-005**: El sistema MUST vincular cada calificación/comentario a una interacción real (pedido o domicilio) entre las partes involucradas.
 - **FR-006**: El sistema MUST impedir que un mismo usuario registre más de una calificación por la misma interacción y entidad.
+- **FR-007**: El sistema MUST permitir al vendedor (ambulante o de punto fijo) calificar y comentar al cliente de un pedido entregado.
 
 ### Key Entities
 

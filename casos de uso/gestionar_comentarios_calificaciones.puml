@@ -4,12 +4,15 @@ left to right direction
 
 actor "Cliente" as c
 actor "Vendedor" as v
+actor "Vendedor de Punto Fijo" as vpf
 actor "Domiciliario" as d
 actor "Administrador" as adm
 
-rectangle "Gestionar cometarios y calificaciones" {
+vpf --|> v
+
+rectangle "Gestionar comentarios y calificaciones" {
     usecase "Calificar y comentar emprendimiento" as UC1
-    usecase "Calificar y comentar Producto" as UC2
+    usecase "Calificar y comentar producto" as UC2
     usecase "Calificar y comentar domiciliario" as UC3
     usecase "Calificar y comentar cliente" as UC4
     usecase "Consultar calificaciones y comentarios de un emprendimiento" as UC5
@@ -30,29 +33,34 @@ c --> UC8
 c --> UC9
 c --> UC10
 
-v --> UC3
 v --> UC4
 v --> UC5
 v --> UC6
-v --> UC7
 v --> UC8
 v --> UC9
 v --> UC10
 
+vpf --> UC3
+vpf --> UC7
 
-UC1 <-- d
-UC4 <-- d
-UC5 <-- d
-UC7 <-- d
-UC8 <-- d
-UC9 <-- d
-UC10 <-- d
+d --> UC1
+d --> UC4
+d --> UC5
+d --> UC7
+d --> UC8
+d --> UC9
+d --> UC10
 
-UC9 <-- adm
-UC10 <-- adm
-UC5 <-- adm
-UC6 <-- adm
-UC7 <-- adm
-UC8 <-- adm
+adm --> UC5
+adm --> UC6
+adm --> UC7
+adm --> UC8
+adm --> UC9
+adm --> UC10
+
+note right of UC3
+  Los vendedores de punto fijo son quienes
+  interactúan con los domiciliarios.
+end note
 
 @enduml
