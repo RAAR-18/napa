@@ -8,22 +8,25 @@ actor "Domiciliario" as d
 actor "Administrador" as adm
 
 rectangle "Gestionar pagos" {
-  usecase "Seleccionar metodo de pago" as UC1
-  usecase "Confirmar pago de pedido" as UC2
-  usecase "Confirmar pago domicilio" as UC3
-  usecase "Configurar tarifa minima del domicilio" as UC4
-  usecase "Consultar historial de pagos" as UC5
+  usecase "Confirmar pago del pedido" as UC1
+  usecase "Confirmar pago del domicilio" as UC2
+  usecase "Configurar tarifa mínima del domicilio" as UC3
+  usecase "Consultar historial de pagos" as UC4
 }
 
-c --> UC1
-c --> UC5
+v --> UC1
+d --> UC2
+adm --> UC3
 
-UC5 <-- adm
-UC4 <-- adm
+c --> UC4
+v --> UC4
+d --> UC4
+adm --> UC4
 
-v --> UC2
-v --> UC5
+note right of UC1
+  El pago es siempre en efectivo:
+  la plataforma no procesa transferencias
+  ni pagos electrónicos.
+end note
 
-UC3 <-- d
-UC5 <-- d
 @enduml

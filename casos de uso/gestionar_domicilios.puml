@@ -2,53 +2,92 @@
 
 left to right direction
 
-actor "Vendedor" as v
 actor "Cliente" as c
+actor "Vendedor de Punto Fijo" as vpf
 actor "Domiciliario" as d
 actor "Administrador" as adm
 
 rectangle "Gestionar domicilios" {
-    usecase "Consultar domicilios" as UC2
-    usecase "Editar domicilio" as UC3
-    usecase "Cancelar domicilio" as UC4
-    usecase "Listar domicilios" as UC5
-    usecase "Ver domicilios disponibles" as UC6
-    usecase "Aceptar domicilio" as UC7
-    usecase "Rechazar domicilio" as UC8
-    usecase "Consultar estado del domicilio" as UC10
-    usecase "Consultar información del domicilio" as UC13
-    usecase "Marcar domicilio como recogido y en camino" as UC17
-    usecase "Confirmar entrega" as UC19
-    usecase "Consultar información del domiciliario" as UC23
-    usecase "Publicar domicilio" as UC24
-    usecase "Ingresar código de confirmación" as UC25
-    usecase "Ver código de confirmación" as UC27
+    ' Vendedor de punto fijo
+    usecase "Publicar domicilio" as UC1
+    usecase "Listar domicilios" as UC2
+    usecase "Consultar estado del domicilio" as UC3
+    usecase "Consultar información del domiciliario" as UC4
+    usecase "Confirmar salida del domiciliario" as UC5
+
+    ' Domiciliario
+    usecase "Listar domicilios disponibles" as UC6
+    usecase "Archivar domicilio" as UC7
+    usecase "Consultar domicilios archivados" as UC8
+    usecase "Consultar información del domicilio" as UC9
+    usecase "Aceptar domicilio" as UC10
+    usecase "Ofertar precio del domicilio" as UC11
+    usecase "Consultar ruta en el mapa" as UC12
+    usecase "Confirmar recogida del pedido" as UC13
+    usecase "Confirmar entrega del pedido" as UC14
+
+    ' Cliente
+    usecase "Consultar ofertas de precio" as UC15
+    usecase "Aceptar oferta de precio" as UC16
+    usecase "Rechazar oferta de precio" as UC17
+    usecase "Consultar trazabilidad del domicilio" as UC18
+    usecase "Confirmar llegada del pedido" as UC19
+
+    ' Administrador
+    usecase "Consultar domicilios" as UC20
+    usecase "Cancelar domicilio" as UC21
 }
 
-c --> UC10
-c --> UC23
-c --> UC27
-
-UC10 <-- v
-UC24 <-- v
-UC3 <-- v
-UC5 <-- v
-UC23 <-- v
+vpf --> UC1
+vpf --> UC2
+vpf --> UC5
 
 d --> UC6
-d --> UC7
 d --> UC8
+d --> UC12
 d --> UC13
-d --> UC19
-d --> UC17
+d --> UC14
 
-UC2 <-- adm
-UC4 <-- adm
-UC5 <-- adm
+c --> UC15
+c --> UC18
+c --> UC19
 
-UC25 <. UC19: <<include>>
-UC7 .> UC13: <<include>>
-UC7 <. UC6: <<extend>>
-UC6 <. UC8: <<extend>>
+adm --> UC20
+
+UC3 .> UC2 : <<extend>>
+UC4 .> UC3 : <<extend>>
+UC4 .> UC18 : <<extend>>
+
+UC7 .> UC6 : <<extend>>
+UC9 .> UC6 : <<extend>>
+UC10 .> UC9 : <<extend>>
+UC11 .> UC9 : <<extend>>
+
+UC16 .> UC15 : <<extend>>
+UC17 .> UC15 : <<extend>>
+
+UC21 .> UC20 : <<extend>>
+
+note right of UC1
+  Solo para pedidos de domicilio ya aceptados.
+  Punto A = punto fijo, punto B = ubicación del cliente.
+  Un domicilio publicado no puede editarse.
+end note
+
+note right of UC9
+  Muestra de dónde sale, a dónde va,
+  quién lo recibe y cuánto ganaría.
+end note
+
+note right of UC12
+  Disponible cuando el domicilio queda asignado:
+  el domiciliario acepta la tarifa publicada o
+  el cliente acepta su oferta.
+end note
+
+note right of UC14
+  Cierre en dos pasos: el domiciliario confirma
+  la entrega y el cliente confirma la llegada.
+end note
 
 @enduml

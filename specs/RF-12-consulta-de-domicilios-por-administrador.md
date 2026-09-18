@@ -1,8 +1,9 @@
 # Feature Specification: Consulta de domicilios por administrador
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-09-18
 **Requerimiento funcional**: RF-12
-**Historias de usuario relacionadas**: HU-30
+**Historias de usuario relacionadas**: HU-51
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -29,7 +30,7 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 ### Edge Cases
 
 - ¿Qué sucede cuando no existen domicilios registrados en el sistema?
-- ¿Cómo se muestra un domicilio que fue cancelado o rechazado por varios domiciliarios?
+- ¿Cómo se muestra un domicilio que fue cancelado, o que recibió ofertas de precio que el cliente rechazó?
 - ¿Qué ocurre si el administrador consulta un domicilio que fue eliminado o archivado?
 
 ## Requirements *(mandatory)*

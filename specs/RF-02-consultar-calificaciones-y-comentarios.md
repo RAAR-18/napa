@@ -1,8 +1,9 @@
 # Feature Specification: Consultar calificaciones y comentarios
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-09-18
 **Requerimiento funcional**: RF-02
-**Historias de usuario relacionadas**: HU-07, HU-08, HU-09, HU-10, HU-11, HU-12, HU-13, HU-14, HU-15, HU-16, HU-17
+**Historias de usuario relacionadas**: HU-08, HU-09, HU-10, HU-11, HU-12, HU-13, HU-14, HU-15, HU-16, HU-17, HU-18
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -47,7 +48,7 @@ Como cliente, quiero consultar las calificaciones y comentarios de un domiciliar
 
 ### User Story 3 - Vendedor consulta reputación de su emprendimiento y contrapartes (Priority: P2)
 
-Como vendedor, quiero consultar las calificaciones y comentarios de mi emprendimiento, mis productos, los domiciliarios y los clientes con los que interactúo, para conocer la percepción de los usuarios sobre mi negocio y sus contrapartes.
+Como vendedor, quiero consultar las calificaciones y comentarios de mi emprendimiento, mis productos, los domiciliarios (si soy vendedor de punto fijo) y los clientes con los que interactúo, para conocer la percepción de los usuarios sobre mi negocio y sus contrapartes.
 
 **Why this priority**: Ayuda al vendedor a mejorar su servicio, pero no es indispensable para la operación diaria de venta.
 
@@ -89,7 +90,7 @@ Como domiciliario, quiero consultar las calificaciones y comentarios de emprendi
 
 - **FR-001**: El sistema MUST permitir al cliente consultar las calificaciones y comentarios de emprendimientos y productos.
 - **FR-002**: El sistema MUST permitir al cliente consultar las calificaciones y comentarios de domiciliarios y de otros clientes.
-- **FR-003**: El sistema MUST permitir al vendedor consultar las calificaciones y comentarios de su emprendimiento, sus productos, los domiciliarios y los clientes involucrados en sus pedidos.
+- **FR-003**: El sistema MUST permitir al vendedor consultar las calificaciones y comentarios de su emprendimiento, sus productos, los domiciliarios (en el caso del vendedor de punto fijo) y los clientes involucrados en sus pedidos.
 - **FR-004**: El sistema MUST permitir al domiciliario consultar las calificaciones y comentarios de emprendimientos, otros domiciliarios y clientes.
 - **FR-005**: El sistema MUST calcular y mostrar un promedio de calificación por entidad junto con el listado de comentarios asociados.
 
