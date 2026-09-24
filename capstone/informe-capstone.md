@@ -111,7 +111,6 @@ El vendedor no es un único rol: los vendedores ambulantes y los de punto fijo t
 | Reserva (para el día siguiente) | ✅ | ✅ | Ambulante: el vendedor lo lleva al cliente. Punto fijo: el cliente lo retira en el punto fijo. |
 | Domicilio | — | ✅ | Un domiciliario lo lleva del punto fijo (A) a la ubicación del cliente (B). |
 
-El **pago es siempre en efectivo**. Un pedido tiene varios ítems (producto y cantidad).
 
 **Entrega directa (vendedor ambulante).** El cliente realiza el pedido (RF-45) → el vendedor ambulante recibe la notificación (RF-38) y lo acepta o rechaza (RF-53) → consulta la ubicación del cliente en el mapa (RF-35) → inicia la entrega (RF-36) → confirma la entrega y el cobro en efectivo (RF-37, RF-42).
 
