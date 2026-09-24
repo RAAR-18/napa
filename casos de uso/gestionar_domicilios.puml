@@ -14,59 +14,56 @@ rectangle "Gestionar domicilios" {
     usecase "Consultar estado del domicilio" as UC3
     usecase "Consultar información del domiciliario" as UC4
     usecase "Confirmar salida del domiciliario" as UC5
+    usecase "Aceptar solicitud de domicilio" as UC8
 
     ' Domiciliario
     usecase "Listar domicilios disponibles" as UC6
-    usecase "Archivar domicilio" as UC7
-    usecase "Consultar domicilios archivados" as UC8
+    usecase "Rechazar domicilio" as UC7
     usecase "Consultar información del domicilio" as UC9
     usecase "Aceptar domicilio" as UC10
-    usecase "Ofertar precio del domicilio" as UC11
     usecase "Consultar ruta en el mapa" as UC12
     usecase "Confirmar recogida del pedido" as UC13
     usecase "Confirmar entrega del pedido" as UC14
+    usecase "Ingresar código de confirmación" as UC16
 
     ' Cliente
-    usecase "Consultar ofertas de precio" as UC15
-    usecase "Aceptar oferta de precio" as UC16
-    usecase "Rechazar oferta de precio" as UC17
-    usecase "Consultar trazabilidad del domicilio" as UC18
-    usecase "Confirmar llegada del pedido" as UC19
+    usecase "Consultar estado del domicilio" as UC11
+    usecase "Confirmar entrega del pedido" as UC19
+    usecase "ver código de confirmación" as UC15
 
     ' Administrador
     usecase "Consultar domicilios" as UC20
     usecase "Cancelar domicilio" as UC21
+    usecase "Listar domicilios" as UC22
 }
 
-vpf --> UC1
-vpf --> UC2
-vpf --> UC5
+UC1 <-- vpf
+UC2 <-- vpf
+UC4 <-- vpf
+UC5 <-- vpf
+UC8 <-- vpf
 
 d --> UC6
-d --> UC8
 d --> UC12
 d --> UC13
 d --> UC14
 
-c --> UC15
-c --> UC18
+c --> UC11
 c --> UC19
 
-adm --> UC20
+UC20 <-- adm
+UC21 <-- adm
+UC22 <-- adm
 
 UC3 .> UC2 : <<extend>>
 UC4 .> UC3 : <<extend>>
-UC4 .> UC18 : <<extend>>
-
-UC7 .> UC6 : <<extend>>
 UC9 .> UC6 : <<extend>>
 UC10 .> UC9 : <<extend>>
-UC11 .> UC9 : <<extend>>
+UC7 .> UC9 : <<extend>>
+UC20 .> UC22 : <<extend>>
 
-UC16 .> UC15 : <<extend>>
-UC17 .> UC15 : <<extend>>
-
-UC21 .> UC20 : <<extend>>
+UC15 <. UC19 : <<include>>
+UC14 .> UC16 : <<include>>
 
 note right of UC1
   Solo para pedidos de domicilio ya aceptados.
@@ -80,14 +77,8 @@ note right of UC9
 end note
 
 note right of UC12
-  Disponible cuando el domicilio queda asignado:
-  el domiciliario acepta la tarifa publicada o
-  el cliente acepta su oferta.
+  Disponible cuando el domicilio queda asignado
 end note
 
-note right of UC14
-  Cierre en dos pasos: el domiciliario confirma
-  la entrega y el cliente confirma la llegada.
-end note
 
 @enduml
