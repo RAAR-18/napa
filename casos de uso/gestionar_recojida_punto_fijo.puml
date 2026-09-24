@@ -1,0 +1,32 @@
+@startuml
+
+left to right direction
+
+actor "Cliente" as c
+actor "Vendedor de Punto Fijo" as vpf
+
+rectangle "Gestionar recogida en punto fijo" {
+    usecase "Marcar pedido como lista para recoger" as UC2
+    usecase "Confirmar retiro del pedido" as UC3
+}
+
+usecase "Confirmar pago del pedido" as UC4
+
+vpf --> UC2
+vpf --> UC3
+
+UC3 .> UC4 : <<include>>
+
+note right of UC4
+  Cobro en efectivo al retirar la reserva.
+end note
+
+note right of UC3
+  Al confirmar el retiro, si el vendedor
+  cobra en efectivo o por cuenta bancaria,
+  se dispara "Confirmar pago de pedido"
+  (ver Gestionar pagos: efectivo o cuenta
+  bancaria si el vendedor la tiene).
+end note
+
+@enduml
