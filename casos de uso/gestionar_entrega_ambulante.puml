@@ -8,8 +8,9 @@ rectangle "Gestionar entregas del vendedor ambulante" {
     usecase "Consultar ubicación de entrega" as UC1
     usecase "Iniciar entrega" as UC2
     usecase "Confirmar entrega directa" as UC3
-    usecase "Confirmar pago del pedido" as UC4
 }
+
+usecase "Confirmar pago del pedido" as UC4
 
 va --> UC1
 va --> UC2
@@ -23,8 +24,13 @@ note right of UC1
   ambulante va hasta donde está el cliente.
 end note
 
-note right of UC4
-  Cobro en efectivo al entregar el pedido.
+note right of UC3
+  Aplica a pedidos aceptados de entrega directa
+  y a reservas el día programado. El vendedor
+  ambulante ve la dirección del cliente
+  (dato que no existe en ningún otro RF, a
+  diferencia del punto fijo que ya expone su
+  ubicación en su emprendimiento).
 end note
 
 @enduml

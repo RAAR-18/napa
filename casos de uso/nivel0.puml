@@ -24,7 +24,7 @@ rectangle "Ñapa" {
     usecase "Gestionar productos" as UC4
     usecase "Gestionar pedidos" as UC5
     usecase "Gestionar entregas del vendedor ambulante" as UC6
-    usecase "Gestionar reservas en punto fijo" as UC7
+    usecase "Gestionar recogida en punto fijo" as UC7
     usecase "Gestionar domicilios" as UC8
     usecase "Gestionar pagos" as UC9
     usecase "Gestionar comentarios y calificaciones" as UC10

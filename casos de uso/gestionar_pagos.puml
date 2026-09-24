@@ -12,21 +12,47 @@ rectangle "Gestionar pagos" {
   usecase "Confirmar pago del domicilio" as UC2
   usecase "Configurar tarifa mínima del domicilio" as UC3
   usecase "Consultar historial de pagos" as UC4
+  usecase "Seleccionar método de pago" as UC5
+  usecase "Seleccionar método de pago aceptados" as UC6
 }
 
-v --> UC1
+UC1 <-- v
+UC4 <-- v
+UC6 <-- v
 d --> UC2
 adm --> UC3
 
 c --> UC4
-v --> UC4
+c --> UC5
+
+
 d --> UC4
 adm --> UC4
 
 note right of UC1
-  El pago es siempre en efectivo:
-  la plataforma no procesa transferencias
-  ni pagos electrónicos.
+  Se usa al realizar un pedido (HU-56 = HU-69).
+  El método permitido depende de la MODALIDAD
+  DE ENTREGA elegida, no directamente del tipo
+  de vendedor (reserva o inmediato no cambia esto):
+
+  - Entrega directa (ambulante): efectivo o
+    cuenta bancaria, si el vendedor la tiene
+  - Recogida en el punto (punto fijo): efectivo
+    o cuenta bancaria, si el vendedor la tiene
+  - Domicilio (punto fijo): NO se permite
+    efectivo, solo medios digitales
+
+  Esta misma regla se referencia desde
+  "Gestionar entregas del vendedor ambulante",
+  "Gestionar recogida en punto fijo" y
+  "Gestionar domicilios". No se redefine ahí.
+end note
+
+note bottom of UC6
+  El vendedor indica si acepta efectivo
+  y/o registra su cuenta bancaria.
+  Sin cuenta, el cliente no puede pagar
+  por medios digitales.
 end note
 
 @enduml

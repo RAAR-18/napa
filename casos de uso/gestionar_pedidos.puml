@@ -7,15 +7,14 @@ actor "Vendedor" as v
 actor "Vendedor Ambulante" as va
 actor "Vendedor de Punto Fijo" as vpf
 
-va --|> v
-vpf --|> v
+v <|-- va
+v <|-- vpf
 
 rectangle "Gestionar pedidos" {
     usecase "Realizar pedido" as UC1
     usecase "Seleccionar productos" as UC2
     usecase "Seleccionar modalidad de entrega" as UC3
     usecase "Indicar ubicación de entrega" as UC4
-    usecase "Consultar disponibilidad prevista" as UC5
     usecase "Listar mis pedidos" as UC6
     usecase "Consultar estado del pedido" as UC7
     usecase "Contactar vendedor o domiciliario" as UC8
@@ -26,6 +25,8 @@ rectangle "Gestionar pedidos" {
     usecase "Rechazar pedido" as UC13
 }
 
+usecase "Seleccionar método de pago" as UC14
+
 c --> UC1
 c --> UC6
 
@@ -33,8 +34,8 @@ UC9 <-- v
 
 UC1 .> UC2 : <<include>>
 UC1 .> UC3 : <<include>>
+UC1 .> UC14 : <<include>>
 UC4 .> UC1 : <<extend>>
-UC5 .> UC1 : <<extend>>
 
 UC7 .> UC6 : <<extend>>
 UC8 .> UC7 : <<extend>>
@@ -45,23 +46,38 @@ UC11 .> UC10 : <<extend>>
 UC12 .> UC10 : <<extend>>
 UC13 .> UC10 : <<extend>>
 
+note right of UC1
+  El pedido tiene un atributo "reserva" (sí/no)
+  con fecha/hora acordada. NO es una modalidad
+  de entrega distinta: es un pedido anticipado
+  que se cumple con la modalidad normal del
+  vendedor una vez llega la fecha.
+end note
+
+note right of UC12
+  Aceptar/Rechazar cubre también la decisión
+  del vendedor sobre una reserva (si puede
+  cumplirla o no). No existe un caso de uso
+  aparte para "confirmar disponibilidad".
+end note
+
 note right of UC3
-  Ambulante: entrega directa o reserva.
-  Punto fijo: reserva (retiro) o domicilio.
+  Modalidades según el tipo de vendedor:
+  - Ambulante: entrega directa
+    (ver "Gestionar entregas propias")
+  - Punto fijo: recogida en el punto
+    (ver "Gestionar entregas propias")
+    o domicilio (ver "Gestionar domicilios")
+  La entrega directa y la recogida NO son
+  domicilio: las ejecuta el propio vendedor,
+  sin domiciliario.
 end note
 
 note right of UC4
-  Solo en entrega directa, reserva con
-  vendedor ambulante y domicilio.
-end note
-
-note right of UC5
-  Solo cuando la modalidad es reserva
-  (pedido para el día siguiente).
-end note
-
-note bottom of UC1
-  El pago es siempre en efectivo.
+  Solo aplica cuando la modalidad implica
+  llevar el pedido a una dirección:
+  entrega directa o domicilio.
+  No aplica a recogida en el punto.
 end note
 
 @enduml
