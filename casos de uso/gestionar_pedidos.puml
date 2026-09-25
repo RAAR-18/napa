@@ -15,36 +15,36 @@ rectangle "Gestionar pedidos" {
     usecase "Seleccionar productos" as UC2
     usecase "Seleccionar modalidad de entrega" as UC3
     usecase "Indicar ubicación de entrega" as UC4
-    usecase "Listar mis pedidos" as UC6
-    usecase "Consultar estado del pedido" as UC7
-    usecase "Contactar vendedor o domiciliario" as UC8
-    usecase "Listar pedidos recibidos" as UC9
-    usecase "Consultar detalle del pedido" as UC10
-    usecase "Ver información del cliente" as UC11
-    usecase "Aceptar pedido" as UC12
-    usecase "Rechazar pedido" as UC13
+    usecase "Listar mis pedidos" as UC5
+    usecase "Consultar estado del pedido" as UC6
+    usecase "Contactar vendedor o domiciliario" as UC7
+    usecase "Listar pedidos recibidos" as UC8
+    usecase "Consultar detalle del pedido" as UC9
+    usecase "Ver información del cliente" as UC10
+    usecase "Aceptar pedido" as UC11
+    usecase "Rechazar pedido" as UC12
 }
 
-usecase "Seleccionar método de pago" as UC14
+usecase "Seleccionar método de pago" as UC13
 
 c --> UC1
-c --> UC6
+c --> UC5
 
-UC9 <-- v
+UC8 <-- v
 
 UC1 .> UC2 : <<include>>
 UC1 .> UC3 : <<include>>
-UC1 .> UC14 : <<include>>
+UC1 .> UC13 : <<include>>
 UC4 .> UC1 : <<extend>>
 
+UC6 .> UC5 : <<extend>>
 UC7 .> UC6 : <<extend>>
-UC8 .> UC7 : <<extend>>
 
+UC9 .> UC8 : <<extend>>
+UC10 .> UC8 : <<extend>>
 UC10 .> UC9 : <<extend>>
 UC11 .> UC9 : <<extend>>
-UC11 .> UC10 : <<extend>>
-UC12 .> UC10 : <<extend>>
-UC13 .> UC10 : <<extend>>
+UC12 .> UC9 : <<extend>>
 
 note right of UC1
   El pedido tiene un atributo "reserva" (sí/no)
@@ -54,7 +54,7 @@ note right of UC1
   vendedor una vez llega la fecha.
 end note
 
-note right of UC12
+note right of UC11
   Aceptar/Rechazar cubre también la decisión
   del vendedor sobre una reserva (si puede
   cumplirla o no). No existe un caso de uso
@@ -64,9 +64,9 @@ end note
 note right of UC3
   Modalidades según el tipo de vendedor:
   - Ambulante: entrega directa
-    (ver "Gestionar entregas propias")
+    (ver "Gestionar entrega del vendedor ambulante")
   - Punto fijo: recogida en el punto
-    (ver "Gestionar entregas propias")
+    (ver "Gestionar recogida en punto fijo")
     o domicilio (ver "Gestionar domicilios")
   La entrega directa y la recogida NO son
   domicilio: las ejecuta el propio vendedor,

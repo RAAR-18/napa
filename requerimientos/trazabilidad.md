@@ -136,7 +136,7 @@ Diagrama: [`gestionar_reporte.puml`](../casos%20de%20uso/gestionar_reporte.puml)
 
 ## 11. Gestionar reservas en punto fijo
 
-Diagrama: [`gestionar_recojida_punto_fijo.puml`](../casos%20de%20uso/gestionar_recojida_punto_fijo.puml)
+Diagrama: [`gestionar_recogida_punto_fijo.puml`](../casos%20de%20uso/gestionar_recogida_punto_fijo.puml)
 
 | RF | Requerimiento | Historias de usuario | Actores | Casos de uso | Especificación |
 |---|---|---|---|---|---|
