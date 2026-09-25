@@ -27,8 +27,8 @@ rectangle "Gestionar domicilios" {
     usecase "Ingresar código de confirmación" as UC16
 
     ' Cliente
-    usecase "Consultar estado del domicilio" as UC11
-    usecase "Confirmar entrega del pedido" as UC19
+    usecase "Consultar trazabilidad del domicilio" as UC11
+    usecase "Confirmar llegada del pedido" as UC19
     usecase "ver código de confirmación" as UC15
 
     ' Administrador
@@ -71,6 +71,13 @@ note right of UC1
   Un domicilio publicado no puede editarse.
 end note
 
+note right of UC7
+  retira el domicilio de
+  la lista de disponibles de ese domiciliario de
+  forma permanente
+  El domicilio sigue disponible para los demás.
+end note
+
 note right of UC9
   Muestra de dónde sale, a dónde va,
   quién lo recibe y cuánto ganaría.
@@ -80,5 +87,11 @@ note right of UC12
   Disponible cuando el domicilio queda asignado
 end note
 
+note right of UC11
+  cronología completa del
+  domicilio (publicado, asignado, recogido, en
+  camino, entregado, finalizado/cancelado) con
+  ubicación aproximada del domiciliario en curso.
+end note
 
 @enduml
