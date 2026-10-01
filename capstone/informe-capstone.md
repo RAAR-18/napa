@@ -213,7 +213,7 @@ Se definieron **69 requerimientos funcionales** derivados de **102 historias de 
 | | **Gestionar pagos** | | | |
 | RF-40 | Consulta de historial de pagos | Cliente, Vendedor, Domiciliario | P2 | [RF-40](../specs/RF-40-consulta-de-historial-de-pagos.md) |
 | RF-41 | Consulta de historial general de pagos | Administrador | P3 | [RF-41](../specs/RF-41-consulta-de-historial-general-de-pagos.md) |
-| RF-42 | Confirmación de pago en efectivo del pedido | Vendedor | P1 | [RF-42](../specs/RF-42-confirmacion-de-pago-en-efectivo-del-pedido.md) |
+| RF-42 | Confirmación de pago en efectivo del pedido | Vendedor | P1 | [RF-42](../specs/RF-42-confirmacion-de-pago-del-pedido.md) |
 | RF-43 | Confirmación de pago en efectivo del domicilio | Domiciliario | P2 | [RF-43](../specs/RF-43-confirmacion-de-pago-en-efectivo-del-domicilio.md) |
 | RF-44 | Configuración de tarifa mínima de domicilio | Administrador | P3 | [RF-44](../specs/RF-44-configuracion-de-tarifa-minima-de-domicilio.md) |
 | | **Gestionar pedidos** | | | |

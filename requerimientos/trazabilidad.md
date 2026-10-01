@@ -91,7 +91,7 @@ Diagrama: [`gestionar_pagos.puml`](../casos%20de%20uso/gestionar_pagos.puml)
 |---|---|---|---|---|---|
 | RF-40 | Consulta de historial de pagos | HU-65, HU-67, HU-69 | Cliente, Vendedor, Domiciliario | Consultar historial de pagos | [RF-40-consulta-de-historial-de-pagos.md](../specs/RF-40-consulta-de-historial-de-pagos.md) |
 | RF-41 | Consulta de historial general de pagos | HU-70 | Administrador | Consultar historial de pagos | [RF-41-consulta-de-historial-general-de-pagos.md](../specs/RF-41-consulta-de-historial-general-de-pagos.md) |
-| RF-42 | Confirmación de pago en efectivo del pedido | HU-66 | Vendedor | Confirmar pago del pedido | [RF-42-confirmacion-de-pago-en-efectivo-del-pedido.md](../specs/RF-42-confirmacion-de-pago-en-efectivo-del-pedido.md) |
+| RF-42 | Confirmación de pago en efectivo del pedido | HU-66 | Vendedor | Confirmar pago del pedido | [RF-42-confirmacion-de-pago-en-efectivo-del-pedido.md](../specs/RF-42-confirmacion-de-pago-del-pedido.md) |
 | RF-43 | Confirmación de pago en efectivo del domicilio | HU-68 | Domiciliario | Confirmar pago del domicilio | [RF-43-confirmacion-de-pago-en-efectivo-del-domicilio.md](../specs/RF-43-confirmacion-de-pago-en-efectivo-del-domicilio.md) |
 | RF-44 | Configuración de tarifa mínima de domicilio | HU-71 | Administrador | Configurar tarifa mínima del domicilio | [RF-44-configuracion-de-tarifa-minima-de-domicilio.md](../specs/RF-44-configuracion-de-tarifa-minima-de-domicilio.md) |
 
