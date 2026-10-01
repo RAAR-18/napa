@@ -1,7 +1,6 @@
 # Feature Specification: Listado de pedidos del vendedor
 
 **Created**: 2026-09-11
-**Actualizado**: 2026-09-18
 **Requerimiento funcional**: RF-50
 **Historias de usuario relacionadas**: HU-80
 
@@ -27,6 +26,11 @@ Como vendedor, quiero listar mis pedidos, para consultar los pedidos recibidos.
    - **When** aplica un filtro por estado (por ejemplo, pendientes o en camino)
    - **Then** el sistema muestra únicamente los pedidos que coinciden con el estado seleccionado
 
+3. **Scenario**: Filtrado del listado por reserva
+   - **Given** el vendedor tiene pedidos marcados como reserva junto con pedidos inmediatos
+   - **When** filtra el listado por "reservas"
+   - **Then** el sistema muestra únicamente los pedidos marcados como reserva, con su fecha y hora acordadas
+
 ### Edge Cases
 
 - ¿Qué sucede si el vendedor no tiene ningún pedido registrado?
@@ -41,11 +45,11 @@ Como vendedor, quiero listar mis pedidos, para consultar los pedidos recibidos.
 - **FR-002**: El sistema DEBE mostrar en el listado, al menos, el cliente, la fecha, el estado y el total de cada pedido.
 - **FR-003**: El sistema DEBE permitir al vendedor filtrar el listado de pedidos por estado.
 - **FR-004**: El sistema DEBE impedir que el vendedor visualice pedidos de otros emprendimientos.
-- **FR-005**: El sistema DEBE mostrar la modalidad de cada pedido (entrega directa, reserva o domicilio), la fecha de entrega o retiro en el caso de las reservas, y permitir filtrar el listado por modalidad y por fecha de entrega.
+- **FR-005**: El sistema DEBE mostrar la modalidad de cada pedido (entrega directa, recogida en punto fijo o domicilio), indicar si está marcado como reserva con su fecha y hora acordadas, y permitir filtrar el listado por modalidad y por reserva.
 
 ### Key Entities
 
-- **Pedido**: Entidad listada, con referencia al emprendimiento del vendedor, cliente, fecha, estado y total.
+- **Pedido**: Entidad listada, con referencia al emprendimiento del vendedor, cliente, fecha, estado, total, modalidad y atributo de reserva.
 
 ## Success Criteria *(mandatory)*
 
@@ -53,4 +57,4 @@ Como vendedor, quiero listar mis pedidos, para consultar los pedidos recibidos.
 
 - **SC-001**: El vendedor puede acceder al listado de sus pedidos en menos de 3 segundos.
 - **SC-002**: El 100% de los pedidos mostrados en el listado corresponden al emprendimiento del vendedor autenticado.
-- **SC-003**: El vendedor puede identificar el estado de un pedido en el listado sin necesidad de abrir su detalle.
+- **SC-003**: El vendedor puede identificar el estado y la modalidad de un pedido en el listado sin necesidad de abrir su detalle.
