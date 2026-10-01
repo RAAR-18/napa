@@ -1,19 +1,21 @@
 # Feature Specification: Predicción de demanda
 
 **Created**: 2026-09-11
-**Actualizado**: 2026-09-18
+**Actualizado**: 2026-09-26
 **Requerimiento funcional**: RF-59
 **Historias de usuario relacionadas**: HU-90
 
-## User Scenarios & Testing *(mandatory)*
+> ⚠️ **Fuera de alcance del MVP.** Este requerimiento se conserva documentado como mejora futura del producto, pero **no se implementa en la entrega actual**.
 
-### User Story 1 - Estimar cuánto producto preparar (Priority: P3)
+## User Scenarios & Testing *(mandatory, para una futura iteración post-MVP)*
+
+### User Story 1 - Estimar cuánto producto preparar (Priority: P3, post-MVP)
 
 Como vendedor, quiero ver una estimación de cuánto producto podría vender según pedidos anticipados e histórico de ventas, para comprar o preparar solo lo necesario y reducir pérdidas por productos perecederos.
 
-**Why this priority**: Aporta un valor diferencial importante para reducir desperdicio, pero depende de que ya exista un historial mínimo de ventas y pedidos (RF-45, RF-54, RF-57), por lo que solo tiene sentido una vez la operación básica está funcionando.
+**Why this priority**: Aporta un valor diferencial importante para reducir desperdicio, pero depende de que ya exista un historial mínimo de ventas y pedidos, y de infraestructura de IA que el MVP no incluye; queda como evolución natural una vez la operación básica (registro manual de disponibilidad) esté validada con usuarios reales.
 
-**Independent Test**: Puede probarse con una cuenta de vendedor que tenga historial de ventas registrado, consultando la sección de predicción de demanda y verificando que se muestra una estimación.
+**Independent Test (post-MVP)**: Puede probarse con una cuenta de vendedor que tenga historial de ventas registrado, consultando la sección de predicción de demanda y verificando que se muestra una estimación.
 
 **Acceptance Scenarios**:
 
@@ -27,47 +29,24 @@ Como vendedor, quiero ver una estimación de cuánto producto podría vender seg
    - **When** consulta la predicción de demanda de ese producto
    - **Then** el sistema informa que no hay suficiente historial para generar una estimación confiable
 
----
+### Edge Cases (post-MVP)
 
-### User Story 2 - Decidir qué reservas puedo cumplir (Priority: P2)
-
-Como vendedor, quiero que la predicción de demanda considere las reservas recibidas para el día siguiente, para decidir si acepto o rechazo cada reserva según lo que voy a tener disponible.
-
-**Why this priority**: Conecta la predicción con el flujo de reservas (RF-46, RF-53); depende de que la predicción base ya exista, por lo que se clasifica como P2.
-
-**Independent Test**: Puede probarse registrando una reserva para el día siguiente y verificando que la predicción del producto muestra la demanda comprometida frente a la cantidad estimada disponible.
-
-**Acceptance Scenarios**:
-
-1. **Scenario**: Reservas frente a la disponibilidad prevista
-   - **Given** el vendedor tiene reservas pendientes de respuesta para el día siguiente
-   - **When** consulta la predicción de demanda del producto
-   - **Then** el sistema muestra la cantidad estimada disponible y la cantidad ya comprometida en reservas
-
----
-
-### Edge Cases
-
-- ¿Qué ocurre si el histórico de ventas presenta una interrupción prolongada (ej. el vendedor dejó de operar varias semanas)?
+- ¿Qué ocurre si el histórico de ventas presenta una interrupción prolongada?
 - ¿Cómo se comunica al vendedor el nivel de confianza de la estimación mostrada?
 
-## Requirements *(mandatory)*
+## Requirements *(post-MVP, no implementar en esta entrega)*
 
 ### Functional Requirements
 
-- **FR-001**: El sistema MUST permitir al vendedor consultar una estimación de demanda para cada uno de sus productos.
-- **FR-002**: El sistema MUST basar la estimación en el histórico de ventas y los pedidos anticipados registrados del producto.
-- **FR-003**: El sistema MUST indicar cuándo no existe historial suficiente para generar una predicción confiable.
-- **FR-004**: El sistema MUST calcular, a partir de la predicción y del inventario actual, la disponibilidad prevista de cada producto para el día siguiente, y ponerla a disposición del cliente al reservar (RF-46).
-- **FR-005**: El sistema MUST mostrar al vendedor, junto a la predicción, la cantidad ya comprometida en reservas aceptadas y pendientes.
+- **FR-001**: El sistema PODRÁ permitir al vendedor consultar una estimación de demanda para cada uno de sus productos, en una iteración futura.
+- **FR-002**: La estimación se basaría en el histórico de ventas y los pedidos anticipados registrados del producto.
+- **FR-003**: El sistema indicaría cuándo no existe historial suficiente para generar una predicción confiable.
+- **FR-004**: De implementarse, la predicción alimentaría la disponibilidad declarada por el vendedor como sugerencia, sin reemplazar su declaración manual (RF-57), que sigue siendo la fuente de verdad para RF-46.
 
-### Key Entities *(include if feature involves data)*
+### Key Entities *(diseño de referencia, no implementado)*
 
 - **Predicción de demanda**: Estimación calculada para un producto, basada en histórico de ventas y pedidos anticipados; atributos clave: producto asociado, periodo estimado, cantidad estimada, nivel de confianza.
 
-## Success Criteria *(mandatory)*
+## Success Criteria
 
-### Measurable Outcomes
-
-- **SC-001**: El vendedor puede consultar la predicción de demanda de un producto en menos de 5 segundos.
-- **SC-002**: El sistema informa claramente cuando el historial disponible es insuficiente, en el 100% de esos casos.
+No aplica en esta entrega. Al retomarse en una iteración futura, se recomienda definir de nuevo los criterios de éxito según los datos de uso reales del MVP.
