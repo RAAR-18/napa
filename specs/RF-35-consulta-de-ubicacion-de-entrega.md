@@ -10,21 +10,21 @@
 
 Como vendedor ambulante, quiero ver en un mapa la ubicación del cliente, para llegar hasta donde está y entregarle su pedido.
 
-**Why this priority**: La entrega directa y la reserva con entrega dependen de que el vendedor ambulante encuentre al cliente; sin la ubicación no puede cumplir el pedido, por lo que se clasifica como P1.
+**Why this priority**: La entrega directa depende de que el vendedor ambulante encuentre al cliente; sin la ubicación no puede cumplir el pedido, por lo que se clasifica como P1.
 
 **Independent Test**: Puede probarse aceptando un pedido de entrega directa y verificando que el vendedor ambulante ve la ubicación indicada por el cliente en un mapa.
 
 **Acceptance Scenarios**:
 
-1. **Scenario**: Ubicación de un pedido de entrega directa
+1. **Scenario**: Ubicación de un pedido de entrega directa inmediato
    - **Given** acepté un pedido de entrega directa
    - **When** abro la ubicación de entrega
    - **Then** el sistema muestra en un mapa interactivo la ubicación indicada por el cliente y mi posición actual
 
-2. **Scenario**: Ubicación de una reserva el día programado
-   - **Given** acepté una reserva cuya fecha es hoy
+2. **Scenario**: Ubicación de un pedido marcado como reserva
+   - **Given** acepté un pedido de entrega directa marcado como reserva cuya fecha y hora acordadas son hoy
    - **When** abro la ubicación de entrega
-   - **Then** el sistema muestra en un mapa la ubicación indicada por el cliente al reservar
+   - **Then** el sistema muestra en un mapa la ubicación indicada por el cliente al hacer el pedido
 
 3. **Scenario**: Pedido no aceptado o ajeno
    - **Given** el pedido está pendiente o pertenece a otro vendedor
@@ -34,21 +34,21 @@ Como vendedor ambulante, quiero ver en un mapa la ubicación del cliente, para l
 ### Edge Cases
 
 - ¿Qué ocurre si el cliente está demasiado lejos del vendedor ambulante para que la entrega sea viable?
-- ¿Cómo se maneja una reserva cuya ubicación fue indicada el día anterior y el cliente ya no está allí?
+- ¿Cómo se maneja una reserva cuya ubicación fue indicada mucho antes y el cliente ya no está allí?
 - ¿Qué sucede si el vendedor ambulante no tiene señal o permiso de ubicación?
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE permitir al vendedor ambulante consultar la ubicación de entrega solo de pedidos aceptados de entrega directa o de reserva.
+- **FR-001**: El sistema DEBE permitir al vendedor ambulante consultar la ubicación de entrega solo de pedidos aceptados de entrega directa, inmediatos o marcados como reserva.
 - **FR-002**: El sistema DEBE mostrar un mapa interactivo con la ubicación del cliente y la del vendedor, con la dirección en texto como respaldo (RNF19).
 - **FR-003**: El sistema DEBE compartir la ubicación del cliente únicamente con el vendedor del pedido y mientras el pedido esté activo (RNF04).
 
 ### Key Entities
 
 - **Ubicación de entrega**: Punto indicado por el cliente al hacer el pedido, con su dirección de referencia.
-- **Pedido**: De entrega directa o reserva con vendedor ambulante, en estado aceptado.
+- **Pedido**: De entrega directa, en estado aceptado; puede estar marcado como reserva con su fecha y hora acordadas.
 
 ## Success Criteria *(mandatory)*
 
