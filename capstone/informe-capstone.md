@@ -21,11 +21,16 @@
 - ☐ Investigación aplicada
 - ☐ Intervención agroambiental
 
-- **Contexto real del problema:** El problema se presenta en el comercio informal de Santa Marta: vendedores ambulantes, de carretilla, de alimentos preparados y pequeños negocios
-  familiares que operan en calles, barrios, parques y zonas turísticas, ya sea desplazándose (vendedores ambulantes) o desde un puesto o local fijo (vendedores de punto fijo), y sin un canal digital de venta. Su alcance depende exclusivamente del tránsito peatonal, no pueden
-  anunciar con anticipación qué tienen disponible ni recibir pedidos antes de salir a vender, y una parte de su mercancía especialmente productos perecederos como frutas, pescado
-  y alimentos preparados se pierde al final del día por falta de un mecanismo para conectar oferta y demanda antes de que el producto se dañe. El detalle completo del problema,
-  su formulación técnica y la evidencia recogida en campo está documentado en [`investigacion/problema.md`](../investigacion/problema.md).
+- **Contexto real del problema:** El problema se presenta en el comercio informal de Santa Marta. Según el Departamento Administrativo Nacional de Estadística (DANE), la tasa de informalidad laboral de la ciudad alcanzó el **56,9 %** en el trimestre marzo-mayo de 2026, con un promedio histórico reciente del 55,7 %. La situación es aún más aguda en los micronegocios, donde la informalidad escala al **84,5 %**. La población objetivo está constituida por vendedores ambulantes, de carretilla, de alimentos preparados y pequeños negocios familiares que operan en calles, barrios, parques y zonas turísticas, ya sea desplazándose (vendedores ambulantes) o desde un puesto o local fijo (vendedores de punto fijo). Una muestra de la alta densidad comercial en el espacio público local es la Carrera 5.ª del Centro Histórico, donde el censo del Sistema Estratégico de Transporte Público (SETP) de Santa Marta caracterizó a **546 vendedores informales** compitiendo en una sola vía.
+
+  A nivel operativo, la Encuesta de Micronegocios (EMICRON) del DANE muestra que el **97,2 %** de estos comerciantes trabaja de manera independiente por cuenta propia y que el **88,0 %** es la única persona a cargo de su unidad productiva. Según la caracterización del DANE sobre la ocupación del espacio público, el **59,3 %** son vendedores móviles y el **40,7 %** estacionarios, distribución que sustenta los dos perfiles de vendedor de la plataforma. Además, el **58,2 %** creó su negocio porque no tenía otra alternativa de ingresos, lo que convierte la venta diaria en el único sustento familiar ("si hoy no vendo, hoy no gano").
+
+  Actualmente estos comerciantes operan sin un canal digital de venta estructurado. Según la EMICRON, el **82,4 %** de los micronegocios de calle no lleva registro ni sistemas contables por considerar que "no los necesita", y el **99,8 %** de las transacciones se realiza en efectivo, aunque la aceptación de transferencias bancarias o pagos por internet ha ascendido al 19,4 %. Esto genera tres barreras operativas críticas, sustentadas en las entrevistas de campo:
+  1. **Dependencia exclusiva del tránsito peatonal:** la capacidad de venta depende estrictamente de las personas que transitan frente al punto de ubicación.
+  2. **Incapacidad de conectar oferta y demanda antes de salir:** los vendedores compran o preparan mercancía basándose únicamente en estimaciones de experiencia, sin herramientas para anunciar su inventario con anticipación ni recibir pedidos previos.
+  3. **Pérdida económica por desperdicio de mercancía:** en productos de alta perecibilidad (frutas, pescado y alimentos preparados), la mercancía no vendida al final de la jornada se deteriora o pierde por completo su valor comercial.
+
+  El detalle completo del problema, su formulación técnica y la evidencia recogida en campo está documentado en [`investigacion/problema.md`](../investigacion/problema.md).
 
 - **Duración del proyecto:** 4 meses
 
@@ -36,27 +41,32 @@
 
 ## 2. DESCRIPCIÓN DEL PROBLEMA DE INGENIERÍA
 
-**Situación problemática identificada:** En Santa Marta, una parte importante de la actividad comercial la constituyen vendedores informales y pequeños comerciantes (carretilleros, vendedores ambulantes,
-de alimentos preparados, negocios familiares) que dependen de la venta diaria de sus productos para sostener a sus familias. Estos vendedores no pueden dar visibilidad a su oferta más allá del punto físico
-donde se ubican, no tienen un canal estructurado para recibir pedidos anticipados, y dependen de mecanismos informales (voz a voz, WhatsApp, llamadas, carteles) que no permiten gestionar de forma ordenada la oferta,
-los pedidos ni las entregas. Esta situación es crítica para quienes venden productos perecederos (frutas, pescado, alimentos preparados), donde lo no vendido en el día se convierte en pérdida económica directa.
+**Situación problemática identificada:** En Santa Marta, con una informalidad laboral general del 56,9 % y del 84,5 % en micronegocios (DANE), una parte fundamental de la economía popular la integran comerciantes informales (carretilleros, vendedores ambulantes, de alimentos preparados y pequeños negocios familiares) que dependen diariamente de la venta de sus productos para sostener sus hogares. Estos comerciantes no pueden dar visibilidad a su oferta más allá del lugar físico donde se ubican, carecen de un canal estructurado para recibir pedidos anticipados y dependen de mecanismos informales (voz a voz, llamadas, WhatsApp, carteles) que no permiten gestionar de forma ordenada el inventario, los pedidos ni las entregas. De acuerdo con la evidencia de campo, esta situación es crítica para quienes comercializan productos perecederos (frutas, pescado, alimentos preparados), donde la mercancía no vendida en el día se traduce en pérdida económica directa.
 
-Por su parte, los consumidores cercanos no tienen forma de saber qué vendedores están cerca, qué productos ofrecen, a qué precio y en qué cantidad, lo que limita sus posibilidades de compra y mantiene al vendedor
-dependiente exclusivamente del tránsito peatonal.
+Por su parte, los consumidores cercanos no disponen de un medio para conocer qué vendedores están en su entorno, qué productos ofrecen, a qué precio y en qué cantidad, lo que restringe sus opciones de compra y mantiene al vendedor en una estricta dependencia del tránsito peatonal voluntario.
 
-**Necesidad o demanda del entorno:** Las 5 entrevistas semiestructuradas realizadas ([`investigacion/entrevistas.md`](../investigacion/entrevistas.md)) confirman de forma consistente:
-(1) incertidumbre de demanda al comprar/preparar mercancía, (2) alto riesgo económico en productos perecederos, (3) existencia real de pedidos anticipados manejados informalmente por WhatsApp/llamadas,
-y (4) el domicilio como oportunidad no resuelta — los vendedores no pueden abandonar su punto de venta para entregar personalmente.
+**Necesidad o demanda del entorno:** Las 5 entrevistas semiestructuradas realizadas ([`investigacion/entrevistas.md`](../investigacion/entrevistas.md)) y las estadísticas oficiales del DANE confirman de forma consistente cuatro demandas clave:
+1. **Incertidumbre de demanda** al comprar o preparar mercancía sin conocer las ventas del día, en un contexto donde el 58,2 % de los vendedores opera sin otra alternativa de ingresos (EMICRON).
+2. **Alto riesgo económico en productos perecederos** de vida útil corta.
+3. **Existencia real de pedidos anticipados**, manejados de forma precaria por WhatsApp o llamadas.
+4. **El domicilio como oportunidad no resuelta:** según la EMICRON, el 88,0 % de los comerciantes trabaja solo, y las entrevistas confirman que abandonar el punto de venta para entregar implica perder ventas presenciales o dejar la mercancía sola.
 
 **Usuarios o beneficiarios:**
-- **Vendedor ambulante:** vendedor de carretilla, de termo o de puesto móvil que se desplaza para vender. Atiende pedidos de *entrega directa* (va hasta donde está el cliente), inmediatos o marcados como reserva.
-- **Vendedor de punto fijo:** vendedor de alimentos preparados, pequeño negocio familiar o comerciante con establecimiento. Atiende pedidos de *recogida* en su punto (inmediatos o reservas) y ofrece *domicilios* mediante domiciliarios.
-- **Cliente:** persona cercana que quiere descubrir y comprar productos sin depender de coincidir físicamente con el vendedor.
-- **Domiciliario:** persona que genera ingresos adicionales realizando entregas para vendedores de punto fijo que no pueden abandonar su punto de venta; ve la ganancia de cada domicilio y decide si lo acepta con la tarifa publicada o lo rechaza.
+- **Vendedor ambulante (59,3 % del sector, según el DANE):** vendedor de carretilla, de termo o de puesto móvil que se desplaza para vender. Atiende pedidos de *entrega directa* (va hasta donde está el cliente), inmediatos o marcados como reserva.
+- **Vendedor de punto fijo (40,7 % del sector, según el DANE):** vendedor de alimentos preparados, pequeño negocio familiar o comerciante con establecimiento. Atiende pedidos de *recogida* en su punto (inmediatos o reservas) y ofrece *domicilios* mediante domiciliarios.
+- **Cliente:** consumidor cercano que quiere descubrir, consultar y comprar productos informales sin depender de coincidir físicamente con el vendedor en la calle.
+- **Domiciliario:** actor independiente que genera ingresos adicionales realizando entregas para vendedores de punto fijo que no pueden abandonar su punto de venta; ve la ganancia de cada domicilio y decide si lo acepta con la tarifa publicada o lo rechaza.
 
-**Justificación técnica y social del proyecto:** Técnicamente, el problema es resoluble con un modelo de publicación de disponibilidad en tiempo real, gestión de pedidos e inventario, y un mercado de domicilios
-bajo demanda sin requerir que el vendedor adopte herramientas complejas (mapa de empatía, Dolor 5: "Publicar → recibir pedido → confirmar → vender"). Socialmente, la solución impacta directamente los ingresos
-de un sector vulnerable de la economía informal santamartense, reduciendo el desperdicio de productos perecederos y ampliando el mercado del vendedor más allá de su ubicación física.
+**Justificación: ¿por qué la solución debe ser un software?**
+1. **Es un problema de asimetría de información y coordinación.** La oferta (vendedor) y la demanda (cliente) existen en el mismo sector, pero no coinciden por falta de visibilidad en tiempo real. Un software lo resuelve de forma instantánea y a costo marginal casi nulo mediante geolocalización e inventario actualizado, algo imposible con medios físicos o tradicionales.
+2. **Apalancamiento en modelos probados.**
+  - *Rappi / DoorDash:* demostraron que la tecnología permite a pequeños comercios vender a domicilio sin flota propia, integrando repartidores independientes.
+  - *Uber / DiDi:* demostraron que el software formaliza en tiempo real un mercado disperso e itinerante mediante mapas interactivos.
+  - *Mercado Libre:* evidenció que una vitrina digital multiplica el alcance geográfico del comerciante sin exigir locales físicos ni grandes costos fijos.
+3. **Bajo costo y alta adopción.** El 88,0 % trabaja solo y el 82,4 % no lleva contabilidad. Una aplicación móvil ligera no exige inversión en infraestructura, aprovecha el smartphone que el comerciante ya posee y reduce la interacción al flujo esencial: *publicar → recibir pedido → confirmar → vender*.
+4. **Sustituye la intuición por predictibilidad.** Permitir reservas y pedidos previos convierte la incertidumbre en demanda conocida, evitando que los productos perecederos se pierdan y protegiendo el ingreso diario de familias vulnerables. Socialmente, la solución impacta directamente a un sector vulnerable de la economía informal santamartense y amplía el mercado del vendedor más allá de su ubicación física.
+
+**Fuentes de las cifras:** DANE, Gran Encuesta Integrada de Hogares (informalidad laboral, trimestre marzo-mayo 2026); DANE, Encuesta de Micronegocios (EMICRON) y caracterización de la ocupación del espacio público; censo del Sistema Estratégico de Transporte Público (SETP) de Santa Marta, Carrera 5.ª del Centro Histórico.
 
 ## 3. RESTRICCIONES Y CONDICIONANTES DEL DISEÑO
 
@@ -73,15 +83,15 @@ de un sector vulnerable de la economía informal santamartense, reduciendo el de
 - **Técnicas:** los vendedores operan en la calle durante toda su jornada, sin garantía de conexión estable a internet ni de datos móviles constantes, y muchos usan equipos de gama baja con almacenamiento
   y capacidad de procesamiento limitados. Esto condiciona el diseño para que funcionalidades críticas como publicar disponibilidad o consultar pedidos toleren conectividad intermitente y sincronicen cuando la
   señal se recupere, en vez de requerir una conexión permanente (RNF28 y RNF31).
-- **Económicas:** los vendedores informales no tienen presupuesto para tecnología costosa ni comisiones altas por transacción. Esto llevó a decidir que la plataforma no procese pagos: no integra pasarelas ni maneja
+- **Económicas:** los vendedores informales no tienen presupuesto para tecnología costosa ni comisiones altas por transacción. Además, según la EMICRON, el 99,8 % de sus transacciones se realiza en efectivo y solo el 19,4 % acepta transferencias o pagos por internet. Esto llevó a decidir que la plataforma no procese pagos: no integra pasarelas ni maneja
   tarjetas o billeteras electrónicas de terceros. El dinero se mueve fuera de la aplicación, en efectivo o por transferencia directa a la cuenta del vendedor (y, en el pago de la tarifa de un domicilio, a la cuenta del domiciliario),
   y la plataforma solo registra la confirmación de cada cobro (RNF29). Así no hay comisiones ni intermediación financiera.
-- **Sociales y culturales:** las entrevistas mostraron vendedores mayores con temor a herramientas complicadas ("Yo no tengo tiempo para estar aprendiendo cosas difíciles" - Sergio, entrevista #3).
+- **Sociales y culturales:** las entrevistas mostraron vendedores mayores con temor a herramientas complicadas ("Yo no tengo tiempo para estar aprendiendo cosas difíciles" - Sergio, entrevista #3), y el 82,4 % de los micronegocios de calle no lleva registros contables por considerar que no los necesita.
   El diseño de casos de uso privilegia flujos cortos (publicar → recibir pedido → confirmar → vender) y evita catálogos o formularios extensos. Por la misma razón, el vendedor decide las reservas con su propio criterio en lugar de
   mantener un inventario por fecha.
 - **Normativas y legales:** el manejo de ubicación (para calcular cercanía) y de datos personales (nombre, teléfono, foto) debe cumplir la Ley 1581 de Protección de Datos Personales.
   Esto se refleja en RNF04 (Privacidad) y en que el sistema restringe el acceso a datos personales únicamente a usuarios autorizados según su rol (RNF03).
-- **Éticas:** el sistema de calificación bidireccional (Cliente ↔ Vendedor ↔ Domiciliario) introduce un riesgo real de sesgo  por ejemplo, calificaciones usadas como represalia,
+- **Éticas:** el sistema de calificación bidireccional (Cliente ↔ Vendedor ↔ Domiciliario) introduce un riesgo real de sesgo, por ejemplo calificaciones usadas como represalia,
   o domiciliarios calificados injustamente por demoras fuera de su control (tráfico, clima). Por eso se incluyeron casos de uso de moderación (Eliminar comentario, Editar comentario) con intervención del Administrador.
 
 ## 4. ANÁLISIS Y ESPECIFICACIÓN DE REQUERIMIENTOS
@@ -134,19 +144,19 @@ El cliente puede seguir la trazabilidad en todo momento (RF-26).
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Disponible: el vendedor de punto fijo publica (pedido aceptado y pagado)
-    Disponible --> Asignado: el domiciliario acepta la tarifa publicada
-    Asignado --> Recogido: el domiciliario confirma la recogida
-    Recogido --> EnCamino: el vendedor confirma la salida
-    EnCamino --> Entregado: el domiciliario confirma la entrega con el código
-    Entregado --> Finalizado: el cliente confirma la llegada
-    Finalizado --> [*]
-    Disponible --> Cancelado: el administrador cancela
-    Asignado --> Cancelado: el administrador cancela
-    Recogido --> Cancelado: el administrador cancela
-    EnCamino --> Cancelado: el administrador cancela
-    Cancelado --> [*]
-    EnCamino : En camino
+  [*] --> Disponible: el vendedor de punto fijo publica (pedido aceptado y pagado)
+  Disponible --> Asignado: el domiciliario acepta la tarifa publicada
+  Asignado --> Recogido: el domiciliario confirma la recogida
+  Recogido --> EnCamino: el vendedor confirma la salida
+  EnCamino --> Entregado: el domiciliario confirma la entrega con el código
+  Entregado --> Finalizado: el cliente confirma la llegada
+  Finalizado --> [*]
+  Disponible --> Cancelado: el administrador cancela
+  Asignado --> Cancelado: el administrador cancela
+  Recogido --> Cancelado: el administrador cancela
+  EnCamino --> Cancelado: el administrador cancela
+  Cancelado --> [*]
+  EnCamino : En camino
 ```
 
 ### 4.3 Casos de uso
