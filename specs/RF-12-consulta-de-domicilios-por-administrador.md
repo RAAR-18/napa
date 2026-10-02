@@ -1,8 +1,9 @@
 # Feature Specification: Consulta de domicilios por administrador
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-12
-**Historias de usuario relacionadas**: HU-30
+**Historias de usuario relacionadas**: HU-51
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -19,7 +20,7 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 1. **Scenario**: Listado general de domicilios
    - **Given** existen domicilios registrados en el sistema en distintos estados
    - **When** el administrador ingresa a la sección de consulta de domicilios
-   - **Then** el sistema muestra el listado completo de domicilios con su información básica (origen, destino, estado, costo)
+   - **Then** el sistema muestra el listado completo de domicilios con su información básica (origen, destino, estado, tarifa)
 
 2. **Scenario**: Consulta de detalle de un domicilio específico
    - **Given** el administrador está viendo el listado de domicilios
@@ -29,20 +30,20 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 ### Edge Cases
 
 - ¿Qué sucede cuando no existen domicilios registrados en el sistema?
-- ¿Cómo se muestra un domicilio que fue cancelado o rechazado por varios domiciliarios?
-- ¿Qué ocurre si el administrador consulta un domicilio que fue eliminado o archivado?
+- ¿Cómo se muestra un domicilio que fue cancelado, o uno que ningún domiciliario ha tomado por un tiempo prolongado?
+- ¿Qué ocurre si el administrador consulta un domicilio que fue eliminado?
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al administrador consultar el listado de todos los domicilios registrados en la plataforma, independientemente del vendedor o domiciliario asociado.
-- **FR-002**: El sistema DEBE mostrar, para cada domicilio, su estado actual, origen, destino y costo.
+- **FR-002**: El sistema DEBE mostrar, para cada domicilio, su estado actual, origen, destino y tarifa.
 - **FR-003**: El sistema DEBE permitir al administrador acceder al detalle completo de un domicilio seleccionado desde el listado.
 
 ### Key Entities
 
-- **Domicilio**: Representa un servicio de entrega asociado a un pedido; incluye estado, origen, destino, costo, vendedor, cliente y domiciliario asignado.
+- **Domicilio**: Representa un servicio de entrega asociado a un pedido; incluye estado, origen, destino, tarifa publicada, vendedor, cliente y domiciliario asignado.
 
 ## Success Criteria *(mandatory)*
 

@@ -15,13 +15,15 @@ rectangle "Gestionar productos" {
 
 v --> UC1
 v --> UC2
-v --> UC3
-v --> UC4
-v --> UC5
 v --> UC6
 
 UC3 .> UC2 : <<extend>>
-UC5 .> UC2 : <<extend>>
 UC4 .> UC2 : <<extend>>
+UC5 .> UC2 : <<extend>>
+
+note right of UC6
+  La predicción también alimenta la disponibilidad
+  prevista que el cliente ve al hacer una reserva.
+end note
 
 @enduml

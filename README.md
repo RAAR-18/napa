@@ -14,24 +14,34 @@ donde lo no vendido en el día se pierde o pierde valor.
 ## Estructura del repositorio
 
 ```
-docs/
 ├── capstone/
-│   └── informe-capstone.md  # Entregable oficial (plantilla del curso, link al documento word)
+│   └── informe-capstone.md      # Entregable oficial (plantilla del curso, link al documento word)
 ├── investigacion/               # Entrevistas, mapa de empatía, hallazgos
-├── requerimientos/               # Requerimientos funcionales y no funcionales, MoSCoW
-├── casos-de-uso/                 # Diagramas y especificación de casos de uso (PlantUML)
-└── historias-usuario/            # Historias de usuario con criterios de aceptación
+│   └── HistoriasDeUsuario/      # Historias de usuario con su actor y caso de uso
+├── requerimientos/              # Requerimientos funcionales y no funcionales, matriz de trazabilidad
+├── casos de uso/                # Diagramas de casos de uso (PlantUML), uno por módulo
+└── specs/                       # Especificación detallada de cada requerimiento funcional (RF-NN)
 ```
 
 ## Actores principales
 
-- **Vendedor**: publica productos, gestiona su emprendimiento y sus pedidos.
-- **Cliente**: descubre emprendimientos cercanos, compra productos y solicita domicilios.
-- **Domiciliario**: acepta y realiza entregas de pedidos.
+- **Cliente**: descubre emprendimientos cercanos y hace pedidos en tres modalidades: entrega directa, reserva o domicilio.
+- **Vendedor**: administra su emprendimiento y sus productos y atiende pedidos. Tiene dos perfiles con flujos distintos:
+  - **Vendedor ambulante**: atiende *entregas directas* (va hasta donde está el cliente) y *reservas* para el día siguiente con entrega al cliente.
+  - **Vendedor de punto fijo**: atiende *reservas* que el cliente retira en el punto fijo y ofrece *domicilios* mediante domiciliarios.
+- **Domiciliario**: toma domicilios disponibles (con la ganancia visible), puede ofertar otro precio, recoge el pedido en el punto fijo y lo lleva al cliente.
 - **Administrador**: supervisa usuarios y domicilios de la plataforma.
+
+## Modalidades de entrega
+
+| Modalidad | Vendedor ambulante | Vendedor de punto fijo |
+|---|:---:|:---:|
+| Entrega directa | ✅ | — |
+| Reserva (para el día siguiente, según la disponibilidad prevista) | ✅ entrega al cliente | ✅ el cliente retira en el punto fijo |
+| Domicilio (punto A → punto B, no editable) | — | ✅ |
+
+El pago es siempre en **efectivo**: la plataforma no procesa transferencias ni pagos electrónicos.
 
 ## Estado del proyecto
 
-En construcción. Fase actual: documentación de diseño (casos de uso, historias de usuario, requerimientos). 
-
-
+En construcción. Fase actual: documentación de diseño (casos de uso, historias de usuario, requerimientos y especificaciones).

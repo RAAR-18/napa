@@ -1,0 +1,44 @@
+@startuml
+
+left to right direction
+
+actor "Vendedor" as v
+actor "Cliente" as c
+
+rectangle "Gestionar emprendimientos" {
+    usecase "Crear emprendimiento" as UC1
+    usecase "Editar emprendimiento" as UC2
+    usecase "Eliminar emprendimiento" as UC3
+    usecase "Listar emprendimientos" as UC4
+    usecase "Consultar emprendimiento" as UC5
+    usecase "Listar productos de un emprendimiento" as UC6
+    usecase "Ver información del vendedor" as UC7
+}
+
+v --> UC1
+v --> UC2
+v --> UC3
+
+c --> UC4
+
+UC5 .> UC4 : <<extend>>
+UC6 .> UC5 : <<extend>>
+UC7 .> UC4 : <<extend>>
+UC7 .> UC5 : <<extend>>
+
+note right of UC1
+  Punto fijo: registra la dirección de su punto.
+  Ambulante: registra su zona habitual de venta.
+end note
+
+note right of UC2
+  El vendedor ambulante actualiza aquí
+  su ubicación cuando cambia de zona.
+end note
+
+note right of UC5
+  Muestra el tipo de vendedor y las modalidades
+  de entrega que ofrece el emprendimiento.
+end note
+
+@enduml

@@ -1,14 +1,15 @@
 # Feature Specification: Registro de cuenta
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-09-18
 **Requerimiento funcional**: RF-07
-**Historias de usuario relacionadas**: HU-23
+**Historias de usuario relacionadas**: HU-24
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Persona interesada crea una cuenta (Priority: P1)
 
-Como persona interesada en usar la plataforma, quiero registrarme indicando mis datos básicos y el rol que voy a desempeñar (cliente, vendedor o domiciliario), para poder acceder a las funcionalidades correspondientes a cada rol.
+Como persona interesada en usar la plataforma, quiero registrarme indicando mis datos básicos y el rol que voy a desempeñar (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), para poder acceder a las funcionalidades correspondientes a cada rol.
 
 **Why this priority**: Sin registro no existe acceso a ninguna otra funcionalidad de la plataforma; es el punto de entrada obligatorio para todos los actores.
 
@@ -36,14 +37,15 @@ Como persona interesada en usar la plataforma, quiero registrarme indicando mis 
 
 ### Functional Requirements
 
-- **FR-001**: El sistema MUST permitir a una persona registrarse indicando datos básicos (nombre, correo o teléfono, contraseña) y seleccionando su rol (cliente, vendedor o domiciliario).
+- **FR-001**: El sistema MUST permitir a una persona registrarse indicando datos básicos (nombre, correo o teléfono, contraseña) y seleccionando su rol (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario).
 - **FR-002**: El sistema MUST validar que el correo electrónico o número de teléfono no esté previamente registrado antes de crear la cuenta.
 - **FR-003**: El sistema MUST requerir la confirmación de la contraseña y validar que ambas coincidan.
 - **FR-004**: El sistema MUST permitir iniciar sesión inmediatamente después de un registro exitoso.
+- **FR-005**: El sistema MUST habilitar las funcionalidades de la cuenta según el rol elegido; en particular, el vendedor ambulante gestiona entregas directas y reservas con entrega al cliente, y el vendedor de punto fijo gestiona reservas con retiro en el punto y domicilios.
 
 ### Key Entities
 
-- **Cuenta**: Representa a un usuario registrado, con datos básicos, credenciales y un rol asignado (cliente, vendedor o domiciliario).
+- **Cuenta**: Representa a un usuario registrado, con datos básicos, credenciales y un rol asignado (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario).
 
 ## Success Criteria *(mandatory)*
 

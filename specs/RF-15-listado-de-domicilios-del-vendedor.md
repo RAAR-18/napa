@@ -1,14 +1,15 @@
 # Feature Specification: Listado de domicilios del vendedor
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-09-18
 **Requerimiento funcional**: RF-15
-**Historias de usuario relacionadas**: HU-33
+**Historias de usuario relacionadas**: HU-32
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Hacer seguimiento a los envíos propios (Priority: P2)
 
-Como vendedor, quiero ver el listado de mis domicilios con filtros por estado y por fecha, para hacer seguimiento a mis envíos.
+Como vendedor de punto fijo, quiero ver el listado de mis domicilios con filtros por estado y por fecha, para hacer seguimiento a mis envíos.
 
 **Why this priority**: Es una función de consulta que apoya la operación diaria del vendedor pero no es indispensable para que el ciclo de domicilio funcione, por lo que se clasifica como P2.
 
@@ -36,8 +37,8 @@ Como vendedor, quiero ver el listado de mis domicilios con filtros por estado y 
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE permitir al vendedor consultar el listado completo de los domicilios asociados a sus pedidos.
-- **FR-002**: El sistema DEBE permitir filtrar el listado de domicilios por estado (disponible, aceptado, en camino, entregado, cancelado).
+- **FR-001**: El sistema DEBE permitir al vendedor de punto fijo consultar el listado completo de los domicilios asociados a sus pedidos.
+- **FR-002**: El sistema DEBE permitir filtrar el listado de domicilios por estado (disponible, asignado, recogido, en camino, entregado, finalizado, cancelado).
 - **FR-003**: El sistema DEBE permitir filtrar el listado de domicilios por rango de fechas.
 
 ### Key Entities

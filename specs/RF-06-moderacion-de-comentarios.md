@@ -2,7 +2,7 @@
 
 **Created**: 2026-09-11
 **Requerimiento funcional**: RF-06
-**Historias de usuario relacionadas**: HU-21, HU-22
+**Historias de usuario relacionadas**: HU-22, HU-23
 
 ## User Scenarios & Testing *(mandatory)*
 

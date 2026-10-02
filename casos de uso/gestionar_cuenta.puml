@@ -2,23 +2,27 @@
 
 left to right direction
 
-actor "Vendedor" as v
+actor "Usuario" as u
 actor "Cliente" as c
+actor "Vendedor" as v
+actor "Vendedor Ambulante" as va
+actor "Vendedor de Punto Fijo" as vpf
 actor "Domiciliario" as d
-actor Usuario as u
-actor Administrador as adm
+actor "Administrador" as adm
+
+c --|> u
+v --|> u
+d --|> u
+va --|> v
+vpf --|> v
 
 rectangle "Gestionar cuenta" {
   usecase "Crear una cuenta" as UC1
   usecase "Editar mi cuenta" as UC2
   usecase "Cambiar contraseña" as UC3
-  usecase "Iniciar sesion en mi cuenta" as UC4
+  usecase "Iniciar sesión en mi cuenta" as UC4
   usecase "Eliminar mi cuenta" as UC5
 }
-
-c --|> u
-d --|> u
-v --|> u
 
 u --> UC1
 u --> UC2
@@ -28,5 +32,11 @@ u --> UC5
 
 UC4 <-- adm
 UC3 <-- adm
+
+note right of UC1
+  Al crear la cuenta el usuario elige su rol:
+  Cliente, Vendedor Ambulante,
+  Vendedor de Punto Fijo o Domiciliario.
+end note
 
 @enduml
