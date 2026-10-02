@@ -3,6 +3,7 @@
 > Backlog de historias de usuario derivadas de los casos de uso del sistema **Ñapa**.
 > Cada historia corresponde a una pantalla o acción que el usuario final realiza en la aplicación (un botón o una vista). Los filtros, ordenamientos y validaciones se consideran funcionalidad de la historia y se detallan en su especificación (`specs/`), no como historias aparte.
 
+
 ---
 
 ## Índice
@@ -41,7 +42,6 @@
 | **Total** | **97** |
 
 > HU-90 (predicción de demanda) se conserva documentada pero está fuera de alcance del MVP; se cuenta en el total como historia diseñada, no como historia a implementar en esta entrega.
-> Huecos de numeración (no cuentan en el total): HU-38, HU-41, HU-42, HU-43, HU-44, HU-75 y HU-96.
 
 ---
 
@@ -186,6 +186,8 @@
 | HU-82 | Como vendedor, quiero consultar la información del cliente, para conocer los datos necesarios para gestionar su pedido. |
 | HU-83 | Como vendedor, quiero aceptar un pedido (incluida una reserva, según mi propio criterio), para comprometerme a atenderlo según su modalidad de entrega. |
 | HU-84 | Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo. |
+
+> **Reserva** es un atributo del pedido (sí/no, con fecha y hora libremente acordadas con el vendedor), independiente de la modalidad de entrega elegida; no es una modalidad aparte. Para el MVP, la disponibilidad se valida contra el inventario que el propio vendedor declara (RF-46), sin predicción de demanda (RF-59 queda fuera de alcance del MVP).
 
 ---
 
