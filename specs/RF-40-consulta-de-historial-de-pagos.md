@@ -1,6 +1,7 @@
 # Feature Specification: Consulta de historial de pagos
 
 **Created**: 2026-09-18
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-40
 **Historias de usuario relacionadas**: HU-65, HU-67, HU-69
 
@@ -12,14 +13,14 @@ Como cliente, quiero consultar mi historial de pagos, para revisar los pagos que
 
 **Why this priority**: Da transparencia al cliente sobre sus compras, pero no bloquea el flujo transaccional, por lo que se clasifica como P2.
 
-**Independent Test**: Puede probarse ingresando al historial del cliente y verificando que solo se listan pagos de sus propios pedidos y domicilios, con su medio correspondiente.
+**Independent Test**: Puede probarse ingresando al historial del cliente y verificando que solo se listan pagos de sus propios pedidos, con su medio correspondiente.
 
 **Acceptance Scenarios**:
 
 1. **Scenario**: Consulta del historial del cliente
    - **Given** el cliente tiene pagos registrados
    - **When** accede a su historial de pagos
-   - **Then** el sistema muestra la lista con fecha, monto, medio (efectivo o cuenta bancaria), pedido o domicilio asociado y estado (pendiente de confirmación o confirmado)
+   - **Then** el sistema muestra la lista con fecha, monto, medio (efectivo o cuenta bancaria), pedido asociado y estado (pendiente de confirmación o confirmado); en un domicilio, el monto es el total de productos más tarifa
 
 2. **Scenario**: Cliente sin pagos
    - **Given** el cliente no ha realizado compras
@@ -28,9 +29,9 @@ Como cliente, quiero consultar mi historial de pagos, para revisar los pagos que
 
 ---
 
-### User Story 2 - Vendedor consulta lo cobrado en sus pedidos (Priority: P2)
+### User Story 2 - Vendedor consulta lo cobrado y pagado en sus pedidos (Priority: P2)
 
-Como vendedor, quiero consultar el historial de pagos, para revisar los cobros en efectivo y digitales relacionados con mis pedidos.
+Como vendedor, quiero consultar el historial de pagos, para revisar los cobros en efectivo y digitales relacionados con mis pedidos y, en domicilios, las tarifas pagadas a los domiciliarios.
 
 **Why this priority**: Permite al vendedor (ambulante o de punto fijo) conciliar su caja diaria, sin ser crítico para el flujo de compra, por lo que se clasifica como P2.
 
@@ -41,24 +42,24 @@ Como vendedor, quiero consultar el historial de pagos, para revisar los cobros e
 1. **Scenario**: Consulta del historial del vendedor
    - **Given** el vendedor tiene pedidos con pagos registrados
    - **When** accede a su historial de pagos
-   - **Then** el sistema muestra los cobros con fecha, monto, medio, modalidad de entrega del pedido y estado
+   - **Then** el sistema muestra los cobros con fecha, monto, medio, modalidad de entrega del pedido y estado, e incluye, en los domicilios, el pago de la tarifa al domiciliario
 
 ---
 
 ### User Story 3 - Domiciliario consulta lo cobrado por sus servicios (Priority: P2)
 
-Como domiciliario, quiero consultar el historial de pagos, para revisar lo que se ha cobrado digitalmente por mis servicios.
+Como domiciliario, quiero consultar el historial de pagos, para revisar las tarifas que he recibido por mis servicios.
 
 **Why this priority**: Permite al domiciliario conocer sus ingresos por domicilio, sin bloquear otros flujos, por lo que se clasifica como P2.
 
-**Independent Test**: Puede probarse ingresando al historial del domiciliario y verificando que solo aparecen pagos de domicilios que él realizó.
+**Independent Test**: Puede probarse ingresando al historial del domiciliario y verificando que solo aparecen pagos de tarifa de domicilios que él realizó.
 
 **Acceptance Scenarios**:
 
 1. **Scenario**: Consulta del historial del domiciliario
-   - **Given** el domiciliario realizó domicilios con pagos registrados
+   - **Given** el domiciliario realizó domicilios con pagos de tarifa registrados
    - **When** accede a su historial de pagos
-   - **Then** el sistema muestra los pagos de domicilio (siempre por cuenta bancaria) con fecha, monto (tarifa o valor de la oferta aceptada) y estado
+   - **Then** el sistema muestra los pagos de tarifa (siempre por cuenta bancaria) con fecha, monto (la tarifa publicada) y estado
 
 ### Edge Cases
 
@@ -70,16 +71,16 @@ Como domiciliario, quiero consultar el historial de pagos, para revisar lo que s
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE permitir al cliente consultar únicamente los pagos asociados a sus propios pedidos y domicilios.
-- **FR-002**: El sistema DEBE permitir al vendedor consultar únicamente los pagos asociados a los pedidos de su emprendimiento.
-- **FR-003**: El sistema DEBE permitir al domiciliario consultar únicamente los pagos de los domicilios que ha realizado.
-- **FR-004**: El sistema DEBE mostrar en cada registro la fecha, el monto, el medio (efectivo o cuenta bancaria), la entidad relacionada (pedido o domicilio) y el estado del pago (pendiente de confirmación o confirmado).
+- **FR-001**: El sistema DEBE permitir al cliente consultar únicamente los pagos asociados a sus propios pedidos.
+- **FR-002**: El sistema DEBE permitir al vendedor consultar únicamente los pagos asociados a los pedidos de su emprendimiento y las tarifas que pagó a domiciliarios.
+- **FR-003**: El sistema DEBE permitir al domiciliario consultar únicamente los pagos de tarifa de los domicilios que ha realizado.
+- **FR-004**: El sistema DEBE mostrar en cada registro la fecha, el monto, el medio (efectivo o cuenta bancaria), la entidad relacionada (pedido o domicilio) y el estado del pago.
 - **FR-005**: El sistema DEBE impedir que un usuario acceda al historial de pagos de otro usuario.
 - **FR-006**: El sistema DEBE permitir filtrar el historial por medio de pago.
 
 ### Key Entities
 
-- **Pago**: Registro de un pago; atributos clave: monto, fecha, medio (efectivo o cuenta bancaria), estado (pendiente de confirmación, confirmado), tipo (pedido o domicilio) y usuario asociado. La plataforma no procesa el dinero directamente: solo registra su confirmación.
+- **Pago**: Registro de un pago; atributos clave: monto, fecha, medio (efectivo o cuenta bancaria), estado, tipo (pago del pedido o pago de la tarifa del domicilio) y usuario asociado. La plataforma no procesa el dinero directamente: solo registra su confirmación.
 
 ## Success Criteria *(mandatory)*
 

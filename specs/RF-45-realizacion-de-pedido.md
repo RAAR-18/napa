@@ -1,6 +1,7 @@
 # Feature Specification: Realización de pedido
 
 **Created**: 2026-09-18
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-45
 **Historias de usuario relacionadas**: HU-72, HU-73, HU-74, HU-76
 
@@ -78,7 +79,7 @@ Como cliente, quiero marcar mi pedido como reserva indicando la fecha y hora que
 1. **Scenario**: Pedido marcado como reserva
    - **Given** elegí productos y modalidad
    - **When** marco el pedido como reserva e indico fecha y hora futuras
-   - **Then** el sistema registra el pedido con el atributo de reserva y válida las cantidades contra la disponibilidad que el vendedor declaró para esa fecha (RF-46)
+   - **Then** el sistema registra el pedido con el atributo de reserva, en estado pendiente de la respuesta del vendedor, quien decide con su propio criterio si puede cumplirlo (RF-53)
 
 2. **Scenario**: Fecha u hora inválida
    - **Given** marqué el pedido como reserva
@@ -99,13 +100,13 @@ Como cliente, quiero realizar un pedido con los productos seleccionados y elegir
 
 1. **Scenario**: Creación exitosa de un pedido de entrega directa o recogida
    - **Given** seleccioné productos, modalidad y, cuando aplica, ubicación
-   - **When** elijo un medio de pago entre los que el vendedor tiene habilitados (efectivo o cuenta bancaria).
+   - **When** elijo un medio de pago entre los que el vendedor tiene habilitados (efectivo o cuenta bancaria)
    - **Then** el sistema lo registra en estado pendiente, muestra el total a pagar y notifica al vendedor
 
 2. **Scenario**: Pedido de domicilio
    - **Given** elegí domicilio con un vendedor de punto fijo
    - **When** reviso el resumen antes de confirmar
-   - **Then** el sistema muestra el costo del domicilio y el total (productos más domicilio) y exige pago por transferencia, sin ofrecer efectivo
+   - **Then** el sistema muestra el costo del domicilio y el total (productos más domicilio), exige pago por transferencia por ese total, no ofrece efectivo e informa que deberé pagarlo apenas el vendedor acepte el pedido
 
 3. **Scenario**: Datos incompletos
    - **Given** falta seleccionar productos, modalidad, medio de pago o ubicación (cuando aplica)
@@ -119,13 +120,15 @@ Como cliente, quiero realizar un pedido con los productos seleccionados y elegir
 - ¿Qué ocurre si el cliente está demasiado lejos de un vendedor ambulante para una entrega directa?
 - ¿Qué pasa si el cliente pierde conexión después de armar el pedido y antes de confirmarlo (RNF28)?
 - ¿Qué ocurre si el vendedor deshabilita un medio de pago mientras el cliente arma su pedido?
+- ¿Puede reservarse un producto que hoy figura como agotado, si el vendedor lo tendrá en la fecha acordada?
+- ¿Qué ocurre si el vendedor de punto fijo aceptó un pedido de domicilio y el cliente nunca realiza la transferencia? (no hay plazo definido; punto pendiente de validar)
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al cliente seleccionar uno o más productos de un emprendimiento con la cantidad deseada de cada uno; cada producto seleccionado es un ítem del pedido.
-- **FR-002**: El sistema DEBE validar la disponibilidad de inventario de cada ítem antes de confirmar el pedido; en pedidos marcados como reserva, valida contra la disponibilidad declarada por el vendedor para la fecha acordada (RF-46).
+- **FR-002**: El sistema DEBE validar la disponibilidad de inventario actual de cada ítem antes de confirmar un pedido inmediato; en los pedidos marcados como reserva no valida las cantidades contra una disponibilidad futura, porque el vendedor decide con su propio criterio al aceptarlos o rechazarlos (RF-53).
 - **FR-003**: El sistema DEBE ofrecer las modalidades de entrega según el tipo de vendedor: entrega directa para el vendedor ambulante; recogida en el punto fijo y domicilio para el vendedor de punto fijo.
 - **FR-004**: El sistema DEBE solicitar la ubicación de entrega en la entrega directa y el domicilio, y no solicitarla en la recogida en punto fijo.
 - **FR-005**: El sistema DEBE permitir marcar cualquier pedido como reserva, indicando fecha y hora futuras acordadas con el vendedor; la reserva es un atributo del pedido y no altera su modalidad de entrega.
@@ -133,6 +136,7 @@ Como cliente, quiero realizar un pedido con los productos seleccionados y elegir
 - **FR-007**: El sistema DEBE registrar el pedido en estado "pendiente" y notificar al vendedor.
 - **FR-008**: El sistema DEBE impedir la confirmación del pedido si falta algún ítem, la modalidad, el medio de pago, la ubicación cuando esta aplique, o la fecha y hora cuando se marque como reserva.
 - **FR-009**: El sistema DEBE ofrecer como medio de pago, en entrega directa y recogida, únicamente los que el vendedor tenga habilitados (RF-63), y exigir pago por transferencia en el domicilio.
+- **FR-010**: El sistema DEBE informar al cliente, en un pedido de domicilio, que el total (productos más domicilio) deberá pagarse por transferencia apenas el vendedor acepte el pedido.
 
 ### Key Entities
 
@@ -147,6 +151,7 @@ Como cliente, quiero realizar un pedido con los productos seleccionados y elegir
 
 - **SC-001**: El cliente puede completar un pedido (ítems, modalidad, ubicación y pago) en menos de 3 minutos.
 - **SC-002**: El 100% de los pedidos confirmados cuentan con ítems, modalidad, medio de pago y, cuando aplica, ubicación y fecha y hora de reserva.
-- **SC-003**: El 0% de los pedidos se confirma con productos sin disponibilidad de inventario o superior a la declarada para la reserva.
+- **SC-003**: El 0% de los pedidos inmediatos se confirma con productos sin disponibilidad de inventario.
 - **SC-004**: El vendedor recibe la notificación de un nuevo pedido pendiente en menos de 1 minuto.
 - **SC-005**: El 0% de los pedidos de domicilio se confirma con pago en efectivo.
+- **SC-006**: El 100% de los pedidos de domicilio informan al cliente el total a pagar por transferencia y el momento del pago antes de confirmarse.

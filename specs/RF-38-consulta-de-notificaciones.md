@@ -1,6 +1,7 @@
 # Feature Specification: Consulta de notificaciones
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-38
 **Historias de usuario relacionadas**: HU-63
 
@@ -39,7 +40,7 @@ Como usuario (cliente, vendedor, domiciliario o administrador), quiero consultar
 - **FR-001**: El sistema DEBE permitir a los usuarios (cliente, vendedor, domiciliario, administrador) consultar sus notificaciones.
 - **FR-002**: El sistema DEBE mostrar las notificaciones ordenadas por fecha, distinguiendo las leídas de las no leídas.
 - **FR-003**: El sistema DEBE generar notificaciones ante eventos relevantes de pedidos, reservas, domicilios, pagos y reportes.
-- **FR-004**: El sistema DEBE notificar, como mínimo, los siguientes eventos: nuevo pedido recibido (al vendedor, incluida la entrega directa al vendedor ambulante), pedido aceptado o rechazado (al cliente), inicio de la entrega directa (al cliente), pedido listo para recoger (al cliente), nuevo domicilio disponible (a los domiciliarios), nueva oferta de precio (al cliente), oferta aceptada o rechazada (al domiciliario), pedido recogido por el domiciliario (al vendedor de punto fijo), domiciliario en camino (al cliente), entrega confirmada con código por el domiciliario (al cliente, solicitando confirmar la llegada), llegada confirmada por el cliente (al domiciliario y al vendedor), cancelación de un domicilio (a las partes) y resolución de un reporte (a quien lo creó).
+- **FR-004**: El sistema DEBE notificar, como mínimo, los siguientes eventos: nuevo pedido recibido (al vendedor, incluida la entrega directa al vendedor ambulante), pedido aceptado o rechazado (al cliente; en un domicilio, la aceptación incluye el aviso de que debe transferir el total), pago de un pedido confirmado (al cliente), inicio de la entrega directa (al cliente), pedido listo para recoger (al cliente), nuevo domicilio disponible (a los domiciliarios), pedido recogido por el domiciliario (al vendedor de punto fijo), domiciliario en camino (al cliente), entrega confirmada con código por el domiciliario (al cliente, solicitando confirmar la llegada, y al vendedor de punto fijo, para que pague la tarifa), pago de la tarifa registrado por el vendedor (al domiciliario), llegada confirmada por el cliente (al domiciliario y al vendedor), cancelación de un domicilio (a las partes) y resolución de un reporte (a quien lo creó).
 
 ### Key Entities
 

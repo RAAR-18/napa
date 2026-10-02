@@ -1,9 +1,9 @@
 # Feature Specification: Consulta de emprendimiento
 
 **Created**: 2026-09-11
-**Actualizado**: 2026-09-25
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-32
-**Historias de usuario relacionadas**: HU-57, HU-96
+**Historias de usuario relacionadas**: HU-57
 
 ## User Scenarios & Testing *(mandatory)*
 

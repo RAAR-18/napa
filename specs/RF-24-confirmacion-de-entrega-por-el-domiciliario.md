@@ -1,6 +1,7 @@
 # Feature Specification: Confirmación de entrega por el domiciliario
 
 **Created**: 2026-09-18
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-24
 **Historias de usuario relacionadas**: HU-47
 
@@ -10,16 +11,16 @@
 
 Como domiciliario, quiero confirmar la entrega del pedido ingresando el código de confirmación que me da el cliente, para registrar que lo llevé al punto de destino.
 
-**Why this priority**: Cierra la parte operativa del domiciliario y habilita la confirmación del cliente y el cobro, por lo que se clasifica como P1.
+**Why this priority**: Cierra la parte operativa del domiciliario y habilita la confirmación del cliente y el pago de su tarifa, por lo que se clasifica como P1.
 
-**Independent Test**: Puede probarse con un domicilio en camino, ingresando el código de confirmación que el cliente le muestra al domiciliario y verificando que el estado pasa a entregado y que el cliente es notificado para confirmar la llegada.
+**Independent Test**: Puede probarse con un domicilio en camino, ingresando el código de confirmación que el cliente le muestra al domiciliario y verificando que el estado pasa a entregado y que el cliente y el vendedor son notificados.
 
 **Acceptance Scenarios**:
 
 1. **Scenario**: Confirmación de entrega con código válido
    - **Given** el domicilio está en camino, llegué al punto de destino y el cliente me entrega su código de confirmación
    - **When** ingreso el código y confirmo la entrega
-   - **Then** el sistema valida el código, cambia el estado a entregado, lo registra en la trazabilidad y notifica al cliente para que confirme la llegada
+   - **Then** el sistema valida el código, cambia el estado a entregado, lo registra en la trazabilidad, notifica al cliente para que confirme la llegada y notifica al vendedor de punto fijo para que pague mi tarifa
 
 2. **Scenario**: Código incorrecto
    - **Given** estoy confirmando la entrega de un domicilio
@@ -31,10 +32,10 @@ Como domiciliario, quiero confirmar la entrega del pedido ingresando el código 
    - **When** intento confirmar la entrega
    - **Then** el sistema rechaza la operación e indica el estado actual
 
-4. **Scenario**: Registro del cobro posterior
+4. **Scenario**: Habilitación del pago de la tarifa
    - **Given** confirmé la entrega del pedido con el código correcto
-   - **When** reviso las acciones disponibles
-   - **Then** el sistema me permite registrar el pago digital del domicilio (RF-43)
+   - **When** el sistema registra el estado entregado
+   - **Then** el vendedor de punto fijo puede registrar el pago de mi tarifa y yo podré confirmar su recepción (RF-43)
 
 ### Edge Cases
 
@@ -48,9 +49,9 @@ Como domiciliario, quiero confirmar la entrega del pedido ingresando el código 
 
 - **FR-001**: El sistema DEBE permitir al domiciliario asignado confirmar la entrega únicamente cuando el domicilio esté en estado "en camino".
 - **FR-002**: El sistema DEBE exigir al domiciliario el ingreso del código de confirmación del domicilio como parte de la confirmación de entrega, y rechazar la confirmación si el código no coincide.
-- **FR-003**: El sistema DEBE cambiar el estado del domicilio a "entregado", registrar el evento en la trazabilidad y notificar al cliente, una vez validado el código.
+- **FR-003**: El sistema DEBE cambiar el estado del domicilio a "entregado", registrar el evento en la trazabilidad y notificar al cliente y al vendedor de punto fijo, una vez validado el código.
 - **FR-004**: El sistema DEBE impedir que la entrega se confirme más de una vez.
-- **FR-005**: El sistema DEBE habilitar el registro del pago digital del domicilio a partir del estado "entregado" (RF-43).
+- **FR-005**: El sistema DEBE habilitar el registro y la confirmación del pago de la tarifa del domicilio a partir del estado "entregado" (RF-43).
 
 ### Key Entities
 
