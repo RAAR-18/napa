@@ -9,7 +9,8 @@ actor "Administrador" as adm
 
 rectangle "Gestionar pagos" {
   usecase "Confirmar pago del pedido" as UC1
-  usecase "Confirmar pago del domicilio" as UC2
+  usecase "Confirmar recepción de la tarifa del domicilio" as UC2
+  usecase "Registrar pago de la tarifa al domiciliario" as UC7
   usecase "Configurar tarifa mínima del domicilio" as UC3
   usecase "Consultar historial de pagos" as UC4
   usecase "Seleccionar método de pago" as UC5
@@ -19,6 +20,7 @@ rectangle "Gestionar pagos" {
 UC1 <-- v
 UC4 <-- v
 UC6 <-- v
+UC7 <-- v
 d --> UC2
 adm --> UC3
 
@@ -30,22 +32,42 @@ d --> UC4
 adm --> UC4
 
 note right of UC1
-  Se usa al realizar un pedido (HU-56 = HU-69).
+  Se usa al realizar un pedido.
   El método permitido depende de la MODALIDAD
   DE ENTREGA elegida, no directamente del tipo
   de vendedor (reserva o inmediato no cambia esto):
 
   - Entrega directa (ambulante): efectivo o
-    cuenta bancaria, si el vendedor la tiene
+    cuenta bancaria, si el vendedor la tiene.
+    Se confirma al confirmar la entrega.
   - Recogida en el punto (punto fijo): efectivo
-    o cuenta bancaria, si el vendedor la tiene
+    o cuenta bancaria, si el vendedor la tiene.
+    Se confirma al confirmar el retiro.
   - Domicilio (punto fijo): NO se permite
-    efectivo, solo medios digitales
+    efectivo, solo transferencia. El cliente
+    transfiere el TOTAL (productos + tarifa del
+    domicilio) apenas el vendedor acepta el
+    pedido y el vendedor confirma la recepción
+    ANTES de publicar el domicilio.
 
   Esta misma regla se referencia desde
   "Gestionar entregas del vendedor ambulante",
   "Gestionar recogida en punto fijo" y
   "Gestionar domicilios". No se redefine ahí.
+end note
+
+note right of UC2
+  Pago de la TARIFA al domiciliario, distinto del
+  pago del pedido. Una vez el domicilio está
+  "entregado", el vendedor transfiere la tarifa
+  y lo registra (Registrar pago de la tarifa);
+  el domiciliario confirma que la recibió.
+  Siempre por transferencia.
+end note
+
+note right of UC3
+  Piso de la tarifa publicada que calcula
+  el sistema para cada domicilio.
 end note
 
 note bottom of UC6

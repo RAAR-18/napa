@@ -52,13 +52,21 @@ note right of UC1
   de entrega distinta: es un pedido anticipado
   que se cumple con la modalidad normal del
   vendedor una vez llega la fecha.
+  El pedido queda pendiente hasta que el
+  vendedor responda.
 end note
 
 note right of UC11
   Aceptar/Rechazar cubre también la decisión
-  del vendedor sobre una reserva (si puede
-  cumplirla o no). No existe un caso de uso
-  aparte para "confirmar disponibilidad".
+  del vendedor sobre una reserva: la acepta o
+  rechaza con su propio criterio, sin validación
+  automática de inventario futuro. No existe un
+  caso de uso aparte para "confirmar
+  disponibilidad".
+  En domicilio, tras aceptar el pedido el cliente
+  debe pagar por transferencia el total (productos
+  + domicilio) antes de que el vendedor pueda
+  publicar el domicilio.
 end note
 
 note right of UC3
@@ -78,6 +86,14 @@ note right of UC4
   llevar el pedido a una dirección:
   entrega directa o domicilio.
   No aplica a recogida en el punto.
+end note
+
+note right of UC13
+  Efectivo o cuenta bancaria en entrega directa
+  y recogida (según lo que acepte el vendedor).
+  Domicilio: solo transferencia por el total
+  (productos + domicilio), pagada apenas el
+  vendedor acepta el pedido.
 end note
 
 @enduml
