@@ -1,6 +1,7 @@
 # Feature Specification: Consulta del estado del pedido
 
 **Created**: 2026-09-18
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-48
 **Historias de usuario relacionadas**: HU-78
 
@@ -26,17 +27,22 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
    - **When** consulto su estado
    - **Then** el sistema muestra pendiente, aceptado, listo para recoger, entregado o rechazado
 
-3. **Scenario**: Estado de un domicilio
-   - **Given** mi pedido es de domicilio
+3. **Scenario**: Estado de un domicilio aceptado pendiente de pago
+   - **Given** mi pedido es de domicilio, el vendedor lo aceptó y aún no se confirma mi pago
    - **When** consulto su estado
-   - **Then** el sistema muestra el estado del pedido y, una vez publicado, el estado del domicilio con acceso a su trazabilidad (RF-26)
+   - **Then** el sistema muestra que el pedido está aceptado y a la espera de mi pago por transferencia, con el total a pagar
 
-4. **Scenario**: Pedido marcado como reserva
+4. **Scenario**: Estado de un domicilio publicado
+   - **Given** mi pedido es de domicilio y el vendedor ya publicó el domicilio
+   - **When** consulto su estado
+   - **Then** el sistema muestra el estado del pedido y el estado del domicilio, con acceso a su trazabilidad (RF-26)
+
+5. **Scenario**: Pedido marcado como reserva
    - **Given** mi pedido está marcado como reserva
    - **When** consulto su estado
    - **Then** el sistema muestra, además del estado según su modalidad, que es una reserva y la fecha y hora acordadas
 
-5. **Scenario**: Pedido rechazado
+6. **Scenario**: Pedido rechazado
    - **Given** el vendedor rechazó mi pedido
    - **When** consulto su estado
    - **Then** el sistema muestra que fue rechazado
@@ -46,6 +52,7 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
 - ¿Cómo se informa al cliente si un pedido queda en estado pendiente durante un tiempo prolongado?
 - ¿Qué ocurre si el cliente intenta consultar el estado de un pedido que no le pertenece?
 - ¿Cómo se distingue en pantalla un pedido inmediato de uno marcado como reserva próxima a vencer si el vendedor no responde a tiempo?
+- ¿Cómo se muestra un pedido de domicilio aceptado que lleva mucho tiempo sin pago? (no hay plazo definido)
 
 ## Requirements *(mandatory)*
 
@@ -55,10 +62,11 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
 - **FR-002**: El sistema DEBE mostrar estados coherentes con la modalidad del pedido (entrega directa, recogida en punto fijo o domicilio).
 - **FR-003**: El sistema DEBE mostrar, junto al estado, la fecha y hora de la última actualización y, cuando el pedido esté marcado como reserva, la fecha y hora acordadas.
 - **FR-004**: El sistema DEBE impedir que un cliente consulte el estado de pedidos ajenos.
+- **FR-005**: El sistema DEBE indicar al cliente, en un pedido de domicilio aceptado, si el pago está pendiente o confirmado.
 
 ### Key Entities
 
-- **Pedido**: Estados posibles según la modalidad: pendiente, aceptado, rechazado, listo para recoger, en camino, entregado y cancelado; en un domicilio se apoya en los estados del domicilio. Atributo adicional: reserva (sí/no, fecha y hora acordadas).
+- **Pedido**: Estados posibles según la modalidad: pendiente, aceptado, rechazado, listo para recoger, en camino, entregado y cancelado; en un domicilio se apoya en los estados del domicilio y en el estado de su pago. Atributo adicional: reserva (sí/no, fecha y hora acordadas).
 
 ## Success Criteria *(mandatory)*
 

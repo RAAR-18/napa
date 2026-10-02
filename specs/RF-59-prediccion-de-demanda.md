@@ -1,7 +1,7 @@
 # Feature Specification: Predicción de demanda
 
 **Created**: 2026-09-11
-**Actualizado**: 2026-09-26
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-59
 **Historias de usuario relacionadas**: HU-90
 
@@ -13,7 +13,7 @@
 
 Como vendedor, quiero ver una estimación de cuánto producto podría vender según pedidos anticipados e histórico de ventas, para comprar o preparar solo lo necesario y reducir pérdidas por productos perecederos.
 
-**Why this priority**: Aporta un valor diferencial importante para reducir desperdicio, pero depende de que ya exista un historial mínimo de ventas y pedidos, y de infraestructura de IA que el MVP no incluye; queda como evolución natural una vez la operación básica (registro manual de disponibilidad) esté validada con usuarios reales.
+**Why this priority**: Aporta un valor diferencial importante para reducir desperdicio, pero depende de que ya exista un historial mínimo de ventas y pedidos, y de infraestructura de IA que el MVP no incluye; queda como evolución natural una vez la operación básica (inventario manual y reservas decididas por el vendedor) esté validada con usuarios reales.
 
 **Independent Test (post-MVP)**: Puede probarse con una cuenta de vendedor que tenga historial de ventas registrado, consultando la sección de predicción de demanda y verificando que se muestra una estimación.
 
@@ -41,7 +41,7 @@ Como vendedor, quiero ver una estimación de cuánto producto podría vender seg
 - **FR-001**: El sistema PODRÁ permitir al vendedor consultar una estimación de demanda para cada uno de sus productos, en una iteración futura.
 - **FR-002**: La estimación se basaría en el histórico de ventas y los pedidos anticipados registrados del producto.
 - **FR-003**: El sistema indicaría cuándo no existe historial suficiente para generar una predicción confiable.
-- **FR-004**: De implementarse, la predicción alimentaría la disponibilidad declarada por el vendedor como sugerencia, sin reemplazar su declaración manual (RF-57), que sigue siendo la fuente de verdad para RF-46.
+- **FR-004**: De implementarse, la predicción se ofrecería al vendedor como apoyo para decidir cuánto comprar o preparar y qué reservas aceptar, sin reemplazar su criterio al responder los pedidos (RF-53) ni su inventario declarado (RF-57).
 
 ### Key Entities *(diseño de referencia, no implementado)*
 
