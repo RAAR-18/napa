@@ -5,10 +5,10 @@ permitiendo publicar productos, gestionar pedidos anticipados y coordinar domici
 
 ## Problema
 
-Vendedores informales (carretillas, puestos ambulantes, pequeños negocios familiares) 
+Vendedores informales (carretillas, puestos ambulantes, pequeños negocios familiares)
 dependen del tránsito peatonal para vender y no tienen forma de dar visibilidad a su oferta,
-recibir pedidos anticipados ni coordinar entregas sin dejar su punto de venta. 
-Esto es especialmente crítico para productos perecederos (frutas, pescado, alimentos preparados), 
+recibir pedidos anticipados ni coordinar entregas sin dejar su punto de venta.
+Esto es especialmente crítico para productos perecederos (frutas, pescado, alimentos preparados),
 donde lo no vendido en el día se pierde o pierde valor.
 
 ## Estructura del repositorio
@@ -20,28 +20,47 @@ donde lo no vendido en el día se pierde o pierde valor.
 │   └── HistoriasDeUsuario/      # Historias de usuario con su actor y caso de uso
 ├── requerimientos/              # Requerimientos funcionales y no funcionales, matriz de trazabilidad
 ├── casos de uso/                # Diagramas de casos de uso (PlantUML), uno por módulo
-└── specs/                       # Especificación detallada de cada requerimiento funcional (RF-NN)
+├── specs/                       # Specs y planes (ver specs/README.md)
+│   ├── templates/               # spec-template.md y plan-template.md
+│   ├── general/                 # Roles, convenciones de API, modelo de datos (ER) y catálogo de eventos
+│   ├── foundations/plan.md      # Plan de la infraestructura transversal
+│   └── RF-NN-nombre/            # spec.md (QUÉ) y plan.md (CÓMO) por requerimiento
+├── backend/                     # (por crear) Spring Boot, arquitectura hexagonal por módulo
+└── frontend/                    # (por crear) React Native + Expo
 ```
 
 ## Actores principales
 
-- **Cliente**: descubre emprendimientos cercanos y hace pedidos en tres modalidades: entrega directa, reserva o domicilio.
+- **Cliente**: descubre emprendimientos cercanos y hace pedidos en tres modalidades: entrega directa, recogida en punto fijo o domicilio. Cualquier pedido puede marcarse como reserva.
 - **Vendedor**: administra su emprendimiento y sus productos y atiende pedidos. Tiene dos perfiles con flujos distintos:
-  - **Vendedor ambulante**: atiende *entregas directas* (va hasta donde está el cliente) y *reservas* para el día siguiente con entrega al cliente.
-  - **Vendedor de punto fijo**: atiende *reservas* que el cliente retira en el punto fijo y ofrece *domicilios* mediante domiciliarios.
-- **Domiciliario**: toma domicilios disponibles (con la ganancia visible), puede ofertar otro precio, recoge el pedido en el punto fijo y lo lleva al cliente.
-- **Administrador**: supervisa usuarios y domicilios de la plataforma.
+  - **Vendedor ambulante**: atiende *entregas directas* (va hasta donde está el cliente), inmediatas o marcadas como reserva.
+  - **Vendedor de punto fijo**: atiende *recogidas* en su punto (inmediatas o reservas) y ofrece *domicilios* mediante domiciliarios.
+- **Domiciliario**: toma domicilios disponibles (con la ganancia visible), los acepta con la tarifa publicada o los rechaza de forma definitiva; no negocia el precio. Recoge el pedido en el punto fijo y lo lleva al cliente.
+- **Administrador**: supervisa usuarios, domicilios, pagos, comentarios y reportes, y define la tarifa mínima de domicilio.
 
 ## Modalidades de entrega
 
 | Modalidad | Vendedor ambulante | Vendedor de punto fijo |
 |---|:---:|:---:|
 | Entrega directa | ✅ | — |
-| Reserva (para el día siguiente, según la disponibilidad prevista) | ✅ entrega al cliente | ✅ el cliente retira en el punto fijo |
+| Recogida en punto fijo | — | ✅ |
 | Domicilio (punto A → punto B, no editable) | — | ✅ |
 
-El pago es siempre en **efectivo**: la plataforma no procesa transferencias ni pagos electrónicos.
+**Reserva** no es una modalidad: es un atributo de cualquier pedido, con fecha y hora acordadas con el vendedor, que este acepta o rechaza con su propio criterio.
+
+## Pagos
+
+La plataforma **no procesa dinero**: solo registra la confirmación de cada cobro. Medios admitidos:
+
+- **Efectivo** o **transferencia a la cuenta bancaria del vendedor** en entrega directa y recogida, según lo que el vendedor acepte.
+- **Domicilio: solo transferencia digital.** El cliente paga un total (productos + tarifa) apenas el vendedor acepta el pedido; el vendedor confirma el pago antes de publicar el domicilio. Tras la entrega, el vendedor transfiere la tarifa al domiciliario y ambos lo confirman.
+
+No se guardan datos de tarjetas ni billeteras electrónicas de terceros.
+
+## Stack previsto
+
+Backend: Java 21, Spring Boot 4.1.x, Spring Security, JPA + Hibernate Spatial, PostgreSQL 16 + PostGIS, Redis 7, Firebase Admin (FCM), Twilio Verify (verificación del celular por WhatsApp o SMS). Frontend: React Native + Expo (development build), expo-sqlite. Detalle y decisiones en [`specs/foundations/plan.md`](specs/foundations/plan.md).
 
 ## Estado del proyecto
 
-En construcción. Fase actual: documentación de diseño (casos de uso, historias de usuario, requerimientos y especificaciones).
+En construcción. Fase actual: documentación de diseño y planes de implementación (casos de uso, historias de usuario, requerimientos, especificaciones y planes).
