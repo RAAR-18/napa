@@ -60,9 +60,9 @@ Por su parte, los consumidores cercanos no disponen de un medio para conocer qu�
 **Justificación: ¿por qué la solución debe ser un software?**
 1. **Es un problema de asimetría de información y coordinación.** La oferta (vendedor) y la demanda (cliente) existen en el mismo sector, pero no coinciden por falta de visibilidad en tiempo real. Un software lo resuelve de forma instantánea y a costo marginal casi nulo mediante geolocalización e inventario actualizado, algo imposible con medios físicos o tradicionales.
 2. **Apalancamiento en modelos probados.**
-  - *Rappi / DoorDash:* demostraron que la tecnología permite a pequeños comercios vender a domicilio sin flota propia, integrando repartidores independientes.
-  - *Uber / DiDi:* demostraron que el software formaliza en tiempo real un mercado disperso e itinerante mediante mapas interactivos.
-  - *Mercado Libre:* evidenció que una vitrina digital multiplica el alcance geográfico del comerciante sin exigir locales físicos ni grandes costos fijos.
+- *Rappi / DoorDash:* demostraron que la tecnología permite a pequeños comercios vender a domicilio sin flota propia, integrando repartidores independientes.
+- *Uber / DiDi:* demostraron que el software formaliza en tiempo real un mercado disperso e itinerante mediante mapas interactivos.
+- *Mercado Libre:* evidenció que una vitrina digital multiplica el alcance geográfico del comerciante sin exigir locales físicos ni grandes costos fijos.
 3. **Bajo costo y alta adopción.** El 88,0 % trabaja solo y el 82,4 % no lleva contabilidad. Una aplicación móvil ligera no exige inversión en infraestructura, aprovecha el smartphone que el comerciante ya posee y reduce la interacción al flujo esencial: *publicar → recibir pedido → confirmar → vender*.
 4. **Sustituye la intuición por predictibilidad.** Permitir reservas y pedidos previos convierte la incertidumbre en demanda conocida, evitando que los productos perecederos se pierdan y protegiendo el ingreso diario de familias vulnerables. Socialmente, la solución impacta directamente a un sector vulnerable de la economía informal santamartense y amplía el mercado del vendedor más allá de su ubicación física.
 
@@ -167,7 +167,7 @@ Se elaboró un diagrama de nivel 0 y un diagrama por módulo (PlantUML). Los mó
 |---|---|---|---|
 | Nivel 0 | [`nivel0.puml`](../casos%20de%20uso/nivel0.puml) | Todos | 12 módulos |
 | Gestionar comentarios y calificaciones | [`gestionar_comentarios_calificaciones.puml`](../casos%20de%20uso/gestionar_comentarios_calificaciones.puml) | Cliente, Vendedor (ambulante y de punto fijo), Domiciliario, Administrador | Calificar y comentar emprendimiento; Calificar y comentar producto; Calificar y comentar domiciliario; Calificar y comentar cliente; Consultar calificaciones y comentarios de un emprendimiento; de un producto; de un domiciliario; de un cliente; Eliminar comentario; Editar comentario |
-| Gestionar cuenta | [`gestionar_cuenta.puml`](../casos%20de%20uso/gestionar_cuenta.puml) | Usuario, Administrador | Crear una cuenta; Editar mi cuenta; Cambiar contraseña; Iniciar sesión en mi cuenta; Eliminar mi cuenta |
+| Gestionar cuenta | [`gestionar_cuenta.puml`](../casos%20de%20uso/gestionar_cuenta.puml) | Usuario, Administrador | Crear una cuenta; Editar mi cuenta; Cambiar contraseña; Iniciar sesión en mi cuenta; Eliminar mi cuenta; Verificar celular con código |
 | Gestionar domicilios | [`gestionar_domicilios.puml`](../casos%20de%20uso/gestionar_domicilios.puml) | Vendedor de punto fijo, Domiciliario, Cliente, Administrador | Publicar domicilio; Listar domicilios; Consultar estado del domicilio; Consultar información del domiciliario; Confirmar salida del domiciliario; Listar domicilios disponibles; Rechazar domicilio; Consultar información del domicilio; Aceptar domicilio; Consultar ruta en el mapa; Confirmar recogida del pedido; Confirmar entrega del pedido; Ingresar código de confirmación; Consultar trazabilidad del domicilio; Confirmar llegada del pedido; Ver código de confirmación; Consultar domicilios; Cancelar domicilio |
 | Gestionar emprendimientos | [`gestionar_emprendimientos.puml`](../casos%20de%20uso/gestionar_emprendimientos.puml) | Vendedor, Cliente | Crear emprendimiento; Editar emprendimiento; Eliminar emprendimiento; Listar emprendimientos; Consultar emprendimiento; Listar productos de un emprendimiento; Ver información del vendedor |
 | Gestionar entregas del vendedor ambulante | [`gestionar_entrega_ambulante.puml`](../casos%20de%20uso/gestionar_entrega_ambulante.puml) | Vendedor ambulante | Consultar ubicación de entrega; Iniciar entrega; Confirmar entrega directa |
@@ -181,88 +181,89 @@ Se elaboró un diagrama de nivel 0 y un diagrama por módulo (PlantUML). Los mó
 
 ### 4.4 Requerimientos funcionales
 
-Se definieron **66 requerimientos funcionales** (65 del MVP y RF-59, documentado como mejora futura) derivados de **97 historias de usuario** (96 del MVP y HU-90, post-MVP), organizados en 12 módulos. Los huecos de numeración (RF-20, RF-21 y RF-46) no se reutilizan. La prioridad corresponde a la mayor prioridad entre las historias de su especificación (P1 = núcleo del flujo, P2 = importante, P3 = complementario).
+Se definieron **67 requerimientos funcionales** (66 del MVP y RF-59, documentado como mejora futura) derivados de **98 historias de usuario** (97 del MVP y HU-90, post-MVP), organizados en 12 módulos. Los huecos de numeración (RF-20, RF-21 y RF-46) no se reutilizan. La prioridad corresponde a la mayor prioridad entre las historias de su especificación (P1 = núcleo del flujo, P2 = importante, P3 = complementario).
 
 | RF | Requerimiento | Actores | Prioridad | Especificación |
 |---|---|---|:---:|---|
 | | **Gestionar comentarios y calificaciones** | | | |
-| RF-01 | Calificar y comentar entidades | Cliente, Vendedor de punto fijo, Domiciliario, Vendedor | P1 | [RF-01](../specs/RF-01-calificar-y-comentar-entidades.md) |
-| RF-02 | Consultar calificaciones y comentarios | Cliente, Vendedor, Vendedor de punto fijo, Domiciliario | P1 | [RF-02](../specs/RF-02-consultar-calificaciones-y-comentarios.md) |
-| RF-03 | Supervisión de calificaciones y comentarios | Administrador | P2 | [RF-03](../specs/RF-03-supervision-de-calificaciones-y-comentarios.md) |
-| RF-04 | Edición de comentarios propios | Usuario | P2 | [RF-04](../specs/RF-04-edicion-de-comentarios-propios.md) |
-| RF-05 | Eliminación de comentarios propios | Usuario | P2 | [RF-05](../specs/RF-05-eliminacion-de-comentarios-propios.md) |
-| RF-06 | Moderación de comentarios | Administrador | P1 | [RF-06](../specs/RF-06-moderacion-de-comentarios.md) |
+| RF-01 | Calificar y comentar entidades | Cliente, Vendedor de punto fijo, Domiciliario, Vendedor | P1 | [RF-01](../specs/RF-01-calificar-y-comentar-entidades/spec.md) |
+| RF-02 | Consultar calificaciones y comentarios | Cliente, Vendedor, Vendedor de punto fijo, Domiciliario | P1 | [RF-02](../specs/RF-02-consultar-calificaciones-y-comentarios/spec.md) |
+| RF-03 | Supervisión de calificaciones y comentarios | Administrador | P2 | [RF-03](../specs/RF-03-supervision-de-calificaciones-y-comentarios/spec.md) |
+| RF-04 | Edición de comentarios propios | Usuario | P2 | [RF-04](../specs/RF-04-edicion-de-comentarios-propios/spec.md) |
+| RF-05 | Eliminación de comentarios propios | Usuario | P2 | [RF-05](../specs/RF-05-eliminacion-de-comentarios-propios/spec.md) |
+| RF-06 | Moderación de comentarios | Administrador | P1 | [RF-06](../specs/RF-06-moderacion-de-comentarios/spec.md) |
 | | **Gestionar cuenta** | | | |
-| RF-07 | Registro de cuenta | Usuario | P1 | [RF-07](../specs/RF-07-registro-de-cuenta.md) |
-| RF-08 | Edición de datos de cuenta | Usuario | P2 | [RF-08](../specs/RF-08-edicion-de-datos-de-cuenta.md) |
-| RF-09 | Cambio de contraseña | Usuario, Administrador | P1 | [RF-09](../specs/RF-09-cambio-de-contrasena.md) |
-| RF-10 | Inicio de sesión | Usuario, Administrador | P1 | [RF-10](../specs/RF-10-inicio-de-sesion.md) |
-| RF-11 | Eliminación de cuenta | Usuario | P2 | [RF-11](../specs/RF-11-eliminacion-de-cuenta.md) |
+| RF-07 | Registro de cuenta | Usuario | P1 | [RF-07](../specs/RF-07-registro-de-cuenta/spec.md) |
+| RF-08 | Edición de datos de cuenta | Usuario | P2 | [RF-08](../specs/RF-08-edicion-de-datos-de-cuenta/spec.md) |
+| RF-09 | Cambio de contraseña | Usuario, Administrador | P1 | [RF-09](../specs/RF-09-cambio-de-contrasena/spec.md) |
+| RF-10 | Inicio de sesión | Usuario, Administrador | P1 | [RF-10](../specs/RF-10-inicio-de-sesion/spec.md) |
+| RF-11 | Eliminación de cuenta | Usuario | P2 | [RF-11](../specs/RF-11-eliminacion-de-cuenta/spec.md) |
+| RF-70 | Verificación de celular por WhatsApp | Usuario | P1 | [RF-70](../specs/RF-70-verificacion-de-celular-por-whatsapp/spec.md) |
 | | **Gestionar domicilios** | | | |
-| RF-12 | Consulta de domicilios por administrador | Administrador | P3 | [RF-12](../specs/RF-12-consulta-de-domicilios-por-administrador.md) |
-| RF-13 | Cancelación de domicilio por administrador | Administrador | P3 | [RF-13](../specs/RF-13-cancelacion-de-domicilio-por-administrador.md) |
-| RF-14 | Publicación de domicilio (pedido aceptado y pagado) | Vendedor de punto fijo | P1 | [RF-14](../specs/RF-14-publicacion-de-domicilio.md) |
-| RF-15 | Listado de domicilios del vendedor | Vendedor de punto fijo | P2 | [RF-15](../specs/RF-15-listado-de-domicilios-del-vendedor.md) |
-| RF-16 | Consulta de domicilios disponibles | Domiciliario | P1 | [RF-16](../specs/RF-16-consulta-de-domicilios-disponibles.md) |
-| RF-17 | Rechazo de domicilios | Domiciliario | P2 | [RF-17](../specs/RF-17-rechazo-de-domicilios.md) |
-| RF-18 | Consulta de información del domicilio por el domiciliario | Domiciliario | P1 | [RF-18](../specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md) |
-| RF-19 | Aceptación de domicilio | Domiciliario | P1 | [RF-19](../specs/RF-19-aceptacion-de-domicilio.md) |
-| RF-22 | Ruta en mapa interactivo | Domiciliario | P1 | [RF-22](../specs/RF-22-ruta-en-mapa-interactivo.md) |
-| RF-23 | Recogida del pedido y salida del domiciliario | Domiciliario, Vendedor de punto fijo | P1 | [RF-23](../specs/RF-23-recogida-del-pedido-y-salida-del-domiciliario.md) |
-| RF-24 | Confirmación de entrega por el domiciliario | Domiciliario | P1 | [RF-24](../specs/RF-24-confirmacion-de-entrega-por-el-domiciliario.md) |
-| RF-25 | Confirmación de llegada por el cliente | Cliente | P1 | [RF-25](../specs/RF-25-confirmacion-de-llegada-por-el-cliente.md) |
-| RF-26 | Estado y trazabilidad del domicilio | Cliente, Vendedor de punto fijo | P1 | [RF-26](../specs/RF-26-estado-y-trazabilidad-del-domicilio.md) |
-| RF-27 | Consulta de información del domiciliario | Vendedor de punto fijo, Cliente | P2 | [RF-27](../specs/RF-27-consulta-de-informacion-del-domiciliario.md) |
+| RF-12 | Consulta de domicilios por administrador | Administrador | P3 | [RF-12](../specs/RF-12-consulta-de-domicilios-por-administrador/spec.md) |
+| RF-13 | Cancelación de domicilio por administrador | Administrador | P3 | [RF-13](../specs/RF-13-cancelacion-de-domicilio-por-administrador/spec.md) |
+| RF-14 | Publicación de domicilio (pedido aceptado y pagado) | Vendedor de punto fijo | P1 | [RF-14](../specs/RF-14-publicacion-de-domicilio/spec.md) |
+| RF-15 | Listado de domicilios del vendedor | Vendedor de punto fijo | P2 | [RF-15](../specs/RF-15-listado-de-domicilios-del-vendedor/spec.md) |
+| RF-16 | Consulta de domicilios disponibles | Domiciliario | P1 | [RF-16](../specs/RF-16-consulta-de-domicilios-disponibles/spec.md) |
+| RF-17 | Rechazo de domicilios | Domiciliario | P2 | [RF-17](../specs/RF-17-rechazo-de-domicilios/spec.md) |
+| RF-18 | Consulta de información del domicilio por el domiciliario | Domiciliario | P1 | [RF-18](../specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario/spec.md) |
+| RF-19 | Aceptación de domicilio | Domiciliario | P1 | [RF-19](../specs/RF-19-aceptacion-de-domicilio/spec.md) |
+| RF-22 | Ruta en mapa interactivo | Domiciliario | P1 | [RF-22](../specs/RF-22-ruta-en-mapa-interactivo/spec.md) |
+| RF-23 | Recogida del pedido y salida del domiciliario | Domiciliario, Vendedor de punto fijo | P1 | [RF-23](../specs/RF-23-recogida-del-pedido-y-salida-del-domiciliario/spec.md) |
+| RF-24 | Confirmación de entrega por el domiciliario | Domiciliario | P1 | [RF-24](../specs/RF-24-confirmacion-de-entrega-por-el-domiciliario/spec.md) |
+| RF-25 | Confirmación de llegada por el cliente | Cliente | P1 | [RF-25](../specs/RF-25-confirmacion-de-llegada-por-el-cliente/spec.md) |
+| RF-26 | Estado y trazabilidad del domicilio | Cliente, Vendedor de punto fijo | P1 | [RF-26](../specs/RF-26-estado-y-trazabilidad-del-domicilio/spec.md) |
+| RF-27 | Consulta de información del domiciliario | Vendedor de punto fijo, Cliente | P2 | [RF-27](../specs/RF-27-consulta-de-informacion-del-domiciliario/spec.md) |
 | | **Gestionar emprendimientos** | | | |
-| RF-28 | Creación de emprendimiento | Vendedor | P1 | [RF-28](../specs/RF-28-creacion-de-emprendimiento.md) |
-| RF-29 | Edición de emprendimiento | Vendedor | P2 | [RF-29](../specs/RF-29-edicion-de-emprendimiento.md) |
-| RF-30 | Eliminación de emprendimiento | Vendedor | P3 | [RF-30](../specs/RF-30-eliminacion-de-emprendimiento.md) |
-| RF-31 | Listado de emprendimientos | Cliente | P1 | [RF-31](../specs/RF-31-listado-de-emprendimientos.md) |
-| RF-32 | Consulta de emprendimiento | Cliente | P1 | [RF-32](../specs/RF-32-consulta-de-emprendimiento.md) |
-| RF-33 | Listado de productos de un emprendimiento | Cliente | P2 | [RF-33](../specs/RF-33-listado-de-productos-de-un-emprendimiento.md) |
-| RF-34 | Consulta de información del vendedor | Cliente | P3 | [RF-34](../specs/RF-34-consulta-de-informacion-del-vendedor.md) |
+| RF-28 | Creación de emprendimiento | Vendedor | P1 | [RF-28](../specs/RF-28-creacion-de-emprendimiento/spec.md) |
+| RF-29 | Edición de emprendimiento | Vendedor | P2 | [RF-29](../specs/RF-29-edicion-de-emprendimiento/spec.md) |
+| RF-30 | Eliminación de emprendimiento | Vendedor | P3 | [RF-30](../specs/RF-30-eliminacion-de-emprendimiento/spec.md) |
+| RF-31 | Listado de emprendimientos | Cliente | P1 | [RF-31](../specs/RF-31-listado-de-emprendimientos/spec.md) |
+| RF-32 | Consulta de emprendimiento | Cliente | P1 | [RF-32](../specs/RF-32-consulta-de-emprendimiento/spec.md) |
+| RF-33 | Listado de productos de un emprendimiento | Cliente | P2 | [RF-33](../specs/RF-33-listado-de-productos-de-un-emprendimiento/spec.md) |
+| RF-34 | Consulta de información del vendedor | Cliente | P3 | [RF-34](../specs/RF-34-consulta-de-informacion-del-vendedor/spec.md) |
 | | **Gestionar entregas del vendedor ambulante** | | | |
-| RF-35 | Consulta de ubicación de entrega | Vendedor ambulante | P1 | [RF-35](../specs/RF-35-consulta-de-ubicacion-de-entrega.md) |
-| RF-36 | Inicio de entrega directa | Vendedor ambulante | P1 | [RF-36](../specs/RF-36-inicio-de-entrega-directa.md) |
-| RF-37 | Confirmación de entrega directa | Vendedor ambulante | P1 | [RF-37](../specs/RF-37-confirmacion-de-entrega-directa.md) |
+| RF-35 | Consulta de ubicación de entrega | Vendedor ambulante | P1 | [RF-35](../specs/RF-35-consulta-de-ubicacion-de-entrega/spec.md) |
+| RF-36 | Inicio de entrega directa | Vendedor ambulante | P1 | [RF-36](../specs/RF-36-inicio-de-entrega-directa/spec.md) |
+| RF-37 | Confirmación de entrega directa | Vendedor ambulante | P1 | [RF-37](../specs/RF-37-confirmacion-de-entrega-directa/spec.md) |
 | | **Gestionar notificaciones** | | | |
-| RF-38 | Consulta de notificaciones | Usuario | P2 | [RF-38](../specs/RF-38-consulta-de-notificaciones.md) |
-| RF-39 | Configuración de preferencias de notificación | Usuario | P3 | [RF-39](../specs/RF-39-configuracion-de-preferencias-de-notificacion.md) |
+| RF-38 | Consulta de notificaciones | Usuario | P2 | [RF-38](../specs/RF-38-consulta-de-notificaciones/spec.md) |
+| RF-39 | Configuración de preferencias de notificación | Usuario | P3 | [RF-39](../specs/RF-39-configuracion-de-preferencias-de-notificacion/spec.md) |
 | | **Gestionar pagos** | | | |
-| RF-40 | Consulta de historial de pagos | Cliente, Vendedor, Domiciliario | P2 | [RF-40](../specs/RF-40-consulta-de-historial-de-pagos.md) |
-| RF-41 | Consulta de historial general de pagos | Administrador | P3 | [RF-41](../specs/RF-41-consulta-de-historial-general-de-pagos.md) |
-| RF-42 | Confirmación de pago del pedido | Vendedor | P1 | [RF-42](../specs/RF-42-confirmacion-de-pago-del-pedido.md) |
-| RF-43 | Confirmación del pago de la tarifa del domicilio | Vendedor de punto fijo, Domiciliario | P2 | [RF-43](../specs/RF-43-confirmacion-del-pago-de-la-tarifa-del-domicilio.md) |
-| RF-44 | Configuración de tarifa mínima de domicilio | Administrador | P3 | [RF-44](../specs/RF-44-configuracion-de-tarifa-minima-de-domicilio.md) |
-| RF-63 | Configuración de métodos de pago aceptados por el vendedor | Vendedor | P1 | [RF-63](../specs/RF-63-configuracion-de-metodos-de-pago-aceptados.md) |
+| RF-40 | Consulta de historial de pagos | Cliente, Vendedor, Domiciliario | P2 | [RF-40](../specs/RF-40-consulta-de-historial-de-pagos/spec.md) |
+| RF-41 | Consulta de historial general de pagos | Administrador | P3 | [RF-41](../specs/RF-41-consulta-de-historial-general-de-pagos/spec.md) |
+| RF-42 | Confirmación de pago del pedido | Vendedor | P1 | [RF-42](../specs/RF-42-confirmacion-de-pago-del-pedido/spec.md) |
+| RF-43 | Confirmación del pago de la tarifa del domicilio | Vendedor de punto fijo, Domiciliario | P2 | [RF-43](../specs/RF-43-confirmacion-del-pago-de-la-tarifa-del-domicilio/spec.md) |
+| RF-44 | Configuración de tarifa mínima de domicilio | Administrador | P3 | [RF-44](../specs/RF-44-configuracion-de-tarifa-minima-de-domicilio/spec.md) |
+| RF-63 | Configuración de métodos de pago aceptados por el vendedor | Vendedor | P1 | [RF-63](../specs/RF-63-configuracion-de-metodos-de-pago-aceptados/spec.md) |
 | | **Gestionar pedidos** | | | |
-| RF-45 | Realización de pedido | Cliente | P1 | [RF-45](../specs/RF-45-realizacion-de-pedido.md) |
-| RF-47 | Listado de pedidos del cliente | Cliente | P2 | [RF-47](../specs/RF-47-listado-de-pedidos-del-cliente.md) |
-| RF-48 | Consulta del estado del pedido | Cliente | P1 | [RF-48](../specs/RF-48-consulta-del-estado-del-pedido.md) |
-| RF-49 | Contacto con vendedor o domiciliario | Cliente | P2 | [RF-49](../specs/RF-49-contacto-con-vendedor-o-domiciliario.md) |
-| RF-50 | Listado de pedidos del vendedor | Vendedor | P1 | [RF-50](../specs/RF-50-listado-de-pedidos-del-vendedor.md) |
-| RF-51 | Consulta de detalle de pedido | Vendedor | P1 | [RF-51](../specs/RF-51-consulta-de-detalle-de-pedido.md) |
-| RF-52 | Consulta de información del cliente | Vendedor | P2 | [RF-52](../specs/RF-52-consulta-de-informacion-del-cliente.md) |
-| RF-53 | Respuesta del vendedor a un pedido | Vendedor | P1 | [RF-53](../specs/RF-53-respuesta-del-vendedor-a-un-pedido.md) |
+| RF-45 | Realización de pedido | Cliente | P1 | [RF-45](../specs/RF-45-realizacion-de-pedido/spec.md) |
+| RF-47 | Listado de pedidos del cliente | Cliente | P2 | [RF-47](../specs/RF-47-listado-de-pedidos-del-cliente/spec.md) |
+| RF-48 | Consulta del estado del pedido | Cliente | P1 | [RF-48](../specs/RF-48-consulta-del-estado-del-pedido/spec.md) |
+| RF-49 | Contacto con vendedor o domiciliario | Cliente | P2 | [RF-49](../specs/RF-49-contacto-con-vendedor-o-domiciliario/spec.md) |
+| RF-50 | Listado de pedidos del vendedor | Vendedor | P1 | [RF-50](../specs/RF-50-listado-de-pedidos-del-vendedor/spec.md) |
+| RF-51 | Consulta de detalle de pedido | Vendedor | P1 | [RF-51](../specs/RF-51-consulta-de-detalle-de-pedido/spec.md) |
+| RF-52 | Consulta de información del cliente | Vendedor | P2 | [RF-52](../specs/RF-52-consulta-de-informacion-del-cliente/spec.md) |
+| RF-53 | Respuesta del vendedor a un pedido | Vendedor | P1 | [RF-53](../specs/RF-53-respuesta-del-vendedor-a-un-pedido/spec.md) |
 | | **Gestionar productos** | | | |
-| RF-54 | Registro de producto | Vendedor | P1 | [RF-54](../specs/RF-54-registro-de-producto.md) |
-| RF-55 | Listado de productos del vendedor | Vendedor | P1 | [RF-55](../specs/RF-55-listado-de-productos-del-vendedor.md) |
-| RF-56 | Edición de producto | Vendedor | P2 | [RF-56](../specs/RF-56-edicion-de-producto.md) |
-| RF-57 | Actualización de inventario del producto | Vendedor | P1 | [RF-57](../specs/RF-57-actualizacion-de-inventario-del-producto.md) |
-| RF-58 | Eliminación de producto | Vendedor | P2 | [RF-58](../specs/RF-58-eliminacion-de-producto.md) |
-| RF-59 | Predicción de demanda *(fuera del MVP)* | Vendedor | P3 | [RF-59](../specs/RF-59-prediccion-de-demanda.md) |
+| RF-54 | Registro de producto | Vendedor | P1 | [RF-54](../specs/RF-54-registro-de-producto/spec.md) |
+| RF-55 | Listado de productos del vendedor | Vendedor | P1 | [RF-55](../specs/RF-55-listado-de-productos-del-vendedor/spec.md) |
+| RF-56 | Edición de producto | Vendedor | P2 | [RF-56](../specs/RF-56-edicion-de-producto/spec.md) |
+| RF-57 | Actualización de inventario del producto | Vendedor | P1 | [RF-57](../specs/RF-57-actualizacion-de-inventario-del-producto/spec.md) |
+| RF-58 | Eliminación de producto | Vendedor | P2 | [RF-58](../specs/RF-58-eliminacion-de-producto/spec.md) |
+| RF-59 | Predicción de demanda *(fuera del MVP)* | Vendedor | P3 | [RF-59](../specs/RF-59-prediccion-de-demanda/spec.md) |
 | | **Gestionar reportes** | | | |
-| RF-60 | Creación de reportes | Cliente, Vendedor, Domiciliario | P1 | [RF-60](../specs/RF-60-creacion-de-reportes.md) |
-| RF-61 | Consulta de reportes por administrador | Administrador | P2 | [RF-61](../specs/RF-61-consulta-de-reportes-por-administrador.md) |
-| RF-62 | Resolución de reportes | Administrador | P2 | [RF-62](../specs/RF-62-resolucion-de-reportes.md) |
+| RF-60 | Creación de reportes | Cliente, Vendedor, Domiciliario | P1 | [RF-60](../specs/RF-60-creacion-de-reportes/spec.md) |
+| RF-61 | Consulta de reportes por administrador | Administrador | P2 | [RF-61](../specs/RF-61-consulta-de-reportes-por-administrador/spec.md) |
+| RF-62 | Resolución de reportes | Administrador | P2 | [RF-62](../specs/RF-62-resolucion-de-reportes/spec.md) |
 | | **Gestionar recogida en punto fijo** | | | |
-| RF-64 | Recogida lista para retirar | Vendedor de punto fijo | P1 | [RF-64](../specs/RF-64-recogida-lista-para-recoger.md) |
-| RF-65 | Confirmación de retiro del pedido | Vendedor de punto fijo | P1 | [RF-65](../specs/RF-65-confirmacion-de-retiro-del-pedido.md) |
+| RF-64 | Recogida lista para retirar | Vendedor de punto fijo | P1 | [RF-64](../specs/RF-64-recogida-lista-para-recoger/spec.md) |
+| RF-65 | Confirmación de retiro del pedido | Vendedor de punto fijo | P1 | [RF-65](../specs/RF-65-confirmacion-de-retiro-del-pedido/spec.md) |
 | | **Gestionar usuarios** | | | |
-| RF-66 | Consulta de usuario por administrador | Administrador | P2 | [RF-66](../specs/RF-66-consulta-de-usuario-por-administrador.md) |
-| RF-67 | Edición de usuario por administrador | Administrador | P3 | [RF-67](../specs/RF-67-edicion-de-usuario-por-administrador.md) |
-| RF-68 | Eliminación de usuario por administrador | Administrador | P3 | [RF-68](../specs/RF-68-eliminacion-de-usuario-por-administrador.md) |
-| RF-69 | Listado de usuarios | Administrador | P2 | [RF-69](../specs/RF-69-listado-de-usuarios.md) |
+| RF-66 | Consulta de usuario por administrador | Administrador | P2 | [RF-66](../specs/RF-66-consulta-de-usuario-por-administrador/spec.md) |
+| RF-67 | Edición de usuario por administrador | Administrador | P3 | [RF-67](../specs/RF-67-edicion-de-usuario-por-administrador/spec.md) |
+| RF-68 | Eliminación de usuario por administrador | Administrador | P3 | [RF-68](../specs/RF-68-eliminacion-de-usuario-por-administrador/spec.md) |
+| RF-69 | Listado de usuarios | Administrador | P2 | [RF-69](../specs/RF-69-listado-de-usuarios/spec.md) |
 
 ### 4.5 Requerimientos no funcionales
 
@@ -304,18 +305,18 @@ Se definieron **31 requerimientos no funcionales**. La tolerancia a conectividad
 
 ### 4.6 Especificaciones por requerimiento
 
-Cada requerimiento funcional cuenta con una especificación en `specs/` (66 archivos, uno por RF) con el formato de *Feature Specification*: historias de usuario priorizadas (P1, P2, P3) con su prueba independiente y escenarios de aceptación *Given / When / Then*, casos borde, requerimientos verificables (`FR-NNN`), entidades clave y criterios de éxito medibles (`SC-NNN`).
+Cada requerimiento funcional cuenta con una especificación en `specs/RF-NN-nombre/spec.md` (67 archivos, uno por RF, cada uno con su `plan.md` al entrar a construcción) con el formato de *Feature Specification*: historias de usuario priorizadas (P1, P2, P3) con su prueba independiente y escenarios de aceptación *Given / When / Then*, casos borde, requerimientos verificables (`FR-NNN`), entidades clave y criterios de éxito medibles (`SC-NNN`).
 
 | Prioridad | Especificaciones |
 |---|:---:|
-| P1 – núcleo del flujo | 34 |
+| P1 – núcleo del flujo | 35 |
 | P2 – importante | 22 |
 | P3 – complementario | 10 |
-| **Total** | **66** |
+| **Total** | **67** |
 
 ### 4.7 Trazabilidad
 
-La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) relaciona, para cada módulo, la historia de usuario, el actor, el caso de uso, el requerimiento funcional y su especificación (97 historias → 66 requerimientos → 66 especificaciones → 12 diagramas de casos de uso), e incluye el resumen de huecos de numeración. Todas las historias de usuario están cubiertas por exactamente un requerimiento.
+La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) relaciona, para cada módulo, la historia de usuario, el actor, el caso de uso, el requerimiento funcional y su especificación (98 historias → 67 requerimientos → 67 especificaciones → 12 diagramas de casos de uso), e incluye el resumen de huecos de numeración. Todas las historias de usuario están cubiertas por exactamente un requerimiento.
 
 ### 4.8 Decisiones de diseño y supuestos
 
@@ -331,6 +332,7 @@ La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) 
 8. **Reservas por criterio del vendedor.** La reserva es un atributo del pedido (fecha y hora acordadas con el vendedor). No existe inventario por fecha: el vendedor acepta o rechaza cada reserva con su propio criterio (se eliminó RF-46).
 9. **Predicción de demanda fuera del MVP.** RF-59 se conserva documentado como mejora futura para apoyar al vendedor en sus decisiones de compra, preparación y reservas.
 10. **Tarifa del domicilio.** La ganancia del domiciliario es la tarifa publicada, sin comisión de la plataforma.
+11. **Autenticación.** La credencial es la contraseña. El celular se verifica con un código de un solo uso enviado por WhatsApp (SMS de respaldo) al registrarse, cambiarlo y recuperar la contraseña (RF-70). El administrador entra solo con contraseña.
 
 **Puntos pendientes de validar con el equipo y los usuarios:**
 
@@ -342,3 +344,4 @@ La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) 
 - Privacidad del destino: si la dirección exacta y el nombre de quien recibe se muestran al domiciliario antes o después de la asignación.
 - Límite de domicilios simultáneos por domiciliario.
 - Reglas para el vendedor ambulante cuando el cliente está demasiado lejos para una entrega directa.
+- Costo mensual de los mensajes de WhatsApp/SMS, aprobación de la plantilla ante Meta y vía de soporte cuando un usuario pierde acceso a su celular verificado.
