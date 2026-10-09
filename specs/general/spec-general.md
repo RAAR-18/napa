@@ -88,28 +88,28 @@ Las definiciones de esta sección son la fuente de verdad. Dinero: `bigint` en p
 
 ```mermaid
 erDiagram
-  usuario ||--o| emprendimiento : "dirige"
-  usuario ||--o{ pedido : "compra"
-  usuario ||--o| configuracion_pago : "configura"
-  usuario ||--o{ refresh_token : "tiene"
-  usuario ||--o{ device_token : "registra"
-  usuario ||--o{ mensaje : "recibe"
-  usuario ||--o{ notificacion : "recibe"
-  usuario ||--o{ preferencia_notificacion : "define"
-  usuario ||--o{ calificacion : "escribe"
-  usuario ||--o{ reporte : "crea"
-  usuario ||--o{ domicilio : "reparte"
-  usuario ||--o{ domicilio_rechazo : "rechaza"
-  emprendimiento ||--o{ producto : "ofrece"
-  emprendimiento ||--o{ pedido : "recibe"
-  pedido ||--|{ item_pedido : "contiene"
-  producto ||--o{ item_pedido : "se vende en"
-  pedido ||--o{ pago : "se paga con"
-  pedido ||--o| domicilio : "genera"
-  domicilio ||--o{ domicilio_evento : "registra"
-  domicilio ||--o{ domicilio_rechazo : "es rechazado"
-  domicilio ||--o| pago : "paga tarifa"
-  calificacion ||--o{ moderacion_comentario : "es moderada"
+    usuario ||--o| emprendimiento : "dirige"
+    usuario ||--o{ pedido : "compra"
+    usuario ||--o| configuracion_pago : "configura"
+    usuario ||--o{ refresh_token : "tiene"
+    usuario ||--o{ device_token : "registra"
+    usuario ||--o{ mensaje : "recibe"
+    usuario ||--o{ notificacion : "recibe"
+    usuario ||--o{ preferencia_notificacion : "define"
+    usuario ||--o{ calificacion : "escribe"
+    usuario ||--o{ reporte : "crea"
+    usuario ||--o{ domicilio : "reparte"
+    usuario ||--o{ domicilio_rechazo : "rechaza"
+    emprendimiento ||--o{ producto : "ofrece"
+    emprendimiento ||--o{ pedido : "recibe"
+    pedido ||--|{ item_pedido : "contiene"
+    producto ||--o{ item_pedido : "se vende en"
+    pedido ||--o{ pago : "se paga con"
+    pedido ||--o| domicilio : "genera"
+    domicilio ||--o{ domicilio_historial : "registra"
+    domicilio ||--o{ domicilio_rechazo : "es rechazado"
+    domicilio ||--o| pago : "paga tarifa"
+    calificacion ||--o{ moderacion_comentario : "es moderada"
 ```
 
 ### 3.2 Entidades
@@ -125,7 +125,7 @@ erDiagram
 **item_pedido** — `id`, `pedido_id`, `producto_id`, `nombre_producto`, `precio_unitario`, `cantidad` (precio y nombre al momento de la compra).
 **pago** — `id`, `pedido_id`, `domicilio_id` (solo tarifa), `tipo` (`PEDIDO`, `TARIFA_DOMICILIO`), `monto`, `medio`, `estado` (`PENDIENTE_CONFIRMACION`, `REGISTRADO`, `CONFIRMADO`), `registrado_por`, `confirmado_por`, `confirmado_at`. Únicos parciales: un pago `PEDIDO` por pedido y un pago `TARIFA_DOMICILIO` por domicilio (RNF27).
 **domicilio** — `id`, `pedido_id`, `vendedor_id`, `punto_a`, `punto_a_direccion`, `punto_b`, `punto_b_direccion`, `receptor_nombre`, `receptor_telefono`, `tarifa`, `estado`, `domiciliario_id`, `codigo_confirmacion_hash`, `motivo_cancelacion`, `version`. Inmutables tras crear: `pedido_id`, `punto_a`, `punto_b`, `receptor_*`, `tarifa`. Único parcial `(pedido_id) WHERE estado <> 'CANCELADO'`. Índices: `(estado, created_at)`, GiST `punto_a` parcial `estado='DISPONIBLE'`, `(vendedor_id, estado, created_at)`.
-**domicilio_evento** — trazabilidad: `id` (= `eventId`), `domicilio_id`, `estado`, `occurred_at`, `actor_user_id`.
+**domicilio_historial** — trazabilidad: `id`, `domicilio_id`, `estado`, `occurred_at`, `actor_user_id`. La escribe el caso de uso en la misma transacción que el cambio de estado, no un listener de eventos.
 **domicilio_rechazo** — `domiciliario_id`, `domicilio_id`, `created_at`. PK compuesta; no se actualiza ni se borra (RF-17).
 **calificacion** — `id`, `autor_id`, `tipo_entidad` (`EMPRENDIMIENTO`, `PRODUCTO`, `DOMICILIARIO`, `CLIENTE`), `entidad_id`, `puntaje` (1–5), `comentario`, `pedido_id` o `domicilio_id` (interacción de origen), `estado` (`ACTIVA`, `ELIMINADA_AUTOR`, `ELIMINADA_MODERACION`). Único `(autor_id, tipo_entidad, entidad_id, interaccion)` (RF-01 FR-006).
 **moderacion_comentario** — `id`, `calificacion_id`, `admin_id`, `accion` (`EDITADO`, `ELIMINADO`), `created_at`.
