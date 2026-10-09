@@ -227,7 +227,7 @@ Se definieron **67 requerimientos funcionales** (66 del MVP y RF-59, documentado
 | RF-36 | Inicio de entrega directa | Vendedor ambulante | P1 | [RF-36](../specs/RF-36-inicio-de-entrega-directa/spec.md) |
 | RF-37 | Confirmación de entrega directa | Vendedor ambulante | P1 | [RF-37](../specs/RF-37-confirmacion-de-entrega-directa/spec.md) |
 | | **Gestionar notificaciones** | | | |
-| RF-38 | Consulta de notificaciones | Usuario | P2 | [RF-38](../specs/RF-38-consulta-de-notificaciones/spec.md) |
+| RF-38 | Consulta de notificaciones | Usuario | P1 | [RF-38](../specs/RF-38-consulta-de-notificaciones/spec.md) |
 | RF-39 | Configuración de preferencias de notificación | Usuario | P3 | [RF-39](../specs/RF-39-configuracion-de-preferencias-de-notificacion/spec.md) |
 | | **Gestionar pagos** | | | |
 | RF-40 | Consulta de historial de pagos | Cliente, Vendedor, Domiciliario | P2 | [RF-40](../specs/RF-40-consulta-de-historial-de-pagos/spec.md) |
@@ -309,8 +309,8 @@ Cada requerimiento funcional cuenta con una especificación en `specs/RF-NN-nomb
 
 | Prioridad | Especificaciones |
 |---|:---:|
-| P1 – núcleo del flujo | 35 |
-| P2 – importante | 22 |
+| P1 – núcleo del flujo | 36 |
+| P2 – importante | 21 |
 | P3 – complementario | 10 |
 | **Total** | **67** |
 

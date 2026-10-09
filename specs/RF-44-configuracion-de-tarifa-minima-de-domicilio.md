@@ -1,7 +1,7 @@
 # Feature Specification: Configuración de tarifa mínima de domicilio
 
 **Created**: 2026-09-18
-**Actualizado**: 2026-10-01
+**Actualizado**: 2026-10-08
 **Requerimiento funcional**: RF-44
 **Historias de usuario relacionadas**: HU-71
 
@@ -47,6 +47,7 @@ Como administrador, quiero configurar la tarifa mínima del domicilio, para esta
 - **FR-003**: El sistema DEBE aplicar la tarifa mínima como piso de la tarifa publicada que calcula para todo domicilio nuevo.
 - **FR-004**: El sistema DEBE conservar la tarifa de los domicilios ya asignados cuando la tarifa mínima cambie.
 - **FR-005**: El sistema DEBE mantener un registro de los cambios de la tarifa mínima, con fecha y valor anterior.
+- **FR-006**: El sistema DEBE contar con una tarifa mínima por defecto, definida como parámetro de configuración, desde el primer despliegue, de modo que la tarifa de RF-45 pueda calcularse antes de que exista la pantalla del administrador. Esa pantalla (FR-001) puede entregarse después sin cambiar el cálculo.
 
 ### Key Entities
 

@@ -1,31 +1,31 @@
 # Feature Specification: Consulta de notificaciones
 
 **Created**: 2026-09-11
-**Actualizado**: 2026-10-01
+**Actualizado**: 2026-10-08
 **Requerimiento funcional**: RF-38
 **Historias de usuario relacionadas**: HU-63
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Conocer novedades relacionadas con mi cuenta (Priority: P2)
+### User Story 1 - Conocer novedades relacionadas con mi cuenta (Priority: P1)
 
 Como usuario (cliente, vendedor, domiciliario o administrador), quiero consultar mis notificaciones, para conocer las novedades y eventos relacionados con mi cuenta.
 
-**Why this priority**: Mantiene informado al usuario sobre el avance de pedidos, domicilios, pagos y reportes, pero no es un flujo transaccional en sí mismo; se prioriza después de las funciones core de cada módulo.
+**Why this priority**: Mantiene informado al usuario sobre el avance de pedidos, domicilios, pagos y reportes, y casi todos los flujos P1 (pedidos, domicilios, pagos) dependen de ella para avisar a las partes; por eso se clasifica como P1, aunque no sea un flujo transaccional en sí mismo.
 
 **Independent Test**: Puede probarse de forma independiente generando un evento que produzca una notificación (por ejemplo, un cambio de estado de pedido) y verificando que aparece en la sección de notificaciones del usuario correspondiente.
 
 **Acceptance Scenarios**:
 
 1. **Scenario**: Consulta de notificaciones pendientes
-   - **Given** tengo notificaciones generadas por eventos de la plataforma
-   - **When** ingreso a la sección de notificaciones
-   - **Then** el sistema muestra el listado de notificaciones ordenado por fecha, indicando cuáles no he leído
+    - **Given** tengo notificaciones generadas por eventos de la plataforma
+    - **When** ingreso a la sección de notificaciones
+    - **Then** el sistema muestra el listado de notificaciones ordenado por fecha, indicando cuáles no he leído
 
 2. **Scenario**: Sin notificaciones registradas
-   - **Given** no se ha generado ninguna notificación para mi cuenta
-   - **When** ingreso a la sección de notificaciones
-   - **Then** el sistema muestra un mensaje indicando que no hay notificaciones
+    - **Given** no se ha generado ninguna notificación para mi cuenta
+    - **When** ingreso a la sección de notificaciones
+    - **Then** el sistema muestra un mensaje indicando que no hay notificaciones
 
 ### Edge Cases
 
@@ -40,7 +40,7 @@ Como usuario (cliente, vendedor, domiciliario o administrador), quiero consultar
 - **FR-001**: El sistema DEBE permitir a los usuarios (cliente, vendedor, domiciliario, administrador) consultar sus notificaciones.
 - **FR-002**: El sistema DEBE mostrar las notificaciones ordenadas por fecha, distinguiendo las leídas de las no leídas.
 - **FR-003**: El sistema DEBE generar notificaciones ante eventos relevantes de pedidos, reservas, domicilios, pagos y reportes.
-- **FR-004**: El sistema DEBE notificar, como mínimo, los siguientes eventos: nuevo pedido recibido (al vendedor, incluida la entrega directa al vendedor ambulante), pedido aceptado o rechazado (al cliente; en un domicilio, la aceptación incluye el aviso de que debe transferir el total), pago de un pedido confirmado (al cliente), inicio de la entrega directa (al cliente), pedido listo para recoger (al cliente), nuevo domicilio disponible (a los domiciliarios), pedido recogido por el domiciliario (al vendedor de punto fijo), domiciliario en camino (al cliente), entrega confirmada con código por el domiciliario (al cliente, solicitando confirmar la llegada, y al vendedor de punto fijo, para que pague la tarifa), pago de la tarifa registrado por el vendedor (al domiciliario), llegada confirmada por el cliente (al domiciliario y al vendedor), cancelación de un domicilio (a las partes) y resolución de un reporte (a quien lo creó).
+- **FR-004**: El sistema DEBE notificar, como mínimo, los siguientes eventos: nuevo pedido recibido (al vendedor, incluida la entrega directa al vendedor ambulante), pedido aceptado o rechazado (al cliente; en un domicilio, la aceptación incluye el aviso de que debe transferir el total), pago de un pedido confirmado (al cliente), inicio de la entrega directa (al cliente), pedido listo para recoger (al cliente), nuevo domicilio disponible (a los domiciliarios), pedido recogido por el domiciliario (al vendedor de punto fijo), domiciliario en camino (al cliente), entrega confirmada con código por el domiciliario (al cliente, solicitando confirmar la llegada, y al vendedor de punto fijo, para que pague la tarifa), pago de la tarifa registrado por el vendedor (al domiciliario), llegada confirmada por el cliente (al domiciliario y al vendedor), cancelación de un domicilio (a las partes), resolución de un reporte (a quien lo creó) y comentario editado o eliminado por un administrador (a su autor).
 
 ### Key Entities
 
