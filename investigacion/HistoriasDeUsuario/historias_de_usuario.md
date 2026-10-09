@@ -28,7 +28,7 @@
 | Módulo | Historias |
 |---|:---:|
 | Comentarios y calificaciones | 23 |
-| Cuenta | 7 |
+| Cuenta | 8 |
 | Domicilios | 17 |
 | Emprendimientos | 7 |
 | Entregas del vendedor ambulante | 3 |
@@ -39,7 +39,7 @@
 | Reportes | 5 |
 | Recogida en punto fijo | 2 |
 | Usuarios | 4 |
-| **Total** | **97** |
+| **Total** | **98** |
 
 > HU-90 (predicción de demanda) se conserva documentada pero está fuera de alcance del MVP; se cuenta en el total como historia diseñada, no como historia a implementar en esta entrega.
 
@@ -86,6 +86,9 @@
 | HU-28 | Como usuario, quiero eliminar mi cuenta, para dejar de utilizar la plataforma. |
 | HU-29 | Como administrador, quiero iniciar sesión en mi cuenta, para acceder a las funciones administrativas. |
 | HU-30 | Como administrador, quiero cambiar mi contraseña, para mantener segura mi cuenta administrativa. |
+| HU-105 | Como usuario, quiero verificar mi celular con un código que recibo por WhatsApp (o por SMS si no me llega), para activar mi cuenta, cambiar mi celular o recuperar mi contraseña con un número que es realmente mío. |
+
+> El código de un solo uso verifica el celular; no reemplaza la contraseña como credencial de inicio de sesión (RF-70).
 
 ---
 

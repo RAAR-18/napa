@@ -12,6 +12,7 @@
 - **Domicilio**: solo lleva un pedido del punto A (punto fijo) al punto B (ubicación del cliente); **no puede editarse**. Lo publica el vendedor de punto fijo **una vez el pedido está aceptado y con el pago confirmado**, lo toman los domiciliarios aceptando la **tarifa publicada** (el domiciliario no negocia el precio) y se cierra con la confirmación del domiciliario (reforzada con un código de confirmación que el cliente le entrega) y la confirmación de llegada del cliente.
 - **Rechazo de domicilio**: el domiciliario puede rechazar de forma **definitiva** un domicilio disponible que no le interese; el domicilio se retira de su lista de forma permanente (no existe restauración) y sigue disponible para los demás domiciliarios.
 - **Pago**: admite dos medios: **efectivo** o **transferencia a la cuenta bancaria** que el vendedor registre. La entrega directa y la recogida en punto fijo admiten cualquiera de los dos, según lo que el vendedor haya configurado como aceptado (RF-63), y el cobro se confirma al registrar la entrega (RF-37) o el retiro (RF-65). El **domicilio admite exclusivamente pago digital** e involucra dos pagos distintos: (a) el pago del **pedido**, un solo monto que suma los productos más la tarifa del domicilio, que el cliente transfiere a la cuenta del vendedor apenas este acepta el pedido y que el vendedor confirma (RF-42) **antes de publicar** el domicilio (RF-14); y (b) el pago de la **tarifa al domiciliario** (RF-43): una vez el domicilio está «entregado», el vendedor le transfiere la tarifa y confirma el pago, y el domiciliario confirma que lo recibió, siempre por transferencia. La plataforma no procesa tarjetas ni billeteras electrónicas de terceros; solo registra la confirmación de cada cobro.
+- **Autenticación**: la credencial es la contraseña. El celular se verifica con un código de un solo uso enviado por WhatsApp (SMS de respaldo) al registrarse, al cambiarlo y al recuperar la contraseña (RF-70). El administrador entra solo con contraseña.
 - **Granularidad**: cada requerimiento corresponde a una pantalla o acción del usuario. Los filtros, ordenamientos y validaciones son funcionalidad del requerimiento y no requerimientos aparte.
 
 ## 1. Gestionar comentarios y calificaciones
@@ -25,11 +26,12 @@
 
 ## 2. Gestionar cuenta
 
-- **RF-07 – Registro de cuenta**: El sistema deberá permitir a una persona crear una cuenta para utilizar los servicios de la plataforma, eligiendo su rol: cliente, vendedor ambulante, vendedor de punto fijo o domiciliario. (HU-24)
-- **RF-08 – Edición de datos de cuenta**: El sistema deberá permitir a los usuarios editar su información personal. (HU-25)
-- **RF-09 – Cambio de contraseña**: El sistema deberá permitir a los usuarios y al administrador cambiar su contraseña para mantener la seguridad de su cuenta. (HU-26, HU-30)
-- **RF-10 – Inicio de sesión**: El sistema deberá permitir a los usuarios y al administrador iniciar sesión para acceder a las funcionalidades correspondientes a su perfil. (HU-27, HU-29)
+- **RF-07 – Registro de cuenta**: El sistema deberá permitir a una persona crear una cuenta para utilizar los servicios de la plataforma, eligiendo su rol: cliente, vendedor ambulante, vendedor de punto fijo o domiciliario; el celular se verifica con un código por WhatsApp (RF-70). (HU-24)
+- **RF-08 – Edición de datos de cuenta**: El sistema deberá permitir a los usuarios editar su información personal; un celular nuevo se verifica con un código (RF-70). (HU-25)
+- **RF-09 – Cambio de contraseña**: El sistema deberá permitir a los usuarios y al administrador cambiar su contraseña para mantener la seguridad de su cuenta, ingresando la actual o, en el caso de los usuarios, recuperándola con un código enviado a su celular verificado (RF-70). (HU-26, HU-30)
+- **RF-10 – Inicio de sesión**: El sistema deberá permitir a los usuarios y al administrador iniciar sesión para acceder a las funcionalidades correspondientes a su perfil; las cuentas con el celular sin verificar no pueden iniciar sesión (RF-70). (HU-27, HU-29)
 - **RF-11 – Eliminación de cuenta**: El sistema deberá permitir a los usuarios eliminar su cuenta. (HU-28)
+- **RF-70 – Verificación de celular por WhatsApp**: El sistema deberá verificar el celular de un usuario mediante un código de un solo uso enviado por WhatsApp (con SMS de respaldo), emitido por el proveedor de verificación, al registrarse, al cambiar el celular y al recuperar la contraseña. No sustituye la contraseña como credencial de inicio de sesión. (HU-105)
 
 ## 3. Gestionar domicilios
 
