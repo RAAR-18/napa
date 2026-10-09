@@ -45,7 +45,7 @@ Como vendedor, quiero actualizar rápidamente la cantidad disponible de un produ
 - **FR-003**: El sistema MUST impedir que se registren pedidos sobre productos marcados como agotados.
 - **FR-004**: El sistema MUST rechazar valores de cantidad negativos.
 - **FR-005**: El sistema MUST controlar actualizaciones concurrentes de inventario para evitar sobreventa de la misma unidad.
-- **FR-006**: El sistema MUST descontar de la cantidad disponible las unidades de los pedidos aceptados de entrega directa, recogida y domicilio que no estén marcados como reserva. Los pedidos marcados como reserva no descuentan el inventario actual al aceptarse; el vendedor gestiona su inventario al atenderlos.
+- **FR-006**: El sistema MUST descontar de la cantidad disponible las unidades de los pedidos de entrega directa, recogida y domicilio que no estén marcados como reserva en el momento en que el vendedor los acepta, y rechazar la aceptación si la cantidad disponible no alcanza. Los pedidos marcados como reserva no descuentan el inventario actual al aceptarse; el vendedor gestiona su inventario al atenderlos.
 
 ### Key Entities *(include if feature involves data)*
 

@@ -88,7 +88,7 @@ Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo.
 
 - **FR-001**: El sistema DEBE permitir al vendedor aceptar o rechazar únicamente pedidos de su emprendimiento que estén en estado "pendiente".
 - **FR-002**: El sistema DEBE cambiar el estado del pedido a "aceptado" o "rechazado" y notificar al cliente.
-- **FR-003**: El sistema DEBE validar, al aceptar un pedido inmediato, que el inventario actual cubra el pedido. En los pedidos marcados como reserva NO DEBE validar automáticamente el inventario: el vendedor decide con su propio criterio.
+- **FR-003**: El sistema DEBE validar, al aceptar un pedido inmediato, que el inventario actual cubra el pedido, y descontarlo en ese mismo momento, de forma atómica con la aceptación; si no alcanza, NO DEBE aceptarlo. En los pedidos marcados como reserva NO DEBE validar automáticamente el inventario: el vendedor decide con su propio criterio.
 - **FR-004**: El sistema DEBE habilitar, tras la aceptación, el siguiente paso propio de la modalidad: ubicación de entrega (entrega directa, inmediata o marcada como reserva), marcar como listo para recoger (recogida, inmediata o marcada como reserva), o esperar la confirmación del pago y luego publicar el domicilio (domicilio).
 - **FR-005**: El sistema DEBE liberar las cantidades comprometidas cuando un pedido inmediato sea rechazado.
 - **FR-006**: El sistema DEBE impedir que un vendedor de punto fijo sin cuenta bancaria registrada acepte un pedido de domicilio (RF-63).
