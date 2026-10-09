@@ -60,7 +60,8 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 - Tabla `outbox_event` (definida en `spec-general`). Catálogo de eventos en `specs/general/eventos.md`.
 - El caso de uso publica el evento dentro de su transacción; el relay lo lee por lotes, lo entrega a los manejadores registrados y marca `processed_at`.
-- Manejadores **idempotentes** (entrega al menos una vez): clave natural `event_id` en `notificacion` y en `domicilio_evento`.
+- Manejadores **idempotentes** (entrega al menos una vez): clave natural `event_id` en `notificacion`.
+- `domicilio_historial` (trazabilidad, RF-26) NO se alimenta por eventos: el caso de uso inserta la fila en la misma transacción que cambia el estado del domicilio.
 - Reintentos con retroceso exponencial y límite; tras el límite, estado `DEAD` y alerta.
 
 ### Notificaciones (RF-38, RF-39)
