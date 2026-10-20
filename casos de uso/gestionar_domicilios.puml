@@ -28,8 +28,7 @@ rectangle "Gestionar domicilios" {
 
     ' Cliente
     usecase "Consultar trazabilidad del domicilio" as UC11
-    usecase "Confirmar llegada del pedido" as UC19
-    usecase "ver código de confirmación" as UC15
+    usecase "Ver código de confirmación" as UC15
 
     ' Administrador
     usecase "Consultar domicilios" as UC20
@@ -49,7 +48,7 @@ d --> UC13
 d --> UC14
 
 c --> UC11
-c --> UC19
+c --> UC15
 
 UC20 <-- adm
 UC21 <-- adm
@@ -62,7 +61,6 @@ UC10 .> UC9 : <<extend>>
 UC7 .> UC9 : <<extend>>
 UC20 .> UC22 : <<extend>>
 
-UC15 <. UC19 : <<include>>
 UC14 .> UC16 : <<include>>
 
 note right of UC1
@@ -83,7 +81,7 @@ end note
 
 note right of UC9
   Muestra de dónde sale, a dónde va,
-  quién lo recibe y cuánto ganaría.
+  quién lo recibe (el cliente) y cuánto ganaría.
 end note
 
 note right of UC12
@@ -93,8 +91,19 @@ end note
 note right of UC11
   cronología completa del
   domicilio (publicado, asignado, recogido, en
-  camino, entregado, finalizado/cancelado) con
+  camino, entregado/cancelado) con
   ubicación aproximada del domiciliario en curso.
+end note
+
+note right of UC15
+  Solo el cliente ve el código. Se lo dice al
+  domiciliario al recibir el pedido.
+end note
+
+note right of UC14
+  Al ingresar el código del cliente, el domicilio
+  y el pedido pasan a entregado. Esa es la única
+  confirmación de la entrega.
 end note
 
 @enduml

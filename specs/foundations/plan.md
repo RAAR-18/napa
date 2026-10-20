@@ -29,6 +29,7 @@ Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dom
 | D10 | PostGIS con `geography(Point,4326)`; cercanía con `ST_DWithin`/`ST_Distance`; índice GiST | RNF22. |
 | D11 | Límites entre módulos verificados con **ArchUnit** (dominio sin Spring/JPA; módulos solo se hablan por puertos) | RNF13, RNF25. |
 | D12 | Verificación del celular con **Twilio Verify** (WhatsApp con respaldo SMS) detrás de `VerificarCelularPort` | El equipo ya lo conoce y delega a Twilio la generación del código, su vigencia, los intentos y las plantillas aprobadas. Costo: 0,05 USD por verificación exitosa más la tarifa del canal (a confirmar para Colombia). Adaptador de consola para desarrollo y pruebas, sin gastar unidades. Cambiar de proveedor es cambiar un adaptador. |
+| D13 | El código de confirmación del domicilio se genera al asignarlo (6 dígitos aleatorios) y se guarda tal cual; solo lo ve el cliente. El domiciliario lo ingresa y, si coincide, el domicilio y el pedido pasan a ENTREGADO (única confirmación). Máximo 5 intentos y bloqueo de 15 min. | Es una decisión de simplicidad: el riesgo de guardarlo es bajo frente al resto de datos de la base y el límite de intentos lo mitiga. |
 
 ## Technical Context
 
@@ -61,12 +62,12 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - Tabla `outbox_event` (definida en `spec-general`). Catálogo de eventos en `specs/general/eventos.md`.
 - El caso de uso publica el evento dentro de su transacción; el relay lo lee por lotes, lo entrega a los manejadores registrados y marca `processed_at`.
 - Manejadores **idempotentes** (entrega al menos una vez): clave natural `event_id` en `notificacion`.
-- `domicilio_historial` (trazabilidad, RF-26) NO se alimenta por eventos: el caso de uso inserta la fila en la misma transacción que cambia el estado del domicilio.
+- `EventoTrazabilidad` (trazabilidad, RF-26) NO se alimenta por eventos: el caso de uso inserta la fila en la misma transacción que cambia el estado del domicilio.
 - Reintentos con retroceso exponencial y límite; tras el límite, estado `DEAD` y alerta.
 
 ### Notificaciones (RF-38, RF-39)
 
-- Entidades `notificacion`, `preferencia_notificacion` y `device_token` (en `spec-general`). La notificación siempre se guarda.
+- Entidades `Notificacion`, `PreferenciaNotificacion` y `DispositivoToken` (en `spec-general`).
 - Un listener por evento en `notificaciones/infrastructure/adapters/in/event`, que llama al puerto `EnviarNotificacionPort`. Este consulta las preferencias (RF-39), guarda la notificación y envía FCM con `sendEachForMulticast` en lotes de 500; tokens inválidos se borran.
 - Si FCM falla, la notificación sigue visible en RF-38 (degradación controlada, RNF19/RNF15).
 - Pendiente de decidir: notificaciones críticas que no se puedan silenciar (ver Open Questions).
@@ -99,7 +100,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 ### Geografía (RNF22, RNF04)
 
 - `geography(Point,4326)` en punto fijo, zona del ambulante, ubicación de entrega, puntos A y B.
-- La **ubicación en vivo del domiciliario** no se guarda en PostGIS: la app la envía cada 15 s y se mantiene en Redis (`loc:{domicilioId}`, TTL 2 min). El cliente la consulta cada 15–30 s (RNF30). Se elimina al finalizar (RNF04).
+- La **ubicación en vivo del domiciliario** no se guarda en PostGIS: la app la envía cada 15 s y se mantiene en Redis (`loc:{domicilioId}`, TTL 2 min). El cliente la consulta cada 15–30 s (RNF30). Se elimina al entregarse o cancelarse el domicilio (RNF04).
 - La ubicación del cliente solo se devuelve al vendedor o domiciliario del pedido activo (RF-35 FR-003).
 
 ### Frontend (RNF28, RNF31)
@@ -126,7 +127,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [ ] F015 Pruebas de integración con Testcontainers (PostGIS, Redis) como base de test
 
 **Phase F2 – Identidad (RF-07, RF-09, RF-10, RF-11)**
-- [ ] F020 Entidades `usuario`, `refresh_token`, `device_token` y migración
+- [ ] F020 Entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración
 - [ ] F021 `SolicitarVerificacionUseCase` y `ConfirmarVerificacionUseCase` sobre `VerificarCelularPort`, con límites propios en Redis
 - [ ] F022 Crear el servicio de Twilio Verify, habilitar WhatsApp con respaldo SMS, confirmar vigencia, intentos y tarifa para Colombia, y fijar un tope mensual de gasto con alerta. Activar la cuenta de prueba solo al llegar a esta tarea (dura 30 días y solo envía a números verificados)
 - [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover
@@ -134,9 +135,9 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [ ] F025 Pruebas de seguridad: fuerza bruta, OTP agotado, token revocado
 
 **Phase F3 – Notificaciones (RF-38, RF-39)**
-- [ ] F030 Tablas `notificacion`, `preferencia_notificacion`, `device_token`
+- [ ] F030 Tablas `Notificacion`, `PreferenciaNotificacion`, `DispositivoToken`
 - [ ] F031 Adaptador FCM (Firebase Admin) con limpieza de tokens inválidos
-- [ ] F032 `EnviarNotificacionPort` + listeners por evento del catálogo (E01–E17) en `notificaciones/infrastructure/adapters/in/event`
+- [ ] F032 `EnviarNotificacionPort` + listeners por evento del catálogo (E01–E12 y E14–E17) en `notificaciones/infrastructure/adapters/in/event`
 - [ ] F033 Entidad `mensaje`, `TwilioVerifyAdapter` y `ConsolaVerificacionAdapter` (RF-70); actualizar el estado del mensaje si Twilio ofrece notificaciones de estado
 
 **Phase F4 – Frontend base**
