@@ -14,7 +14,7 @@
 
 ## Summary
 
-Implementar Inicio de sesión para Administrador en el módulo cuentas, con validaciones de pertenencia/estado, contrato REST y persistencia conforme a la spec y los fundamentos compartidos.
+Implementar Inicio de sesión para todos los usuarios y el administrador en el módulo cuentas, con validaciones de credenciales/estado, contrato REST y persistencia conforme a la spec y los fundamentos compartidos.
 
 ## Actors
 
@@ -45,7 +45,7 @@ Implementar Inicio de sesión para Administrador en el módulo cuentas, con vali
 | FR-001 | El sistema MUST permitir a los usuarios y al administrador iniciar sesión mediante correo/teléfono y contraseña. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/login. | T004, T005 |
 | FR-002 | El sistema MUST validar las credenciales antes de conceder acceso a la cuenta. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/login. | T004, T005 |
 | FR-003 | El sistema MUST redirigir al usuario autenticado al panel correspondiente a su rol (cliente, vendedor, domiciliario o administrador). | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/login. | T004, T005 |
-| FR-004 | El sistema MUST limitar los intentos fallidos consecutivos de inicio de sesión para mitigar ataques de fuerza bruta; el límite aplica también a los intentos de código de un solo uso (RF-70). | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/login. | T007, T008 |
+| FR-004 | El sistema MUST limitar los intentos fallidos consecutivos de inicio de sesión para mitigar ataques de fuerza bruta. Después de 5 fallos dentro de 15 minutos por identificador normalizado y por dirección IP, debe responder `429 RATE_LIMITED` con `Retry-After`. El límite aplica también a los intentos de código de un solo uso (RF-70). | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/login. | T007, T008 |
 | FR-005 | El sistema MUST impedir el inicio de sesión de un usuario cuyo celular no esté verificado (RF-70). El administrador inicia sesión solo con contraseña. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/login. | T007, T008 |
 | SC-001 | Los usuarios pueden iniciar sesión y llegar a su panel en menos de 5 segundos bajo condiciones normales. | Métrica comprobable en pruebas automatizadas/observabilidad del flujo. | T003, T009 |
 | SC-002 | El sistema rechaza el 100% de los intentos de inicio de sesión con credenciales incorrectas. | Métrica comprobable en pruebas automatizadas/observabilidad del flujo. | T003, T009 |
@@ -53,7 +53,7 @@ Implementar Inicio de sesión para Administrador en el módulo cuentas, con vali
 | US1: Intento de inicio de sesión con credenciales incorrectas | el sistema rechaza el acceso y muestra un mensaje de error sin indicar cuál dato es incorrecto | Prueba de aceptación aislada de US1. | T003 |
 | US1: Cuenta con el celular sin verificar | el sistema no inicia mi sesión y me lleva a completar la verificación (RF-70) | Prueba de aceptación aislada de US1. | T003 |
 | US2: Inicio de sesión administrativo exitoso | el sistema me autentica y me redirige al panel administrativo | Prueba de aceptación aislada de US2. | T006 |
-| Edge case 1 | ¿Qué ocurre tras varios intentos consecutivos fallidos de inicio de sesión sobre la misma cuenta? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 1 | ¿Qué ocurre tras varios intentos consecutivos fallidos de inicio de sesión sobre la misma cuenta? | Tras 5 fallos en 15 minutos por identificador normalizado y por IP, responder `429 RATE_LIMITED` con `Retry-After`. | Decisión acordada |
 | Edge case 2 | ¿Cómo maneja el sistema el inicio de sesión desde un dispositivo o ubicación no habitual? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
 | Edge case 3 | ¿Qué sucede si la cuenta fue eliminada o inhabilitada y se intenta iniciar sesión con sus credenciales? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
 
@@ -78,13 +78,13 @@ Implementar Inicio de sesión para Administrador en el módulo cuentas, con vali
 
 | Entidad (spec-general) | Lee / escribe | Restricciones de las que depende la feature |
 |---|---|---|
-| Sesión | Lee / escribe según el caso de uso | Representa el acceso autenticado de un usuario o administrador, vinculada a su cuenta y su rol. |
+| Sesion | Lee / escribe según el caso de uso | Representa el acceso autenticado de un usuario o administrador, vinculada a su cuenta y su rol. |
 
 ## Authorization
 
 | Acción | Roles permitidos | Regla de pertenencia |
 |---|---|---|
-| Ejecutar Inicio de sesión | Administrador | Rol ADMINISTRADOR, sin acceso por mera pertenencia. |
+| Ejecutar Inicio de sesión | Público | La cuenta se identifica mediante correo/celular y contraseña; las cuentas pendientes o eliminadas no reciben sesión. |
 
 ## API Contracts
 
@@ -105,6 +105,7 @@ Implementar Inicio de sesión para Administrador en el módulo cuentas, con vali
 |---|:---:|---|
 | Authorization | Según operación | La solicitud pública de registro/login/OTP no exige sesión; confirmar un cambio/recuperación aplica los requisitos de su propósito y las demás rutas requieren JWT. |
 | Idempotency-Key | No | UUID; obligatoria según las convenciones comunes para mutaciones. |
+| X-Device-Id | Sí | Identificador estable de instalación asociado a la sesión creada. |
 | X-Request-Id | No | Identificador opcional, devuelto siempre como `X-Request-Id`. |
 
 **Body**: DTO con los datos estrictamente requeridos por FR-001, FR-002, FR-003, FR-004, FR-005; validar en el caso de uso y no incluir datos no definidos por la fuente funcional.
@@ -253,7 +254,7 @@ frontend/__tests__/
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| ¿Qué ocurre tras varios intentos consecutivos fallidos de inicio de sesión sobre la misma cuenta? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
+| ¿Qué ocurre tras varios intentos consecutivos fallidos de inicio de sesión sobre la misma cuenta? | Puede alterar validaciones, estado, privacidad o respuesta de API. | Tras 5 fallos en 15 minutos por identificador normalizado y por IP, responder `429 RATE_LIMITED` con `Retry-After`. | Decisión acordada |
 | ¿Cómo maneja el sistema el inicio de sesión desde un dispositivo o ubicación no habitual? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 | ¿Qué sucede si la cuenta fue eliminada o inhabilitada y se intenta iniciar sesión con sus credenciales? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 

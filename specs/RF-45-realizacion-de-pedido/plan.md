@@ -76,7 +76,7 @@ Implementar Realización de pedido para Cliente en el módulo pedidos, con valid
 | Edge case 4 | ¿Qué pasa si el cliente pierde conexión después de armar el pedido y antes de confirmarlo (RNF28)? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
 | Edge case 5 | ¿Qué ocurre si el vendedor deshabilita un medio de pago mientras el cliente arma su pedido? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
 | Edge case 6 | ¿Puede reservarse un producto que hoy figura como agotado, si el vendedor lo tendrá en la fecha acordada? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 7 | ¿Qué ocurre si el vendedor de punto fijo aceptó un pedido de domicilio y el cliente nunca realiza la transferencia? (no hay plazo definido; punto pendiente de validar) | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 7 | Si el cliente nunca realiza la transferencia de un pedido de domicilio aceptado, el pedido permanece aceptado y pendiente de pago, sin vencimiento automático en el MVP. | Mantener estado ACEPTADO y pago pendiente; no publicar el domicilio hasta confirmar el pago. | T012 |
 
 ## Non-Functional Requirements Check
 
@@ -327,7 +327,6 @@ frontend/__tests__/
 | ¿Qué pasa si el cliente pierde conexión después de armar el pedido y antes de confirmarlo (RNF28)? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 | ¿Qué ocurre si el vendedor deshabilita un medio de pago mientras el cliente arma su pedido? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 | ¿Puede reservarse un producto que hoy figura como agotado, si el vendedor lo tendrá en la fecha acordada? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Qué ocurre si el vendedor de punto fijo aceptó un pedido de domicilio y el cliente nunca realiza la transferencia? (no hay plazo definido; punto pendiente de validar) | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 
 ## Plan Review Checklist
 

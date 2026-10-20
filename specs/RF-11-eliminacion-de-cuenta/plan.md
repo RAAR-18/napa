@@ -9,6 +9,8 @@
 **Depende de**: RF-07
 **Habilita a**: ninguno declarado
 
+**Dependencia de implementación**: el endpoint de eliminación se difiere hasta que existan los módulos y repositorios de pedidos, emprendimientos y domicilios. Sin esas fuentes no es posible comprobar de forma segura FR-002; el endpoint no debe quedar disponible ni asumir que no hay operaciones pendientes.
+
 > Este documento define **CÓMO** implementar la spec, sin redefinir su comportamiento, el modelo compartido ni los eventos.
 > Si una decisión pendiente cambia el comportamiento, corregir primero la spec. No iniciar implementación mientras el Plan Review Checklist tenga elementos pendientes.
 
@@ -74,7 +76,7 @@ Implementar Eliminación de cuenta para Usuario en el módulo cuentas, con valid
 
 | Entidad (spec-general) | Lee / escribe | Restricciones de las que depende la feature |
 |---|---|---|
-| Cuenta | Lee / escribe según el caso de uso | Registro del usuario cuyo ciclo de vida incluye un estado de eliminación/desactivación. |
+| Usuario | Lee / escribe según el caso de uso | Registro del usuario cuyo ciclo de vida incluye el estado `ELIMINADA`. |
 
 ## Authorization
 

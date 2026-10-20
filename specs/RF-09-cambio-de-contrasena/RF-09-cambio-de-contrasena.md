@@ -61,13 +61,13 @@ Como administrador, quiero cambiar mi contraseña, para mantener segura mi cuent
 ### Functional Requirements
 
 - **FR-001**: El sistema MUST permitir a los usuarios y al administrador cambiar su contraseña ingresando la contraseña actual. Los usuarios (no el administrador) pueden además recuperarla con un código de un solo uso enviado a su celular verificado (RF-70).
-- **FR-002**: El sistema MUST validar que la nueva contraseña cumpla los requisitos mínimos de seguridad definidos.
+- **FR-002**: El sistema MUST validar que la nueva contraseña tenga entre 8 y 128 caracteres. No se exigen reglas de composición.
 - **FR-003**: El sistema MUST cerrar todas las demás sesiones activas de la cuenta al completarse el cambio de contraseña.
 - **FR-004**: El sistema MUST rechazar el cambio si la contraseña actual ingresada no coincide con la almacenada.
 
 ### Key Entities
 
-- **Cuenta**: Contiene la contraseña (almacenada de forma segura) y las sesiones activas asociadas.
+- **Usuario y Sesion**: `Usuario` almacena el hash de la contraseña; las sesiones activas asociadas se revocan según la operación, conforme a `spec-general` §3.2.
 
 ## Success Criteria *(mandatory)*
 

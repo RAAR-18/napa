@@ -121,7 +121,7 @@ Como cliente, quiero realizar un pedido con los productos seleccionados y elegir
 - ¿Qué pasa si el cliente pierde conexión después de armar el pedido y antes de confirmarlo (RNF28)?
 - ¿Qué ocurre si el vendedor deshabilita un medio de pago mientras el cliente arma su pedido?
 - ¿Puede reservarse un producto que hoy figura como agotado, si el vendedor lo tendrá en la fecha acordada?
-- ¿Qué ocurre si el vendedor de punto fijo aceptó un pedido de domicilio y el cliente nunca realiza la transferencia? (no hay plazo definido; punto pendiente de validar)
+- Si el cliente nunca realiza la transferencia de un pedido de domicilio aceptado, el pedido permanece aceptado y pendiente de pago, sin vencimiento automático en el MVP.
 
 ## Requirements *(mandatory)*
 

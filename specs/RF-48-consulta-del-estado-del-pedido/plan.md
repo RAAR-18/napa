@@ -56,10 +56,10 @@ Implementar Consulta del estado del pedido para Cliente en el módulo pedidos, c
 | US1: Estado de un domicilio publicado | el sistema muestra el estado del pedido y el estado del domicilio, con acceso a su trazabilidad (RF-26) | Prueba de aceptación aislada de US1. | T003 |
 | US1: Pedido marcado como reserva | el sistema muestra, además del estado según su modalidad, que es una reserva y la fecha y hora acordadas | Prueba de aceptación aislada de US1. | T003 |
 | US1: Pedido rechazado | el sistema muestra que fue rechazado | Prueba de aceptación aislada de US1. | T003 |
-| Edge case 1 | ¿Cómo se informa al cliente si un pedido queda en estado pendiente durante un tiempo prolongado? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 1 | Si un pedido permanece pendiente durante un tiempo prolongado, se informa que espera respuesta del vendedor y no vence ni cambia automáticamente en el MVP. | Mostrar el estado PENDIENTE y su última actualización; no simular un vencimiento. | T003 |
 | Edge case 2 | ¿Qué ocurre si el cliente intenta consultar el estado de un pedido que no le pertenece? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 3 | ¿Cómo se distingue en pantalla un pedido inmediato de uno marcado como reserva próxima a vencer si el vendedor no responde a tiempo? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 4 | ¿Cómo se muestra un pedido de domicilio aceptado que lleva mucho tiempo sin pago? (no hay plazo definido) | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 3 | Si una reserva supera su fecha acordada sin respuesta, el pedido permanece en su estado actual: no vence ni cambia automáticamente en el MVP; se muestra la fecha acordada y que sigue pendiente de respuesta. | Mostrar la modalidad, la reserva y la fecha acordada junto al estado actual. | T003 |
+| Edge case 4 | Si un pedido de domicilio aceptado lleva mucho tiempo sin pago, se muestra el pago pendiente y el total; el pedido no vence ni cambia automáticamente en el MVP. | Mostrar estado ACEPTADO y pago pendiente con el total, sin fecha límite inventada. | T003 |
 
 ## Non-Functional Requirements Check
 
@@ -239,10 +239,7 @@ frontend/__tests__/
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| ¿Cómo se informa al cliente si un pedido queda en estado pendiente durante un tiempo prolongado? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 | ¿Qué ocurre si el cliente intenta consultar el estado de un pedido que no le pertenece? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Cómo se distingue en pantalla un pedido inmediato de uno marcado como reserva próxima a vencer si el vendedor no responde a tiempo? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Cómo se muestra un pedido de domicilio aceptado que lleva mucho tiempo sin pago? (no hay plazo definido) | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 
 ## Plan Review Checklist
 

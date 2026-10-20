@@ -14,7 +14,7 @@
 
 ## Summary
 
-Implementar Cambio de contraseña para Administrador en el módulo cuentas, con validaciones de pertenencia/estado, contrato REST y persistencia conforme a la spec y los fundamentos compartidos.
+Implementar Cambio de contraseña para todos los usuarios y el administrador en el módulo cuentas, con validaciones de pertenencia/estado, contrato REST y persistencia conforme a la spec y los fundamentos compartidos.
 
 ## Actors
 
@@ -43,7 +43,7 @@ Implementar Cambio de contraseña para Administrador en el módulo cuentas, con 
 | Spec | Descripción corta | Cubierto por (componente / endpoint / regla) | Tareas |
 |---|---|---|---|
 | FR-001 | El sistema MUST permitir a los usuarios y al administrador cambiar su contraseña ingresando la contraseña actual. Los usuarios (no el administrador) pueden además recuperarla con un código de un solo uso enviado a su celular verificado (RF-70). | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/cambio-contrasena. | T004, T005 |
-| FR-002 | El sistema MUST validar que la nueva contraseña cumpla los requisitos mínimos de seguridad definidos. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/cambio-contrasena. | T004, T005 |
+| FR-002 | El sistema MUST validar que la nueva contraseña tenga entre 8 y 128 caracteres. No se exigen reglas de composición. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/cambio-contrasena. | T004, T005 |
 | FR-003 | El sistema MUST cerrar todas las demás sesiones activas de la cuenta al completarse el cambio de contraseña. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/cambio-contrasena. | T007, T008 |
 | FR-004 | El sistema MUST rechazar el cambio si la contraseña actual ingresada no coincide con la almacenada. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/cambio-contrasena. | T007, T008 |
 | SC-001 | El 100% de las sesiones activas distintas a la actual se cierran inmediatamente tras un cambio de contraseña exitoso. | Métrica comprobable en pruebas automatizadas/observabilidad del flujo. | T003, T009 |
@@ -52,7 +52,7 @@ Implementar Cambio de contraseña para Administrador en el módulo cuentas, con 
 | US1: Intento de cambio con contraseña actual incorrecta | el sistema rechaza el cambio y no modifica la contraseña vigente | Prueba de aceptación aislada de US1. | T003 |
 | US1: Recuperación con código | el sistema me permite definir una contraseña nueva y cierra las demás sesiones activas | Prueba de aceptación aislada de US1. | T003 |
 | US2: Cambio exitoso de contraseña administrativa | el sistema actualiza la contraseña y cierra las demás sesiones administrativas activas | Prueba de aceptación aislada de US2. | T006 |
-| Edge case 1 | ¿Qué ocurre si la nueva contraseña no cumple los requisitos mínimos de seguridad (longitud, complejidad)? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 1 | ¿Qué ocurre si la nueva contraseña no cumple los requisitos mínimos de seguridad (longitud, complejidad)? | Rechazar con `400 VALIDATION_ERROR` si tiene menos de 8 o más de 128 caracteres; no exigir reglas de composición. | Decisión acordada |
 | Edge case 2 | ¿Cómo se maneja el cambio de contraseña mediante recuperación cuando el usuario no recuerda la contraseña actual? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
 | Edge case 3 | ¿Qué pasa si el usuario intenta reutilizar su contraseña actual como "nueva" contraseña? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
 
@@ -77,13 +77,13 @@ Implementar Cambio de contraseña para Administrador en el módulo cuentas, con 
 
 | Entidad (spec-general) | Lee / escribe | Restricciones de las que depende la feature |
 |---|---|---|
-| Cuenta | Lee / escribe según el caso de uso | Contiene la contraseña (almacenada de forma segura) y las sesiones activas asociadas. |
+| Usuario, Sesion | Lee / escribe según el caso de uso | `Usuario.password_hash` almacena la credencial; las sesiones activas asociadas se revocan según la operación. |
 
 ## Authorization
 
 | Acción | Roles permitidos | Regla de pertenencia |
 |---|---|---|
-| Ejecutar Cambio de contraseña | Administrador | Rol ADMINISTRADOR, sin acceso por mera pertenencia. |
+| Ejecutar Cambio de contraseña | Usuario y administrador | Solo puede cambiar la contraseña de su propia cuenta autenticada. |
 
 ## API Contracts
 
@@ -251,7 +251,7 @@ frontend/__tests__/
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| ¿Qué ocurre si la nueva contraseña no cumple los requisitos mínimos de seguridad (longitud, complejidad)? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
+| ¿Qué ocurre si la nueva contraseña no cumple los requisitos mínimos de seguridad (longitud, complejidad)? | Puede alterar validaciones, estado, privacidad o respuesta de API. | Rechazar contraseñas de menos de 8 o más de 128 caracteres, sin reglas de composición. | Decisión acordada |
 | ¿Cómo se maneja el cambio de contraseña mediante recuperación cuando el usuario no recuerda la contraseña actual? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 | ¿Qué pasa si el usuario intenta reutilizar su contraseña actual como "nueva" contraseña? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 
