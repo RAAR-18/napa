@@ -1,8 +1,10 @@
 # Feature Specification: Edición de datos de cuenta
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-10-08
 **Requerimiento funcional**: RF-08
 **Historias de usuario relacionadas**: HU-25
+**Relacionado con**: RF-70 (verificación de celular)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -26,10 +28,16 @@ Como usuario registrado, quiero editar mis datos personales (nombre, teléfono, 
    - **When** ingreso un dato con formato inválido (por ejemplo, un teléfono con caracteres no numéricos)
    - **Then** el sistema rechaza el cambio y muestra un mensaje de error
 
+3. **Scenario**: Cambio de celular
+   - **Given** tengo una cuenta activa
+   - **When** ingreso un celular nuevo
+   - **Then** el sistema envía un código a ese número (RF-70) y solo reemplaza el celular cuando lo confirmo; mientras tanto sigue vigente el anterior
+
 ### Edge Cases
 
 - ¿Qué ocurre si el usuario intenta editar su correo o teléfono a uno ya usado por otra cuenta?
 - ¿Cómo maneja el sistema la carga de una foto de perfil con formato o tamaño no soportado?
+- ¿Qué ocurre si el usuario no confirma el código del celular nuevo?
 - ¿Qué pasa si la ubicación proporcionada no puede ser validada por el proveedor de mapas?
 
 ## Requirements *(mandatory)*
@@ -39,6 +47,7 @@ Como usuario registrado, quiero editar mis datos personales (nombre, teléfono, 
 - **FR-001**: El sistema MUST permitir a los usuarios registrados editar su nombre, teléfono, foto de perfil y ubicación.
 - **FR-002**: El sistema MUST validar el formato de los datos ingresados antes de guardarlos.
 - **FR-003**: El sistema MUST reflejar los cambios en el perfil del usuario inmediatamente después de guardarlos.
+- **FR-004**: El sistema MUST exigir la verificación del celular nuevo con un código (RF-70) antes de aplicar el cambio, y mantener vigente el celular anterior hasta entonces.
 
 ### Key Entities
 
