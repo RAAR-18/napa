@@ -110,11 +110,11 @@
 | HU-47 | Como domiciliario, quiero confirmar la entrega del pedido ingresando el código de confirmación que me da el cliente, para registrar que lo llevé al punto de destino. |
 | HU-48 | Como cliente, quiero consultar la trazabilidad de mi domicilio, para saber en todo momento en qué etapa va mi pedido y dónde está. |
 | HU-49 | Como cliente, quiero consultar la información del domiciliario, para conocer quién realizará mi entrega. |
-| HU-50 | Como cliente, quiero ver mi código de confirmación y confirmar la llegada de mi pedido, para dar por finalizado el domicilio. |
+| HU-50 | Como cliente, quiero ver mi código de confirmación, para entregárselo al domiciliario cuando llegue mi pedido. |
 | HU-51 | Como administrador, quiero consultar domicilios, para supervisar los servicios de entrega registrados. |
 | HU-52 | Como administrador, quiero cancelar un domicilio, para gestionar servicios que deban ser cancelados. |
 
-> Un domicilio solo lleva un pedido del punto A (punto fijo del vendedor) al punto B (ubicación del cliente) y **no puede editarse**. Los domicilios son ofrecidos únicamente por vendedores de punto fijo, y solo pueden publicarse cuando el pedido ya fue aceptado y pagado por el cliente (RF-14, RF-42). El domiciliario **no negocia el precio**: acepta la tarifa publicada o rechaza el domicilio. El cierre del domicilio se refuerza con un código de confirmación que el cliente entrega al domiciliario (ver RF-24, RF-25).
+> Un domicilio solo lleva un pedido del punto A (punto fijo del vendedor) al punto B (ubicación del cliente) y **no puede editarse**. Los domicilios son ofrecidos únicamente por vendedores de punto fijo, y solo pueden publicarse cuando el pedido ya fue aceptado y pagado por el cliente (RF-14, RF-42). El domiciliario **no negocia el precio**: acepta la tarifa publicada o rechaza el domicilio. El cierre del domicilio es el código de confirmación que el cliente entrega al domiciliario: al ingresarlo, el domicilio y el pedido pasan a entregado (ver RF-24, RF-25).
 
 ---
 
@@ -180,7 +180,7 @@
 | HU-72 | Como cliente, quiero seleccionar los productos y las cantidades de un emprendimiento, para definir los artículos que deseo comprar. |
 | HU-73 | Como cliente, quiero seleccionar la modalidad de entrega según el tipo de vendedor (entrega directa con un vendedor ambulante; recogida en el punto fijo o domicilio con un vendedor de punto fijo), para elegir cómo recibir mi pedido. |
 | HU-74 | Como cliente, quiero indicar la ubicación donde recibiré mi pedido cuando la modalidad lo requiera (entrega directa o domicilio), para que el vendedor o el domiciliario sepan a dónde llevarlo. |
-| HU-76 | Como cliente, quiero realizar un pedido con los productos seleccionados, pudiendo marcarlo como reserva con la fecha y hora que acuerde con el vendedor, para comprarlos y pagarlos con el medio disponible para la modalidad elegida (efectivo o cuenta bancaria en entrega directa y recogida; solo digital en domicilio, pagando el total —productos más domicilio— apenas el vendedor acepte el pedido). |
+| HU-76 | Como cliente, quiero realizar un pedido con los productos seleccionados, pudiendo marcarlo como reserva con la fecha y hora que acuerde con el vendedor, para comprarlos y pagarlos con el medio disponible para la modalidad elegida (efectivo o cuenta bancaria en entrega directa y recogida; solo digital en domicilio, pagando el total productos más domicilio apenas el vendedor acepte el pedido). |
 | HU-77 | Como cliente, quiero listar mis pedidos, para consultar el historial de mis compras. |
 | HU-78 | Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de mi compra. |
 | HU-79 | Como cliente, quiero contactar al vendedor o domiciliario, para comunicarme con ellos cuando tenga alguna inquietud sobre mi pedido. |

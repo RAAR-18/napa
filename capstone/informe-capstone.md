@@ -135,7 +135,7 @@ El vendedor no es un único rol: los vendedores ambulantes y los de punto fijo t
 3. El cliente transfiere el total a la cuenta del vendedor y el vendedor confirma la recepción (RF-42). **Solo entonces** puede publicar el domicilio (RF-14), que **no puede editarse**.
 4. Los domiciliarios ven los domicilios disponibles con su ganancia (RF-16) y consultan la información (RF-18); pueden **rechazarlos de forma definitiva** (RF-17) o **aceptarlos con la tarifa publicada** (RF-19), sin negociar el precio.
 5. El domiciliario ve la ruta en el mapa (RF-22), confirma que recogió el pedido y el vendedor confirma que va en camino (RF-23).
-6. El cliente ve su código de confirmación y se lo entrega al domiciliario, quien lo ingresa para confirmar la entrega (RF-24); el cliente confirma la llegada (RF-25).
+6. El cliente ve su código de confirmación (RF-25) y se lo entrega al domiciliario, quien lo ingresa para confirmar la entrega (RF-24); con eso el domicilio y el pedido quedan entregados.
 7. Una vez entregado, el vendedor transfiere la tarifa al domiciliario y registra el pago, y el domiciliario confirma que la recibió (RF-43).
 
 El cliente puede seguir la trazabilidad en todo momento (RF-26).
@@ -148,9 +148,8 @@ stateDiagram-v2
   Disponible --> Asignado: el domiciliario acepta la tarifa publicada
   Asignado --> Recogido: el domiciliario confirma la recogida
   Recogido --> EnCamino: el vendedor confirma la salida
-  EnCamino --> Entregado: el domiciliario confirma la entrega con el código
-  Entregado --> Finalizado: el cliente confirma la llegada
-  Finalizado --> [*]
+  EnCamino --> Entregado: el domiciliario ingresa el código del cliente
+  Entregado --> [*]
   Disponible --> Cancelado: el administrador cancela
   Asignado --> Cancelado: el administrador cancela
   Recogido --> Cancelado: el administrador cancela
@@ -168,7 +167,7 @@ Se elaboró un diagrama de nivel 0 y un diagrama por módulo (PlantUML). Los mó
 | Nivel 0 | [`nivel0.puml`](../casos%20de%20uso/nivel0.puml) | Todos | 12 módulos |
 | Gestionar comentarios y calificaciones | [`gestionar_comentarios_calificaciones.puml`](../casos%20de%20uso/gestionar_comentarios_calificaciones.puml) | Cliente, Vendedor (ambulante y de punto fijo), Domiciliario, Administrador | Calificar y comentar emprendimiento; Calificar y comentar producto; Calificar y comentar domiciliario; Calificar y comentar cliente; Consultar calificaciones y comentarios de un emprendimiento; de un producto; de un domiciliario; de un cliente; Eliminar comentario; Editar comentario |
 | Gestionar cuenta | [`gestionar_cuenta.puml`](../casos%20de%20uso/gestionar_cuenta.puml) | Usuario, Administrador | Crear una cuenta; Editar mi cuenta; Cambiar contraseña; Iniciar sesión en mi cuenta; Eliminar mi cuenta; Verificar celular con código |
-| Gestionar domicilios | [`gestionar_domicilios.puml`](../casos%20de%20uso/gestionar_domicilios.puml) | Vendedor de punto fijo, Domiciliario, Cliente, Administrador | Publicar domicilio; Listar domicilios; Consultar estado del domicilio; Consultar información del domiciliario; Confirmar salida del domiciliario; Listar domicilios disponibles; Rechazar domicilio; Consultar información del domicilio; Aceptar domicilio; Consultar ruta en el mapa; Confirmar recogida del pedido; Confirmar entrega del pedido; Ingresar código de confirmación; Consultar trazabilidad del domicilio; Confirmar llegada del pedido; Ver código de confirmación; Consultar domicilios; Cancelar domicilio |
+| Gestionar domicilios | [`gestionar_domicilios.puml`](../casos%20de%20uso/gestionar_domicilios.puml) | Vendedor de punto fijo, Domiciliario, Cliente, Administrador | Publicar domicilio; Listar domicilios; Consultar estado del domicilio; Consultar información del domiciliario; Confirmar salida del domiciliario; Listar domicilios disponibles; Rechazar domicilio; Consultar información del domicilio; Aceptar domicilio; Consultar ruta en el mapa; Confirmar recogida del pedido; Confirmar entrega del pedido; Ingresar código de confirmación; Consultar trazabilidad del domicilio; Ver código de confirmación; Consultar domicilios; Cancelar domicilio |
 | Gestionar emprendimientos | [`gestionar_emprendimientos.puml`](../casos%20de%20uso/gestionar_emprendimientos.puml) | Vendedor, Cliente | Crear emprendimiento; Editar emprendimiento; Eliminar emprendimiento; Listar emprendimientos; Consultar emprendimiento; Listar productos de un emprendimiento; Ver información del vendedor |
 | Gestionar entregas del vendedor ambulante | [`gestionar_entrega_ambulante.puml`](../casos%20de%20uso/gestionar_entrega_ambulante.puml) | Vendedor ambulante | Consultar ubicación de entrega; Iniciar entrega; Confirmar entrega directa |
 | Gestionar notificaciones | [`gestionar_notificaciones.puml`](../casos%20de%20uso/gestionar_notificaciones.puml) | Usuario | Consultar notificaciones; Configurar preferencias de notificación |
@@ -211,7 +210,7 @@ Se definieron **67 requerimientos funcionales** (66 del MVP y RF-59, documentado
 | RF-22 | Ruta en mapa interactivo | Domiciliario | P1 | [RF-22](../specs/RF-22-ruta-en-mapa-interactivo/spec.md) |
 | RF-23 | Recogida del pedido y salida del domiciliario | Domiciliario, Vendedor de punto fijo | P1 | [RF-23](../specs/RF-23-recogida-del-pedido-y-salida-del-domiciliario/spec.md) |
 | RF-24 | Confirmación de entrega por el domiciliario | Domiciliario | P1 | [RF-24](../specs/RF-24-confirmacion-de-entrega-por-el-domiciliario/spec.md) |
-| RF-25 | Confirmación de llegada por el cliente | Cliente | P1 | [RF-25](../specs/RF-25-confirmacion-de-llegada-por-el-cliente/spec.md) |
+| RF-25 | Código de confirmación del cliente | Cliente | P1 | [RF-25](../specs/RF-25-codigo-de-confirmacion-del-cliente/spec.md) |
 | RF-26 | Estado y trazabilidad del domicilio | Cliente, Vendedor de punto fijo | P1 | [RF-26](../specs/RF-26-estado-y-trazabilidad-del-domicilio/spec.md) |
 | RF-27 | Consulta de información del domiciliario | Vendedor de punto fijo, Cliente | P2 | [RF-27](../specs/RF-27-consulta-de-informacion-del-domiciliario/spec.md) |
 | | **Gestionar emprendimientos** | | | |
@@ -293,7 +292,7 @@ Se definieron **31 requerimientos no funcionales**. La tolerancia a conectividad
 | RNF20 | Integridad y fiabilidad de los datos | **Recuperación.** El sistema deberá contar con mecanismos que permitan recuperar la información ante fallos del sistema o pérdida de datos. |
 | RNF21 | Integridad y fiabilidad de los datos | **Auditoría.** El sistema deberá permitir identificar las operaciones relevantes realizadas sobre pedidos, reservas, domicilios, pagos y reportes. |
 | RNF22 | Información, notificaciones e integración | **Localización.** El sistema deberá utilizar la información de ubicación de manera consistente para calcular distancias, tarifas y rutas, mostrar emprendimientos cercanos y mostrar la ubicación del cliente y del domiciliario cuando corresponda. |
-| RNF23 | Integridad y fiabilidad de los datos | **Consistencia de estados.** El sistema deberá garantizar que los estados de productos, pedidos, reservas, domicilios, pagos y reportes solo puedan cambiar mediante transiciones válidas (por ejemplo, un domicilio avanza en la secuencia disponible → asignado → recogido → en camino → entregado → finalizado, o pasa a cancelado). |
+| RNF23 | Integridad y fiabilidad de los datos | **Consistencia de estados.** El sistema deberá garantizar que los estados de productos, pedidos, reservas, domicilios, pagos y reportes solo puedan cambiar mediante transiciones válidas (por ejemplo, un domicilio avanza en la secuencia disponible → asignado → recogido → en camino → entregado, o pasa a cancelado). |
 | RNF24 | Usabilidad, compatibilidad y conectividad | **Protección ante errores.** El sistema deberá mostrar mensajes claros al usuario cuando una operación no pueda completarse. |
 | RNF25 | Arquitectura y evolución | **Arquitectura.** El sistema deberá mantener una separación clara de responsabilidades entre sus diferentes componentes y capas para facilitar su evolución. |
 | RNF26 | Seguridad y privacidad | **Moderación de contenido.** El sistema deberá proveer mecanismos que permitan controlar y moderar el contenido generado por los usuarios (comentarios y calificaciones) para prevenir contenido ofensivo, fraudulento o abusivo. |
@@ -324,7 +323,7 @@ La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) 
 
 1. **Vendedor con dos roles.** Ambulante y de punto fijo, definidos al crear la cuenta, con casos de uso distintos.
 2. **El domicilio no se edita.** Un domicilio solo lleva un pedido del punto A al punto B; se eliminó la edición.
-3. **Código de confirmación en la entrega.** Al asignarse el domicilio se genera un código que el cliente ve y entrega al domiciliario, quien lo ingresa para confirmar la entrega. El cliente confirma además la llegada: el código refuerza, no reemplaza, la doble confirmación.
+3. **Código de confirmación en la entrega.** Al asignarse el domicilio se genera un código que solo el cliente ve y entrega al domiciliario, quien lo ingresa para confirmar la entrega; al validarse, el domicilio y el pedido pasan a entregado. El código es la única confirmación: no hay una segunda confirmación del cliente.
 4. **Rechazo definitivo, no archivado.** El domiciliario rechaza de forma definitiva los domicilios que no le interesan; el domicilio sigue disponible para los demás, sin notificar ni penalizar a nadie. No existe lista de rechazados ni restauración.
 5. **El domiciliario no negocia el precio.** Acepta el domicilio con la tarifa publicada, que calcula el sistema según la distancia entre los puntos A y B sin ser inferior a la tarifa mínima, o lo rechaza. Se eliminó la oferta de precio (RF-20 y RF-21).
 6. **Pago mixto, sin que la plataforma procese el dinero.** Efectivo o transferencia a la cuenta del vendedor en entrega directa y recogida (según lo que el vendedor acepte); el domicilio es exclusivamente digital. La plataforma solo registra la confirmación de cada cobro.

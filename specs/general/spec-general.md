@@ -1,8 +1,8 @@
 # Spec general de Ñapa
 
-**Updated**: 2026-10-05
+**Updated**: 2026-10-14
 **Alcance**: reglas compartidas por todos los requerimientos: roles, convenciones de API, modelo de datos y estados.
-**Fuentes**: `requerimientos/funcionales.md` (reglas del dominio), `investigacion/HistoriasDeUsuario/historias_de_usuario.md` (actores), `capstone/informe-capstone.md`.
+**Fuentes**: `requerimientos/funcionales.md` (reglas del dominio), `investigacion/HistoriasDeUsuario/historias_de_usuario.md` (actores), `capstone/informe-capstone.md`. El modelo de datos sigue el ER diseñado por el equipo en ERDPlus, que es la fuente de verdad.
 
 > Los planes técnicos (`specs/RF-NN-*/plan.md`) **no redefinen** el modelo de datos ni las convenciones: las referencian. Si una feature necesita un cambio de esquema, se corrige primero este documento.
 
@@ -11,20 +11,20 @@
 | Término del dominio | Rol en el sistema (`usuario.rol`) | Descripción |
 |---|---|---|
 | **Comprador** (en las specs: *Cliente*) | `CLIENTE` | Descubre emprendimientos, hace pedidos, paga, califica. |
-| **Vendedor** *(abstracto)* | `VENDEDOR_AMBULANTE` o `VENDEDOR_PUNTO_FIJO` | Administra su emprendimiento y productos y atiende pedidos. El tipo se elige al crear la cuenta. |
+| **Vendedor** *(abstracto)* | `VENDEDOR_AMBULANTE` o `VENDEDOR_PUNTO_FIJO` | Administra su emprendimiento y productos y atiende pedidos. El tipo se elige al crear la cuenta y vive solo en `usuario.rol`. |
 | Vendedor ambulante | `VENDEDOR_AMBULANTE` | Entrega directa; no ofrece recogida ni domicilio. |
 | Vendedor de punto fijo | `VENDEDOR_PUNTO_FIJO` | Recogida en el punto y domicilio mediante domiciliarios. |
 | **Domiciliario** | `DOMICILIARIO` | Lleva pedidos del punto A al punto B; acepta la tarifa publicada o rechaza. |
 | **Administrador** | `ADMINISTRADOR` | Supervisa usuarios, domicilios, pagos, comentarios y reportes. |
 | Usuario | (actor base) | Funciones comunes: cuenta y notificaciones. |
 
-**Pedidos: quién interviene.** El *comprador* crea el pedido y lo consulta (RF-45, RF-47, RF-48, RF-49). El *vendedor* lo lista, ve el detalle, consulta al comprador y lo acepta o rechaza (RF-50 a RF-53). Las modalidades por tipo de vendedor están en `funcionales.md` (Reglas generales) y en el informe §4.2. La **reserva** es un atributo del pedido, no una modalidad.
+**Pedidos: quién interviene.** El *comprador* crea el pedido y lo consulta (RF-45, RF-47, RF-48, RF-49). El *vendedor* lo lista, ve el detalle, consulta al comprador y lo acepta o rechaza (RF-50 a RF-53). Las modalidades por tipo de vendedor están en `funcionales.md` (Reglas generales) y en el informe §4.2. La **reserva** es un atributo del pedido, no una modalidad. **El receptor de un pedido es siempre el cliente que lo hace**; si lo recibe otra persona, se resuelve con la dirección de entrega.
 
-> En el código y la API se mantiene `CLIENTE`/`cliente` por coherencia con las 66 specs. "Comprador" es el nombre del rol en los documentos de diseño.
+> En el código y la API se mantiene `CLIENTE`/`cliente`. "Comprador" es el nombre del rol en los documentos de diseño.
 
 ## 2. Convenciones de API
 
-Prefijo `/api/v1`. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCULAS. Dinero en pesos colombianos como entero (`tarifa`, `total`).
+Prefijo `/api/v1`. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCULAS. Dinero en pesos colombianos como entero (`tarifa_domicilio`, `total`, `monto`).
 
 ### 2.1 Cabeceras
 
@@ -39,7 +39,7 @@ Prefijo `/api/v1`. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCU
 | `Location` | Response | `201` | URL del recurso creado |
 | `Idempotent-Replayed: true` | Response | Cuando se devuelve una respuesta guardada | Indica repetición, no una nueva operación |
 | `Retry-After` | Response | `429`, `503` | Segundos de espera |
-| `Cache-Control: no-store` | Response | Auth, pagos, ubicación | Evita caché de datos sensibles |
+| `Cache-Control: no-store` | Response | Auth, pagos, ubicación, código de confirmación | Evita caché de datos sensibles |
 
 ### 2.2 Códigos HTTP
 
@@ -56,7 +56,7 @@ Prefijo `/api/v1`. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCU
 | 405 | Método no ofrecido (p. ej. editar un domicilio) | `METHOD_NOT_ALLOWED` |
 | 409 | Conflicto de estado o duplicado | `INVALID_STATE`, `ALREADY_CONFIRMED`, `CONFLICT`, y códigos específicos (`PAYMENT_NOT_CONFIRMED`, `ALREADY_PUBLISHED`) |
 | 422 | Misma `Idempotency-Key` con cuerpo distinto; regla de negocio con cuerpo válido | `IDEMPOTENCY_KEY_REUSED`, `BUSINESS_RULE` |
-| 429 | Límite de intentos (login, OTP) | `RATE_LIMITED` |
+| 429 | Límite de intentos (login, OTP, código de entrega) | `RATE_LIMITED` |
 | 500 | Error inesperado | `INTERNAL_ERROR` |
 | 503 | Servicio externo caído (mapas, push, WhatsApp) | `EXTERNAL_SERVICE_UNAVAILABLE` |
 
@@ -68,81 +68,136 @@ Todo listado acepta `page` (desde 0), `size` (por defecto 20, máximo 100) y `so
 
 | Endpoint | RF | Filtros |
 |---|---|---|
-| `GET /emprendimientos` | RF-31 | `tipoVendedor`, `lat`, `lng`, `radioMetros`, `orden=cercania` |
+| `GET /emprendimientos` | RF-31 | `tipoVendedor` (según `usuario.rol` del dueño), `lat`, `lng`, `radioMetros`, `orden=cercania` |
 | `GET /emprendimientos/{id}/productos` | RF-33 | `sort` |
 | `GET /productos` (del vendedor) | RF-55 | `estado` (`DISPONIBLE`, `AGOTADO`) |
-| `GET /pedidos` (limitado al usuario autenticado) | RF-47, RF-50 | `estado`, `modalidad`, `reserva` (`true`/`false`), `desde`, `hasta` |
+| `GET /pedidos` (limitado al usuario autenticado) | RF-47, RF-50 | `estado`, `modalidad`, `reserva` (`true` = con fecha acordada), `desde`, `hasta` |
 | `GET /domicilios` | RF-15, RF-12 | `estado`, `desde`, `hasta`; el administrador añade `vendedorId`, `domiciliarioId` |
 | `GET /domicilios/disponibles` | RF-16 | `orden=cercania\|ganancia`, `lat`, `lng` |
 | `GET /pagos` | RF-40, RF-41 | `medio`, `estado`, `tipo`, `desde`, `hasta` |
-| `GET /calificaciones` | RF-02, RF-03 | `tipoEntidad`, `entidadId` |
+| `GET /calificaciones` | RF-02, RF-03 | `tipoEntidad` (`EMPRENDIMIENTO`, `PRODUCTO`, `USUARIO`), `entidadId`; se traducen a la relación de destino de la calificación |
 | `GET /notificaciones` | RF-38 | `leida` |
 | `GET /reportes` | RF-61 | `estado` |
 | `GET /usuarios` | RF-69 | `rol`, `estado` |
 
 ## 3. Modelo de datos
 
-Las definiciones de esta sección son la fuente de verdad. Dinero: `bigint` en pesos. Ubicaciones: `geography(Point,4326)`. Todas las tablas llevan `created_at` y `updated_at` (RNF16) salvo indicación.
+El diagrama de ERDPlus es la fuente de verdad. Esta sección lo transcribe. Convenciones: `id` uuid; dinero `bigint` en pesos; los estados y valores fijos (rol, estado, modalidad, medio, tipo) son **atributos enumerados**, no entidades. Todas las tablas llevan `created_at` y `updated_at` (RNF16), salvo las indicadas en cada entidad.
 
 ### 3.1 Diagrama entidad-relación
 
+![Modelo entidad-relación de Ñapa](img/modelo-er.png)
+
+El diagrama Mermaid muestra las relaciones;
+
 ```mermaid
 erDiagram
-    usuario ||--o| emprendimiento : "dirige"
-    usuario ||--o{ pedido : "compra"
-    usuario ||--o| configuracion_pago : "configura"
-    usuario ||--o{ refresh_token : "tiene"
-    usuario ||--o{ device_token : "registra"
-    usuario ||--o{ mensaje : "recibe"
-    usuario ||--o{ notificacion : "recibe"
-    usuario ||--o{ preferencia_notificacion : "define"
-    usuario ||--o{ calificacion : "escribe"
-    usuario ||--o{ reporte : "crea"
-    usuario ||--o{ domicilio : "reparte"
-    usuario ||--o{ domicilio_rechazo : "rechaza"
-    emprendimiento ||--o{ producto : "ofrece"
-    emprendimiento ||--o{ pedido : "recibe"
-    pedido ||--|{ item_pedido : "contiene"
-    producto ||--o{ item_pedido : "se vende en"
-    pedido ||--o{ pago : "se paga con"
-    pedido ||--o| domicilio : "genera"
-    domicilio ||--o{ domicilio_historial : "registra"
-    domicilio ||--o{ domicilio_rechazo : "es rechazado"
-    domicilio ||--o| pago : "paga tarifa"
-    calificacion ||--o{ moderacion_comentario : "es moderada"
+    USUARIO ||--o{ SESION : "inicia"
+    USUARIO ||--o{ DISPOSITIVO_TOKEN : "registra"
+    USUARIO |o--o| UBICACION : "tiene"
+    USUARIO ||--o{ EMPRENDIMIENTO : "dirige"
+    USUARIO |o--o| CONFIGURACION_PAGO : "configura"
+    USUARIO |o--o{ TARIFA_MINIMA : "define (admin)"
+    USUARIO ||--o{ PEDIDO : "realiza"
+    USUARIO |o--o{ DOMICILIO : "reparte (domiciliario)"
+    USUARIO ||--o{ EVENTO_TRAZABILIDAD : "origina"
+    USUARIO ||--o{ DOMICILIO_RECHAZO : "realiza"
+    USUARIO ||--o{ CALIFICACION : "escribe"
+    USUARIO |o--o{ CALIFICACION : "es valorado en"
+    USUARIO ||--o{ MODERACION_COMENTARIO : "realiza (admin)"
+    USUARIO ||--o{ REPORTE : "crea"
+    USUARIO |o--o{ REPORTE : "resuelve (admin)"
+    USUARIO |o--o{ REPORTE : "es reportado en"
+    USUARIO ||--o{ NOTIFICACION : "recibe"
+    USUARIO ||--o{ PREFERENCIA_NOTIFICACION : "define"
+
+    EMPRENDIMIENTO ||--|| UBICACION : "se ubica en"
+    EMPRENDIMIENTO ||--o{ PRODUCTO : "ofrece"
+    EMPRENDIMIENTO ||--o{ PEDIDO : "recibe"
+    EMPRENDIMIENTO |o--o{ CALIFICACION : "recibe"
+    PRODUCTO |o--o{ CALIFICACION : "recibe"
+    PRODUCTO ||--o{ ITEM_PEDIDO : "aparece en"
+
+    PEDIDO |o--o| UBICACION : "se entrega en"
+    PEDIDO ||--|{ ITEM_PEDIDO : "contiene"
+    PEDIDO ||--o{ DOMICILIO : "genera (1 activo)"
+    PEDIDO |o--o| PAGO : "se paga con (tipo PEDIDO)"
+    PEDIDO ||--o{ CALIFICACION : "habilita"
+    PEDIDO ||--o{ CANAL_CONTACTO : "habilita"
+    PEDIDO |o--o{ REPORTE : "es motivo de"
+
+    DOMICILIO ||--|| UBICACION : "recoge en (punto A)"
+    DOMICILIO ||--|{ EVENTO_TRAZABILIDAD : "registra"
+    DOMICILIO ||--o{ DOMICILIO_RECHAZO : "recibe"
+    DOMICILIO |o--o| PAGO : "paga su tarifa con (tipo TARIFA_DOMICILIO)"
+    DOMICILIO |o--o{ REPORTE : "es motivo de"
+
+    CALIFICACION ||--o{ MODERACION_COMENTARIO : "es moderada en"
 ```
 
 ### 3.2 Entidades
 
-**usuario** — `id`, `nombre`, `celular` (único), `celular_verificado_at`, `correo` (único, opcional), `password_hash`, `rol`, `foto_url`, `ubicacion`, `estado` (`PENDIENTE_VERIFICACION`, `ACTIVA`, `ELIMINADA`), `session_version`.
-**refresh_token** — `id`, `usuario_id`, `token_hash`, `device_id`, `expires_at`, `revoked_at`.
-**device_token** — `id`, `usuario_id`, `token` (FCM), `platform`, `last_seen_at`. Único `(usuario_id, token)`.
-**mensaje** — registro de cada envío o verificación por canal externo (WhatsApp, SMS). `id`, `usuario_id` (opcional), `canal` (`WHATSAPP`, `SMS`), `proposito` (`OTP_REGISTRO`, `OTP_RECUPERACION`, `OTP_CAMBIO_CELULAR`), `destino` (celular), `plantilla`, `estado` (`PENDIENTE`, `ENVIADO`, `ENTREGADO`, `FALLIDO`), `proveedor` (p. ej. `TWILIO_VERIFY`), `proveedor_message_id` (SID del proveedor), `error_codigo`, `intentos`, `created_at`, `updated_at`. **Nunca guarda el código de verificación** (Ñapa no lo conoce: lo genera el proveedor).
-**emprendimiento** — `id`, `vendedor_id`, `nombre`, `categoria`, `descripcion`, `tipo_vendedor`, `ubicacion`, `direccion`, `horario`, `estado` (`ACTIVO`, `INACTIVO`, `ELIMINADO`). Único parcial `(vendedor_id) WHERE estado = 'ACTIVO'` (RF-28 FR-003).
-**configuracion_pago** — `vendedor_id` (PK), `acepta_efectivo`, `banco`, `numero_cuenta`, `tipo_cuenta` (cuenta opcional, RF-63).
-**producto** — `id`, `emprendimiento_id`, `nombre`, `descripcion`, `precio`, `cantidad_disponible` (≥ 0), `estado` (`DISPONIBLE`, `AGOTADO`, `ELIMINADO`).
-**pedido** — `id`, `comprador_id`, `emprendimiento_id`, `modalidad` (`ENTREGA_DIRECTA`, `RECOGIDA`, `DOMICILIO`), `estado` (ver §4), `es_reserva`, `reserva_fecha_hora`, `ubicacion_entrega`, `direccion_entrega`, `receptor_nombre`, `receptor_telefono`, `medio_pago` (`EFECTIVO`, `CUENTA_BANCARIA`), `subtotal`, `tarifa_domicilio` (solo domicilio), `total`.
-**item_pedido** — `id`, `pedido_id`, `producto_id`, `nombre_producto`, `precio_unitario`, `cantidad` (precio y nombre al momento de la compra).
-**pago** — `id`, `pedido_id`, `domicilio_id` (solo tarifa), `tipo` (`PEDIDO`, `TARIFA_DOMICILIO`), `monto`, `medio`, `estado` (`PENDIENTE_CONFIRMACION`, `REGISTRADO`, `CONFIRMADO`), `registrado_por`, `confirmado_por`, `confirmado_at`. Únicos parciales: un pago `PEDIDO` por pedido y un pago `TARIFA_DOMICILIO` por domicilio (RNF27).
-**domicilio** — `id`, `pedido_id`, `vendedor_id`, `punto_a`, `punto_a_direccion`, `punto_b`, `punto_b_direccion`, `receptor_nombre`, `receptor_telefono`, `tarifa`, `estado`, `domiciliario_id`, `codigo_confirmacion_hash`, `motivo_cancelacion`, `version`. Inmutables tras crear: `pedido_id`, `punto_a`, `punto_b`, `receptor_*`, `tarifa`. Único parcial `(pedido_id) WHERE estado <> 'CANCELADO'`. Índices: `(estado, created_at)`, GiST `punto_a` parcial `estado='DISPONIBLE'`, `(vendedor_id, estado, created_at)`.
-**domicilio_historial** — trazabilidad: `id`, `domicilio_id`, `estado`, `occurred_at`, `actor_user_id`. La escribe el caso de uso en la misma transacción que el cambio de estado, no un listener de eventos.
-**domicilio_rechazo** — `domiciliario_id`, `domicilio_id`, `created_at`. PK compuesta; no se actualiza ni se borra (RF-17).
-**calificacion** — `id`, `autor_id`, `tipo_entidad` (`EMPRENDIMIENTO`, `PRODUCTO`, `DOMICILIARIO`, `CLIENTE`), `entidad_id`, `puntaje` (1–5), `comentario`, `pedido_id` o `domicilio_id` (interacción de origen), `estado` (`ACTIVA`, `ELIMINADA_AUTOR`, `ELIMINADA_MODERACION`). Único `(autor_id, tipo_entidad, entidad_id, interaccion)` (RF-01 FR-006).
-**moderacion_comentario** — `id`, `calificacion_id`, `admin_id`, `accion` (`EDITADO`, `ELIMINADO`), `created_at`.
-**reporte** — `id`, `autor_id`, `rol_autor`, `motivo`, `descripcion`, `entidad_tipo` (`PEDIDO`, `DOMICILIO`, `USUARIO`), `entidad_id`, `estado` (`PENDIENTE`, `EN_REVISION`, `RESUELTO`), `nota_resolucion`, `resuelto_por`.
-**notificacion** — `id`, `usuario_id`, `tipo`, `event_id` (único junto con `usuario_id`), `titulo`, `cuerpo`, `leida_at`.
-**preferencia_notificacion** — `usuario_id`, `tipo`, `habilitada`. PK `(usuario_id, tipo)`.
-**tarifa_minima** — `id`, `valor`, `valor_anterior`, `actualizada_por`, `created_at` (cada cambio es una fila; la vigente es la última, RF-44 FR-005).
-**outbox_event** — `id`, `type`, `aggregate_type`, `aggregate_id`, `payload` (jsonb), `occurred_at`, `processed_at`, `attempts`, `next_attempt_at`, `estado` (`PENDIENTE`, `PROCESADO`, `DEAD`).
+**Usuario** — `id`, `nombre`, `celular` (único), `correo` (único, opcional), `password_hash`, `foto_url` (opcional), `rol` (`CLIENTE`, `VENDEDOR_AMBULANTE`, `VENDEDOR_PUNTO_FIJO`, `DOMICILIARIO`, `ADMINISTRADOR`), `estado` (`PENDIENTE_VERIFICACION`, `ACTIVA`, `ELIMINADA`), `celular_verificado_at`, `created_at` (fecha de registro), `updated_at`. No existe entidad Cuenta. `session_version` es solo una nota de implementación.
+**Ubicacion** — `id`, `latitud`, `longitud`, `direccion`, `referencia` (opcional). Cada uso crea su propia fila (no se comparte). La usan: Usuario (0..1), Emprendimiento (1:1), Pedido (0..1; no aplica en `RECOGIDA`) y Domicilio solo para el punto A (1:1). La columna `geography(Point,4326)` es detalle de implementación derivado de `latitud` y `longitud`.
+**Sesion** — `id`, `token_hash`, `device_id`, `created_at`, `expires_at`, `revoked_at` (opcional). Usuario inicia Sesion (1:N). "Activa" se deduce de `revoked_at` y `expires_at`.
+**DispositivoToken** — `id`, `token` (FCM), `plataforma` (`ANDROID`, `IOS`), `ultima_conexion_at`. Usuario registra DispositivoToken (1:N); único `(usuario, token)`. Independiente de `Sesion.device_id`.
+**Emprendimiento** — `id`, `nombre`, `categoria`, `descripcion`, `horario` (texto libre), `estado` (`ACTIVO`, `INACTIVO`, `ELIMINADO`). Sin `tipo_vendedor` (sale de `Usuario.rol`). Usuario dirige Emprendimiento (1:N); solo uno `ACTIVO` por usuario (índice único parcial). Se ubica en una Ubicacion (1:1).
+**Producto** — `id`, `nombre`, `descripcion`, `precio` (> 0), `cantidad_disponible` (≥ 0), `estado` (`DISPONIBLE`, `AGOTADO`, `ELIMINADO`). Emprendimiento ofrece Producto (1:N); cada producto pertenece a un solo emprendimiento. Sin foto.
+**Pedido** — `id`, `modalidad` (`ENTREGA_DIRECTA`, `RECOGIDA`, `DOMICILIO`), `estado`, `reserva` (fecha y hora acordadas; nulo = pedido inmediato), `medio_pago` (el que elige el cliente), `tarifa_domicilio` (solo `DOMICILIO`; calculada al pedir con piso de la tarifa mínima; el Domicilio no la repite), `total` (valor congelado). Sin `subtotal` (derivado) ni `receptor_*` (el receptor es el cliente). Relaciones: Usuario realiza Pedido (1:N); Emprendimiento recibe Pedido (1:N); Pedido se entrega en Ubicacion (0..1); contiene ItemPedido (1:N); genera Domicilio (0..N, uno activo); se paga con Pago (0..1 de tipo `PEDIDO`); habilita Calificacion (1:N) y CanalContacto (1:N).
+**ItemPedido** — `id`, `cantidad`, `precio_unitario` (copia al comprar). El nombre se obtiene del Producto. Pedido contiene ItemPedido; Producto aparece en ItemPedido (1:N).
+**ConfiguracionPago** — `id`, `acepta_efectivo`, `banco`, `numero_cuenta`, `tipo_cuenta` (los tres últimos opcionales y van juntos). Usuario configura ConfiguracionPago (0..1). Limitación conocida: al ser editable no conserva la cuenta con la que se publicó un domicilio en curso (RF-63).
+**Pago** — `id`, `tipo` (`PEDIDO`, `TARIFA_DOMICILIO`), `monto`, `medio` (`EFECTIVO`, `CUENTA_BANCARIA`; la tarifa siempre `CUENTA_BANCARIA`), `estado` (`PENDIENTE_CONFIRMACION`, `REGISTRADO`, `CONFIRMADO`), `confirmado_at`. Relaciones 1:1 opcionales con Pedido (tipo `PEDIDO`) y con Domicilio (tipo `TARIFA_DOMICILIO`); la regla "de un pedido o de un domicilio, nunca ambos ni ninguno" está en §3.3. No guarda quién registra ni quién confirma: se deduce. En el pago del pedido, el vendedor es el dueño del emprendimiento del pedido; en el pago de la tarifa, registra el vendedor del pedido del domicilio y confirma el domiciliario que reparte ese domicilio (que no se reasigna). `confirmado_at` conserva cuándo se confirmó.
+**TarifaMinima** — `id`, `valor` (> 0), `created_at`. Cada cambio es una fila nueva; la vigente es la última y el valor anterior de cada cambio es el `valor` de la fila previa (RF-44 FR-005). Sin relación con Pedido ni Domicilio. Usuario (administrador) define TarifaMinima (opcional del lado de TarifaMinima). La mínima por defecto del primer despliegue es un **parámetro de configuración** (RF-44 FR-006): mientras no haya filas, rige ese parámetro.
+**Domicilio** — `id`, `estado`, `codigo_confirmacion`, `motivo_cancelacion` (opcional). Sin tarifa, sin `receptor_*`, sin `vendedor_id`, sin punto B (se lee de la ubicación de entrega del Pedido, inmutable), sin `codigo_validado_at` ni `llegada_confirmada_at` (la fecha de la entrega queda en el EventoTrazabilidad de `ENTREGADO`, con el domiciliario como autor). `version` es una nota de implementación. Relaciones: Pedido genera Domicilio (uno activo; único parcial donde `estado <> 'CANCELADO'`); recoge en Ubicacion (punto A, copia del punto fijo al publicar); Usuario (domiciliario) reparte Domicilio (0..1); registra EventoTrazabilidad (1:N, mínimo 1); recibe DomicilioRechazo (1:N); paga su tarifa con Pago (0..1). Inmutables tras publicar: pedido y punto A. **Código de confirmación**: se genera al asignar (RF-19), solo lo ve el cliente (RF-25) y el domiciliario lo ingresa al entregar (RF-24); es la única confirmación de la entrega. Se guarda tal cual (6 dígitos aleatorios generados al asignar) y deja de servir al entregarse o cancelarse el domicilio.
+**EventoTrazabilidad** — `id`, `estado`, `ocurrido_at`. Inmutable, sin `updated_at`. Domicilio registra EventoTrazabilidad (1:N); Usuario origina EventoTrazabilidad (1:N). El caso de uso lo inserta en la misma transacción que el cambio de estado.
+**DomicilioRechazo** — `created_at`. Entidad débil con PK compuesta `(domiciliario, domicilio)`. Usuario realiza / Domicilio recibe, ambas identificadoras. Irreversible y no consultable desde la app; solo filtra la lista de disponibles (RF-16 FR-003).
+**Calificacion** — `id`, `puntaje` (1–5), `comentario`, `estado` (`ACTIVA`, `ELIMINADA_AUTOR`, `ELIMINADA_MODERACION`). Tres relaciones opcionales de destino (Emprendimiento recibe, Producto recibe, Usuario es valorado en); exactamente una por calificación. Usuario escribe Calificacion (obligatoria). Pedido habilita Calificacion (obligatoria; el domicilio se deduce del pedido). Único `(autor, pedido, destino)`. El promedio es derivado, no se guarda.
+**ModeracionComentario** — `id`, `accion` (`EDITADO`, `ELIMINADO`), `contenido_anterior` (texto del comentario antes de la acción, para auditoría), `created_at`. Calificacion es moderada en ModeracionComentario (1:N); Usuario (administrador) realiza ModeracionComentario (1:N). Sin `updated_at`.
+**Reporte** — `id`, `motivo`, `descripcion`, `estado` (`PENDIENTE`, `EN_REVISION`, `RESUELTO`), `nota_resolucion`. Sin `rol_autor` (sale del autor) ni `entidad_tipo`/`entidad_id`. Usuario crea (obligatoria); Usuario (administrador) resuelve (opcional); tres relaciones opcionales: Pedido, Domicilio, Usuario reportado (como máximo una; puede no haber ninguna).
+**Notificacion** — `id`, `tipo`, `titulo`, `cuerpo`, `leida_at`, `created_at`. Sin `event_id` (la idempotencia es detalle de implementación). Usuario recibe Notificacion (1:N).
+**PreferenciaNotificacion** — `tipo`, `habilitada`. Entidad débil con PK `(usuario, tipo)`. Usuario define PreferenciaNotificacion (identificadora).
+**CanalContacto** (RF-49 FR-004) — `id`, `tipo` (`MENSAJE`, `LLAMADA`), `destinatario` (`VENDEDOR`, `DOMICILIARIO`), `created_at`. Pedido habilita CanalContacto (1:N). No guarda contenido de conversaciones.
 
-**Datos efímeros en Redis** (no son entidades): `otp:{celular}:{proposito}` (hash del código, TTL 5 min, contador de intentos), `idem:{usuarioId}:{clave}`, `sv:{usuarioId}`, `loc:{domicilioId}` (última ubicación del domiciliario, TTL 2 min), caché de rutas.
+**Infraestructura, no modelada en el ER:** los índices de rendimiento (p. ej. GiST sobre la ubicación) se definen en las migraciones de cada plan; `mensaje` (registro de envíos OTP por Twilio, sin el código), `outbox_event`, y los datos efímeros en Redis (`verif-rl:*`, `verif-att:*`, `idem:*`, `sv:*`, `loc:{domicilioId}`, intentos de código de entrega, caché de rutas). El código OTP lo genera y valida el proveedor; Ñapa solo guarda contadores.
+
+### 3.3 Restricciones que no se dibujan
+
+| # | Restricción |
+|---|---|
+| 1 | Solo un usuario con rol vendedor dirige un Emprendimiento y tiene ConfiguracionPago; solo uno `ACTIVO` por vendedor. |
+| 2 | Un pago es de un pedido o de un domicilio, nunca ambos ni ninguno; un solo pago `PEDIDO` por pedido y un solo pago `TARIFA_DOMICILIO` por domicilio. |
+| 3 | Quién registra y quién confirma un pago no se guarda: en el pago del pedido confirma el vendedor dueño del emprendimiento; en el pago de la tarifa registra el vendedor del pedido y confirma el domiciliario asignado al domicilio. El caso de uso valida esa pertenencia. |
+| 4 | Una calificación apunta a un solo destino; única por `(autor, pedido, destino)`. |
+| 5 | Un reporte apunta a como máximo una entidad. |
+| 6 | Un domicilio solo se publica con pedido `DOMICILIO`, `ACEPTADO` y pago `PEDIDO` `CONFIRMADO`; un solo domicilio activo por pedido. |
+| 7 | Un pedido de domicilio no admite pago en efectivo; el vendedor necesita cuenta bancaria registrada para aceptarlo. |
+| 8 | Calificar exige pedido `ENTREGADO` (RF-01 FR-005). |
+| 9 | El código de confirmación solo lo ve el cliente del pedido; solo puede validarse una vez (RF-24 FR-004) y solo con el domicilio `EN_CAMINO`; máximo 5 intentos fallidos y luego bloqueo temporal de 15 minutos (429). |
+| 10 | Al validarse el código correctamente, el domicilio y el pedido pasan a `ENTREGADO` en la misma transacción. No existe una segunda confirmación del cliente. |
+| 11 | El pago de la tarifa al domiciliario solo se registra con el domicilio `ENTREGADO` (RF-43). |
+| 12 | El administrador cancela un domicilio en cualquier estado salvo `ENTREGADO` (RF-13); al cancelarlo, el pedido asociado pasa a `CANCELADO` en la misma transacción. |
+| 13 | El destino (punto B) de un domicilio es la ubicación de entrega del pedido; el receptor es el cliente. |
 
 ## 4. Estados
 
-- **Pedido**: `PENDIENTE`, `ACEPTADO`, `RECHAZADO`, `LISTO_PARA_RECOGER`, `EN_CAMINO`, `ENTREGADO`, `CANCELADO`. Entrega directa usa `PENDIENTE → ACEPTADO → EN_CAMINO → ENTREGADO`; recogida usa `PENDIENTE → ACEPTADO → LISTO_PARA_RECOGER → ENTREGADO`; domicilio permanece `ACEPTADO` mientras el domicilio avanza. Cualquier modalidad puede terminar en `RECHAZADO`. *Pendiente de validar: cuándo pasa a `ENTREGADO` un pedido de domicilio (propuesta: al finalizarse el domicilio).*
-- **Domicilio**: `DISPONIBLE → ASIGNADO → RECOGIDO → EN_CAMINO → ENTREGADO → FINALIZADO`, o `CANCELADO` (diagrama en el informe). Las transiciones inválidas responden `INVALID_STATE` (RNF23).
-- **Pago**: `PENDIENTE_CONFIRMACION → CONFIRMADO`; la tarifa al domiciliario pasa por `REGISTRADO` (RF-43).
+- **Pedido**: `PENDIENTE`, `ACEPTADO`, `RECHAZADO`, `LISTO_PARA_RECOGER`, `EN_CAMINO`, `ENTREGADO`, `CANCELADO`.
+    - Entrega directa: `PENDIENTE → ACEPTADO → EN_CAMINO → ENTREGADO`.
+    - Recogida: `PENDIENTE → ACEPTADO → LISTO_PARA_RECOGER → ENTREGADO`.
+    - Domicilio: permanece `ACEPTADO` mientras el domicilio avanza; pasa a `ENTREGADO` cuando el domiciliario valida el código del cliente; pasa a `CANCELADO` si el administrador cancela el domicilio.
+    - Cualquier modalidad puede terminar en `RECHAZADO` desde `PENDIENTE`.
+- **Domicilio**: `DISPONIBLE → ASIGNADO → RECOGIDO → EN_CAMINO → ENTREGADO`, o `CANCELADO` desde cualquier estado salvo `ENTREGADO` (RF-13). Las transiciones inválidas responden `INVALID_STATE` (RNF23).
+    - **Confirmación de la entrega por código**: al llegar, el cliente le dice al domiciliario su código; el domiciliario lo ingresa (RF-24). Si es correcto, en la misma transacción el domicilio y el pedido pasan a `ENTREGADO`, se inserta el EventoTrazabilidad (domiciliario como autor) y se avisa al vendedor, que debe pagar la tarifa.
+    - Si el cliente no da el código o dice no haber recibido, el domicilio no avanza y sigue `EN_CAMINO`; el cliente puede crear un reporte (RF-60) y el administrador puede cancelar el domicilio (RF-13).
+- **Pago**: `PENDIENTE_CONFIRMACION → CONFIRMADO`; la tarifa al domiciliario pasa por `REGISTRADO` (RF-43), que solo se habilita con el domicilio `ENTREGADO`.
 - **Reporte**: `PENDIENTE → EN_REVISION → RESUELTO`.
+- **Calificaciones**: se habilitan con el pedido `ENTREGADO` (en domicilio, cuando el domiciliario valida el código).
+
+### Puntos abiertos
+- Si el cliente nunca da el código, el domicilio queda `EN_CAMINO` y el domiciliario no cobra (sin vencimiento automático en el MVP).
+- Cómo se guarda el código de confirmación: en claro (`codigo_confirmacion`) o derivado por HMAC (`codigo_confirmacion`).
+- Límite de domicilios simultáneos por domiciliario.
+- Vencimientos de pedidos sin respuesta.
+- Si el administrador cancela un domicilio ya pagado, la devolución del dinero ocurre fuera de la plataforma (la plataforma no procesa dinero).
 
 ## 5. Eventos
 
