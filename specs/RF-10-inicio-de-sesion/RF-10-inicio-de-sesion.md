@@ -63,7 +63,7 @@ Como administrador, quiero iniciar sesión en mi cuenta, para acceder a las func
 - **FR-001**: El sistema MUST permitir a los usuarios y al administrador iniciar sesión mediante correo/teléfono y contraseña.
 - **FR-002**: El sistema MUST validar las credenciales antes de conceder acceso a la cuenta.
 - **FR-003**: El sistema MUST redirigir al usuario autenticado al panel correspondiente a su rol (cliente, vendedor, domiciliario o administrador).
-- **FR-004**: El sistema MUST limitar los intentos fallidos consecutivos de inicio de sesión para mitigar ataques de fuerza bruta; el límite aplica también a los intentos de código de un solo uso (RF-70).
+- **FR-004**: El sistema MUST limitar los intentos fallidos consecutivos de inicio de sesión para mitigar ataques de fuerza bruta. Después de 5 fallos dentro de 15 minutos por identificador normalizado y por dirección IP, debe responder `429 RATE_LIMITED` con `Retry-After`. El límite aplica también a los intentos de código de un solo uso (RF-70).
 - **FR-005**: El sistema MUST impedir el inicio de sesión de un usuario cuyo celular no esté verificado (RF-70). El administrador inicia sesión solo con contraseña.
 - **FR-006**: El administrador no se registra: su cuenta se siembra desde la base de datos con correo y celular registrados, y entra con correo y contraseña.
 

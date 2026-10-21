@@ -44,7 +44,7 @@ Como persona interesada en usar la plataforma, quiero registrarme indicando mis 
 
 ### Functional Requirements
 
-- **FR-001**: El sistema MUST permitir a una persona registrarse indicando datos básicos (nombre, celular, contraseña; el correo es opcional) y seleccionando su rol (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario).
+- **FR-001**: El sistema MUST permitir a una persona registrarse indicando datos básicos (nombre, celular, contraseña de 8 a 128 caracteres; el correo es opcional) y seleccionando su rol (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario).
 - **FR-002**: El sistema MUST validar que el celular (y el correo, si se indica) no esté previamente registrado antes de crear la cuenta.
 - **FR-003**: El sistema MUST requerir la confirmación de la contraseña y validar que ambas coincidan.
 - **FR-004**: El sistema MUST permitir iniciar sesión inmediatamente después de un registro exitoso; al verificarse el celular (RF-70) la sesión se inicia sin pedir de nuevo las credenciales.
@@ -54,7 +54,7 @@ Como persona interesada en usar la plataforma, quiero registrarme indicando mis 
 
 ### Key Entities
 
-- **Cuenta**: Representa a un usuario registrado, con datos básicos, celular verificado, credenciales y un rol asignado (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario).
+- **Usuario**: Representa a una persona registrada, con datos básicos, celular verificado, credenciales y un rol asignado (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), según `spec-general` §3.2.
 
 ## Success Criteria *(mandatory)*
 
