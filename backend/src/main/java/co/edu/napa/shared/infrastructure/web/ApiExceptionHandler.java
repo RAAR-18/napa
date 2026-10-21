@@ -169,11 +169,11 @@ public class ApiExceptionHandler {
             case "METHOD_NOT_ALLOWED" -> HttpStatus.METHOD_NOT_ALLOWED;
             case "INVALID_STATE", "ALREADY_CONFIRMED", "CONFLICT", "PAYMENT_NOT_CONFIRMED",
                     "ALREADY_PUBLISHED" -> HttpStatus.CONFLICT;
-            case "IDEMPOTENCY_KEY_REUSED", "BUSINESS_RULE" -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case "IDEMPOTENCY_KEY_REUSED", "BUSINESS_RULE" -> HttpStatus.UNPROCESSABLE_CONTENT;
             case "RATE_LIMITED" -> HttpStatus.TOO_MANY_REQUESTS;
             case "EXTERNAL_SERVICE_UNAVAILABLE" -> HttpStatus.SERVICE_UNAVAILABLE;
             case "INTERNAL_ERROR" -> HttpStatus.INTERNAL_SERVER_ERROR;
-            default -> HttpStatus.UNPROCESSABLE_ENTITY;
+            default -> HttpStatus.UNPROCESSABLE_CONTENT;
         };
     }
 }

@@ -327,7 +327,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         writeError(
                 request,
                 response,
-                HttpStatus.UNPROCESSABLE_ENTITY,
+                HttpStatus.UNPROCESSABLE_CONTENT,
                 "IDEMPOTENCY_KEY_REUSED",
                 "La clave Idempotency-Key ya se usó con una solicitud diferente.",
                 Map.of()

@@ -2,6 +2,7 @@ package co.edu.napa.cuentas.infrastructure.security;
 
 import co.edu.napa.shared.domain.DomainException;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 
@@ -17,7 +18,7 @@ class RedisLoginAttemptAdapterTest {
     void blocksTheFifthFailedAttemptAndIncludesRetryTime() {
         StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
         when(redisTemplate.execute(
-                any(RedisScript.class),
+                ArgumentMatchers.<RedisScript<Long>>any(),
                 anyList(),
                 any(Object[].class)
         )).thenReturn(900L);
@@ -36,7 +37,7 @@ class RedisLoginAttemptAdapterTest {
     void permitsLoginWhenThereIsNoActiveLimit() {
         StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
         when(redisTemplate.execute(
-                any(RedisScript.class),
+                ArgumentMatchers.<RedisScript<Long>>any(),
                 anyList(),
                 any(Object[].class)
         )).thenReturn(0L);
