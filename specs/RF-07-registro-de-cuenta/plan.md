@@ -42,7 +42,7 @@ Implementar Registro de cuenta para Usuario en el módulo cuentas, con validacio
 
 | Spec | Descripción corta | Cubierto por (componente / endpoint / regla) | Tareas |
 |---|---|---|---|
-| FR-001 | El sistema MUST permitir a una persona registrarse indicando datos básicos (nombre, celular, contraseña; el correo es opcional) y seleccionando su rol (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario). | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/registro. | T004, T005 |
+| FR-001 | El sistema MUST permitir a una persona registrarse indicando datos básicos (nombre, celular, contraseña de 8 a 128 caracteres; el correo es opcional) y seleccionando su rol (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario). | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/registro. | T004, T005 |
 | FR-002 | El sistema MUST validar que el celular (y el correo, si se indica) no esté previamente registrado antes de crear la cuenta. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/registro. | T004, T005 |
 | FR-003 | El sistema MUST requerir la confirmación de la contraseña y validar que ambas coincidan. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/registro. | T004, T005 |
 | FR-004 | El sistema MUST permitir iniciar sesión inmediatamente después de un registro exitoso; al verificarse el celular (RF-70) la sesión se inicia sin pedir de nuevo las credenciales. | Regla de dominio/caso de uso en cuentas; contrato POST /api/v1/auth/registro. | T004, T005 |
@@ -79,7 +79,7 @@ Implementar Registro de cuenta para Usuario en el módulo cuentas, con validacio
 
 | Entidad (spec-general) | Lee / escribe | Restricciones de las que depende la feature |
 |---|---|---|
-| Cuenta | Lee / escribe según el caso de uso | Representa a un usuario registrado, con datos básicos, celular verificado, credenciales y un rol asignado (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario). |
+| Usuario | Lee / escribe según el caso de uso | Usuario definido en `spec-general` con celular, credenciales, estado y rol asignado. |
 
 ## Authorization
 
@@ -106,6 +106,7 @@ Implementar Registro de cuenta para Usuario en el módulo cuentas, con validacio
 |---|:---:|---|
 | Authorization | Según operación | La solicitud pública de registro/login/OTP no exige sesión; confirmar un cambio/recuperación aplica los requisitos de su propósito y las demás rutas requieren JWT. |
 | Idempotency-Key | Sí para mutación de estado/dinero | UUID; obligatoria según las convenciones comunes para mutaciones. |
+| X-Device-Id | Sí para registrar la instalación y acotar idempotencia antes de autenticar | Identificador estable de instalación. |
 | X-Request-Id | No | Identificador opcional, devuelto siempre como `X-Request-Id`. |
 
 **Body**: DTO con los datos estrictamente requeridos por FR-001, FR-002, FR-003, FR-004, FR-005, FR-006; validar en el caso de uso y no incluir datos no definidos por la fuente funcional.

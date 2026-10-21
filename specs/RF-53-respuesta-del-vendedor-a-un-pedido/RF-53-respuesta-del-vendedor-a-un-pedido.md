@@ -76,11 +76,10 @@ Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo.
 
 ### Edge Cases
 
-- ¿Qué sucede si el vendedor ambulante no responde a un pedido de entrega directa en un tiempo razonable? ¿Vence el pedido?
-- ¿Qué sucede si el vendedor no responde a una reserva antes de la fecha acordada?
+- Si el vendedor no responde a un pedido inmediato o reserva, el pedido permanece pendiente sin vencimiento ni transición automática en el MVP.
 - ¿Puede el vendedor indicar un motivo al rechazar un pedido?
-- ¿Qué ocurre si dos pedidos inmediatos pendientes compiten por la misma cantidad de un producto?
-- ¿Qué ocurre si el vendedor acepta un pedido de domicilio y el cliente nunca paga? (no hay plazo ni cancelación automática; el domicilio simplemente no puede publicarse)
+- Si varios pedidos inmediatos compiten por el mismo inventario, cada aceptación valida y descuenta existencias de forma atómica; solo se acepta el pedido cubierto por el inventario restante (FR-003).
+- Si el vendedor acepta un pedido de domicilio y el cliente nunca paga, el pedido permanece aceptado y pendiente de pago, sin vencimiento automático; el domicilio no puede publicarse hasta que el pago se confirme.
 
 ## Requirements *(mandatory)*
 

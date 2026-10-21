@@ -114,7 +114,7 @@ Como usuario que no recibió el código, quiero pedir uno nuevo o recibirlo por 
 
 - ¿Qué ocurre si el celular no tiene WhatsApp instalado?
 - ¿Qué pasa si el usuario cambia de celular a uno ya registrado por otra cuenta?
-- ¿Cómo se trata un celular con formato internacional distinto del colombiano?
+- ¿Cómo se trata un celular con formato internacional distinto del colombiano? Se aceptan celulares colombianos de 10 dígitos y números internacionales E.164; todos se normalizan a E.164 antes de guardar o enviar.
 - ¿Qué sucede si el proveedor entrega el mensaje con demora y el código ya venció?
 - ¿Qué hacer si un mismo celular recibe solicitudes masivas (abuso)? (límites por celular e IP; bloqueo temporal)
 - ¿Quién cubre el costo de los mensajes y qué techo mensual se fija?
@@ -134,6 +134,7 @@ Como usuario que no recibió el código, quiero pedir uno nuevo o recibirlo por 
 - **FR-009**: El sistema DEBE registrar cada envío como `Mensaje` con canal, propósito, destino, estado e identificador del proveedor, **sin incluir el código**.
 - **FR-010**: El sistema NO DEBE almacenar ni registrar el código en claro en base de datos, logs ni outbox.
 - **FR-011**: El sistema DEBE actualizar el estado del `Mensaje` (enviado, entregado, fallido) cuando el proveedor ofrezca notificaciones de estado.
+- **FR-012**: El sistema DEBE aceptar celulares colombianos de 10 dígitos y números internacionales E.164, normalizando ambos formatos a E.164 antes de persistirlos o enviarlos al proveedor.
 
 ### Key Entities
 

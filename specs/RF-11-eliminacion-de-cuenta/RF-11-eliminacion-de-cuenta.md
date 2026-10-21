@@ -42,7 +42,7 @@ Como usuario registrado, quiero eliminar mi cuenta, para dejar de utilizar la pl
 
 ### Key Entities
 
-- **Cuenta**: Registro del usuario cuyo ciclo de vida incluye un estado de eliminación/desactivación.
+- **Usuario**: Registro cuyo ciclo de vida incluye el estado `ELIMINADA`, conforme a `spec-general` §3.2.
 
 ## Success Criteria *(mandatory)*
 

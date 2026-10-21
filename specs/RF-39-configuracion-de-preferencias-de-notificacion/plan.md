@@ -49,7 +49,7 @@ Implementar Configuración de preferencias de notificación para Cliente en el m
 | SC-002 | El usuario puede modificar sus preferencias de notificación en menos de 1 minuto. | Métrica comprobable en pruebas automatizadas/observabilidad del flujo. | T003, T006 |
 | US1: Desactivar un tipo de notificación | el sistema deja de enviarme notificaciones de ese tipo, conservando las demás | Prueba de aceptación aislada de US1. | T003 |
 | US1: Reactivar un tipo de notificación previamente desactivado | el sistema vuelve a generarme notificaciones de ese tipo ante nuevos eventos | Prueba de aceptación aislada de US1. | T003 |
-| Edge case 1 | ¿Qué sucede si el usuario desactiva un tipo de notificación crítico (ej. cambios de estado de un domicilio en curso)? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 1 | Si el usuario desactiva un tipo de notificación crítico, se respeta igualmente su preferencia; no existen tipos no silenciables. | RF-39 FR-002; aplicar la preferencia al generar cada notificación, también para domicilios en curso. | T003 |
 | Edge case 2 | ¿Se conservan las preferencias configuradas si el usuario cambia de rol o dispositivo? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
 | Edge case 3 | ¿Qué ocurre con las notificaciones ya generadas antes de desactivar un tipo? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
 
@@ -232,7 +232,6 @@ frontend/__tests__/
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| ¿Qué sucede si el usuario desactiva un tipo de notificación crítico (ej. cambios de estado de un domicilio en curso)? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 | ¿Se conservan las preferencias configuradas si el usuario cambia de rol o dispositivo? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 | ¿Qué ocurre con las notificaciones ya generadas antes de desactivar un tipo? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 

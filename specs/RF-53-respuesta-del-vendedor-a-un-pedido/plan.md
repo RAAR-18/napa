@@ -62,11 +62,10 @@ Implementar Respuesta del vendedor a un pedido para Vendedor (ambulante / punto 
 | US2: Rechazo de un pedido pendiente | el sistema cambia el pedido a rechazado, libera las cantidades comprometidas y notifica al cliente | Prueba de aceptación aislada de US2. | T006 |
 | US2: Rechazo de una reserva según mi criterio | el sistema cambia el pedido a rechazado y notifica al cliente | Prueba de aceptación aislada de US2. | T006 |
 | US2: Rechazo de un pedido ya aceptado | el sistema rechaza la operación e indica que el pedido ya no está pendiente | Prueba de aceptación aislada de US2. | T006 |
-| Edge case 1 | ¿Qué sucede si el vendedor ambulante no responde a un pedido de entrega directa en un tiempo razonable? ¿Vence el pedido? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 2 | ¿Qué sucede si el vendedor no responde a una reserva antes de la fecha acordada? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 3 | ¿Puede el vendedor indicar un motivo al rechazar un pedido? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 4 | ¿Qué ocurre si dos pedidos inmediatos pendientes compiten por la misma cantidad de un producto? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 5 | ¿Qué ocurre si el vendedor acepta un pedido de domicilio y el cliente nunca paga? (no hay plazo ni cancelación automática; el domicilio simplemente no puede publicarse) | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 1 | Si el vendedor no responde a un pedido inmediato o reserva, el pedido permanece pendiente sin vencimiento ni transición automática en el MVP. | Mantener PENDIENTE y permitir consulta hasta una acción explícita autorizada. | T003 |
+| Edge case 2 | ¿Puede el vendedor indicar un motivo al rechazar un pedido? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 3 | Si varios pedidos inmediatos compiten por el mismo inventario, cada aceptación valida y descuenta existencias de forma atómica; solo se acepta el pedido cubierto por el inventario restante (FR-003). | La actualización condicional de inventario y la transición del pedido deben confirmar en una única transacción. | T003, T004 |
+| Edge case 4 | Si el vendedor acepta un pedido de domicilio y el cliente nunca paga, el pedido permanece aceptado y pendiente de pago, sin vencimiento automático; el domicilio no puede publicarse hasta que el pago se confirme. | Mantener ACEPTADO con pago pendiente; bloquear publicación del domicilio mientras no se confirme. | T003 |
 
 ## Non-Functional Requirements Check
 
@@ -275,11 +274,7 @@ frontend/__tests__/
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| ¿Qué sucede si el vendedor ambulante no responde a un pedido de entrega directa en un tiempo razonable? ¿Vence el pedido? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Qué sucede si el vendedor no responde a una reserva antes de la fecha acordada? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 | ¿Puede el vendedor indicar un motivo al rechazar un pedido? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Qué ocurre si dos pedidos inmediatos pendientes compiten por la misma cantidad de un producto? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Qué ocurre si el vendedor acepta un pedido de domicilio y el cliente nunca paga? (no hay plazo ni cancelación automática; el domicilio simplemente no puede publicarse) | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 
 ## Plan Review Checklist
 

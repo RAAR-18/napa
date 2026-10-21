@@ -49,10 +49,10 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
 
 ### Edge Cases
 
-- ¿Cómo se informa al cliente si un pedido queda en estado pendiente durante un tiempo prolongado?
+- Si un pedido permanece pendiente durante un tiempo prolongado, se informa que espera respuesta del vendedor y no vence ni cambia automáticamente en el MVP.
 - ¿Qué ocurre si el cliente intenta consultar el estado de un pedido que no le pertenece?
-- ¿Cómo se distingue en pantalla un pedido inmediato de uno marcado como reserva próxima a vencer si el vendedor no responde a tiempo?
-- ¿Cómo se muestra un pedido de domicilio aceptado que lleva mucho tiempo sin pago? (no hay plazo definido)
+- Si una reserva supera su fecha acordada sin respuesta, el pedido permanece en su estado actual: no vence ni cambia automáticamente en el MVP; se muestra la fecha acordada y que sigue pendiente de respuesta.
+- Si un pedido de domicilio aceptado lleva mucho tiempo sin pago, se muestra el pago pendiente y el total; el pedido no vence ni cambia automáticamente en el MVP.
 
 ## Requirements *(mandatory)*
 

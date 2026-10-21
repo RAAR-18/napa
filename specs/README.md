@@ -14,13 +14,13 @@ specs/
 ├── foundations/
 │   └── plan.md                    # CÓMO compartido: Auth, outbox/eventos, idempotencia, FCM, mapas, offline
 └── RF-NN-nombre/                  # una carpeta por requerimiento funcional (67 en total)
-    ├── spec.md                    # especificación funcional (fuente de verdad)
+    ├── RF-NN-nombre.md             # especificación funcional (fuente de verdad)
     └── plan.md                    # plan técnico (se crea cuando el RF entra a construcción)
 ```
 
 ## Flujo
 
-1. **Spec** (`RF-NN-nombre/spec.md`): comportamiento, escenarios Given/When/Then, FR y SC. Sin decisiones técnicas.
+1. **Spec** (`RF-NN-nombre/RF-NN-nombre.md`): comportamiento, escenarios Given/When/Then, FR y SC. Sin decisiones técnicas.
 2. **Plan** (`RF-NN-nombre/plan.md`): diseño, contratos, eventos emitidos, tareas y pruebas. Se escribe desde `templates/plan-template.md` y no puede contradecir la spec ni `general/`.
 3. **Implementación**: solo cuando el *Plan Review Checklist* del plan está completo. Las tareas (`T0NN`) viven dentro del plan; si el plan supera unas 300 líneas se puede separar un `tasks.md` en la misma carpeta.
 4. **Trazabilidad**: cualquier cambio de alcance se refleja en `requerimientos/funcionales.md`, `investigacion/HistoriasDeUsuario/historias_de_usuario.md` y `requerimientos/trazabilidad.md`.
@@ -35,7 +35,7 @@ specs/
 
 ## Orden de lectura para un RF nuevo
 
-`general/spec-general.md` → `general/eventos.md` → `RF-NN/spec.md` → `foundations/plan.md` → `RF-NN/plan.md`.
+`general/spec-general.md` → `general/eventos.md` → `RF-NN/RF-NN-nombre.md` → `foundations/plan.md` → `RF-NN/plan.md`.
 
 ## Orden de construcción
 

@@ -28,7 +28,7 @@ Como usuario (cliente, vendedor, domiciliario o administrador), quiero configura
 
 ### Edge Cases
 
-- ¿Qué sucede si el usuario desactiva un tipo de notificación crítico (ej. cambios de estado de un domicilio en curso)?
+- Si el usuario desactiva un tipo de notificación crítico, se respeta igualmente su preferencia; no existen tipos no silenciables.
 - ¿Se conservan las preferencias configuradas si el usuario cambia de rol o dispositivo?
 - ¿Qué ocurre con las notificaciones ya generadas antes de desactivar un tipo?
 

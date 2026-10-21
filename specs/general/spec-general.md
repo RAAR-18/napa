@@ -137,7 +137,7 @@ erDiagram
 
 ### 3.2 Entidades
 
-**Usuario** — `id`, `nombre`, `celular` (único), `correo` (único, opcional), `password_hash`, `foto_url` (opcional), `rol` (`CLIENTE`, `VENDEDOR_AMBULANTE`, `VENDEDOR_PUNTO_FIJO`, `DOMICILIARIO`, `ADMINISTRADOR`), `estado` (`PENDIENTE_VERIFICACION`, `ACTIVA`, `ELIMINADA`), `celular_verificado_at`, `created_at` (fecha de registro), `updated_at`. No existe entidad Cuenta. `session_version` es solo una nota de implementación.
+**Usuario** — `id`, `nombre`, `celular` (único, normalizado a E.164), `correo` (único, opcional), `password_hash` (hash Argon2id), `foto_url` (opcional), `rol` (`CLIENTE`, `VENDEDOR_AMBULANTE`, `VENDEDOR_PUNTO_FIJO`, `DOMICILIARIO`, `ADMINISTRADOR`), `estado` (`PENDIENTE_VERIFICACION`, `ACTIVA`, `ELIMINADA`), `celular_verificado_at`, `created_at` (fecha de registro), `updated_at`. La contraseña ingresada debe tener entre 8 y 128 caracteres, sin reglas de composición. Se aceptan celulares colombianos de 10 dígitos y teléfonos internacionales E.164; el valor persistido siempre es E.164. No existe entidad Cuenta. `session_version` es solo una nota de implementación.
 **Ubicacion** — `id`, `latitud`, `longitud`, `direccion`, `referencia` (opcional). Cada uso crea su propia fila (no se comparte). La usan: Usuario (0..1), Emprendimiento (1:1), Pedido (0..1; no aplica en `RECOGIDA`) y Domicilio solo para el punto A (1:1). La columna `geography(Point,4326)` es detalle de implementación derivado de `latitud` y `longitud`.
 **Sesion** — `id`, `token_hash`, `device_id`, `created_at`, `expires_at`, `revoked_at` (opcional). Usuario inicia Sesion (1:N). "Activa" se deduce de `revoked_at` y `expires_at`.
 **DispositivoToken** — `id`, `token` (FCM), `plataforma` (`ANDROID`, `IOS`), `ultima_conexion_at`. Usuario registra DispositivoToken (1:N); único `(usuario, token)`. Independiente de `Sesion.device_id`.
@@ -185,18 +185,17 @@ erDiagram
     - Recogida: `PENDIENTE → ACEPTADO → LISTO_PARA_RECOGER → ENTREGADO`.
     - Domicilio: permanece `ACEPTADO` mientras el domicilio avanza; pasa a `ENTREGADO` cuando el domiciliario valida el código del cliente; pasa a `CANCELADO` si el administrador cancela el domicilio.
     - Cualquier modalidad puede terminar en `RECHAZADO` desde `PENDIENTE`.
+    - En el MVP no hay vencimientos automáticos: pedidos sin respuesta y pedidos de domicilio aceptados que esperan pago permanecen en su estado hasta una transición permitida iniciada por un usuario.
 - **Domicilio**: `DISPONIBLE → ASIGNADO → RECOGIDO → EN_CAMINO → ENTREGADO`, o `CANCELADO` desde cualquier estado salvo `ENTREGADO` (RF-13). Las transiciones inválidas responden `INVALID_STATE` (RNF23).
     - **Confirmación de la entrega por código**: al llegar, el cliente le dice al domiciliario su código; el domiciliario lo ingresa (RF-24). Si es correcto, en la misma transacción el domicilio y el pedido pasan a `ENTREGADO`, se inserta el EventoTrazabilidad (domiciliario como autor) y se avisa al vendedor, que debe pagar la tarifa.
-    - Si el cliente no da el código o dice no haber recibido, el domicilio no avanza y sigue `EN_CAMINO`; el cliente puede crear un reporte (RF-60) y el administrador puede cancelar el domicilio (RF-13).
+    - Si el cliente no da el código o dice no haber recibido, el domicilio no avanza y sigue `EN_CAMINO` sin vencimiento automático en el MVP; el cliente puede crear un reporte (RF-60) y el administrador puede cancelar el domicilio (RF-13).
 - **Pago**: `PENDIENTE_CONFIRMACION → CONFIRMADO`; la tarifa al domiciliario pasa por `REGISTRADO` (RF-43), que solo se habilita con el domicilio `ENTREGADO`.
 - **Reporte**: `PENDIENTE → EN_REVISION → RESUELTO`.
 - **Calificaciones**: se habilitan con el pedido `ENTREGADO` (en domicilio, cuando el domiciliario valida el código).
 
 ### Puntos abiertos
-- Si el cliente nunca da el código, el domicilio queda `EN_CAMINO` y el domiciliario no cobra (sin vencimiento automático en el MVP).
-- Cómo se guarda el código de confirmación: en claro (`codigo_confirmacion`) o derivado por HMAC (`codigo_confirmacion`).
+- Cómo se guarda el **código de confirmación del domicilio**: en claro (`codigo_confirmacion`) o derivado por HMAC. Foundations D13 propone guardarlo en claro; resolver y alinear antes de RF-19/RF-24. Este código es distinto del OTP de celular de RF-70, que nunca se almacena.
 - Límite de domicilios simultáneos por domiciliario.
-- Vencimientos de pedidos sin respuesta.
 - Si el administrador cancela un domicilio ya pagado, la devolución del dinero ocurre fuera de la plataforma (la plataforma no procesa dinero).
 
 ## 5. Eventos
