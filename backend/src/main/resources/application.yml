@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: napa-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/napa}
+    username: ${DATABASE_USERNAME:napa}
+    password: ${DATABASE_PASSWORD:${POSTGRES_PASSWORD:napa_local_dev_only}}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+napa:
+  maps:
+    api-key: ${GOOGLE_MAPS_API_KEY:}
+  auth:
+    jwt-secret: ${NAPA_JWT_SECRET:}
+    access-token-ttl: ${NAPA_ACCESS_TOKEN_TTL:PT15M}
+    refresh-token-ttl: ${NAPA_REFRESH_TOKEN_TTL:P30D}
+    admin-bootstrap:
+      enabled: ${NAPA_ADMIN_BOOTSTRAP_ENABLED:false}
+      name: ${NAPA_ADMIN_NAME:}
+      phone: ${NAPA_ADMIN_PHONE:}
+      email: ${NAPA_ADMIN_EMAIL:}
+      password: ${NAPA_ADMIN_PASSWORD:}

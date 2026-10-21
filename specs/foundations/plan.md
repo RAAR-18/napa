@@ -30,6 +30,10 @@ Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dom
 | D11 | Límites entre módulos verificados con  **ArchUnit**  (dominio sin Spring/JPA; módulos solo se hablan por puertos) | RNF13, RNF25. |
 | D12 | Verificación del celular con  **Twilio Verify**  (WhatsApp con respaldo SMS) detrás de VerificarCelularPort | El equipo ya lo conoce y delega a Twilio la generación del código, su vigencia, los intentos y las plantillas aprobadas. Costo: 0,05 USD por verificación exitosa más la tarifa del canal (a confirmar para Colombia). Adaptador de consola para desarrollo y pruebas, sin gastar unidades. Cambiar de proveedor es cambiar un adaptador. |
 | D13 | El código de confirmación del domicilio se genera al asignarlo (6 dígitos aleatorios) y se guarda tal cual; solo lo ve el cliente. El domiciliario lo ingresa y, si coincide, el domicilio y el pedido pasan a ENTREGADO (única confirmación). Máximo 5 intentos y bloqueo de 15 min. | Es una decisión de simplicidad: el riesgo de guardarlo es bajo frente al resto de datos de la base y el límite de intentos lo mitiga. |
+| D14 | Contraseñas con Argon2id, longitud de 8–128 caracteres y sin reglas de composición; contraseñas nuevas con recuperación o cambio revocan las demás sesiones. | Decisión aprobada por el usuario; balancea compatibilidad con frases de contraseña y un mínimo explícito. |
+| D15 | Tras 5 fallos en 15 minutos por identificador normalizado y por IP, login responde `429` con `Retry-After`. | Decisión aprobada por el usuario para mitigar fuerza bruta sin revelar si existe la cuenta. |
+| D16 | Bootstrap administrativo habilitado explícitamente mediante secretos de entorno y ejecutado una sola vez; el marcador persistente impide volver a sembrar la cuenta. | Decisión aprobada por el usuario; no se persiste la contraseña en claro ni se permiten registros públicos de administrador. |
+| D17 | Se aceptan móviles colombianos de 10 dígitos y números internacionales E.164; se normalizan y persisten como E.164. | Decisión aprobada por el usuario; asegura unicidad y compatibilidad con proveedores de verificación. |
 
 ## Technical Context
 
@@ -70,7 +74,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - Entidades `Notificacion`, `PreferenciaNotificacion` y `DispositivoToken` (en `spec-general`).
 - Un listener por evento en `notificaciones/infrastructure/adapters/in/event`, que llama al puerto `EnviarNotificacionPort`. Este consulta las preferencias (RF-39), guarda la notificación y envía FCM con `sendEachForMulticast` en lotes de 500; tokens inválidos se borran.
 - Si FCM falla, la notificación sigue visible en RF-38 (degradación controlada, RNF19/RNF15).
-- Pendiente de decidir: notificaciones críticas que no se puedan silenciar (ver Open Questions).
+- Las preferencias de RF-39 se respetan para todos los tipos de notificación; no existen excepciones no silenciables.
 
 ### Seguridad y autenticación
 
@@ -113,26 +117,33 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 ## Fases de construcción de la base
 
 **Phase F0 – Repositorio y CI**
-- [ ] F001 Monorepo `backend/` y `frontend/`; Gradle/Maven con Java 21 y Boot 4.1.x en `backend/build.gradle`
-- [ ] F002 Docker Compose (PostGIS 16, Redis 7) en `docker-compose.yml`
-- [ ] F003 Pipeline CI: pruebas backend, Jest, ArchUnit
-- [ ] F004 Flyway y migración base con extensión PostGIS en `backend/src/main/resources/db/migration/V1__base.sql`
+- [x] F001 Monorepo `backend/` y `frontend/`; Gradle Wrapper con Java 21 y Boot 4.1.x en `backend/build.gradle`
+- [x] F002 Docker Compose (PostGIS 16, Redis 7) en `docker-compose.yml`
+- [x] F003 Pipeline CI: pruebas backend, Jest, ArchUnit
+- [x] F004 Flyway y migración base con extensión PostGIS en `backend/src/main/resources/db/migration/V1__base.sql`
+
+**Validación local F0**: Gradle, Jest, TypeScript y Expo Doctor pasan. Docker no está instalado en este entorno; CI valida el Compose y los tests de integración usan Testcontainers con `disabledWithoutDocker`.
+**Riesgo de dependencias**: `npm audit --omit=dev` reporta 15 vulnerabilidades altas y 7 moderadas en el árbol de Expo/React Native. La corrección forzada sugerida baja Expo a 44 y React Native a 0.72, incompatibles con el SDK acordado; no se aplicó. Revaluar los avisos al actualizar a una versión compatible antes de publicar.
 
 **Phase F1 – Núcleo compartido**
-- [ ] F010 `ApiError` y manejador global en `backend/.../shared/infrastructure/web/`
-- [ ] F011 `DomainEvent` + outbox + relay + manejadores idempotentes en `shared/infrastructure/outbox/`
-- [ ] F012 `IdempotencyFilter` con Redis y pruebas de concurrencia en `shared/infrastructure/idempotency/`
-- [ ] F013 Utilidades geo y `RoutingPort` con adaptador del proveedor elegido en `shared/infrastructure/geo/`
-- [ ] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
-- [ ] F015 Pruebas de integración con Testcontainers (PostGIS, Redis) como base de test
+- [x] F010 `ApiError` y manejador global en `backend/.../shared/infrastructure/web/`
+- [x] F011 `DomainEvent` + outbox + relay en `shared/infrastructure/outbox/`
+- [x] F012 `IdempotencyFilter` con Redis, integrado después de autenticación; pruebas de concurrencia en `shared/infrastructure/idempotency/`
+- [x] F013 Utilidades geo y `RoutingPort` con adaptador Google Maps Routes API en `shared/infrastructure/geo/`
+- [x] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
+- [ ] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis); el entorno local no tiene Docker
 
 **Phase F2 – Identidad (RF-07, RF-09, RF-10, RF-11)**
-- [ ] F020 Entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración
-- [ ] F021 `SolicitarVerificacionUseCase` y `ConfirmarVerificacionUseCase` sobre `VerificarCelularPort`, con límites propios en Redis
+- [ ] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración (modelos, entidades JPA y adaptadores creados; falta ejecutar validación de migración/JPA en PostgreSQL/PostGIS con Docker)
+- [ ] F021 Completar `SolicitarVerificacionUseCase` y `ConfirmarVerificacionUseCase` sobre `VerificarCelularPort`, con límites de envíos/intentos en Redis (puerto y flujos de aplicación iniciados)
 - [ ] F022 Crear el servicio de Twilio Verify, habilitar WhatsApp con respaldo SMS, confirmar vigencia, intentos y tarifa para Colombia, y fijar un tope mensual de gasto con alerta. Activar la cuenta de prueba solo al llegar a esta tarea (dura 30 días y solo envía a números verificados)
-- [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover
-- [ ] F024 Filtro JWT con `sv` y cuenta admin sembrada
-- [ ] F025 Pruebas de seguridad: fuerza bruta, OTP agotado, token revocado
+- [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover (rutas creadas; OTP queda cerrado con 503 hasta configurar un proveedor)
+- [x] F024 Filtro JWT con `sv` y bootstrap admin de un solo uso
+- [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado (hay pruebas unitarias de login/rate-limit y revocación; falta proveedor e integración Redis/PostgreSQL)
+
+**Avance F2**: Argon2id, validación de contraseñas, JWT HS256 con expiración, refresh token opaco rotativo y guardado como hash, revocación de sesiones en Redis, limitación de login, bootstrap administrativo, endpoints de autenticación, modelos/adaptadores de persistencia para usuario, sesión, ubicación y token de dispositivo, y esquema de identidad están implementados. El proveedor OTP real está deliberadamente diferido por presupuesto; la implementación falla de forma explícita con `503` en verificación, y no guarda ni registra OTP. RF-11 no expone endpoint hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes. La migración V3 y la validación JPA/Testcontainers aún deben ejecutarse en Docker CI.
+
+**Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. El proveedor real de OTP y sus costos quedan diferidos hasta aprobar presupuesto. RF-11 se implementará después de los módulos de pedidos, emprendimientos y domicilios, porque aún no existen sus tablas para comprobar operaciones pendientes.
 
 **Phase F3 – Notificaciones (RF-38, RF-39)**
 - [ ] F030 Tablas `Notificacion`, `PreferenciaNotificacion`, `DispositivoToken`
@@ -165,12 +176,11 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| Proveedor de rutas (Google, Mapbox, OSRM propio) | Costo y cuotas | Puerto + adaptador; decidir en F013 | Equipo |
-| Habilitar el canal de WhatsApp en Twilio Verify para Colombia (remitente y plantilla) | Plazo de F022 | SMS como respaldo | Equipo |
-| Costo mensual de Twilio Verify (0,05 USD por verificación exitosa + canal) y tope de gasto | Presupuesto del piloto | Con unos cientos de verificaciones al mes, decenas de dólares; fijar tope y alerta | Equipo |
-| ¿Verify cancela la verificación anterior al pedir otra para el mismo celular (RF-70 FR-005)? | Seguridad | Si no, cancelarla explícitamente antes de crear la nueva | Equipo |
-| ¿Notificaciones críticas no silenciables (estado de domicilio)? | RF-39 | Sí para domicilios en curso | Equipo |
-| Vencimientos (pedido sin respuesta, pago sin hacer, llegada sin confirmar) | Varias specs | Sin vencimiento automático en MVP | Equipo y usuarios |
+| Proveedor de rutas | Costo, cuotas y contratos de integración | **Resuelto: Google Maps Routes API** detrás de `RoutingPort`; restringir y rotar claves por entorno | Equipo |
+| Activación de Twilio Verify y presupuesto mensual (WhatsApp + SMS de respaldo) | Costo y riesgo de habilitar envíos reales | **Diferido**: solo adaptador de consola en desarrollo/pruebas; no activar envíos reales ni desplegar credenciales hasta acordar presupuesto y canal para Colombia | Equipo |
+| ¿Verify cancela la verificación anterior al pedir otra para el mismo celular (RF-70 FR-005)? | Seguridad | Verificar el comportamiento del proveedor en F022 y garantizar en la aplicación que la solicitud nueva invalida la anterior; no almacenar el OTP | Equipo |
+| ¿Notificaciones críticas no silenciables (estado de domicilio)? | RF-39 | **Resuelto: no hay excepciones**; se respetan las preferencias para todo tipo de notificación | Equipo |
+| Vencimientos (pedido sin respuesta, pago sin hacer, llegada sin confirmar) | Varias specs | **Resuelto para MVP: no hay vencimiento automático**; permanecen en su estado actual hasta una acción permitida por las specs. Reabrir la decisión requiere actualizar las specs | Equipo y usuarios |
 
 #### Plan Review Checklist
 *  [x] Spec Change Requests aplicados a las specs 

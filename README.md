@@ -24,9 +24,9 @@ donde lo no vendido en el día se pierde o pierde valor.
 │   ├── templates/               # spec-template.md y plan-template.md
 │   ├── general/                 # Roles, convenciones de API, modelo de datos (ER) y catálogo de eventos
 │   ├── foundations/plan.md      # Plan de la infraestructura transversal
-│   └── RF-NN-nombre/            # spec.md (QUÉ) y plan.md (CÓMO) por requerimiento
-├── backend/                     # (por crear) Spring Boot, arquitectura hexagonal por módulo
-└── frontend/                    # (por crear) React Native + Expo
+│   └── RF-NN-nombre/              # RF-NN-nombre.md (QUÉ) y plan.md (CÓMO) por requerimiento
+├── backend/                     # Spring Boot, arquitectura hexagonal por módulo
+└── frontend/                    # React Native + Expo
 ```
 
 ## Actores principales
@@ -61,6 +61,45 @@ No se guardan datos de tarjetas ni billeteras electrónicas de terceros.
 
 Backend: Java 21, Spring Boot 4.1.x, Spring Security, JPA + Hibernate Spatial, PostgreSQL 16 + PostGIS, Redis 7, Firebase Admin (FCM), Twilio Verify (verificación del celular por WhatsApp o SMS). Frontend: React Native + Expo (development build), expo-sqlite. Detalle y decisiones en [`specs/foundations/plan.md`](specs/foundations/plan.md).
 
+## Desarrollo local
+
+Requisitos: JDK 21, Node.js 24 o compatible con Expo SDK 58 y Docker Compose.
+
+```powershell
+docker compose up -d
+cd backend
+.\gradlew.bat test
+```
+
+Para iniciar la API localmente, conserva la base de datos de Compose y ejecuta:
+
+```powershell
+$env:DATABASE_PASSWORD = "napa_local_dev_only"
+$env:NAPA_JWT_SECRET = "replace-with-at-least-32-random-local-bytes"
+.\gradlew.bat bootRun
+```
+
+El secreto JWT es obligatorio y debe tener al menos 32 bytes. Para crear el administrador inicial, configura una sola vez `NAPA_ADMIN_BOOTSTRAP_ENABLED=true`, `NAPA_ADMIN_NAME`, `NAPA_ADMIN_PHONE` (formato E.164) y `NAPA_ADMIN_PASSWORD` (8–128 caracteres). El bootstrap se marca como completado en la base de datos; no vuelvas a habilitarlo para reemplazar la cuenta.
+
+La integración de entrega OTP con Twilio está diferida hasta aprobar presupuesto. Mientras no exista un proveedor de verificación configurado, las rutas de verificación responden `503`; no se escribe ni registra ningún código OTP.
+
+Para habilitar el cálculo de rutas, configura una clave de Google Maps con Routes API habilitada:
+
+```powershell
+$env:GOOGLE_MAPS_API_KEY = "tu-clave-local"
+```
+
+En otra terminal, prepara y valida la app móvil:
+
+```powershell
+cd frontend
+npm ci
+npm run typecheck
+npm start
+```
+
+El entorno de Compose usa credenciales exclusivamente locales. No las reutilices en producción.
+
 ## Estado del proyecto
 
-En construcción. Fase actual: documentación de diseño y planes de implementación (casos de uso, historias de usuario, requerimientos, especificaciones y planes).
+La implementación cubrió las fundaciones F0–F1 y avanza en F2 (identidad). El estado de cada fase, las decisiones aprobadas y los bloqueos de proveedor están en [el plan de fundaciones](specs/foundations/plan.md).
