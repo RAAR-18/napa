@@ -48,7 +48,7 @@ Como domiciliario, quiero ver los domicilios disponibles junto con lo que ganar�
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al domiciliario consultar los domicilios en estado "disponible".
-- **FR-002**: El sistema DEBE mostrar, para cada domicilio, su origen, su destino, la distancia y la ganancia que recibiría el domiciliario, que es la tarifa publicada.
+- **FR-002**: El sistema DEBE mostrar, para cada domicilio, su origen, su destino completo, la distancia y la ganancia que recibiría el domiciliario, que es la tarifa publicada.
 - **FR-003**: El sistema DEBE excluir de la lista los domicilios que el propio domiciliario rechazó (RF-17).
 - **FR-004**: El sistema DEBE retirar de la lista los domicilios que dejen de estar disponibles (asignados o cancelados).
 - **FR-005**: El sistema DEBE permitir ordenar la lista por cercanía o por ganancia.

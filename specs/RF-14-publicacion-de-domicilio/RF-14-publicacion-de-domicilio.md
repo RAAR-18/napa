@@ -42,6 +42,11 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
    - **When** reviso las acciones disponibles sobre él
    - **Then** el sistema no ofrece ninguna opción para modificar su origen, destino, receptor ni tarifa
 
+6. **Scenario**: Reserva publicada antes de tiempo
+   - **Given** tengo un pedido de domicilio aceptado, con el pago confirmado y marcado como reserva
+   - **When** faltan más de 15 minutos para la fecha y hora acordadas e intento publicar el domicilio
+   - **Then** el sistema rechaza la operación (`RESERVATION_NOT_DUE`) e indica desde cuándo puedo publicarlo
+
 ### Edge Cases
 
 - ¿Qué sucede si el pedido es cancelado o el domicilio es cancelado por el administrador después de publicado y antes de ser tomado?
@@ -49,7 +54,6 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 - ¿Qué ocurre si ningún domiciliario toma el domicilio en un tiempo razonable? ¿Se notifica al vendedor y al cliente?
 - ¿Qué pasa si el vendedor publica el domicilio antes de tener el pedido preparado para entregar?
 - ¿Qué ocurre si el pedido de domicilio fue aceptado y el cliente nunca paga? (no hay plazo ni cancelación automática definidos: el domicilio simplemente no puede publicarse; punto pendiente de validar)
-- ¿Puede publicarse el domicilio de un pedido marcado como reserva antes de la fecha y hora acordadas?
 
 ## Requirements *(mandatory)*
 
@@ -58,10 +62,11 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 - **FR-001**: El sistema DEBE permitir al vendedor de punto fijo publicar un domicilio únicamente para un pedido propio, con modalidad de domicilio, en estado aceptado y con el pago confirmado (RF-42).
 - **FR-002**: El sistema DEBE definir como punto A una copia de la ubicación del punto fijo y como punto B la ubicación de entrega indicada por el cliente en el pedido; el receptor es el cliente que hizo el pedido.
 - **FR-003**: El sistema DEBE tomar como tarifa publicada la tarifa del domicilio calculada al realizar el pedido (que no puede ser inferior a la tarifa mínima vigente, RF-44); el domicilio no la repite.
-- **FR-004**: El sistema DEBE crear el domicilio en estado "disponible", ponerlo a disposición de los domiciliarios y notificarlos.
+- **FR-004**: El sistema DEBE crear el domicilio en estado "disponible", ponerlo a disposición de los domiciliarios y notificar a todos los domiciliarios activos.
 - **FR-005**: El sistema DEBE impedir que un pedido tenga más de un domicilio activo al mismo tiempo.
 - **FR-006**: El sistema DEBE impedir la edición de un domicilio una vez publicado (pedido y punto A; el punto B, el receptor y la tarifa provienen del pedido).
 - **FR-007**: El sistema DEBE impedir la publicación de un pedido de domicilio cuyo pago no esté confirmado, indicando el motivo.
+- **FR-008**: En un pedido marcado como reserva, el sistema DEBE permitir publicar el domicilio solo desde 15 minutos antes de la fecha y hora acordadas (RESERVATION_NOT_DUE).
 
 ### Key Entities
 

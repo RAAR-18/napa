@@ -18,7 +18,7 @@ Como vendedor, quiero confirmar el pago de un pedido, en efectivo o por transfer
 **Acceptance Scenarios**:
 
 1. **Scenario**: Cobro en efectivo en una entrega directa o recogida
-   - **Given** soy vendedor ambulante o de punto fijo, acepto efectivo, y entregué o el cliente retiró su pedido
+   - **Given** soy vendedor ambulante o de punto fijo, el cliente eligió pagar en efectivo, y entregué o el cliente retiró su pedido
    - **When** confirmo que recibí el efectivo al confirmar la entrega (RF-37) o el retiro (RF-65)
    - **Then** el sistema registra el pago como confirmado, indicando el medio "efectivo"
 
@@ -30,7 +30,7 @@ Como vendedor, quiero confirmar el pago de un pedido, en efectivo o por transfer
 3. **Scenario**: Cobro de un pedido de domicilio, antes de publicarlo
    - **Given** soy vendedor de punto fijo, acepté un pedido de domicilio y el cliente transfirió el total (productos más tarifa del domicilio) a mi cuenta
    - **When** confirmo que recibí la transferencia
-   - **Then** el sistema registra el pago como confirmado por transferencia por el total del pedido y me habilita a publicar el domicilio (RF-14); el domicilio no admite cobro en efectivo
+   - **Then** el sistema registra el pago como confirmado por transferencia por el total del pedido y me habilita a publicar el domicilio (RF-14); el domicilio no admite cobro en efectivo el pago ya existe en pendiente desde la aceptación (RF-53)
 
 4. **Scenario**: Confirmación de pago de un domicilio antes de aceptarlo
    - **Given** un pedido de domicilio sigue en estado pendiente
@@ -54,7 +54,7 @@ Como vendedor, quiero confirmar el pago de un pedido, en efectivo o por transfer
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE permitir al vendedor (ambulante o de punto fijo) confirmar que recibió el pago de un pedido de su emprendimiento, indicando el medio utilizado (efectivo o cuenta bancaria).
+- **FR-001**: El sistema DEBE permitir al vendedor (ambulante o de punto fijo) confirmar que recibió el pago de un pedido de su emprendimiento, por el medio que eligió el cliente; el cliente no puede cambiarlo al pagar.
 - **FR-002**: El sistema DEBE solicitar esta confirmación al registrar la entrega directa (RF-37) o el retiro del pedido (RF-65); en los pedidos de domicilio, DEBE permitirla únicamente a partir de que el pedido esté aceptado y antes de publicar el domicilio (RF-14).
 - **FR-003**: El sistema DEBE impedir que el pago de un mismo pedido se confirme más de una vez.
 - **FR-004**: El sistema DEBE impedir que un vendedor confirme el pago de un pedido que no pertenece a su emprendimiento.
@@ -65,7 +65,7 @@ Como vendedor, quiero confirmar el pago de un pedido, en efectivo o por transfer
 
 ### Key Entities
 
-- **Pago**: Registro asociado a un pedido; estados: pendiente de confirmación y confirmado. Atributo adicional: medio (efectivo o cuenta bancaria). En domicilio, el monto es el total de productos más tarifa. Es distinto del pago de la tarifa al domiciliario (RF-43).
+- **Pago**: Creado al aceptar el pedido (RF-53); estados: pendiente de confirmación y confirmado. Atributo adicional: medio (efectivo o cuenta bancaria) = el elegido por el cliente . En domicilio, el monto es el total de productos más tarifa. Es distinto del pago de la tarifa al domiciliario (RF-43).
 - **Pedido**: Su estado de pago se actualiza al confirmarse el cobro.
 
 ## Success Criteria *(mandatory)*

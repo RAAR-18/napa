@@ -17,12 +17,12 @@ Como vendedor de punto fijo, quiero confirmar el retiro de un pedido, para regis
 **Acceptance Scenarios**:
 
 1. **Scenario**: Confirmación de retiro y cobro en efectivo
-   - **Given** un pedido mío está listo para recoger, acepto efectivo, y el cliente lo retira y paga en efectivo
+   - **Given** un pedido mío está listo para recoger, el cliente eligió pagar en efectivo, y el cliente lo retira y paga en efectivo
    - **When** confirmo el retiro y el cobro
    - **Then** el sistema cambia el estado del pedido a entregado, registra el pago como confirmado con medio "efectivo" (RF-42) y habilita las calificaciones
 
 2. **Scenario**: Confirmación de retiro y cobro por transferencia
-   - **Given** un pedido mío está listo para recoger y el cliente paga por transferencia a mi cuenta registrada
+   - **Given** un pedido mío está listo para recoger y el cliente eligió pagar por transferencia a mi cuenta registrada
    - **When** confirmo el retiro y verifico la transferencia
    - **Then** el sistema cambia el estado del pedido a entregado y registra el pago como confirmado con medio "cuenta bancaria" (RF-42)
 
@@ -41,13 +41,13 @@ Como vendedor de punto fijo, quiero confirmar el retiro de un pedido, para regis
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al vendedor de punto fijo confirmar el retiro de un pedido en estado "listo para recoger".
-- **FR-002**: El sistema DEBE solicitar la confirmación del cobro al registrar el retiro, indicando el medio utilizado (efectivo o cuenta bancaria) entre los habilitados por el vendedor (RF-42, RF-63).
+- **FR-002**: El sistema DEBE solicitar al vendedor la confirmación del cobro al registrar la entrega, por el medio que eligió el cliente al hacer el pedido; el cliente no puede cambiarlo al pagar.
 - **FR-003**: El sistema DEBE cambiar el estado del pedido a "entregado" y habilitar las calificaciones (RF-01).
 
 ### Key Entities
 
 - **Pedido**: Modalidad recogida; transición de esta funcionalidad: listo para recoger → entregado.
-- **Pago**: Registro asociado al pedido, confirmado junto con el retiro, con su medio.
+- **Pago**: Registro asociado al pedido, confirmado junto con el retiro, con el medio elegido por el cliente.
 
 ## Success Criteria *(mandatory)*
 

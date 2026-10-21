@@ -20,22 +20,22 @@ Como vendedor, quiero aceptar un pedido, para comprometerme a atenderlo según s
 1. **Scenario**: Aceptación de una entrega directa
    - **Given** soy vendedor ambulante y recibí un pedido de entrega directa
    - **When** lo acepto
-   - **Then** el sistema cambia el pedido a aceptado, notifica al cliente y me habilita la ubicación de entrega (RF-35)
+   - **Then** el sistema cambia el pedido a aceptado, notifica al cliente y me habilita la ubicación de entrega (RF-35) y crea el pago del pedido en estado pendiente de confirmación, con el medio elegido por el cliente
 
 2. **Scenario**: Aceptación de una recogida en punto fijo
    - **Given** soy vendedor de punto fijo y recibí un pedido de recogida
    - **When** lo acepto
-   - **Then** el sistema cambia el pedido a aceptado, notifica al cliente y me habilita a marcarlo como listo para recoger (RF-64)
+   - **Then** el sistema cambia el pedido a aceptado, notifica al cliente y me habilita a marcarlo como listo para recoger (RF-64) y crea el pago del pedido en estado pendiente de confirmación, con el medio elegido por el cliente
 
 3. **Scenario**: Aceptación de un pedido de domicilio
    - **Given** soy vendedor de punto fijo con una cuenta bancaria registrada (RF-63) y recibí un pedido de domicilio
    - **When** lo acepto
-   - **Then** el sistema cambia el pedido a aceptado, notifica al cliente que debe transferir el total (productos más domicilio) y queda a la espera del pago; solo podré publicar el domicilio (RF-14) cuando confirme ese pago (RF-42)
+   - **Then** el sistema cambia el pedido a aceptado, notifica al cliente que debe transferir el total (productos más domicilio) y crea el pago del pedido en estado pendiente de confirmación, con el medio elegido por el cliente; solo podré publicar el domicilio (RF-14) cuando confirme ese pago (RF-42)
 
 4. **Scenario**: Aceptación de una reserva según mi criterio
    - **Given** recibí un pedido marcado como reserva con fecha y hora acordadas
    - **When** lo acepto porque considero que puedo cumplirlo
-   - **Then** el sistema cambia el pedido a aceptado y notifica al cliente, sin validar automáticamente el inventario para esa fecha, y el pedido queda para atenderse en la fecha acordada con el siguiente paso propio de su modalidad
+   - **Then** el sistema cambia el pedido a aceptado y notifica al cliente, sin validar ni descontar inventario, ahora ni después, y el pedido queda para atenderse en la fecha acordada con el siguiente paso propio de su modalidad
 
 5. **Scenario**: Domicilio sin cuenta bancaria registrada
    - **Given** soy vendedor de punto fijo sin cuenta bancaria registrada
@@ -62,7 +62,7 @@ Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo.
 1. **Scenario**: Rechazo de un pedido pendiente
    - **Given** tengo un pedido pendiente que no puedo atender
    - **When** lo rechazo
-   - **Then** el sistema cambia el pedido a rechazado, libera las cantidades comprometidas y notifica al cliente
+   - **Then** el sistema cambia el pedido a rechazado y notifica al cliente
 
 2. **Scenario**: Rechazo de una reserva según mi criterio
    - **Given** tengo una reserva pendiente que no creo poder cumplir en la fecha acordada
@@ -87,16 +87,17 @@ Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo.
 
 - **FR-001**: El sistema DEBE permitir al vendedor aceptar o rechazar únicamente pedidos de su emprendimiento que estén en estado "pendiente".
 - **FR-002**: El sistema DEBE cambiar el estado del pedido a "aceptado" o "rechazado" y notificar al cliente.
-- **FR-003**: El sistema DEBE validar, al aceptar un pedido inmediato, que el inventario actual cubra el pedido, y descontarlo en ese mismo momento, de forma atómica con la aceptación; si no alcanza, NO DEBE aceptarlo. En los pedidos marcados como reserva NO DEBE validar automáticamente el inventario: el vendedor decide con su propio criterio.
+- **FR-003**: El sistema DEBE validar, al aceptar un pedido inmediato, que el inventario actual cubra el pedido, y descontarlo en ese mismo momento, de forma atómica con la aceptación; si no alcanza, NO DEBE aceptarlo. Ninguna reserva valida ni descuenta inventario en ningún momento: el vendedor decide con su propio criterio.
 - **FR-004**: El sistema DEBE habilitar, tras la aceptación, el siguiente paso propio de la modalidad: ubicación de entrega (entrega directa, inmediata o marcada como reserva), marcar como listo para recoger (recogida, inmediata o marcada como reserva), o esperar la confirmación del pago y luego publicar el domicilio (domicilio).
-- **FR-005**: El sistema DEBE liberar las cantidades comprometidas cuando un pedido inmediato sea rechazado.
+- **FR-005**: El sistema DEBE, al aceptar un pedido, crear el `Pago` del pedido en estado "pendiente de confirmación" (`PENDIENTE_CONFIRMACION`), con el medio de pago que el cliente eligió al hacer el pedido.
 - **FR-006**: El sistema DEBE impedir que un vendedor de punto fijo sin cuenta bancaria registrada acepte un pedido de domicilio (RF-63).
 - **FR-007**: El sistema DEBE notificar al cliente, al aceptarse un pedido de domicilio, que debe transferir el total para que el domicilio pueda publicarse.
 
 ### Key Entities
 
-- **Pedido**: Transiciones de esta funcionalidad: pendiente → aceptado y pendiente → rechazado. Puede estar marcado como reserva.
+- **Pedido**: Transiciones de esta funcionalidad: pendiente → aceptado y pendiente → rechazado. Puede estar marcado como reserva. 
 - **Vendedor**: Ambulante o de punto fijo; decide sobre los pedidos recibidos con su propio criterio.
+- **Pago**: Se crea en estado pendiente de confirmación al aceptar el pedido, con el medio elegido por el cliente.
 
 ## Success Criteria *(mandatory)*
 

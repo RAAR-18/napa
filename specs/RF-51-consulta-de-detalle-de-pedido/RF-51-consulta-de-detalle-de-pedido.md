@@ -20,7 +20,7 @@ Como vendedor, quiero consultar un pedido, para conocer todos sus detalles.
 1. **Scenario**: Consulta exitosa del detalle de un pedido
    - **Given** el vendedor tiene un pedido recibido en su listado
    - **When** el vendedor selecciona ese pedido para ver su detalle
-   - **Then** el sistema muestra los productos y cantidades, el total, la modalidad de entrega (con la fecha y la ubicación de entrega cuando aplique), el monto a cobrar en efectivo, el estado y los datos básicos del cliente
+   - **Then** el sistema muestra los productos y cantidades, el total, la modalidad de entrega (con la fecha y la ubicación de entrega cuando aplique), el total, el medio de pago y el estado del pago, el estado y los datos básicos del cliente
 
 2. **Scenario**: Intento de consultar el detalle de un pedido de otro emprendimiento
    - **Given** existe un pedido que no pertenece al emprendimiento del vendedor autenticado
@@ -38,13 +38,13 @@ Como vendedor, quiero consultar un pedido, para conocer todos sus detalles.
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al vendedor consultar el detalle completo de un pedido asociado a su emprendimiento.
-- **FR-002**: El sistema DEBE mostrar en el detalle los productos, cantidades, total a cobrar en efectivo, modalidad de entrega, ubicación de entrega cuando aplique y estado del pedido.
+- **FR-002**: El sistema DEBE mostrar en el detalle los productos, cantidades, total, medio de pago y estado del pago, modalidad de entrega, ubicación de entrega cuando aplique y estado del pedido.
 - **FR-003**: El sistema DEBE mostrar en el detalle los datos básicos del cliente asociado al pedido.
 - **FR-004**: El sistema DEBE impedir que el vendedor consulte el detalle de un pedido que no pertenece a su emprendimiento.
 
 ### Key Entities
 
-- **Pedido**: Entidad consultada; incluye productos, cantidades, total a cobrar en efectivo, modalidad de entrega, ubicación de entrega, estado y referencia al cliente.
+- **Pedido**: Entidad consultada; incluye productos, cantidades, total, medio de pago y estado del pago, modalidad de entrega, ubicación de entrega cuando aplique y estado del pedido.
 - **Producto**: Ítem incluido en el pedido con su cantidad y precio al momento de la compra.
 
 ## Success Criteria *(mandatory)*

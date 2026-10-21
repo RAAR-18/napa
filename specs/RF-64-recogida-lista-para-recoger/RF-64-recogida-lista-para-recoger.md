@@ -33,12 +33,16 @@ Como vendedor de punto fijo, quiero marcar un pedido de recogida como listo para
 
 4. **Scenario**: Recogida marcada como reserva para una fecha futura
    - **Given** tengo un pedido de recogida aceptado marcado como reserva
-   - **When** llega la fecha acordada y preparo el pedido
+   - **When** faltan 15 minutos o menos para la fecha acordada
    - **Then** puedo marcarlo como listo para retirar igual que un pedido de recogida inmediato
+
+5. **Scenario**: Reserva marcada como lista antes de tiempo
+   - **Given** tengo un pedido de recogida aceptado marcado como reserva
+   - **When** faltan más de 15 minutos para la fecha y hora acordadas e intento marcarlo como listo para retirar
+   - **Then** el sistema rechaza la operación (`RESERVATION_NOT_DUE`) e indica desde cuándo puedo marcarlo como listo
 
 ### Edge Cases
 
-- ¿Puede marcarse un pedido de recogida como listo antes de la fecha y hora acordadas, si es una reserva?
 - ¿Qué ocurre si el cliente no llega a retirar un pedido marcado como listo? ¿Vence?
 
 ## Requirements *(mandatory)*
@@ -48,6 +52,7 @@ Como vendedor de punto fijo, quiero marcar un pedido de recogida como listo para
 - **FR-001**: El sistema DEBE permitir al vendedor de punto fijo marcar como "listo para recoger" un pedido aceptado de modalidad recogida de su emprendimiento, sea inmediato o marcado como reserva.
 - **FR-002**: El sistema DEBE notificar al cliente cuando su pedido esté listo.
 - **FR-003**: El sistema DEBE impedir marcar como listo un pedido que no sea de modalidad recogida y esté aceptado.
+- **FR-004**: En un pedido marcado como reserva, el sistema DEBE permitir marcarlo como listo solo desde 15 minutos antes de la fecha y hora acordadas.
 
 ### Key Entities
 

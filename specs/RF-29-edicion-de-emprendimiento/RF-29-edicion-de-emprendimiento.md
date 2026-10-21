@@ -9,7 +9,7 @@
 
 ### User Story 1 - Mantener actualizada la información del emprendimiento (Priority: P2)
 
-Como vendedor, quiero editar la información de mi emprendimiento (ubicación, horario, descripción), para mantenerla actualizada según mi actividad diaria.
+Como vendedor, quiero editar la información de mi emprendimiento (ubicación, hora de apertura y hora de cierre, descripción), para mantenerla actualizada según mi actividad diaria.
 
 **Why this priority**: Es una función de mantenimiento sobre un emprendimiento ya creado; agrega valor continuo pero no bloquea el flujo inicial de publicación ni de venta.
 
@@ -19,7 +19,7 @@ Como vendedor, quiero editar la información de mi emprendimiento (ubicación, h
 
 1. **Scenario**: Edición exitosa de un campo del emprendimiento
    - **Given** tengo un emprendimiento creado
-   - **When** modifico uno o varios campos (ubicación, horario, descripción)
+   - **When** modifico uno o varios campos (ubicación, hora de apertura, hora de cierre, descripción)
    - **Then** el sistema guarda los cambios y los muestra a los clientes de inmediato
 
 2. **Scenario**: Intento de edición con datos inválidos
@@ -37,14 +37,14 @@ Como vendedor, quiero editar la información de mi emprendimiento (ubicación, h
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE permitir al vendedor editar la ubicación, el horario y la descripción de su emprendimiento.
+- **FR-001**: El sistema DEBE permitir al vendedor editar la ubicación, la hora de apertura, la hora de cierre y la descripción de su emprendimiento.
 - **FR-002**: El sistema DEBE validar los datos modificados antes de guardar los cambios.
 - **FR-003**: El sistema DEBE reflejar los cambios guardados en la vista pública del emprendimiento de forma inmediata.
 - **FR-004**: El sistema DEBE permitir al vendedor ambulante actualizar su ubicación de venta cada vez que cambie de zona durante la jornada.
 
 ### Key Entities
 
-- **Emprendimiento**: Representa el negocio del vendedor; los campos ubicación, horario y descripción son editables.
+- **Emprendimiento**: Representa el negocio del vendedor; los campos ubicación, hora_apertura, hora_cierre y descripción son editables.
 
 ## Success Criteria *(mandatory)*
 

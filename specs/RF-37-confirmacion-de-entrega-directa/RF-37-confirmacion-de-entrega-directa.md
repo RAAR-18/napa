@@ -17,12 +17,12 @@ Como vendedor ambulante, quiero confirmar la entrega del pedido, para registrar 
 **Acceptance Scenarios**:
 
 1. **Scenario**: Confirmación de entrega y cobro en efectivo
-   - **Given** un pedido mío está en camino, acepto efectivo, y ya se lo entregué al cliente que paga en efectivo
+   - **Given** un pedido mío está en camino, el cliente eligió pagar en efectivo, y ya se lo entregué al cliente que paga en efectivo
    - **When** confirmo la entrega y el cobro
    - **Then** el sistema cambia el estado del pedido a entregado, registra el pago como confirmado con medio "efectivo" (RF-42) y habilita las calificaciones
 
 2. **Scenario**: Confirmación de entrega y cobro por transferencia
-   - **Given** un pedido mío está en camino y el cliente paga por transferencia a mi cuenta registrada
+   - **Given** un pedido mío está en camino yel cliente eligió pagar por transferencia a mi cuenta registrada
    - **When** confirmo la entrega y verifico la transferencia
    - **Then** el sistema cambia el estado del pedido a entregado y registra el pago como confirmado con medio "cuenta bancaria"
 
@@ -46,18 +46,18 @@ Como vendedor ambulante, quiero confirmar la entrega del pedido, para registrar 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al vendedor ambulante confirmar la entrega únicamente de pedidos en estado "en camino".
-- **FR-002**: El sistema DEBE solicitar al vendedor la confirmación del cobro al registrar la entrega, indicando el medio utilizado (efectivo o cuenta bancaria) entre los habilitados por el vendedor (RF-42, RF-63).
+- **FR-002**: El sistema DEBE solicitar al vendedor la confirmación del cobro al registrar la entrega, por el medio que eligió el cliente al hacer el pedido; el cliente no puede cambiarlo al pagar.
 - **FR-003**: El sistema DEBE cambiar el estado del pedido a "entregado" y habilitar las calificaciones entre las partes (RF-01).
 - **FR-004**: El sistema DEBE impedir que la entrega de un mismo pedido se confirme más de una vez.
 
 ### Key Entities
 
 - **Pedido**: Transición de esta funcionalidad: en camino → entregado.
-- **Pago**: Registro asociado al pedido, confirmado junto con la entrega, con su medio.
+- **Pago**: Registro asociado al pedido, confirmado junto con la entrega, con el medio elegido por el cliente.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: El vendedor puede confirmar la entrega y el cobro en menos de 15 segundos.
-- **SC-002**: El 100% de los pedidos entregados por vendedores ambulantes tienen su pago confirmado, con su medio correctamente registrado.
+- **SC-002**: El 100% de los pedidos entregados por vendedores ambulantes tienen su pago confirmado, medio igual al elegido por el cliente.

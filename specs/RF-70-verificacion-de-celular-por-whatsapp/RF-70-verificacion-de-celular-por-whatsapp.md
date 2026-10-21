@@ -123,9 +123,9 @@ Como usuario que no recibió el código, quiero pedir uno nuevo o recibirlo por 
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE emitir un código de 6 dígitos de un solo uso, con vigencia limitada (no mayor a 10 minutos).
+- **FR-001**: El sistema DEBE solicitar a Twilio Verify un código de 6 dígitos de un solo uso con vigencia limitada (no mayor a 10 minutos); el proveedor lo genera y lo entrega.
 - **FR-002**: El sistema DEBE enviar el código por WhatsApp con una plantilla aprobada y ofrecer SMS como respaldo si el envío falla.
-- **FR-003**: El sistema DEBE permitir hasta 5 intentos por código y invalidarlo al agotarlos.
+- **FR-003**: El sistema DEBE permitir hasta 5 intentos por código; el proveedor valida el código y Ñapa lleva el contador de intentos e invalida la verificación al agotarlos.
 - **FR-004**: El sistema DEBE limitar los envíos por celular (1 por minuto, 5 por hora) y por IP, respondiendo `429` con `Retry-After`.
 - **FR-005**: El sistema DEBE invalidar el código anterior cuando se genera uno nuevo para el mismo celular y propósito.
 - **FR-006**: El sistema DEBE responder igual ante celulares registrados y no registrados en la recuperación de contraseña.
@@ -138,8 +138,8 @@ Como usuario que no recibió el código, quiero pedir uno nuevo o recibirlo por 
 
 ### Key Entities
 
-- **Mensaje**: Envío saliente por un canal externo; ver `../general/spec-general.md` §3.2.
-- **Código OTP**: Dato efímero en Redis (hash, intentos, vigencia); no es entidad persistente.
+- **Mensaje**: Envío saliente por un canal externo; ver `../general/spec-general.md`.
+- **Código OTP**: Contadores de intentos y límites de envío en Redis; Ñapa no conoce ni conserva el código, que lo genera, entrega y valida el proveedor. No es entidad persistente.
 - **Usuario**: Su celular y la fecha de verificación (`celular_verificado_at`).
 
 ## Success Criteria *(mandatory)*

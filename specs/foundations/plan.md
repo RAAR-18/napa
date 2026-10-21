@@ -16,19 +16,19 @@ Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dom
 ## Decisiones (ADR resumido)
 
 | # | Decisión | Motivo |
-|---|---|---|
-| D1 | **Autenticación**: contraseña Argon2id como credencial; contraseña de 8–128 caracteres sin reglas de composición; código de un solo uso (Twilio Verify) solo para verificar el celular y recuperar la contraseña (RF-70). El administrador entra solo con contraseña y se inicializa una sola vez con secretos de entorno. | Limita el costo de mensajes (un código por alta, cambio de celular o recuperación, no por inicio de sesión), conserva el límite de intentos de RF-10 FR-004 y no depende de WhatsApp para entrar a vender. |
-| D2 | Spring Boot **4.1.x**, Java 21 LTS | 3.2 está sin soporte. Verificar parche y compatibilidad de Hibernate Spatial al iniciar. |
+| ------ | ------ | ------ |
+| D1 | **Autenticación** : contraseña como credencial; código de un solo uso (Twilio Verify) solo para verificar el celular y recuperar la contraseña (RF-70). El administrador entra solo con contraseña (cuenta sembrada). | Limita el costo de mensajes (un código por alta, cambio de celular o recuperación, no por inicio de sesión), conserva el límite de intentos de RF-10 FR-004 y no depende de WhatsApp para entrar a vender. |
+| D2 | Spring Boot  **4.1.x** , Java 21 LTS | 3.2 está sin soporte. Verificar parche y compatibilidad de Hibernate Spatial al iniciar. |
 | D3 | Se elimina "Cash-Only". Medios: efectivo o transferencia; domicilio solo digital | RNF29, RF-42, RF-63. |
-| D4 | Push con **token FCM nativo** (`getDevicePushTokenAsync`) + Firebase Admin, y **development build** de Expo | Expo Go no sirve para push remoto ni react-native-maps con claves propias. |
-| D5 | Offline: **expo-sqlite + outbox + `Idempotency-Key`**, sin WatermelonDB | La app no necesita sincronización bidireccional de grafos; el servidor es la autoridad. Menos dependencias nativas en gama baja (RNF31). |
-| D6 | Idempotencia en dos capas: Redis (respuesta cacheada por clave, 24 h) y **restricciones únicas en BD** como garantía final | Si Redis cae, la BD sigue evitando duplicados (RNF27). |
-| D7 | **Outbox transaccional**: el evento se escribe en la misma transacción; un relay lo despacha. `@TransactionalEventListener(AFTER_COMMIT)` solo para efectos locales no críticos (invalidar caché) | Evita perder notificaciones si el proceso cae tras el commit. |
-| D8 | JWT de acceso corto + refresh rotativo + claim `sv` (versión de sesión) validado contra Redis | Permite cerrar sesiones (RF-09 FR-003), eliminar cuentas (RF-11, RF-68) y cambiar rol sin esperar expiración. |
-| D9 | Rutas y distancias por **Google Maps Routes API** detrás de `RoutingPort`; credenciales por variables de entorno y resultados cacheados en Redis | Decisión de proveedor aprobada para RNF19. Tarifa = distancia A–B (RF-45 FR-006) con piso RF-44. |
-| D10 | PostGIS con `geography(Point,4326)`; cercanía con `ST_DWithin`/`ST_Distance`; índice GiST | RNF22. |
-| D11 | Límites entre módulos verificados con **ArchUnit** (dominio sin Spring/JPA; módulos solo se hablan por puertos) | RNF13, RNF25. |
-| D12 | Verificación del celular con **Twilio Verify** (WhatsApp con respaldo SMS) detrás de `VerificarCelularPort` | El equipo ya lo conoce y delega a Twilio la generación del código, su vigencia, los intentos y las plantillas aprobadas. Costo: 0,05 USD por verificación exitosa más la tarifa del canal (a confirmar para Colombia). Adaptador de consola para desarrollo y pruebas, sin gastar unidades. Cambiar de proveedor es cambiar un adaptador. |
+| D4 | Push con  **token FCM nativo**  (getDevicePushTokenAsync) + Firebase Admin, y  **development build**  de Expo | Expo Go no sirve para push remoto ni react-native-maps con claves propias. |
+| D5 | Offline:  **expo-sqlite + outbox + Idempotency-Key** , sin WatermelonDB | La app no necesita sincronización bidireccional de grafos; el servidor es la autoridad. Menos dependencias nativas en gama baja (RNF31). |
+| D6 | Idempotencia en dos capas: Redis (respuesta cacheada por clave, 24 h) y  **restricciones únicas en BD**  como garantía final | Si Redis cae, la BD sigue evitando duplicados (RNF27). |
+| D7 | **Outbox transaccional** : el evento se escribe en la misma transacción; un relay lo despacha. @TransactionalEventListener(AFTER_COMMIT) solo para efectos locales no críticos (invalidar caché) | Evita perder notificaciones si el proceso cae tras el commit. |
+| D8 | JWT de acceso corto + refresh rotativo + claim sv (versión de sesión) validado contra Redis | Permite cerrar sesiones (RF-09 FR-003), eliminar cuentas (RF-11, RF-68) y cambiar rol sin esperar expiración. |
+| D9 | **Proveedor de rutas** : **OpenRouteService** tras RoutingPort, con caché en Redis y respaldo de línea recta. Verificar cuota y términos vigentes en F013. | RNF19. Tarifa = distancia A–B (RF-45 FR-006) con piso RF-44. |
+| D10 | PostGIS con geography(Point,4326); cercanía con ST_DWithin/ST_Distance; índice GiST | RNF22. |
+| D11 | Límites entre módulos verificados con  **ArchUnit**  (dominio sin Spring/JPA; módulos solo se hablan por puertos) | RNF13, RNF25. |
+| D12 | Verificación del celular con  **Twilio Verify**  (WhatsApp con respaldo SMS) detrás de VerificarCelularPort | El equipo ya lo conoce y delega a Twilio la generación del código, su vigencia, los intentos y las plantillas aprobadas. Costo: 0,05 USD por verificación exitosa más la tarifa del canal (a confirmar para Colombia). Adaptador de consola para desarrollo y pruebas, sin gastar unidades. Cambiar de proveedor es cambiar un adaptador. |
 | D13 | El código de confirmación del domicilio se genera al asignarlo (6 dígitos aleatorios) y se guarda tal cual; solo lo ve el cliente. El domiciliario lo ingresa y, si coincide, el domicilio y el pedido pasan a ENTREGADO (única confirmación). Máximo 5 intentos y bloqueo de 15 min. | Es una decisión de simplicidad: el riesgo de guardarlo es bajo frente al resto de datos de la base y el límite de intentos lo mitiga. |
 | D14 | Contraseñas con Argon2id, longitud de 8–128 caracteres y sin reglas de composición; contraseñas nuevas con recuperación o cambio revocan las demás sesiones. | Decisión aprobada por el usuario; balancea compatibilidad con frases de contraseña y un mínimo explícito. |
 | D15 | Tras 5 fallos en 15 minutos por identificador normalizado y por IP, login responde `429` con `Retry-After`. | Decisión aprobada por el usuario para mitigar fuerza bruta sin revelar si existe la cuenta. |
@@ -182,9 +182,8 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 | ¿Notificaciones críticas no silenciables (estado de domicilio)? | RF-39 | **Resuelto: no hay excepciones**; se respetan las preferencias para todo tipo de notificación | Equipo |
 | Vencimientos (pedido sin respuesta, pago sin hacer, llegada sin confirmar) | Varias specs | **Resuelto para MVP: no hay vencimiento automático**; permanecen en su estado actual hasta una acción permitida por las specs. Reabrir la decisión requiere actualizar las specs | Equipo y usuarios |
 
-## Plan Review Checklist
-
-- [x] Decisiones de alcance y comportamiento registradas en foundations y en las specs afectadas
-- [x] Proveedor de rutas elegido (Google Maps Routes API)
-- [ ] ArchUnit y Testcontainers corren en CI
-- [ ] Checkpoint de la base verificado en un móvil de gama baja
+#### Plan Review Checklist
+*  [x] Spec Change Requests aplicados a las specs (actualizado según spec-general-cambios.md)
+*  [x] Proveedor de rutas elegido (OpenRouteService)
+*  [ ] ArchUnit y Testcontainers corren en CI
+*  [ ] Checkpoint de la base verificado en un móvil de gama baja

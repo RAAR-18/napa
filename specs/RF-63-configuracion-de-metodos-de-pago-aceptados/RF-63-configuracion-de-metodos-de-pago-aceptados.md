@@ -27,14 +27,14 @@ Como vendedor, quiero indicar si acepto efectivo y/o registrar una cuenta bancar
    - **Then** el sistema solo ofrece efectivo como medio de pago
 
 3. **Scenario**: Vendedor de punto fijo con domicilios
-   - **Given** soy vendedor de punto fijo y también ofrezco domicilio
+   - **Given** soy vendedor de punto fijo con una cuenta bancaria registrada.
    - **When** reviso mi configuración de pagos
    - **Then** el sistema me indica que el domicilio siempre exige cuenta bancaria registrada, independientemente de si acepto efectivo en recogida
 
 4. **Scenario**: Intento de ofrecer domicilio sin cuenta bancaria
    - **Given** soy vendedor de punto fijo sin cuenta bancaria registrada
    - **When** intento aceptar un pedido de modalidad domicilio
-   - **Then** el sistema me impide aceptarlo y me indica que debo registrar una cuenta bancaria primero
+   - **Then** el sistema me impide aceptarlo y me indica que debo registrar una cuenta bancaria primero (el cliente ni siquiera ve la modalidad domicilio, RF-45)
 
 ### Edge Cases
 
