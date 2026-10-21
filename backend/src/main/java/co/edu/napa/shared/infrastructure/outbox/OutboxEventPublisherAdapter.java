@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.databind.ObjectMapper;
 
+import java.sql.Timestamp;
 import java.util.Objects;
 
 @Component
@@ -48,7 +49,7 @@ public class OutboxEventPublisherAdapter implements EventPublisherPort {
                 envelope.eventId(),
                 envelope.type(),
                 envelope.version(),
-                envelope.occurredAt(),
+                Timestamp.from(envelope.occurredAt()),
                 envelope.aggregateType(),
                 envelope.aggregateId(),
                 envelope.actorUserId(),
