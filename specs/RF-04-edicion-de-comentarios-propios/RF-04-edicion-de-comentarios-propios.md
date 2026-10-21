@@ -30,14 +30,14 @@ Como usuario, quiero editar los comentarios que he publicado, para corregir o ac
 
 - ¿Qué ocurre si el usuario intenta editar un comentario que ya fue eliminado por un administrador?
 - ¿El sistema conserva un historial de ediciones o solo el estado más reciente?
-- ¿Qué sucede si la edición deja el comentario vacío?
+- ¿Qué sucede si la edición deja el comentario vacío?se rechaza; si el usuario no quiere comentario, no lo envía
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema MUST permitir a un usuario editar únicamente los comentarios que él mismo publicó.
-- **FR-002**: El sistema MUST validar que el contenido editado cumpla las reglas mínimas de la plataforma (no vacío, dentro del límite de caracteres).
+- **FR-002**: El sistema MUST validar que el contenido editado cumpla las reglas mínimas de la plataforma (no vacío, dentro del límite de caracteres (300)).
 - **FR-003**: El sistema MUST reflejar de inmediato los cambios del comentario editado para el resto de los usuarios.
 
 ### Key Entities

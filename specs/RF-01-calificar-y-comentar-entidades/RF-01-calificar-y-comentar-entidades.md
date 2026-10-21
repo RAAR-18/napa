@@ -76,7 +76,7 @@ Como vendedor de punto fijo, quiero calificar y comentar al domiciliario que ges
 - ¿Qué ocurre si un usuario intenta calificar un pedido o domicilio que aún no ha finalizado/entregado?
 - ¿Cómo maneja el sistema un intento de calificar dos veces la misma entidad para el mismo pedido/domicilio?
 - ¿Qué sucede si el usuario intenta calificar una entidad con la que nunca tuvo interacción registrada (sin pedido/domicilio de por medio)?
-- ¿Cómo se limita el rango de la calificación (por ejemplo, fuera de escala) y qué pasa si se envía un valor inválido?
+- ¿Cómo se limita el rango de la calificación (por ejemplo, fuera de escala) y qué pasa si se envía un valor inválido? resuelto en FR-008
 
 ## Requirements *(mandatory)*
 
@@ -89,6 +89,7 @@ Como vendedor de punto fijo, quiero calificar y comentar al domiciliario que ges
 - **FR-005**: El sistema MUST vincular cada calificación/comentario a un pedido entregado entre las partes involucradas (en domicilio, el domicilio se deduce del pedido).
 - **FR-006**: El sistema MUST impedir que un mismo usuario registre más de una calificación por la misma interacción y entidad.
 - **FR-007**: El sistema MUST permitir al vendedor (ambulante o de punto fijo) calificar y comentar al cliente de un pedido entregado.
+- **FR-008**: El sistema DEBE exigir un puntaje de 1 a 5; el comentario es opcional y, si se envía, tiene hasta 300 caracteres.
 
 ### Key Entities
 

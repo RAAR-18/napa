@@ -23,7 +23,7 @@ Como vendedor, quiero añadir un producto con nombre, precio, descripción y can
 
 2. **Scenario**: Datos inválidos al registrar
    - **Given** el vendedor está completando el formulario de un nuevo producto
-   - **When** ingresa un precio negativo o una cantidad no numérica
+   - **When** ingresa un precio negativo o una cantidad no numérica o una cantidad igual a 0
    - **Then** el sistema rechaza el registro y muestra un mensaje indicando el campo inválido
 
 ---
@@ -31,21 +31,22 @@ Como vendedor, quiero añadir un producto con nombre, precio, descripción y can
 ### Edge Cases
 
 - ¿Qué ocurre si el vendedor intenta registrar un producto sin tener un emprendimiento creado?
-- ¿Cómo maneja el sistema el registro de un producto con nombre duplicado dentro del mismo emprendimiento?
-- ¿Qué sucede si se registra un producto con cantidad disponible igual a cero?
+- ¿Cómo maneja el sistema el registro de un producto con nombre duplicado dentro del mismo emprendimiento? (resuelto en FR-005)
+- ¿Qué sucede si se registra un producto con cantidad disponible igual a cero? (resuelto en FR-003)
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: El sistema MUST permitir al vendedor registrar un producto indicando nombre, precio, descripción y cantidad disponible.
+- **FR-001**: El sistema MUST permitir al vendedor registrar un producto indicando nombre, precio, la unidad, descripción y cantidad disponible.
 - **FR-002**: El sistema MUST asociar el producto registrado al emprendimiento del vendedor autenticado.
-- **FR-003**: El sistema MUST validar que el nombre, el precio y la cantidad sean valores válidos antes de publicar el producto.
+- **FR-003**: El sistema DEBE validar que el nombre, el precio, la unidad y la cantidad sean válidos, y que la cantidad initial sea mayor que 0.
 - **FR-004**: El sistema MUST publicar el producto de forma inmediata en el catálogo visible para los clientes una vez registrado.
+- **FR-005**: El sistema DEBE rechazar un producto con nombre duplicado dentro del mismo emprendimiento (409 CONFLICT).
 
 ### Key Entities *(include if feature involves data)*
 
-- **Producto**: Representa un artículo ofrecido por un emprendimiento; atributos clave: nombre, precio, descripción, cantidad disponible, estado (disponible/agotado).
+- **Producto**: Representa un artículo ofrecido por un emprendimiento; atributos clave: nombre, precio, unidad, descripción, cantidad disponible, estado (disponible/agotado).
 
 ## Success Criteria *(mandatory)*
 

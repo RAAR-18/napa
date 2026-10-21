@@ -30,7 +30,7 @@ Como cliente, quiero ver el listado de emprendimientos disponibles en la platafo
 ### Edge Cases
 
 - ¿Qué sucede si un emprendimiento fue eliminado mientras el cliente tenía el listado abierto?
-- ¿Cómo se muestra un emprendimiento que temporalmente está fuera de horario de atención?
+- ¿Cómo se muestra un emprendimiento que temporalmente está fuera de horario de atención? (se calcula con la hora de apertura y la de cierre)
 - ¿Qué ocurre si hay una gran cantidad de emprendimientos registrados? ¿se pagina el resultado?
 
 ## Requirements *(mandatory)*
@@ -38,13 +38,13 @@ Como cliente, quiero ver el listado de emprendimientos disponibles en la platafo
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al cliente consultar el listado de emprendimientos activos registrados en la plataforma.
-- **FR-002**: El sistema DEBE mostrar, para cada emprendimiento del listado, su nombre, categoría, tipo de vendedor (ambulante o de punto fijo) y ubicación.
+- **FR-002**: El sistema DEBE mostrar, para cada emprendimiento del listado, su nombre, categoría (de una lista fija), tipo de vendedor (ambulante o de punto fijo) y ubicación.
 - **FR-003**: El sistema DEBE excluir del listado los emprendimientos inactivos o eliminados.
 - **FR-004**: El sistema DEBE permitir ordenar el listado por cercanía y filtrarlo por tipo de vendedor.
 
 ### Key Entities
 
-- **Emprendimiento**: Representa el negocio del vendedor; se muestra en el listado con nombre, categoría, tipo de vendedor (ambulante o de punto fijo) y ubicación.
+- **Emprendimiento**: Representa el negocio del vendedor; se muestra en el listado con nombre, categoría (de una lista fija), tipo de vendedor (ambulante o de punto fijo) y ubicación.
 
 ## Success Criteria *(mandatory)*
 

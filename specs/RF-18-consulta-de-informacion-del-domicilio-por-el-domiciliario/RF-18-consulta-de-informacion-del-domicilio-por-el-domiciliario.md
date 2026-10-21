@@ -39,7 +39,6 @@ Como domiciliario, quiero consultar la información de un domicilio (de dónde s
 
 ### Edge Cases
 
-- ¿Debe restringirse la dirección exacta y el nombre de quien recibe hasta que el domicilio sea asignado, por privacidad (RNF04)?
 - ¿Cómo se muestra el destino si la ubicación del cliente no puede resolverse en el mapa?
 - ¿Qué ocurre si el domicilio es cancelado mientras el domiciliario revisa su información?
 
@@ -50,7 +49,7 @@ Como domiciliario, quiero consultar la información de un domicilio (de dónde s
 - **FR-001**: El sistema DEBE mostrar al domiciliario, para un domicilio, el punto de origen (A), el punto de destino (B), el cliente que lo recibirá y la ganancia (la tarifa del pedido).
 - **FR-002**: El sistema DEBE mostrar un resumen de los ítems del pedido (cantidad de ítems), sin exponer datos de pago.
 - **FR-003**: El sistema DEBE permitir, desde la información de un domicilio disponible, aceptarlo (RF-19) o rechazarlo (RF-17).
-- **FR-004**: El sistema DEBE restringir los datos personales del receptor a lo necesario para la entrega, según las reglas de privacidad definidas (RNF04).
+- **FR-004**: El sistema DEBE mostrar completos el punto B y el nombre del receptor desde antes de la asignación, sin exponer datos de pago.
 - **FR-005**: El sistema DEBE informar cuando el domicilio consultado ya no esté disponible.
 
 ### Key Entities

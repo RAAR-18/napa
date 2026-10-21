@@ -25,7 +25,7 @@ Como vendedor, quiero actualizar rápidamente la cantidad disponible de un produ
 2. **Scenario**: Producto agotado automáticamente
    - **Given** el vendedor tiene un producto publicado
    - **When** la cantidad disponible llega a cero (manual o por consumo de pedidos)
-   - **Then** el sistema marca el producto como agotado y lo oculta de nuevas compras
+   - **Then** el sistema marca el producto como agotado y lo marca como agotado; solo admite pedidos marcados como reserva
 
 ---
 
@@ -33,8 +33,7 @@ Como vendedor, quiero actualizar rápidamente la cantidad disponible de un produ
 
 - ¿Qué ocurre si dos clientes intentan pedir simultáneamente la última unidad disponible de un producto?
 - ¿Qué sucede si el vendedor intenta establecer una cantidad negativa?
-- ¿El producto agotado permanece visible en el catálogo en modo "no disponible" o se oculta por completo?
-- ¿Cuándo se descuentan las unidades de un pedido marcado como reserva? (se recomienda: al llegar la fecha acordada, cuando el vendedor lo atiende, y no al aceptarlo)
+- ¿El producto agotado permanece visible en el catálogo en modo "no disponible" o se oculta por completo? Permanece visible con la etiqueta ‘solo reserva’ (RF-33)
 
 ## Requirements *(mandatory)*
 
@@ -42,14 +41,15 @@ Como vendedor, quiero actualizar rápidamente la cantidad disponible de un produ
 
 - **FR-001**: El sistema MUST permitir al vendedor actualizar manualmente la cantidad disponible actual de un producto.
 - **FR-002**: El sistema MUST marcar automáticamente un producto como agotado cuando su cantidad disponible llegue a cero.
-- **FR-003**: El sistema MUST impedir que se registren pedidos sobre productos marcados como agotados.
+- **FR-003**: El sistema DEBE impedir pedidos inmediatos sobre productos agotados; un producto agotado solo admite pedidos marcados como reserva.
 - **FR-004**: El sistema MUST rechazar valores de cantidad negativos.
 - **FR-005**: El sistema MUST controlar actualizaciones concurrentes de inventario para evitar sobreventa de la misma unidad.
-- **FR-006**: El sistema MUST descontar de la cantidad disponible las unidades de los pedidos de entrega directa, recogida y domicilio que no estén marcados como reserva en el momento en que el vendedor los acepta, y rechazar la aceptación si la cantidad disponible no alcanza. Los pedidos marcados como reserva no descuentan el inventario actual al aceptarse; el vendedor gestiona su inventario al atenderlos.
+- **FR-006**: El sistema DEBE descontar de la cantidad disponible las unidades de los pedidos que no estén marcados como reserva en el momento en que el vendedor los acepta, y rechazar la aceptación si no alcanza. Las reservas no descuentan inventario en ningún momento; el vendedor gestiona su inventario con su propio criterio.
+- **FR-007**: El sistema DEBE manejar la cantidad disponible como un valor decimal, expresada en una unidad (p. ej. kg, libra, unidad) definida por el vendedor.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Producto**: Ver definición en RF-54; el atributo `cantidad_disponible` (cantidad actual declarada por el vendedor) y el estado `agotado` son el foco de este requerimiento.
+- **Producto**: Ver definición en RF-54; el atributo `cantidad_disponible` (decimal) y unidad (cantidad actual declarada por el vendedor) y el estado `agotado` son el foco de este requerimiento.
 
 ## Success Criteria *(mandatory)*
 

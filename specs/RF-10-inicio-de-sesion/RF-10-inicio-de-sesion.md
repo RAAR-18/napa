@@ -46,7 +46,7 @@ Como administrador, quiero iniciar sesión en mi cuenta, para acceder a las func
 **Acceptance Scenarios**:
 
 1. **Scenario**: Inicio de sesión administrativo exitoso
-   - **Given** tengo una cuenta administrativa registrada
+   - **Given** tengo una cuenta administrativa sembrada en la base de datos
    - **When** ingreso mis credenciales correctas
    - **Then** el sistema me autentica y me redirige al panel administrativo
 
@@ -65,6 +65,7 @@ Como administrador, quiero iniciar sesión en mi cuenta, para acceder a las func
 - **FR-003**: El sistema MUST redirigir al usuario autenticado al panel correspondiente a su rol (cliente, vendedor, domiciliario o administrador).
 - **FR-004**: El sistema MUST limitar los intentos fallidos consecutivos de inicio de sesión para mitigar ataques de fuerza bruta; el límite aplica también a los intentos de código de un solo uso (RF-70).
 - **FR-005**: El sistema MUST impedir el inicio de sesión de un usuario cuyo celular no esté verificado (RF-70). El administrador inicia sesión solo con contraseña.
+- **FR-006**: El administrador no se registra: su cuenta se siembra desde la base de datos con correo y celular registrados, y entra con correo y contraseña.
 
 ### Key Entities
 

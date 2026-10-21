@@ -50,6 +50,7 @@ Como persona interesada en usar la plataforma, quiero registrarme indicando mis 
 - **FR-004**: El sistema MUST permitir iniciar sesión inmediatamente después de un registro exitoso; al verificarse el celular (RF-70) la sesión se inicia sin pedir de nuevo las credenciales.
 - **FR-005**: El sistema MUST habilitar las funcionalidades de la cuenta según el rol elegido; en particular, el vendedor ambulante gestiona entregas directas y reservas con entrega al cliente, y el vendedor de punto fijo gestiona reservas con retiro en el punto y domicilios.
 - **FR-006**: El sistema MUST exigir un celular y verificarlo con un código de un solo uso (RF-70); la cuenta queda activa solo después de verificarlo.
+- **FR-007**: El sistema NO DEBE permitir registrarse como administrador: esa cuenta se siembra desde la base de datos (RF-10).
 
 ### Key Entities
 

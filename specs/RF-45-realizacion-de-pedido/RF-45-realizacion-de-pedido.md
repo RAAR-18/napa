@@ -22,8 +22,8 @@ Como cliente, quiero seleccionar los productos y las cantidades de un emprendimi
    - **When** elijo la modalidad de entrega
    - **Then** el sistema ofrece entrega directa
 
-2. **Scenario**: Modalidades de un vendedor de punto fijo
-   - **Given** consulto el emprendimiento de un vendedor de punto fijo
+2. **Scenario**: Modalidades de un vendedor de punto fijo con cuenta bancaria
+   - **Given** consulto el emprendimiento de un vendedor de punto fijo con cuenta bancaria registrada
    - **When** elijo la modalidad de entrega
    - **Then** el sistema ofrece recogida en el punto fijo y domicilio
 
@@ -32,10 +32,20 @@ Como cliente, quiero seleccionar los productos y las cantidades de un emprendimi
    - **When** agrego varios productos con sus cantidades
    - **Then** el sistema acumula los ítems del pedido con su subtotal y su total
 
-4. **Scenario**: Producto sin disponibilidad
-   - **Given** seleccioné un producto que se agotó
+4. **Scenario**: Producto agotado en un pedido inmediato
+   - **Given** seleccioné un producto que se agotó y el pedido no está marcado como reserva
    - **When** intento continuar con el pedido
    - **Then** el sistema informa que el producto ya no está disponible y me pide ajustar la selección
+
+5. **Scenario**: Vendedor de punto fijo sin cuenta bancaria
+   - **Given** consulto el emprendimiento de un vendedor de punto fijo sin cuenta bancaria registrada
+   - **When** elijo la modalidad de entrega
+   - **Then** el sistema ofrece solo recogida en el punto fijo y no ofrece domicilio
+
+6. **Scenario**: Producto agotado en una reserva
+   - **Given** seleccioné un producto agotado (aparece como "solo reserva") y marqué el pedido como reserva con fecha y hora acordadas
+   - **When** continúo con el pedido
+   - **Then** el sistema acepta el producto sin validar su cantidad y registra el pedido en estado pendiente, a la espera de la decisión del vendedor
 
 ---
 
@@ -119,8 +129,6 @@ Como cliente, quiero realizar un pedido con los productos seleccionados y elegir
 - ¿Cómo maneja el sistema un cambio de precio o de disponibilidad entre la selección y la confirmación?
 - ¿Qué ocurre si el cliente está demasiado lejos de un vendedor ambulante para una entrega directa?
 - ¿Qué pasa si el cliente pierde conexión después de armar el pedido y antes de confirmarlo (RNF28)?
-- ¿Qué ocurre si el vendedor deshabilita un medio de pago mientras el cliente arma su pedido?
-- ¿Puede reservarse un producto que hoy figura como agotado, si el vendedor lo tendrá en la fecha acordada?
 - ¿Qué ocurre si el vendedor de punto fijo aceptó un pedido de domicilio y el cliente nunca realiza la transferencia? (no hay plazo definido; punto pendiente de validar)
 
 ## Requirements *(mandatory)*
@@ -128,14 +136,14 @@ Como cliente, quiero realizar un pedido con los productos seleccionados y elegir
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al cliente seleccionar uno o más productos de un emprendimiento con la cantidad deseada de cada uno; cada producto seleccionado es un ítem del pedido.
-- **FR-002**: El sistema DEBE validar la disponibilidad de inventario actual de cada ítem antes de confirmar un pedido inmediato; en los pedidos marcados como reserva no valida las cantidades contra una disponibilidad futura, porque el vendedor decide con su propio criterio al aceptarlos o rechazarlos (RF-53).
-- **FR-003**: El sistema DEBE ofrecer las modalidades de entrega según el tipo de vendedor: entrega directa para el vendedor ambulante; recogida en el punto fijo y domicilio para el vendedor de punto fijo.
+- **FR-002**: El sistema DEBE validar la disponibilidad de inventario actual de cada ítem antes de confirmar un pedido inmediato. Un producto agotado solo se acepta si el pedido está marcado como reserva; en las reservas no se valida cantidad.
+- **FR-003**: El sistema DEBE ofrecer las modalidades de entrega según el tipo de vendedor: entrega directa para el vendedor ambulante; recogida en el punto fijo y domicilio para el vendedor de punto fijo. El domicilio solo se ofrece si el vendedor de punto fijo tiene cuenta bancaria registrada (RF-63).
 - **FR-004**: El sistema DEBE solicitar la ubicación de entrega en la entrega directa y el domicilio, y no solicitarla en la recogida en punto fijo.
 - **FR-005**: El sistema DEBE permitir marcar cualquier pedido como reserva, indicando fecha y hora futuras acordadas con el vendedor; la reserva es un atributo del pedido y no altera su modalidad de entrega.
-- **FR-006**: El sistema DEBE calcular y mostrar el total del pedido, incluyendo el costo del domicilio cuando aplique, calculado según la distancia y sin ser inferior a la tarifa mínima (RF-44).
+- **FR-006**: El sistema DEBE calcular y mostrar el total del pedido, incluyendo el costo del domicilio cuando aplique, calculado según la ruta entre el punto A y el punto B y sin ser inferior a la tarifa mínima (RF-44).
 - **FR-007**: El sistema DEBE registrar el pedido en estado "pendiente" y notificar al vendedor.
 - **FR-008**: El sistema DEBE impedir la confirmación del pedido si falta algún ítem, la modalidad, el medio de pago, la ubicación cuando esta aplique, o la fecha y hora cuando se marque como reserva.
-- **FR-009**: El sistema DEBE ofrecer como medio de pago, en entrega directa y recogida, únicamente los que el vendedor tenga habilitados (RF-63), y exigir pago por transferencia en el domicilio.
+- **FR-009**: El sistema DEBE ofrecer como medio de pago, en entrega directa y recogida, únicamente los que el vendedor tenga habilitados (RF-63), exigir transferencia en el domicilio, y registrar el medio elegido como el medio con el que se pagará el pedido. El medio elegido no puede cambiarse después de confirmar el pedido.
 - **FR-010**: El sistema DEBE informar al cliente, en un pedido de domicilio, que el total (productos más domicilio) deberá pagarse por transferencia apenas el vendedor acepte el pedido.
 
 ### Key Entities
@@ -151,7 +159,7 @@ Como cliente, quiero realizar un pedido con los productos seleccionados y elegir
 
 - **SC-001**: El cliente puede completar un pedido (ítems, modalidad, ubicación y pago) en menos de 3 minutos.
 - **SC-002**: El 100% de los pedidos confirmados cuentan con ítems, modalidad, medio de pago y, cuando aplica, ubicación y fecha y hora de reserva.
-- **SC-003**: El 0% de los pedidos inmediatos se confirma con productos sin disponibilidad de inventario.
+- **SC-003**: El 0% de los pedidos inmediatos se confirma con productos sin disponibilidad de inventario (los productos agotados solo se aceptan en reservas). 
 - **SC-004**: El vendedor recibe la notificación de un nuevo pedido pendiente en menos de 1 minuto.
 - **SC-005**: El 0% de los pedidos de domicilio se confirma con pago en efectivo.
 - **SC-006**: El 100% de los pedidos de domicilio informan al cliente el total a pagar por transferencia y el momento del pago antes de confirmarse.

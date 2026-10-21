@@ -26,7 +26,7 @@ Como administrador, quiero eliminar comentarios, para retirar contenido que incu
 
 ### User Story 2 - Administrador edita un comentario que requiere corrección (Priority: P2)
 
-Como administrador, quiero editar comentarios, para gestionar contenido que requiera modificaciones sin necesidad de eliminarlo por completo.
+Como administrador, quiero editar el texto de comentarios, para gestionar contenido que requiera modificaciones sin necesidad de eliminarlo por completo.
 
 **Why this priority**: Ofrece una alternativa menos drástica que la eliminación para casos que solo requieren ajustes menores.
 
@@ -36,7 +36,7 @@ Como administrador, quiero editar comentarios, para gestionar contenido que requ
 
 1. **Scenario**: Edición administrativa de un comentario
    - **Given** identifico un comentario que requiere modificación
-   - **When** edito su contenido desde el panel administrativo
+   - **When** edito su texto (la calificación no se modifica) desde el panel administrativo
    - **Then** el sistema guarda el cambio y lo muestra actualizado a los usuarios
 
 ### Edge Cases
@@ -50,8 +50,8 @@ Como administrador, quiero editar comentarios, para gestionar contenido que requ
 ### Functional Requirements
 
 - **FR-001**: El sistema MUST permitir al administrador eliminar cualquier comentario publicado en la plataforma.
-- **FR-002**: El sistema MUST permitir al administrador editar el contenido de cualquier comentario publicado.
-- **FR-003**: El sistema MUST recalcular el promedio de calificación de la entidad afectada tras una eliminación o edición administrativa.
+- **FR-002**: El sistema MUST permitir al administrador editar únicamente el texto de cualquier comentario publicado.
+- **FR-003**:“El sistema DEBE recalcular el promedio de calificación solo tras una eliminación; una edición administrativa no lo cambia.
 - **FR-004**: El sistema MUST registrar que una acción de moderación (edición o eliminación) fue realizada por un administrador, distinguiéndola de las acciones del autor original.
 - **FR-005**: El sistema MUST notificar al autor del comentario cuando este sea editado o eliminado por moderación.
 

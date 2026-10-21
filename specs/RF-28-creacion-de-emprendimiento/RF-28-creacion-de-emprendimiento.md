@@ -9,7 +9,7 @@
 
 ### User Story 1 - Publicar un emprendimiento en la plataforma (Priority: P1)
 
-Como vendedor, quiero crear mi emprendimiento indicando nombre, tipo de producto, ubicación y descripción, para que los clientes puedan encontrarme en la plataforma.
+Como vendedor, quiero crear mi emprendimiento indicando nombre, categoría, ubicación y descripción, para que los clientes puedan encontrarme en la plataforma.
 
 **Why this priority**: Sin un emprendimiento creado, el vendedor no puede publicar productos ni recibir pedidos; es el punto de entrada obligatorio para todo el flujo de ventas.
 
@@ -19,7 +19,7 @@ Como vendedor, quiero crear mi emprendimiento indicando nombre, tipo de producto
 
 1. **Scenario**: Creación exitosa de emprendimiento
    - **Given** estoy registrado como vendedor y no tengo un emprendimiento activo
-   - **When** completo el formulario de creación con nombre, tipo de producto, ubicación y descripción válidos
+   - **When** completo el formulario de creación con nombre, categoría, ubicación y descripción válidos
    - **Then** el sistema publica el emprendimiento y lo hace visible para los clientes
 
 2. **Scenario**: Intento de crear un segundo emprendimiento
@@ -37,7 +37,7 @@ Como vendedor, quiero crear mi emprendimiento indicando nombre, tipo de producto
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE permitir a un usuario con rol vendedor crear un emprendimiento indicando nombre, tipo de producto, ubicación y descripción.
+- **FR-001**: El sistema DEBE permitir a un usuario con rol vendedor crear un emprendimiento indicando nombre, categoría (de una lista fija), ubicación y descripción, hora de apertura y hora de cierre.
 - **FR-002**: El sistema DEBE validar que los campos obligatorios estén completos antes de publicar el emprendimiento.
 - **FR-003**: El sistema DEBE impedir que un vendedor cree un nuevo emprendimiento mientras ya tenga uno activo.
 - **FR-004**: El sistema DEBE publicar el emprendimiento como visible para los clientes inmediatamente después de su creación.
@@ -46,7 +46,7 @@ Como vendedor, quiero crear mi emprendimiento indicando nombre, tipo de producto
 
 ### Key Entities
 
-- **Emprendimiento**: Representa el negocio del vendedor en la plataforma; incluye nombre, tipo de producto, ubicación, descripción, tipo de vendedor (ambulante o de punto fijo) y estado (activo/inactivo).
+- **Emprendimiento**: Representa el negocio del vendedor en la plataforma; incluye nombre, categoría (de una lista fija), ubicación, descripción, tipo de vendedor (ambulante o de punto fijo) y estado (activo/inactivo).
 - **Vendedor**: Usuario propietario de un emprendimiento.
 
 ## Success Criteria *(mandatory)*
