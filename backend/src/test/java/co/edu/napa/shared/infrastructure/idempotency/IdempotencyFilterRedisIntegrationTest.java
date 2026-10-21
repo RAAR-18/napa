@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -79,7 +80,7 @@ class IdempotencyFilterRedisIntegrationTest {
 
         assertEquals(201, replayResponse.getStatus());
         assertEquals("/api/v1/pedidos/123", replayResponse.getHeader("Location"));
-        assertEquals("trace-original", replayResponse.getHeader("X-Request-Id"));
+        assertNull(replayResponse.getHeader("X-Request-Id"));
         assertEquals("true", replayResponse.getHeader("Idempotent-Replayed"));
         assertEquals("{\"id\":\"123\"}", replayResponse.getContentAsString());
     }

@@ -34,7 +34,7 @@ class JwtTokenServiceTest {
                 new com.nimbusds.jose.jwk.source.ImmutableSecret<>(secretKey)
         );
         SessionVersionPort sessionVersions = mock(SessionVersionPort.class);
-        Clock clock = Clock.systemUTC();
+        Clock clock = Clock.fixed(Instant.now(), ZoneOffset.UTC);
         JwtTokenService service = new JwtTokenService(
                 encoder,
                 sessionVersions,
