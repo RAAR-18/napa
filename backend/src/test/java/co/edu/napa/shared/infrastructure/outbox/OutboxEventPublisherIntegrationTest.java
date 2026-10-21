@@ -51,7 +51,16 @@ class OutboxEventPublisherIntegrationTest {
     @Test
     void flywayInstallsPostgisAndOutboxTables() {
         assertNotNull(jdbcTemplate.queryForObject("SELECT PostGIS_Version()", String.class));
-        assertEquals(0, jdbcTemplate.queryForObject("SELECT count(*) FROM outbox_event", Integer.class));
+        assertEquals(
+                1,
+                jdbcTemplate.queryForObject(
+                        """
+                        SELECT count(*) FROM information_schema.tables
+                        WHERE table_schema = 'public' AND table_name = 'outbox_event'
+                        """,
+                        Integer.class
+                )
+        );
     }
 
     @Test
