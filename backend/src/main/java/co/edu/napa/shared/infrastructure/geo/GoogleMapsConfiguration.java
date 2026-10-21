@@ -11,14 +11,14 @@ import java.time.Duration;
 @Configuration
 public class GoogleMapsConfiguration {
     @Bean
-    RestClient googleMapsRoutesRestClient(RestClient.Builder builder) {
+    RestClient googleMapsRoutesRestClient() {
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(1))
                 .build();
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
         requestFactory.setReadTimeout(Duration.ofSeconds(2));
 
-        return builder
+        return RestClient.builder()
                 .requestFactory(requestFactory)
                 .baseUrl("https://routes.googleapis.com")
                 .build();
