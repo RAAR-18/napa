@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-20
 **Spec**: [spec.md](./RF-07-registro-de-cuenta.md) (misma carpeta; es la fuente de verdad)
-**Spec general**: [specs/general/spec-general.md](../general/spec-general.md) · [eventos](../general/eventos.md)
+**Spec general**: [specs/general/spec-general.md](../general/spec-general.md) · [eventos](../general/eventos.md) 
 **Requerimiento funcional**: RF-07
 **Historias de usuario**: HU-24
 **Prioridad (la mayor de la spec)**: P1
@@ -194,7 +194,10 @@ backend/src/main/java/co/edu/napa/cuenta/
     ├── in/web/                   # AuthController (register), DTOs
     └── out/persistence/          # UsuarioEntity, repositorio JPA
 backend/src/main/resources/db/migration/   # V2__usuario.sql (si no la creó foundations F020)
-frontend/src/screens/                       # Registro (pantalla compartida por los 4 roles)
+frontend/src/app/(auth)/registro.tsx        # ruta Expo Router: registro compartido por los 4 roles
+frontend/src/services/auth/                 # cliente de registro (Axios) y manejo de errores
+frontend/src/domain/                        # tipos Rol, RegistroRequest
+frontend/__tests__/auth/registro.test.tsx   # Jest + React Native Testing Library
 ```
 
 **Structure Decision**: módulo `cuenta`. `ActivarCuentaPort` lo invoca RF-70 al confirmar el código, sin que `cuenta` conozca a Twilio. Los controladores solo llaman puertos `in`.
@@ -232,7 +235,9 @@ frontend/src/screens/                       # Registro (pantalla compartida por 
 - [ ] T015 [US1] Validaciones y manejo de errores (400/409) en `cuenta/infrastructure/adapters/in/web/`
 - [ ] T016 [US1] `ActivarCuentaUseCase` y `ActivarCuentaPort` (invocado por RF-70) en `cuenta/application/`
 - [ ] T017 [US1] Idempotencia por `X-Device-Id` en `shared/infrastructure/idempotency/` (extender `IdempotencyFilter`)
-- [ ] T020 [US1] Pantalla de registro en `frontend/src/screens/Registro.tsx`
+- [ ] T018 [P] [US1] Test de la pantalla de registro (validación de campos, errores 409/422/429, envío con `Idempotency-Key` y `X-Device-Id`) en `frontend/__tests__/auth/registro.test.tsx`
+- [ ] T019 [US1] Cliente `registrar()` en `frontend/src/services/auth/registro.ts`
+- [ ] T020 [US1] Pantalla de registro (Expo Router) en `frontend/src/app/(auth)/registro.tsx`; al `201` navega a `(auth)/verificar-celular` (RF-70)
 
 **Checkpoint**: US1 funcional y probable por separado.
 
