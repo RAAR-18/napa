@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-20
 **Spec**: [spec.md](./RF-70-verificacion-de-celular-por-whatsapp.md) (misma carpeta; es la fuente de verdad)
-**Spec general**: [specs/general/spec-general.md](../general/spec-general.md) · [eventos](../general/eventos.md)
+**Spec general**: [specs/general/spec-general.md](../general/spec-general.md) · [eventos](../general/eventos.md) 
 **Requerimiento funcional**: RF-70
 **Historias de usuario**: HU-105
 **Prioridad (la mayor de la spec)**: P1
@@ -218,6 +218,10 @@ backend/src/main/java/co/edu/napa/cuenta/
     ├── out/cache/                # Redis: verif-rl, verif-rl-ip, verif-att
     └── out/persistence/          # MensajeEntity
 backend/src/main/resources/db/migration/   # V?__mensaje.sql
+frontend/src/app/(auth)/verificar-celular.tsx   # ruta Expo Router: ingreso del código, reenvío y opción SMS
+frontend/src/services/auth/verificacion.ts      # solicitar, confirmar y consultar estado del mensaje
+frontend/src/hooks/useCuentaAtras.ts            # cuenta regresiva de `reenvioDisponibleEn`
+frontend/__tests__/auth/verificar-celular.test.tsx
 ```
 
 **Structure Decision**: módulo `cuenta` (RF-70 es parte de Gestionar cuenta). El puerto aísla a Twilio; cambiar de proveedor es cambiar un adaptador.
@@ -256,6 +260,9 @@ backend/src/main/resources/db/migration/   # V?__mensaje.sql
 - [ ] T014 [US1] Registrar `Mensaje` en cada envío en `cuenta/application/usecase/`
 - [ ] T031 [US1] Test y verificación de `Mensaje` por envío (SC-005) en `.../cuenta/MensajeIT.java`
 - [ ] T032 [US1] Enmascarar el código en logs y prueba de SC-004 en `.../cuenta/CodigoNoPersistidoIT.java`
+- [ ] T036 [P] [US1] Test de la pantalla de verificación (código correcto, `OTP_INVALID` con intentos restantes, `OTP_EXPIRED`, cuenta regresiva de reenvío) en `frontend/__tests__/auth/verificar-celular.test.tsx`
+- [ ] T037 [US1] Servicio de verificación en `frontend/src/services/auth/verificacion.ts` y hook `useCuentaAtras` en `frontend/src/hooks/`
+- [ ] T038 [US1] Pantalla `frontend/src/app/(auth)/verificar-celular.tsx` (6 dígitos, reenviar, "recibir por SMS" cuando `smsDisponible`)
 
 **Checkpoint**: US1 funcional y probable por separado.
 

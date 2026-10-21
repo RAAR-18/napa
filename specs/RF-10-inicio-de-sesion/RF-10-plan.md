@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-20
 **Spec**: [spec.md](./RF-10-inicio-de-sesion.md) (misma carpeta; es la fuente de verdad)
-**Spec general**: [specs/general/spec-general.md](../general/spec-general.md) · [eventos](../general/eventos.md) 
+**Spec general**: [specs/general/spec-general.md](../general/spec-general.md) · [eventos](../general/eventos.md)
 **Requerimiento funcional**: RF-10
 **Historias de usuario**: HU-27, HU-29
 **Prioridad (la mayor de la spec)**: P1
@@ -172,7 +172,12 @@ backend/src/main/java/co/edu/napa/cuenta/
     ├── out/persistence/          # SesionEntity
     └── out/cache/                # contadores y `sv` en Redis
 backend/src/main/java/co/edu/napa/shared/infrastructure/security/   # JwtFilter, SessionVersionFilter
-frontend/src/screens/Login.tsx · frontend/src/services/auth/
+frontend/src/app/_layout.tsx                    # guarda de sesión: sin sesión → (auth); con sesión → grupo del rol
+frontend/src/app/(auth)/login.tsx               # ruta Expo Router del login
+frontend/src/app/(cliente)/ · (vendedor)/ · (domiciliario)/ · (administrador)/   # grupos de rutas por rol (el panel de cada uno lo definen sus RF)
+frontend/src/services/auth/                     # login, refresh, logout y almacenamiento seguro del token (expo-secure-store)
+frontend/src/services/http/                     # interceptor Axios: renueva con refresh y reintenta una vez
+frontend/__tests__/auth/login.test.tsx
 ```
 
 **Structure Decision**: módulo `cuenta`; el filtro JWT vive en `shared` y es compartido por todos los módulos.
@@ -208,7 +213,9 @@ frontend/src/screens/Login.tsx · frontend/src/services/auth/
 - [ ] T015 [US1] Límite de intentos fallidos y `429` con `Retry-After`
 - [ ] T018 [US1] `RefrescarSesionUseCase` y `CerrarSesionUseCase` con endpoints `POST /auth/refresh` y `POST /auth/logout`
 - [ ] T019 [US1] `JwtFilter` y `SessionVersionFilter` en `shared/infrastructure/security/` (si no los entregó foundations F024)
-- [ ] T020 [US1] Pantalla de login y navegación por rol en `frontend/src/screens/Login.tsx`
+- [ ] T021 [P] [US1] Test de la pantalla de login (errores 401/403/429, redirección por rol) y del interceptor de refresh en `frontend/__tests__/auth/login.test.tsx`
+- [ ] T022 [US1] Servicio `login/refresh/logout` y guardado del token en `frontend/src/services/auth/` y interceptor en `frontend/src/services/http/`
+- [ ] T020 [US1] Pantalla `frontend/src/app/(auth)/login.tsx` y guarda de rutas por rol en `frontend/src/app/_layout.tsx`; ante `ACCOUNT_NOT_VERIFIED` navega a `(auth)/verificar-celular`
 
 **Checkpoint**: US1 funcional.
 

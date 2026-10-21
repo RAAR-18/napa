@@ -17,6 +17,10 @@
 
 Consulta paginada de notificaciones con estado de lectura, y listeners en `notificaciones/infrastructure/adapters/in/event` que traducen cada evento del catálogo (E01–E17) en una `Notificacion` y un envío FCM, de forma idempotente por `eventId`.
 
+## Estado actual del código
+
+`DispositivoToken` ya tiene entidad y adaptador de persistencia en `cuentas`. El plan crea el módulo `notificaciones` completo. Decisiones cerradas en foundations: sin excepciones a las preferencias de notificación (ni siquiera las de estado de domicilio); sin vencimientos automáticos.
+
 ## Actors
 
 | Actor | Participación en esta feature |
@@ -193,7 +197,11 @@ backend/src/main/java/co/edu/napa/notificaciones/
     ├── in/event/                          # un listener por evento (Pedido…, Pago…, Domicilio…, Reporte…, Comentario…)
     ├── out/persistence/                   # entidades JPA
     └── out/messaging/                     # FcmPushAdapter (Firebase Admin)
-frontend/src/screens/Notificaciones.tsx · frontend/src/services/push/
+frontend/src/app/(comun)/notificaciones.tsx          # lista paginada con leídas/no leídas (todos los roles)
+frontend/src/services/push/                          # registro del token FCM nativo (expo-notifications) y `POST /dispositivos`
+frontend/src/services/notificaciones.ts              # listar y marcar como leída
+frontend/src/database/schema/                        # caché de lectura de notificaciones (SQLite)
+frontend/__tests__/notificaciones/
 ```
 
 **Structure Decision**: módulo `notificaciones`. Los listeners son adaptadores de entrada sin lógica; los eventos se consumen desde `domain/event` de los demás módulos (ArchUnit).
@@ -241,7 +249,9 @@ frontend/src/screens/Notificaciones.tsx · frontend/src/services/push/
 - [ ] T028 [US1] Listeners E16, E17 en `.../in/event/`
 - [ ] T029 [US1] Confirmar que no existe listener para E07 (prueba de arquitectura)
 - [ ] T033 [US1] No enviar push a cuentas `ELIMINADA`
-- [ ] T034 [US1] Pantalla de notificaciones en `frontend/src/screens/Notificaciones.tsx`
+- [ ] T035 [P] [US1] Test de la pantalla (orden, no leídas, lista vacía, marcar leída, lista desde caché sin conexión) en `frontend/__tests__/notificaciones/notificaciones.test.tsx`
+- [ ] T036 [US1] Servicio de notificaciones y registro del token FCM en `frontend/src/services/` (reutiliza foundations F042)
+- [ ] T034 [US1] Pantalla `frontend/src/app/(comun)/notificaciones.tsx`
 
 **Checkpoint**: US1 funcional y probable por separado.
 
@@ -263,7 +273,7 @@ frontend/src/screens/Notificaciones.tsx · frontend/src/services/push/
 |---|---|---|---|
 | E08 va a todos los domiciliarios activos (decidido). Con muchos domiciliarios habrá más push y costo; revisar si crece | Volumen de push | Todos | Equipo |
 | Retención del historial de notificaciones | Edge 2 | Ninguna | Equipo |
-| Notificaciones críticas no silenciables (estado de domicilio) | RF-39 | Sí para domicilios en curso (foundations) | Equipo |
+| Notificaciones críticas no silenciables | RF-39 | **Cerrado (foundations)**: no hay excepciones, se respetan las preferencias | Equipo |
 | Notificaciones del administrador: no hay eventos dirigidos a él en el catálogo | US1 | Sin notificaciones por ahora | Equipo |
 | Preferencia deshabilitada: ¿se guarda la notificación sin push o no se genera? | RF-39 | Pendiente | Equipo |
 | Sin eventos de pedido entregado fuera de domicilio (E07) | FR-004 | No genera notificación | Equipo |

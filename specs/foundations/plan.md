@@ -173,7 +173,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 | Vencimientos (pedido sin respuesta, pago sin hacer, llegada sin confirmar) | Varias specs | Sin vencimiento automático en MVP | Equipo y usuarios |
 
 #### Plan Review Checklist
-*  [x] Spec Change Requests aplicados a las specs (actualizado según spec-general-cambios.md)
+*  [x] Spec Change Requests aplicados a las specs 
 *  [x] Proveedor de rutas elegido (OpenRouteService)
 *  [ ] ArchUnit y Testcontainers corren en CI
 *  [ ] Checkpoint de la base verificado en un móvil de gama baja
