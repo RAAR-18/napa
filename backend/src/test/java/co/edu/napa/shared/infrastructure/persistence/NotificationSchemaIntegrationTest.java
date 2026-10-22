@@ -18,6 +18,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -148,7 +149,11 @@ class NotificationSchemaIntegrationTest {
 
     private UUID insertActiveUser(String role) {
         UUID userId = UUID.randomUUID();
-        String suffix = userId.toString().replace("-", "").substring(0, 10);
+        String suffix = String.format(
+                Locale.ROOT,
+                "%09d",
+                Math.floorMod(userId.getLeastSignificantBits(), 1_000_000_000L)
+        );
         Instant now = Instant.now();
         jdbcTemplate.update(
                 """
