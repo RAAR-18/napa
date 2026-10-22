@@ -4,9 +4,11 @@ import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
 import co.edu.napa.shared.domain.DomainException;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("!otp-console")
 public class UnavailableVerificarCelularAdapter implements VerificarCelularPort {
     @Override
     public void solicitar(String celular, EstadoVerificacion estado, String ipAddress) {

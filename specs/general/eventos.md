@@ -50,3 +50,4 @@
 | E15 | `domicilios.domicilio-cancelado` (`DomicilioCanceladoEvent`) | RF-13 | El administrador cancela (el pedido pasa a `CANCELADO` en la misma transacción) | `domicilioId`, `pedidoId`, `compradorId`, `vendedorId`, `domiciliarioId?` | notificaciones → avisar a las partes |
 | E16 | `reportes.reporte-resuelto` (`ReporteResueltoEvent`) | RF-62 | El administrador cierra el reporte | `reporteId`, `autorId` | notificaciones → avisar al autor |
 | E17 | `calificaciones.comentario-moderado` (`ComentarioModeradoEvent`) | RF-06 | El administrador edita o elimina | `calificacionId`, `autorId`, `accion` | notificaciones → avisar al autor |
+| E18 | `cuentas.cuenta-eliminada` (`CuentaEliminadaEvent`) | RF-11 · `EliminarCuentaUseCase` | La cuenta cambia a `ELIMINADA` | `usuarioId` | notificaciones → eliminar las notificaciones de la cuenta |

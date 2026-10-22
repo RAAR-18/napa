@@ -54,4 +54,17 @@ class ApiExceptionHandlerTest {
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
         assertEquals("120", response.getHeaders().getFirst("Retry-After"));
     }
+
+    @Test
+    void notificationErrorsAreNotCached() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/notificaciones/preferencias");
+
+        var response = handler.handleDomainException(
+                new DomainException("VALIDATION_ERROR", "Consulta inválida."),
+                request
+        );
+
+        assertEquals("no-store", response.getHeaders().getCacheControl());
+    }
 }

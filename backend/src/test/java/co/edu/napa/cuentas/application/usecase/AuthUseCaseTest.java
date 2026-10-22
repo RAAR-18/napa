@@ -7,6 +7,7 @@ import co.edu.napa.cuentas.application.ports.out.SesionRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.SessionVersionPort;
 import co.edu.napa.cuentas.application.ports.out.TokenServicePort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
+import co.edu.napa.cuentas.application.ports.out.VerificationRateLimitPort;
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
@@ -48,6 +49,7 @@ class AuthUseCaseTest {
     @Mock private UsuarioRepositoryPort usuarios;
     @Mock private SesionRepositoryPort sesiones;
     @Mock private VerificarCelularPort verificarCelular;
+    @Mock private VerificationRateLimitPort verificationRateLimits;
     @Mock private LoginAttemptPort loginAttempts;
     @Mock private SessionVersionPort sessionVersions;
     @Mock private PasswordHashingPort passwordHashing;
@@ -66,6 +68,7 @@ class AuthUseCaseTest {
                 usuarios,
                 sesiones,
                 verificarCelular,
+                verificationRateLimits,
                 loginAttempts,
                 sessionVersions,
                 passwordHashing,
@@ -128,6 +131,7 @@ class AuthUseCaseTest {
                 EstadoVerificacion.REGISTRO,
                 "127.0.0.1"
         );
+        verify(verificationRateLimits).checkAndRecord("+573001234567", "127.0.0.1");
     }
 
     @Test

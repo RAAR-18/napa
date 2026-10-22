@@ -1,0 +1,4 @@
+napa:
+  auth:
+    verification:
+      console-code: ${NAPA_OTP_CONSOLE_CODE}

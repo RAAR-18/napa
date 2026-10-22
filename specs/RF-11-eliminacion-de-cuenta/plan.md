@@ -129,7 +129,7 @@ Implementar Eliminación de cuenta para Usuario en el módulo cuentas, con valid
 
 | Evento emitido (eventos.md) | Lo emite el caso de uso | Momento |
 |---|---|---|
-| Ninguno | No aplica | Esta feature no emite evento según eventos.md; RF-70 usa llamada directa al puerto de verificación. |
+| `cuentas.cuenta-eliminada` (`CuentaEliminadaEvent`) | `EliminarCuentaUseCase` | En la misma transacción que cambia el estado del usuario a `ELIMINADA`. |
 
 **Eventos que consume esta feature**: ninguno salvo que la spec y eventos.md indiquen lo contrario.
 

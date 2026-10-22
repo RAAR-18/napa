@@ -14,16 +14,16 @@
 
 ## Summary
 
-Implementar Consulta de notificaciones para Cliente en el módulo notificaciones, con validaciones de pertenencia/estado, contrato REST y persistencia conforme a la spec y los fundamentos compartidos.
+Implementar Consulta de notificaciones para todos los usuarios autenticados en el módulo notificaciones, con consulta limitada al destinatario autenticado, contrato REST y persistencia conforme a la spec y los fundamentos compartidos.
 
 ## Actors
 
 | Actor | Participación en esta feature |
 |---|---|
-| Comprador (Cliente) | Actor directo según la spec. |
-| Vendedor (ambulante / punto fijo) | No interviene directamente. |
-| Domiciliario | No interviene directamente. |
-| Administrador | No interviene directamente. |
+| Comprador (Cliente) | Consulta sus propias notificaciones. |
+| Vendedor (ambulante / punto fijo) | Consulta sus propias notificaciones. |
+| Domiciliario | Consulta sus propias notificaciones. |
+| Administrador | Consulta sus propias notificaciones. |
 | Usuario (rol base) | No interviene directamente. |
 
 ## Technical Context
@@ -46,13 +46,15 @@ Implementar Consulta de notificaciones para Cliente en el módulo notificaciones
 | FR-002 | El sistema DEBE mostrar las notificaciones ordenadas por fecha, distinguiendo las leídas de las no leídas. | Regla de dominio/caso de uso en notificaciones; contrato GET /api/v1/notificaciones. | T004, T005 |
 | FR-003 | El sistema DEBE generar notificaciones ante eventos relevantes de pedidos, reservas, domicilios, pagos y reportes. | Regla de dominio/caso de uso en notificaciones; contrato GET /api/v1/notificaciones. | T004, T005 |
 | FR-004 | El sistema DEBE notificar, como mínimo, los siguientes eventos: nuevo pedido recibido (al vendedor, incluida la entrega directa al vendedor ambulante), pedido aceptado o rechazado (al cliente; en un domicilio, la aceptación incluye el aviso de que debe transferir el total), pago de un pedido confirmado (al cliente), inicio de la entrega directa (al cliente), pedido listo para recoger (al cliente), nuevo domicilio disponible (a los domiciliarios), pedido recogido por el domiciliario (al vendedor de punto fijo), domiciliario en camino (al cliente), entrega confirmada con el código por el domiciliario (al vendedor de punto fijo, para que pague la tarifa, y al cliente, como aviso de entrega), pago de la tarifa registrado por el vendedor (al domiciliario), cancelación de un domicilio (a las partes), resolución de un reporte (a quien lo creó) y comentario editado o eliminado por un administrador (a su autor). | Regla de dominio/caso de uso en notificaciones; contrato GET /api/v1/notificaciones. | T004, T005 |
+| FR-005 | El sistema DEBE marcar una notificación como leída al abrir su detalle; la operación solo puede afectar una notificación del usuario autenticado. | `GET /api/v1/notificaciones/{id}` marca leída de forma idempotente y devuelve el detalle solo al destinatario. | T004, T005 |
 | SC-001 | Las notificaciones generadas por un evento son visibles para el usuario en menos de 1 minuto. | Métrica comprobable en pruebas automatizadas/observabilidad del flujo. | T003, T006 |
 | SC-002 | El 100% de los eventos relevantes definidos por la plataforma generan una notificación correspondiente. | Métrica comprobable en pruebas automatizadas/observabilidad del flujo. | T003, T006 |
 | US1: Consulta de notificaciones pendientes | el sistema muestra el listado de notificaciones ordenado por fecha, indicando cuáles no he leído | Prueba de aceptación aislada de US1. | T003 |
 | US1: Sin notificaciones registradas | el sistema muestra un mensaje indicando que no hay notificaciones | Prueba de aceptación aislada de US1. | T003 |
-| Edge case 1 | ¿Qué sucede si se generan múltiples notificaciones para un mismo evento (ej. reintentos de asignación de domicilio)? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 2 | ¿Cómo se maneja el historial de notificaciones muy antiguas? ¿existe un límite de retención? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 3 | ¿Qué ocurre si el usuario elimina su cuenta teniendo notificaciones pendientes? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| US1: Abrir una notificación | al abrir el detalle, la notificación queda marcada como leída | Prueba de aceptación aislada de US1. | T003 |
+| Edge case 1 | ¿Qué sucede si se generan múltiples notificaciones para un mismo evento (ej. reintentos de asignación de domicilio)? | El consumidor deduplica redeliveries por `eventId`; la restricción única por `(event_id, usuario_id)` evita duplicados por destinatario, según `eventos.md`. | Resuelto por regla compartida |
+| Edge case 2 | ¿Cómo se maneja el historial de notificaciones muy antiguas? ¿existe un límite de retención? | Eliminar después de 30 días desde `created_at`, leídas o no. | Decisión aprobada por usuario |
+| Edge case 3 | ¿Qué ocurre si el usuario elimina su cuenta teniendo notificaciones pendientes? | Eliminar sus notificaciones cuando se consuma `cuentas.cuenta-eliminada` (E18). | Decisión aprobada por usuario |
 
 ## Non-Functional Requirements Check
 
@@ -81,13 +83,13 @@ Implementar Consulta de notificaciones para Cliente en el módulo notificaciones
 
 | Acción | Roles permitidos | Regla de pertenencia |
 |---|---|---|
-| Ejecutar Consulta de notificaciones | Cliente | El pedido/interacción pertenece al cliente autenticado. |
+| Ejecutar Consulta de notificaciones | Cliente, vendedor ambulante, vendedor de punto fijo, domiciliario, administrador | El listado se limita al usuario autenticado; no admite consultar notificaciones de terceros. |
 
 ## API Contracts
 
 ### GET /api/v1/notificaciones
 
-**Rol**: Cliente.
+**Rol**: Todos los usuarios autenticados (`CLIENTE`, `VENDEDOR_AMBULANTE`, `VENDEDOR_PUNTO_FIJO`, `DOMICILIARIO`, `ADMINISTRADOR`).
 **Path params**: Ninguno.
 **Query params**: Filtros funcionales de la spec; page, size y sort para listados (spec-general §2.3).
 
@@ -105,6 +107,12 @@ Implementar Consulta de notificaciones para Cliente en el módulo notificaciones
 | X-Request-Id | No | Identificador opcional, devuelto siempre como `X-Request-Id`. |
 
 **Body**: Ninguno. Los filtros y parámetros se limitan a lo definido por spec-general §2.3 y la spec de esta feature.
+
+### GET /api/v1/notificaciones/{id}
+
+**Rol**: Todos los usuarios autenticados. Solo permite acceder al destinatario autenticado; una notificación ajena responde `404 NOT_FOUND`.
+**Path params**: `id` UUID.
+**Efecto**: Si `leida_at` es nulo, se establece una sola vez al abrir el detalle. La operación es idempotente, no genera evento y responde con `Cache-Control: no-store`.
 
 **Respuestas exitosas**:
 
@@ -130,7 +138,7 @@ Implementar Consulta de notificaciones para Cliente en el módulo notificaciones
 |---|---|---|
 | Ninguno | No aplica | Esta feature no emite evento según eventos.md; RF-70 usa llamada directa al puerto de verificación. |
 
-**Eventos que consume esta feature**: listeners de notificaciones planificados en este módulo; aplicar idempotencia por eventId.
+**Eventos que consume esta feature**: E01–E06, E08–E12, E14–E18. Los manejadores deduplican por `eventId`; E18 elimina las notificaciones del usuario que cambia a `ELIMINADA`.
 
 Los listeners no se planifican en el módulo emisor; pertenecen al módulo que reacciona (especialmente RF-38).
 
@@ -157,7 +165,7 @@ Los listeners no se planifican en el módulo emisor; pertenecen al módulo que r
 | Integración | Endpoint, persistencia real con Testcontainers, permisos, transacciones, concurrencia e idempotencia. | Todos los FR y edge cases definidos. |
 | E2E | Recorrido de pantalla/API por rol, incluyendo errores recuperables. | US1. |
 
-**Cobertura mínima esperada**: todos los 4 FR, 2 SC y 2 escenarios de aceptación tienen pruebas trazables; cada edge case abierto queda bloqueado como decisión pendiente o se convierte en escenario tras corregir la spec.
+**Cobertura mínima esperada**: todos los 5 FR, 2 SC y 3 escenarios de aceptación tienen pruebas trazables; cada edge case abierto queda bloqueado como decisión pendiente o se convierte en escenario tras corregir la spec.
 
 ## Project Structure
 
@@ -174,29 +182,28 @@ specs/RF-38-consulta-de-notificaciones/
 ```text
 backend/src/main/java/co/edu/napa/notificaciones/
 ├── domain/model/                 # reglas y agregados sin Spring/JPA
-├── domain/event/                 # solo los eventos del catálogo que emite la feature
 ├── application/ports/in/         # contrato del caso de uso
 ├── application/ports/out/        # repositorio, reloj y EventPublisherPort si aplica
 ├── application/usecase/          # caso(s) de uso; sin capa Service
-└── infrastructure/adapters/in/web/ # controlador, DTOs y mappers
+└── infrastructure/{event,persistence,push,web}/ # outbox, SQL, FCM, API
 backend/src/test/java/co/edu/napa/notificaciones/
 frontend/src/screens/{cliente,vendedor,domiciliario,administrador}/
 frontend/__tests__/
 ```
 
-**Structure Decision**: módulo `notificaciones`; dominio aislado, los controladores llaman solo a puertos de entrada. No se crea ni modifica esquema fuera de spec-general; migraciones Flyway solo si el modelo compartido ya fue actualizado.
+**Structure Decision**: módulo `notificaciones`; dominio aislado, los controladores y el manejador de outbox llaman solo a puertos de entrada. El frontend se integra en F042 después de establecer autenticación, navegación y transporte HTTP compartido.
 
 ## Phase 1: Setup
 
 **Purpose**: comprobar el alcance de la feature y las fundaciones; no duplicar tareas ya definidas en foundations/plan.md.
 
-- [ ] T001 Revisar spec, spec-general, eventos y dependencias antes de abrir implementación.
+- [x] T001 Revisar spec, spec-general, eventos y dependencias antes de abrir implementación.
 
 ## Phase 2: Foundational
 
 **Purpose**: puertos, acceso autorizado y persistencia requeridos antes de las historias.
 
-- [ ] T002
+- [x] T002 Confirmar la migración V4, unicidad `(event_id, usuario_id)`, paginación por destinatario, retención de 30 días y eliminación por E18.
 
 **Checkpoint**: contrato de aplicación y restricciones compartidas listos; sin cambios de comportamiento fuera de la spec.
 
@@ -208,18 +215,18 @@ frontend/__tests__/
 
 ### Tests
 
-- [ ] T003 Pruebas unitarias, integración/contrato y aceptación para los escenarios listados.
+- [ ] T003 Pruebas unitarias de caso de uso/controlador pasan; la prueba Testcontainers de persistencia está pendiente de ejecución en Docker CI y E2E móvil queda para F042.
 
 ### Implementation
 
-- [ ] T004 Mantener reglas de negocio en domain/usecase; sin lógica en controller.
-- [ ] T005 Aplicar contrato REST, validación, autorización y mapper; la UI solo si la historia la requiere.
+- [x] T004 Mantener reglas de negocio en el caso de uso; sin lógica de negocio en controller.
+- [ ] T005 API REST, validación, autorización por propietario autenticado y mapper implementados; falta integrar la pantalla móvil en F042.
 
 **Checkpoint**: US1 pasa sus pruebas y no rompe las historias ya completadas.
 
 ## Phase 4: Polish & Cross-Cutting
 
-- [ ] T006 Ejecutar pruebas de rendimiento para SC y revisar privacidad/autorización.
+- [ ] T006 Ejecutar pruebas de rendimiento para SC y revisar privacidad/autorización; falta medir el umbral de un minuto con outbox y despliegue integrados.
 - [ ] Actualizar requerimientos/trazabilidad.md solo ante cambio aprobado de alcance.
 - [ ] Actualizar la documentación técnica derivada de decisiones aprobadas.
 
@@ -233,20 +240,16 @@ frontend/__tests__/
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| ¿Qué sucede si se generan múltiples notificaciones para un mismo evento (ej. reintentos de asignación de domicilio)? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Cómo se maneja el historial de notificaciones muy antiguas? ¿existe un límite de retención? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Qué ocurre si el usuario elimina su cuenta teniendo notificaciones pendientes? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-
 ## Plan Review Checklist
 
-- [x] La tabla Spec Coverage enumera cada FR, SC y escenario de aceptación; edge cases se identifican como decisión pendiente.
+- [x] La tabla Spec Coverage enumera cada FR, SC y escenario de aceptación; edge cases se identifican como decisión pendiente o resuelta.
 - [x] Hay tareas de prueba e implementación asociadas a cada historia.
 - [x] Arquitectura modular hexagonal coherente con notificaciones; usecase, sin capa service.
 - [x] Entidades referencian spec-general; no se redefine el modelo.
 - [x] Contrato API, cabeceras, respuestas, errores y autorización descritos conforme a convenciones comunes.
 - [x] Eventos emitidos verificados contra eventos.md; no se planifican listeners en el emisor.
 - [x] Actores identificados según la spec.
-- [ ] Errores y casos borde tienen comportamiento definido; quedan decisiones explícitamente bloqueantes en Open Questions.
+- [x] Errores y casos borde tienen comportamiento definido; las decisiones de retención y eliminación de cuenta están registradas en la spec.
 - [x] Conectividad/concurrencia e idempotencia consideradas.
 - [x] Dependencias tecnológicas se heredan de la plantilla/fundaciones.
 - [x] Tareas identifican componentes/rutas y son trazables.
@@ -254,6 +257,6 @@ frontend/__tests__/
 
 ## Notes
 
-- El nombre real del archivo de spec se conserva en el enlace; este repositorio todavía no tiene backend ni frontend implementados.
+- El backend de RF-38 está implementado. La pantalla queda pendiente de F042 porque el frontend todavía no cuenta con autenticación, navegación ni cliente HTTP.
 - Los endpoints propuestos concretan el contrato técnico sin ampliar el alcance; revisar contra spec-general antes de construir.
 - `[USn]` y los IDs de Spec Coverage vinculan pruebas y tareas a la historia/requirement original.

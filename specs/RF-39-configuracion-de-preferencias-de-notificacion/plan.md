@@ -14,16 +14,16 @@
 
 ## Summary
 
-Implementar Configuración de preferencias de notificación para Cliente en el módulo notificaciones, con validaciones de pertenencia/estado, contrato REST y persistencia conforme a la spec y los fundamentos compartidos.
+Implementar Configuración de preferencias de notificación para todos los usuarios autenticados en el módulo notificaciones, con preferencias propias por usuario, contrato REST y persistencia conforme a la spec y los fundamentos compartidos.
 
 ## Actors
 
 | Actor | Participación en esta feature |
 |---|---|
-| Comprador (Cliente) | Actor directo según la spec. |
-| Vendedor (ambulante / punto fijo) | No interviene directamente. |
-| Domiciliario | No interviene directamente. |
-| Administrador | No interviene directamente. |
+| Comprador (Cliente) | Configura sus propias preferencias. |
+| Vendedor (ambulante / punto fijo) | Configura sus propias preferencias. |
+| Domiciliario | Configura sus propias preferencias. |
+| Administrador | Configura sus propias preferencias. |
 | Usuario (rol base) | No interviene directamente. |
 
 ## Technical Context
@@ -42,16 +42,17 @@ Implementar Configuración de preferencias de notificación para Cliente en el m
 
 | Spec | Descripción corta | Cubierto por (componente / endpoint / regla) | Tareas |
 |---|---|---|---|
-| FR-001 | El sistema DEBE permitir a los usuarios configurar qué tipos de notificación desean recibir. | Regla de dominio/caso de uso en notificaciones; contrato PUT /api/v1/notificaciones/preferencias. | T004, T005 |
-| FR-002 | El sistema DEBE respetar las preferencias configuradas al generar nuevas notificaciones. | Regla de dominio/caso de uso en notificaciones; contrato PUT /api/v1/notificaciones/preferencias. | T004, T005 |
-| FR-003 | El sistema DEBE permitir al usuario modificar sus preferencias en cualquier momento. | Regla de dominio/caso de uso en notificaciones; contrato PUT /api/v1/notificaciones/preferencias. | T004, T005 |
+| FR-001 | El sistema DEBE permitir a los usuarios configurar qué tipos de notificación desean recibir. | Regla de dominio/caso de uso en notificaciones; contratos GET/PATCH /api/v1/notificaciones/preferencias. | T004, T005 |
+| FR-002 | El sistema DEBE respetar las preferencias configuradas al generar nuevas notificaciones. | Aplicar el valor efectivo de preferencia, habilitado por defecto, al crear cada notificación nueva. | T004, T005 |
+| FR-003 | El sistema DEBE permitir al usuario modificar sus preferencias en cualquier momento. | Regla de dominio/caso de uso en notificaciones; contrato PATCH /api/v1/notificaciones/preferencias. | T004, T005 |
 | SC-001 | Un cambio en las preferencias de notificación se aplica a los eventos generados a partir de ese momento en el 100% de los casos. | Métrica comprobable en pruebas automatizadas/observabilidad del flujo. | T003, T006 |
 | SC-002 | El usuario puede modificar sus preferencias de notificación en menos de 1 minuto. | Métrica comprobable en pruebas automatizadas/observabilidad del flujo. | T003, T006 |
 | US1: Desactivar un tipo de notificación | el sistema deja de enviarme notificaciones de ese tipo, conservando las demás | Prueba de aceptación aislada de US1. | T003 |
 | US1: Reactivar un tipo de notificación previamente desactivado | el sistema vuelve a generarme notificaciones de ese tipo ante nuevos eventos | Prueba de aceptación aislada de US1. | T003 |
 | Edge case 1 | Si el usuario desactiva un tipo de notificación crítico, se respeta igualmente su preferencia; no existen tipos no silenciables. | RF-39 FR-002; aplicar la preferencia al generar cada notificación, también para domicilios en curso. | T003 |
-| Edge case 2 | ¿Se conservan las preferencias configuradas si el usuario cambia de rol o dispositivo? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
-| Edge case 3 | ¿Qué ocurre con las notificaciones ya generadas antes de desactivar un tipo? | Decisión pendiente: no definir comportamiento distinto al de la spec sin actualizarla. | Decisión pendiente |
+| Edge case 2 | ¿Se conservan las preferencias configuradas si el usuario cambia de rol o dispositivo? | Sí. La preferencia pertenece al usuario, no al rol ni al dispositivo (`spec-general` §3.2). | Resuelto por modelo compartido |
+| Edge case 3 | ¿Qué ocurre con las notificaciones ya generadas antes de desactivar un tipo? | Se conservan; la preferencia se aplica a eventos que generen notificaciones a partir del cambio (FR-002 y SC-001). | Resuelto por RF-39 |
+| Edge case 4 | ¿Se muestran tipos sin una preferencia persistida? | Sí; el tipo se muestra habilitado por defecto. | Decisión aprobada por usuario |
 
 ## Non-Functional Requirements Check
 
@@ -80,36 +81,37 @@ Implementar Configuración de preferencias de notificación para Cliente en el m
 
 | Acción | Roles permitidos | Regla de pertenencia |
 |---|---|---|
-| Ejecutar Configuración de preferencias de notificación | Cliente | El pedido/interacción pertenece al cliente autenticado. |
+| Ejecutar Configuración de preferencias de notificación | Cliente, vendedor ambulante, vendedor de punto fijo, domiciliario, administrador | Cada usuario solo modifica sus propias preferencias. |
 
 ## API Contracts
 
-### PUT /api/v1/notificaciones/preferencias
+### GET /api/v1/notificaciones/preferencias
 
-**Rol**: Cliente.
-**Path params**: Ninguno.
-**Query params**: Ninguno salvo los definidos por la spec.
+**Rol**: Todos los usuarios autenticados.
+**Path params / query params**: Ninguno.
 
-| Parámetro | Tipo | Obligatorio | Valores / ejemplo | Descripción |
-|---|---|:---:|---|---|
-| page, size, sort | int, int, string | Para listados | 0, 20, fecha,desc | Convención compartida; máximo size 100. |
-| filtros de la feature | Según spec | Según spec | Solo valores documentados | Filtro desconocido: 400. |
+Devuelve todos los tipos que producen notificaciones según `eventos.md`, con el estado efectivo del usuario autenticado. Una preferencia no persistida se devuelve como habilitada.
+
+### PATCH /api/v1/notificaciones/preferencias
+
+**Rol**: Todos los usuarios autenticados.
+**Path params / query params**: Ninguno.
 
 **Headers de request**:
 
 | Cabecera | Obligatoria | Contenido |
 |---|:---:|---|
 | Authorization | Sí | Bearer JWT, según spec-general §2.1. |
-| Idempotency-Key | No | UUID; obligatoria según las convenciones comunes para mutaciones. |
+| Idempotency-Key | Sí | UUID para esta mutación reintentable. |
 | X-Request-Id | No | Identificador opcional, devuelto siempre como `X-Request-Id`. |
 
-**Body**: DTO con los datos estrictamente requeridos por FR-001, FR-002, FR-003; validar en el caso de uso y no incluir datos no definidos por la fuente funcional.
+**Body**: `{"preferencias":[{"tipo":"pedidos.pedido-creado","habilitada":false}]}`. `tipo` es un tipo de evento del catálogo que genere notificaciones. Se modifican solo los tipos incluidos; los omitidos conservan su estado. No se permiten tipos duplicados en una solicitud.
 
 **Respuestas exitosas**:
 
 | HTTP | Cuándo | Headers de response | Body |
 |---|---|---|---|
-| 200 | 200; 204 si la acción no devuelve representación, según convención común. | `X-Request-Id`; `Location` en 201; `Cache-Control: no-store` para datos sensibles. | Representación definida por la spec o sin cuerpo en 204. |
+| 200 | Consulta o actualización de preferencias. | `X-Request-Id`; `Cache-Control: no-store`. | Lista completa de los tipos con su estado efectivo; una actualización devuelve el estado posterior. |
 
 **Errores**:
 
@@ -189,13 +191,13 @@ frontend/__tests__/
 
 **Purpose**: comprobar el alcance de la feature y las fundaciones; no duplicar tareas ya definidas en foundations/plan.md.
 
-- [ ] T001 Revisar spec, spec-general, eventos y dependencias antes de abrir implementación.
+- [x] T001 Revisar spec, spec-general, eventos y dependencias antes de abrir implementación.
 
 ## Phase 2: Foundational
 
 **Purpose**: puertos, acceso autorizado y persistencia requeridos antes de las historias.
 
-- [ ] T002
+- [x] T002 Confirmar preferencias por usuario, valores predeterminados habilitados, tipos siempre visibles, PATCH parcial que conserva tipos omitidos y alcance para todos los roles.
 
 **Checkpoint**: contrato de aplicación y restricciones compartidas listos; sin cambios de comportamiento fuera de la spec.
 
@@ -207,12 +209,12 @@ frontend/__tests__/
 
 ### Tests
 
-- [ ] T003 Pruebas unitarias, integración/contrato y aceptación para los escenarios listados.
+- [ ] T003 Pruebas unitarias de preferencias y eventos pasan; la prueba Testcontainers de persistencia/upsert está pendiente de ejecución en Docker CI y E2E móvil queda para F042.
 
 ### Implementation
 
-- [ ] T004 Mantener reglas de negocio en domain/usecase; sin lógica en controller.
-- [ ] T005 Aplicar contrato REST, validación, autorización y mapper; la UI solo si la historia la requiere.
+- [x] T004 Mantener reglas de negocio en el caso de uso; sin lógica de negocio en controller.
+- [ ] T005 API REST, validación, autorización por propietario autenticado y mapper implementados; falta integrar la pantalla móvil en F042.
 
 **Checkpoint**: US1 pasa sus pruebas y no rompe las historias ya completadas.
 
@@ -232,19 +234,17 @@ frontend/__tests__/
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| ¿Se conservan las preferencias configuradas si el usuario cambia de rol o dispositivo? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
-| ¿Qué ocurre con las notificaciones ya generadas antes de desactivar un tipo? | Puede alterar validaciones, estado, privacidad o respuesta de API. | No asumir una solución; documentar la decisión y corregir primero la spec si cambia comportamiento. | Equipo de producto |
 
 ## Plan Review Checklist
 
-- [x] La tabla Spec Coverage enumera cada FR, SC y escenario de aceptación; edge cases se identifican como decisión pendiente.
+- [x] La tabla Spec Coverage enumera cada FR, SC y escenario de aceptación; edge cases se identifican como decisión pendiente o resuelta.
 - [x] Hay tareas de prueba e implementación asociadas a cada historia.
 - [x] Arquitectura modular hexagonal coherente con notificaciones; usecase, sin capa service.
 - [x] Entidades referencian spec-general; no se redefine el modelo.
 - [x] Contrato API, cabeceras, respuestas, errores y autorización descritos conforme a convenciones comunes.
 - [x] Eventos emitidos verificados contra eventos.md; no se planifican listeners en el emisor.
 - [x] Actores identificados según la spec.
-- [ ] Errores y casos borde tienen comportamiento definido; quedan decisiones explícitamente bloqueantes en Open Questions.
+- [x] Errores y casos borde tienen comportamiento definido; las preferencias omitidas, tipos sin fila y notificaciones existentes están definidos.
 - [x] Conectividad/concurrencia e idempotencia consideradas.
 - [x] Dependencias tecnológicas se heredan de la plantilla/fundaciones.
 - [x] Tareas identifican componentes/rutas y son trazables.
@@ -252,6 +252,6 @@ frontend/__tests__/
 
 ## Notes
 
-- El nombre real del archivo de spec se conserva en el enlace; este repositorio todavía no tiene backend ni frontend implementados.
+- El backend de RF-39 está implementado. La pantalla queda pendiente de F042 porque el frontend todavía no cuenta con autenticación, navegación ni cliente HTTP.
 - Los endpoints propuestos concretan el contrato técnico sin ampliar el alcance; revisar contra spec-general antes de construir.
 - `[USn]` y los IDs de Spec Coverage vinculan pruebas y tareas a la historia/requirement original.

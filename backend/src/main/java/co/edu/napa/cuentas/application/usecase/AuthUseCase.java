@@ -7,6 +7,7 @@ import co.edu.napa.cuentas.application.ports.out.SesionRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.SessionVersionPort;
 import co.edu.napa.cuentas.application.ports.out.TokenServicePort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
+import co.edu.napa.cuentas.application.ports.out.VerificationRateLimitPort;
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
@@ -39,6 +40,7 @@ public class AuthUseCase {
     private final UsuarioRepositoryPort usuarios;
     private final SesionRepositoryPort sesiones;
     private final VerificarCelularPort verificarCelular;
+    private final VerificationRateLimitPort verificationRateLimits;
     private final LoginAttemptPort loginAttempts;
     private final SessionVersionPort sessionVersions;
     private final PasswordHashingPort passwordHashing;
@@ -50,6 +52,7 @@ public class AuthUseCase {
             UsuarioRepositoryPort usuarios,
             SesionRepositoryPort sesiones,
             VerificarCelularPort verificarCelular,
+            VerificationRateLimitPort verificationRateLimits,
             LoginAttemptPort loginAttempts,
             SessionVersionPort sessionVersions,
             PasswordHashingPort passwordHashing,
@@ -59,6 +62,10 @@ public class AuthUseCase {
         this.usuarios = Objects.requireNonNull(usuarios, "usuarios");
         this.sesiones = Objects.requireNonNull(sesiones, "sesiones");
         this.verificarCelular = Objects.requireNonNull(verificarCelular, "verificarCelular");
+        this.verificationRateLimits = Objects.requireNonNull(
+                verificationRateLimits,
+                "verificationRateLimits"
+        );
         this.loginAttempts = Objects.requireNonNull(loginAttempts, "loginAttempts");
         this.sessionVersions = Objects.requireNonNull(sessionVersions, "sessionVersions");
         this.passwordHashing = Objects.requireNonNull(passwordHashing, "passwordHashing");
@@ -96,6 +103,7 @@ public class AuthUseCase {
         if (usuarios.existsByCelular(celular) || (correo != null && usuarios.existsByCorreo(correo))) {
             throw new DomainException("CONFLICT", "El celular o correo ya está registrado.");
         }
+        verificationRateLimits.checkAndRecord(celular, ipAddress);
 
         Instant now = Instant.now(clock);
         Usuario usuario = new Usuario(
@@ -127,6 +135,7 @@ public class AuthUseCase {
                 throw new DomainException("CONFLICT", "La cuenta no está pendiente de verificación.");
             }
         }
+        verificationRateLimits.checkAndRecord(celular, ipAddress);
         verificarCelular.solicitar(celular, estado, ipAddress);
     }
 

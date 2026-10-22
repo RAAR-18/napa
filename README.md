@@ -81,12 +81,26 @@ $env:NAPA_JWT_SECRET = "replace-with-at-least-32-random-local-bytes"
 
 El secreto JWT es obligatorio y debe tener al menos 32 bytes. Para crear el administrador inicial, configura una sola vez `NAPA_ADMIN_BOOTSTRAP_ENABLED=true`, `NAPA_ADMIN_NAME`, `NAPA_ADMIN_PHONE` (formato E.164) y `NAPA_ADMIN_PASSWORD` (8–128 caracteres). El bootstrap se marca como completado en la base de datos; no vuelvas a habilitarlo para reemplazar la cuenta.
 
-La integración de entrega OTP con Twilio está diferida hasta aprobar presupuesto. Mientras no exista un proveedor de verificación configurado, las rutas de verificación responden `503`; no se escribe ni registra ningún código OTP.
+La integración de entrega OTP con Twilio está diferida hasta aprobar presupuesto. Por defecto, las rutas de verificación responden `503`. Para probar el flujo local sin enviar mensajes, activa explícitamente el perfil `otp-console` y configura un código fijo de seis dígitos:
+
+```powershell
+$env:NAPA_OTP_CONSOLE_CODE = "123456"
+.\gradlew.bat bootRun --args="--spring.profiles.active=otp-console"
+```
+
+El adaptador `otp-console` no envía ni registra el código; solo valida el valor configurado y guarda temporalmente en Redis el estado de intentos (10 minutos, máximo 5). El límite de solicitudes se aplica por celular y por IP (1 por minuto, 5 por hora). Este perfil es exclusivo para desarrollo/pruebas: no lo actives en producción. El proveedor real permanece deshabilitado hasta aprobar presupuesto.
 
 Para habilitar el cálculo de rutas, configura una clave de Google Maps con Routes API habilitada:
 
 ```powershell
 $env:GOOGLE_MAPS_API_KEY = "tu-clave-local"
+```
+
+El envío push con Firebase Cloud Messaging está desactivado por defecto. Para habilitarlo en un entorno local, configura credenciales de Google Application Default Credentials fuera del repositorio y activa el adapter:
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS = "C:\ruta\fuera-del-repo\firebase-service-account.json"
+$env:NAPA_NOTIFICATIONS_FCM_ENABLED = "true"
 ```
 
 En otra terminal, prepara y valida la app móvil:

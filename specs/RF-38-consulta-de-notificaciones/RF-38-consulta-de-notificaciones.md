@@ -27,11 +27,16 @@ Como usuario (cliente, vendedor, domiciliario o administrador), quiero consultar
    - **When** ingreso a la sección de notificaciones
    - **Then** el sistema muestra un mensaje indicando que no hay notificaciones
 
+3. **Scenario**: Abrir una notificación
+   - **Given** tengo una notificación no leída
+   - **When** abro su detalle
+   - **Then** el sistema la marca como leída y muestra su contenido
+
 ### Edge Cases
 
-- ¿Qué sucede si se generan múltiples notificaciones para un mismo evento (ej. reintentos de asignación de domicilio)?
-- ¿Cómo se maneja el historial de notificaciones muy antiguas? ¿existe un límite de retención?
-- ¿Qué ocurre si el usuario elimina su cuenta teniendo notificaciones pendientes?
+- Si el mismo evento se vuelve a entregar por reintentos del outbox, se genera como máximo una notificación por destinatario; los consumidores deduplican por `eventId` según `eventos.md`.
+- Las notificaciones se conservan durante 30 días desde su creación y luego se eliminan, estén leídas o no.
+- Al marcar una cuenta como `ELIMINADA`, se eliminan sus notificaciones.
 
 ## Requirements *(mandatory)*
 
@@ -41,6 +46,7 @@ Como usuario (cliente, vendedor, domiciliario o administrador), quiero consultar
 - **FR-002**: El sistema DEBE mostrar las notificaciones ordenadas por fecha, distinguiendo las leídas de las no leídas.
 - **FR-003**: El sistema DEBE generar notificaciones ante eventos relevantes de pedidos, reservas, domicilios, pagos y reportes.
 - **FR-004**: El sistema DEBE notificar, como mínimo, los siguientes eventos: nuevo pedido recibido (al vendedor, incluida la entrega directa al vendedor ambulante), pedido aceptado o rechazado (al cliente; en un domicilio, la aceptación incluye el aviso de que debe transferir el total), pago de un pedido confirmado (al cliente), inicio de la entrega directa (al cliente), pedido listo para recoger (al cliente), nuevo domicilio disponible (a los domiciliarios), pedido recogido por el domiciliario (al vendedor de punto fijo), domiciliario en camino (al cliente), entrega confirmada con el código por el domiciliario (al vendedor de punto fijo, para que pague la tarifa, y al cliente, como aviso de entrega), pago de la tarifa registrado por el vendedor (al domiciliario), cancelación de un domicilio (a las partes), resolución de un reporte (a quien lo creó) y comentario editado o eliminado por un administrador (a su autor).
+- **FR-005**: El sistema DEBE marcar una notificación como leída al abrir su detalle; la operación solo puede afectar una notificación del usuario autenticado.
 
 ### Key Entities
 

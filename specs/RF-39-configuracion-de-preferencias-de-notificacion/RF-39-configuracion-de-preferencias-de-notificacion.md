@@ -29,8 +29,11 @@ Como usuario (cliente, vendedor, domiciliario o administrador), quiero configura
 ### Edge Cases
 
 - Si el usuario desactiva un tipo de notificación crítico, se respeta igualmente su preferencia; no existen tipos no silenciables.
-- ¿Se conservan las preferencias configuradas si el usuario cambia de rol o dispositivo?
-- ¿Qué ocurre con las notificaciones ya generadas antes de desactivar un tipo?
+- Las preferencias pertenecen al usuario y se conservan al cambiar de rol o dispositivo.
+- Las notificaciones ya generadas se conservan; los cambios afectan las notificaciones de eventos posteriores.
+- La consulta de preferencias muestra siempre todos los tipos de evento que generan notificaciones, incluidos los desactivados.
+- Al modificar preferencias, solo cambian los tipos incluidos en la solicitud; los omitidos conservan su estado.
+- Un tipo sin una preferencia guardada está habilitado por defecto.
 
 ## Requirements *(mandatory)*
 
