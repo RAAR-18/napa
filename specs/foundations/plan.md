@@ -25,7 +25,7 @@ Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dom
 | D6 | Idempotencia en dos capas: Redis (respuesta cacheada por clave, 24 h) y  **restricciones únicas en BD**  como garantía final | Si Redis cae, la BD sigue evitando duplicados (RNF27). |
 | D7 | **Outbox transaccional** : el evento se escribe en la misma transacción; un relay lo despacha. @TransactionalEventListener(AFTER_COMMIT) solo para efectos locales no críticos (invalidar caché) | Evita perder notificaciones si el proceso cae tras el commit. |
 | D8 | JWT de acceso corto + refresh rotativo + claim sv (versión de sesión) validado contra Redis | Permite cerrar sesiones (RF-09 FR-003), eliminar cuentas (RF-11, RF-68) y cambiar rol sin esperar expiración. |
-| D9 | **Proveedor de rutas** : **OpenRouteService** tras RoutingPort, con caché en Redis y respaldo de línea recta. Verificar cuota y términos vigentes en F013. | RNF19. Tarifa = distancia A–B (RF-45 FR-006) con piso RF-44. |
+| D9 | Proveedor de rutas: OpenRouteService (perfil driving-car) tras RoutingPort, con caché en Redis de 24 h (coordenadas a 4 decimales) y respaldo de línea recta al calcular la tarifa (RF-45). Plan Standard gratuito: 2.000 solicitudes/día y 40/min. Si no alcanza, se autoaloja ORS cambiando napa.routing.ors.base-url. RNF19. | RNF19. Tarifa = distancia A–B (RF-45 FR-006) con piso RF-44. |
 | D10 | PostGIS con geography(Point,4326); cercanía con ST_DWithin/ST_Distance; índice GiST | RNF22. |
 | D11 | Límites entre módulos verificados con  **ArchUnit**  (dominio sin Spring/JPA; módulos solo se hablan por puertos) | RNF13, RNF25. |
 | D12 | Verificación del celular con  **Twilio Verify**  (WhatsApp con respaldo SMS) detrás de VerificarCelularPort | El equipo ya lo conoce y delega a Twilio la generación del código, su vigencia, los intentos y las plantillas aprobadas. Costo: 0,05 USD por verificación exitosa más la tarifa del canal (a confirmar para Colombia). Adaptador de consola para desarrollo y pruebas, sin gastar unidades. Cambiar de proveedor es cambiar un adaptador. |
@@ -85,7 +85,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 | Login (RF-10) | `POST /auth/login` con celular o correo + contraseña; bloqueo temporal tras N fallos (contador en Redis); mensaje genérico sin indicar qué dato falló. Cuenta sin verificar → `ACCOUNT_NOT_VERIFIED` e invita a reenviar OTP. |
 | Cambio de contraseña (RF-09) | Con contraseña actual, o recuperación con OTP. Incrementa `sv`, revoca refresh tokens salvo el actual y devuelve tokens nuevos. |
 | Admin | Contraseña únicamente, cuenta sembrada por migración o variable de entorno; rate-limit estricto; evaluar TOTP después del MVP. |
-| JWT | Acceso 15 min con `sub`, `role`, `sv`; refresh opaco rotativo guardado hasheado por dispositivo. El filtro compara `sv` con `sv:{userId}` en Redis (fallback a BD si Redis no responde). |
+| JWT | Acceso 15 min con `sub`, `role`, `sv`; refresh opaco rotativo guardado hasheado por dispositivo. El filtro compara `sv` con `sv:{sessionId}` en Redis (fallback a BD si Redis no responde). |
 | Autorización (RNF03) | `@PreAuthorize` por rol + comprobación de pertenencia en el caso de uso (nunca solo en el controlador). |
 | Eliminación (RF-11, RF-68) | Estado `ELIMINADA`, incrementa `sv`, revoca refresh. |
 
@@ -129,7 +129,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [x] F010 `ApiError` y manejador global en `backend/.../shared/infrastructure/web/`
 - [x] F011 `DomainEvent` + outbox + relay en `shared/infrastructure/outbox/`
 - [x] F012 `IdempotencyFilter` con Redis, integrado después de autenticación; pruebas de concurrencia en `shared/infrastructure/idempotency/`
-- [x] F013 Utilidades geo y `RoutingPort` con adaptador Google Maps Routes API en `shared/infrastructure/geo/`
+- [x] F013 Utilidades geo y `RoutingPort` con adaptador OpenRouteService en `shared/infrastructure/geo/`
 - [x] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
 - [ ] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis); el entorno local no tiene Docker
 
@@ -176,7 +176,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| Proveedor de rutas | Costo, cuotas y contratos de integración | **Resuelto: Google Maps Routes API** detrás de `RoutingPort`; restringir y rotar claves por entorno | Equipo |
+| Proveedor de rutas | Costo, cuotas y contratos de integración | Resuelto: OpenRouteService detrás de RoutingPort; la clave va en ORS_API_KEY | Equipo |
 | Activación de Twilio Verify y presupuesto mensual (WhatsApp + SMS de respaldo) | Costo y riesgo de habilitar envíos reales | **Diferido**: solo adaptador de consola en desarrollo/pruebas; no activar envíos reales ni desplegar credenciales hasta acordar presupuesto y canal para Colombia | Equipo |
 | ¿Verify cancela la verificación anterior al pedir otra para el mismo celular (RF-70 FR-005)? | Seguridad | Verificar el comportamiento del proveedor en F022 y garantizar en la aplicación que la solicitud nueva invalida la anterior; no almacenar el OTP | Equipo |
 | ¿Notificaciones críticas no silenciables (estado de domicilio)? | RF-39 | **Resuelto: no hay excepciones**; se respetan las preferencias para todo tipo de notificación | Equipo |
