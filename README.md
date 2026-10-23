@@ -83,10 +83,10 @@ El secreto JWT es obligatorio y debe tener al menos 32 bytes. Para crear el admi
 
 La integración de entrega OTP con Twilio está diferida hasta aprobar presupuesto. Mientras no exista un proveedor de verificación configurado, las rutas de verificación responden `503`; no se escribe ni registra ningún código OTP.
 
-Para habilitar el cálculo de rutas, configura una clave de Google Maps con Routes API habilitada:
+Para habilitar el cálculo de rutas, configura una clave de OpenRouteService con Routes API habilitada:
 
 ```powershell
-$env:GOOGLE_MAPS_API_KEY = "tu-clave-local"
+$env:ORS_API_KEY = "tu-clave-local"
 ```
 
 En otra terminal, prepara y valida la app móvil:

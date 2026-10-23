@@ -30,8 +30,10 @@ management:
         enabled: true
 
 napa:
-  maps:
-    api-key: ${GOOGLE_MAPS_API_KEY:}
+  routing:
+    ors:
+      api-key: ${ORS_API_KEY:}
+      base-url: ${ORS_BASE_URL:https://api.heigit.org}
   auth:
     jwt-secret: ${NAPA_JWT_SECRET:}
     access-token-ttl: ${NAPA_ACCESS_TOKEN_TTL:PT15M}

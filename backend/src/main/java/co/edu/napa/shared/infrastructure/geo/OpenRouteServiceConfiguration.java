@@ -1,5 +1,6 @@
 package co.edu.napa.shared.infrastructure.geo;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -9,9 +10,11 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 
 @Configuration
-public class GoogleMapsConfiguration {
+public class OpenRouteServiceConfiguration {
     @Bean
-    RestClient googleMapsRoutesRestClient() {
+    RestClient openRouteServiceRestClient(
+            @Value("${napa.routing.ors.base-url:https://api.openrouteservice.org}") String baseUrl
+    ) {
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(1))
                 .build();
@@ -20,7 +23,7 @@ public class GoogleMapsConfiguration {
 
         return RestClient.builder()
                 .requestFactory(requestFactory)
-                .baseUrl("https://routes.googleapis.com")
+                .baseUrl(baseUrl)
                 .build();
     }
 }
