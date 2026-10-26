@@ -247,7 +247,8 @@ frontend/__tests__/domicilios/disponibles.test.tsx
 | "Distancia" de la lista: la spec no dice cuál | FR-002 | Línea recta A→B (aproximada); la distancia por ruta solo en la tarifa y en RF-22 | Equipo |
 | `orden=cercania` mide la distancia del domiciliario al origen (A); no está definido | FR-005 | Así | Equipo |
 | Edge 3: ¿radio máximo? | Regla | No hay radio; se ven todos | Equipo |
-| RF-18 FR-004 exige mostrar el destino completo y el nombre del receptor desde antes de la asignación: cualquier domiciliario activo ve la dirección exacta del cliente | RNF04 | Se cumple la spec; se sugiere reevaluar mostrar solo el barrio hasta la asignación | Equipo |
+| RF-18 FR-004 exige mostrar el destino completo y el nombre del receptor desde antes de la asignación: cualquier domiciliario activo ve la dirección exacta del cliente | RNF04 | **Resuelto**: se muestra todo exacto, como pide la spec | Equipo |
+| Un domiciliario con un domicilio activo ve igual la lista, pero no puede aceptar otro (RF-19, `ACTIVE_DELIVERY_EXISTS`) | UX | La lista no se oculta; la app deshabilita "Aceptar" y explica el motivo | Equipo |
 | Sin permiso de ubicación del domiciliario | UX | Orden por ganancia o por más recientes | Equipo |
 
 ## Plan Review Checklist

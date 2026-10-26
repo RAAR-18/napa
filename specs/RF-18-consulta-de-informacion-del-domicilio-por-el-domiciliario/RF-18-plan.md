@@ -235,7 +235,7 @@ frontend/__tests__/domicilios/info-domicilio.test.tsx
 | El catálogo de rutas dice "domiciliario / partes" para `GET /domicilios/{id}`, pero la spec solo describe la vista del domiciliario; el cliente y el vendedor ya tienen RF-25 y RF-26 | Contrato | Solo domiciliario (`403` para otros); las partes usan `/trazabilidad` y `/codigo-confirmacion` | Equipo |
 | Un domicilio ajeno ya tomado responde `409 NOT_AVAILABLE` y no `404`, porque el domiciliario ya lo vio en su lista | Contrato | Así, con el mensaje de la spec | Equipo |
 | Rechazar (RF-17) es P2 y no está en el catálogo de rutas | Alcance | Botón oculto hasta implementarlo | Equipo |
-| Los nombres de los receptores y las direcciones exactas son visibles para cualquier domiciliario con el domicilio disponible (FR-004) | RNF04 | Se cumple la spec; sugerencia: reevaluar | Equipo |
+| Los nombres de los receptores y las direcciones exactas son visibles para cualquier domiciliario con el domicilio disponible (FR-004) | RNF04 | **Resuelto**: se muestra todo exacto, como pide la spec | Equipo |
 | ¿Se muestra el detalle de los ítems? La spec pide solo el resumen (cantidad de ítems) | UX | Solo la cantidad | Equipo |
 
 ## Plan Review Checklist

@@ -14,7 +14,7 @@
 
 ## Summary
 
-El domiciliario acepta un domicilio `DISPONIBLE` con `POST /domicilios/{id}/aceptar`, con la tarifa publicada (no se envía valor). La asignación es exclusiva y atómica: `UPDATE domicilio SET estado='ASIGNADO', domiciliario_id=:d, codigo_confirmacion=:c WHERE id=:id AND estado='DISPONIBLE'`; si la fila afectada es 1 ganó, si es 0 responde `409 NOT_AVAILABLE`. En la misma transacción se genera el código de confirmación (6 dígitos aleatorios, guardado tal cual, D13), se inserta el evento de trazabilidad `ASIGNADO` con el domiciliario como autor y se emite E09 para avisar al cliente y al vendedor. La respuesta no incluye el código: solo lo ve el cliente (RF-25).
+El domiciliario acepta un domicilio `DISPONIBLE` con `POST /domicilios/{id}/aceptar`, con la tarifa publicada (no se envía valor). Un domiciliario solo puede tener **un domicilio activo** (`ASIGNADO`, `RECOGIDO` o `EN_CAMINO`) a la vez: si ya tiene uno, responde `409 ACTIVE_DELIVERY_EXISTS`. La asignación es exclusiva y atómica: `UPDATE domicilio SET estado='ASIGNADO', domiciliario_id=:d, codigo_confirmacion=:c WHERE id=:id AND estado='DISPONIBLE'`; si la fila afectada es 1 ganó, si es 0 responde `409 NOT_AVAILABLE`. En la misma transacción se genera el código de confirmación (6 dígitos aleatorios, guardado tal cual, D13), se inserta el evento de trazabilidad `ASIGNADO` con el domiciliario como autor y se emite E09 para avisar al cliente y al vendedor. La respuesta no incluye el código: solo lo ve el cliente (RF-25).
 
 ## Estado actual del código
 
@@ -51,7 +51,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | SC-003 | < 10 s | Una llamada | T040 |
 | US1-E1 | Aceptación exitosa | `200`, `ASIGNADO`, código generado, trazabilidad y E09 | T010, T012 |
 | US1-E2 | Dos domiciliarios al mismo tiempo | Uno gana; el otro `409 NOT_AVAILABLE` | T011 |
-| Edge 1 | Límite de domicilios simultáneos por domiciliario | Sin límite en la spec (Open Questions) | — |
+| Edge 1 | Límite de domicilios simultáneos por domiciliario | Decisión del equipo: máximo uno activo; verificación en el caso de uso y garantía final con el índice único parcial `(domiciliario_id)` de V10; `409 ACTIVE_DELIVERY_EXISTS` | T025, T026 |
 | Edge 2 | Cancelado justo antes de aceptar | La actualización condicional no afecta filas: `409 NOT_AVAILABLE` | T019 |
 
 ## Non-Functional Requirements Check
@@ -107,6 +107,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | 403 | `FORBIDDEN` | Rol distinto de domiciliario | — |
 | 404 | `NOT_FOUND` | El domicilio no existe | "El domicilio no está disponible" |
 | 409 | `NOT_AVAILABLE` | Ya tomado por otro, cancelado o en otro estado | "El domicilio ya no está disponible" |
+| 409 | `ACTIVE_DELIVERY_EXISTS` | El domiciliario ya tiene un domicilio asignado, recogido o en camino | "Termina tu domicilio actual antes de aceptar otro"; `details.domicilioActivoId` |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | Misma clave con cuerpo distinto | — |
 
 ## Events
@@ -138,7 +139,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 |---|---|---|
 | Unitarias | `Domicilio.asignar`, `CodigoConfirmacion.generar` (6 dígitos, con ceros a la izquierda) | FR-005 |
 | Integración | Endpoint con Testcontainers: aceptación (estado, domiciliario, código guardado y no devuelto, evento de trazabilidad, E09), ya asignado, cancelado, cuerpo con valor, rol equivocado, repetición con la misma clave | US1-E1, FR-001, FR-003 |
-| Concurrencia | N domiciliarios aceptan a la vez: exactamente uno gana y un solo código y evento | US1-E2, SC-001 |
+| Concurrencia | N domiciliarios aceptan a la vez: exactamente uno gana y un solo código y evento; un domiciliario que acepta dos domicilios a la vez gana solo uno | US1-E2, SC-001, Edge 1 |
 | Frontend | Jest: botón, navegación a la ruta, error de no disponible, sin conexión | SC-003 |
 
 **Cobertura mínima**: todos los escenarios Given/When/Then tienen al menos un test.
@@ -199,6 +200,7 @@ frontend/__tests__/domicilios/aceptar.test.tsx
 - [ ] T010 [P] [US1] Test de integración de `POST /domicilios/{id}/aceptar` (`ASIGNADO`, domiciliario, evento de trazabilidad, E09 en el outbox, respuesta sin código) en `backend/src/test/java/co/edu/napa/domicilios/AceptarDomicilioIT.java`
 - [ ] T011 [P] [US1] Test de concurrencia: N aceptaciones simultáneas y exactamente una gana en `.../domicilios/AceptarDomicilioConcurrenciaIT.java`
 - [ ] T012 [P] [US1] Test de que el código es de 6 dígitos, se guarda en la fila y no aparece en la respuesta ni en E09 en `.../domicilios/AceptarDomicilioCodigoIT.java` y unitario `backend/src/test/java/co/edu/napa/domicilios/CodigoConfirmacionTest.java`
+- [ ] T025 [P] [US1] Test de un domiciliario con un domicilio `ASIGNADO`, `RECOGIDO` o `EN_CAMINO` que intenta aceptar otro (`409 ACTIVE_DELIVERY_EXISTS` con `domicilioActivoId`), de que puede aceptar uno nuevo tras `ENTREGADO` o `CANCELADO`, y de dos aceptaciones simultáneas del mismo domiciliario en `.../domicilios/AceptarDomicilioUnicoActivoIT.java`
 - [ ] T019 [P] [US1] Test de domicilio ya asignado, cancelado y entregado (`409 NOT_AVAILABLE`), cuerpo con valor (`400`), rol equivocado (`403`), inexistente (`404`) y repetición con la misma clave en `.../domicilios/AceptarDomicilioEstadosIT.java`
 - [ ] T020 [P] [US1] Test de la acción (aceptar, navegación a la ruta, `NOT_AVAILABLE` con regreso a la lista, sin conexión) en `frontend/__tests__/domicilios/aceptar.test.tsx`
 
@@ -212,6 +214,7 @@ frontend/__tests__/domicilios/aceptar.test.tsx
 - [ ] T018 [US1] Guardado del código en `domicilio.codigo_confirmacion` (sin exponerlo en el DTO de salida)
 - [ ] T021 [US1] Servicio `aceptarDomicilio()` en `frontend/src/services/domicilios.ts` y guardado del domicilio activo en `frontend/src/database/schema/domicilio_activo.ts`
 - [ ] T022 [US1] Botón "Aceptar" en `AccionesDomicilioDisponible` (RF-18) con estados de carga y error
+- [ ] T026 [US1] Regla de un solo domicilio activo por domiciliario: consulta previa en `DomicilioRepositoryPort.buscarActivoDe(domiciliarioId)`, captura de la violación del índice único parcial y mapeo a `ACTIVE_DELIVERY_EXISTS`
 - [ ] T024 [US1] Navegación a `frontend/src/app/(domiciliario)/domicilios/[id]/ruta.tsx` (RF-22) tras aceptar
 
 **Checkpoint**: US1 funcional.
@@ -225,16 +228,16 @@ frontend/__tests__/domicilios/aceptar.test.tsx
 ## Dependencies & Execution Order
 
 - Setup → Foundational → US1 → Polish.
-- Dependencias entre RF: requiere RF-14, RF-16 y RF-18; habilita RF-22, RF-23, RF-24 y RF-25.
+- Dependencias entre RF: requiere RF-14 (incluye el índice único parcial por domiciliario), RF-16 y RF-18; habilita RF-22, RF-23, RF-24 y RF-25.
 - Tareas `[P]` pueden ejecutarse en paralelo.
 
 ## Open Questions
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| Edge 1: límite de domicilios simultáneos por domiciliario (punto abierto en spec-general) | Regla | Sin límite | Equipo |
+| ~~Límite de domicilios simultáneos por domiciliario~~ | Regla | **Resuelto**: un domiciliario solo puede atender un domicilio a la vez. Agregar a spec-general §3.3 la restricción 19 y el código `ACTIVE_DELIVERY_EXISTS` (409) en §2.2.1, y cerrar el punto abierto de §4 | Equipo |
 | ¿Puede aceptar un domicilio que él mismo rechazó antes (RF-17)? El rechazo es "irreversible" pero solo filtra la lista | Regla | No se valida (RF-17 no existe todavía) | Equipo |
-| El domiciliario necesita volver a su domicilio activo si cierra la app; el listado propio (RF-15) no es P1 | Orden de construcción | Guardar el id del domicilio activo en SQLite; incluir RF-15 en el orden | Equipo |
+| El domiciliario necesita volver a su domicilio activo si cierra la app; el listado propio (RF-15) no es P1 | Orden de construcción | Guardar el id del domicilio activo en SQLite; como solo puede tener uno, el servidor lo devuelve en `details.domicilioActivoId` y la app puede recuperarlo | Equipo |
 | `domiciliario activo` (cuenta ACTIVA) como condición para aceptar | Regla | Lo garantiza el filtro de autenticación (cuentas eliminadas o sin verificar no inician sesión) | Equipo |
 
 ## Plan Review Checklist

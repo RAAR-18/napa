@@ -85,7 +85,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 | Entidad (spec-general) | Lee / escribe | Restricciones |
 |---|---|---|
-| Domicilio | Escribe | `DISPONIBLE`; un activo por pedido (`estado <> 'CANCELADO'`); `pedido` y punto A inmutables |
+| Domicilio | Escribe | `DISPONIBLE`; un activo por pedido (`estado <> 'CANCELADO'`); un solo domicilio activo por domiciliario (índice parcial, lo usa RF-19); `pedido` y punto A inmutables |
 | Ubicacion | Escribe (copia del punto fijo) | Una fila propia por domicilio (punto A) |
 | EventoTrazabilidad | Escribe | Inmutable; sin `updated_at`; con el usuario autor |
 | DomicilioRechazo | Crea la tabla | La puebla RF-17 (P2); la filtra RF-16 |
@@ -176,7 +176,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 |---|---|---|
 | Unitarias | `Domicilio.publicar` (estado inicial, evento de trazabilidad) | FR-004 |
 | Integración | Endpoint con Testcontainers y PostGIS: publicación completa (A copiado, B del pedido, ganancia = tarifa, evento de trazabilidad, E08), modalidad y estados no válidos, pago sin confirmar, duplicado, concurrencia, reserva en y fuera de la ventana, ajeno, rol equivocado, `405` | US1-E1–E6, FR-001–FR-008 |
-| Migración | V10 aplica sobre V9: índice parcial, claves foráneas y la de `pago.domicilio_id` | FR-005 |
+| Migración | V10 aplica sobre V9: índices parciales (un domicilio activo por pedido y por domiciliario), claves foráneas y la de `pago.domicilio_id` | FR-005 |
 | Arquitectura | `domicilios` usa otros módulos solo por `ports/in` y `domain/event`; ciclo `pedidos` ↔ `domicilios` limitado a los puertos de este plan | RNF13, RNF25 |
 | Frontend | Jest: botón visible solo en domicilio aceptado y pagado, errores por código, mensaje de reserva con la hora | US1-E3, US1-E6 |
 
@@ -226,7 +226,7 @@ frontend/__tests__/domicilios/publicar.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V10__domicilio.sql` en `backend/src/main/resources/db/migration/`: `domicilio` (id, pedido_id, estado, codigo_confirmacion nulo, motivo_cancelacion nulo, ubicacion_origen_id, domiciliario_id nulo, version, created_at, updated_at; índice único parcial `(pedido_id) WHERE estado <> 'CANCELADO'`), `evento_trazabilidad` (id, domicilio_id, estado, ocurrido_at, usuario_id; sin `updated_at`; índice `(domicilio_id, ocurrido_at)`), `domicilio_rechazo` (PK `(domiciliario_id, domicilio_id)`, created_at) y la FK `pago.domicilio_id → domicilio.id` pendiente de RF-53
+- [ ] T002 Migración `V10__domicilio.sql` en `backend/src/main/resources/db/migration/`: `domicilio` (id, pedido_id, estado, codigo_confirmacion nulo, motivo_cancelacion nulo, ubicacion_origen_id, domiciliario_id nulo, version, created_at, updated_at; índice único parcial `(pedido_id) WHERE estado <> 'CANCELADO'` e índice único parcial `(domiciliario_id) WHERE estado IN ('ASIGNADO','RECOGIDO','EN_CAMINO')`, que impide que un domiciliario atienda más de un domicilio a la vez, ver RF-19), `evento_trazabilidad` (id, domicilio_id, estado, ocurrido_at, usuario_id; sin `updated_at`; índice `(domicilio_id, ocurrido_at)`), `domicilio_rechazo` (PK `(domiciliario_id, domicilio_id)`, created_at) y la FK `pago.domicilio_id → domicilio.id` pendiente de RF-53
 - [ ] T003 Dominio `Domicilio`, `EstadoDomicilio` y `EventoTrazabilidad` en `domicilios/domain/model/` (sin métodos de edición)
 - [ ] T004 Persistencia: entidades JPA y `DomicilioRepositoryPort` (guardar, buscar, `transicionarAtomico(id, desde, hacia)`) y `EventoTrazabilidadRepositoryPort`
 - [ ] T005 `ConsultarPedidoParaDomicilioPort` en `pedidos/application/ports/in/` (con `reservaDisponibleDesde` calculado por `VentanaReserva`) y su adaptador `PedidoParaDomicilioPort` en `domicilios`
