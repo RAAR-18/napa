@@ -65,6 +65,8 @@ Prefijo /api/v1. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCULA
 | 429 | Límite de intentos (login, OTP, código de entrega) | RATE_LIMITED |
 | 500 | Error inesperado | INTERNAL_ERROR |
 | 503 | Servicio externo caído (mapas, push, WhatsApp) | EXTERNAL_SERVICE_UNAVAILABLE |
+| 409 | HAS_PENDING_OPERATIONS | Eliminar la cuenta con pedidos, domicilios o un emprendimiento pendientes; details trae los conteos (RF-11) |
+| 409 | HAS_PENDING_ORDERS | Eliminar un producto con pedidos pendientes; details.pedidosPendientes (RF-58) |
 
 Cuerpo de error: { "code": "...", "message": "mensaje para el usuario", "details": {...}, "traceId": "...", "timestamp": "..." }. INVALID_STATE incluye details.estadoActual.
 
@@ -109,7 +111,7 @@ Todo listado acepta page (desde 0), size (por defecto 20, máximo 100) y sort=ca
 | GET /calificaciones | RF-02, RF-03 | tipoEntidad (EMPRENDIMIENTO, PRODUCTO, USUARIO), entidadId; se traducen a la relación de destino de la calificación |
 | GET /notificaciones | RF-38 | leida |
 | GET /reportes | RF-61 | estado |
-| GET /usuarios | RF-69 | rol, estado |
+| GET /usuarios | RF-69 | rol (los cinco roles del modelo, y el alias VENDEDOR para los dos tipos de vendedor), estado, q (texto de al menos 2 caracteres: nombre, o inicio del celular o del correo) |
 
 
 ### 2.4 Catálogo de rutas (planes P1) 
@@ -122,7 +124,7 @@ Prefijo `/api/v1`. "Idem" = exige `Idempotency-Key`.
 | RF-70 | POST /auth/verify-phone/request (reenvío / canal SMS) · POST /auth/verify-phone/confirm · GET /auth/verify-phone/mensajes/{mensajeId} · POST /webhooks/twilio/status | público / Twilio | — |
 | RF-10 | POST /auth/login · POST /auth/refresh · POST /auth/logout | público / autenticado | — |
 | RF-09 | POST /auth/password/change · POST /auth/password/recover/request · POST /auth/password/recover/confirm | autenticado / público | ✅ en change y confirm |
-| RF-08 | PATCH /usuarios/me · POST /usuarios/me/celular/solicitar-cambio · POST /usuarios/me/celular/confirmar | autenticado | ✅ en los POST |
+| RF-08 | GET /usuarios/me · PATCH /usuarios/me · PUT /usuarios/me/foto · POST /usuarios/me/celular/solicitar-cambio · POST /usuarios/me/celular/confirmar | autenticado | ✅ en los POST |
 | RF-38 | GET /notificaciones · POST /notificaciones/{id}/leer · POST /dispositivos | autenticado | — |
 | RF-28 | POST /emprendimientos | vendedor | ✅ |
 | RF-31 | GET /emprendimientos | cliente | — |
@@ -173,6 +175,14 @@ Prefijo `/api/v1`. "Idem" = exige `Idempotency-Key`.
 | RF-62 | POST /reportes/{id}/resolver | administrador | ✅ |
 | RF-04 | PATCH /calificaciones/{id} | autor de la calificación | — |
 | RF-05 | POST /calificaciones/{id}/eliminar | autor de la calificación | ✅ |
+| RF-11 | POST /usuarios/me/eliminar | cliente / vendedor / domiciliario | ✅ |
+| RF-27 | GET /pedidos/{id}/domiciliario | cliente / vendedor de punto fijo | — |
+| RF-29 | GET /emprendimientos/me · PATCH /emprendimientos/me | vendedor | — |
+| RF-49 | POST /pedidos/{id}/contactar | cliente | ✅ | | RF-52 | GET /pedidos/{id}/cliente | vendedor | — |
+| RF-56 | PATCH /productos/{id} | vendedor | — |
+| RF-58 | POST /productos/{id}/eliminar | vendedor | ✅ |
+| RF-66 | GET /usuarios/{id} | administrador | — |
+| RF-69 | GET /usuarios | administrador | — |
 
 ## 3. Modelo de datos
 
