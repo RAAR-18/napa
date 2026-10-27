@@ -7,10 +7,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 import java.io.IOException;
 import java.util.UUID;
 
+@Ordered(Ordered.HIGHEST_PRECEDENCE)
 @Component
 public class RequestIdFilter extends OncePerRequestFilter {
     public static final String HEADER_NAME = "X-Request-Id";

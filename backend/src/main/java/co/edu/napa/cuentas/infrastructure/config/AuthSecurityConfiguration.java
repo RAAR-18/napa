@@ -120,4 +120,11 @@ public class AuthSecurityConfiguration {
                 new ApiError(code, message, Map.of(), traceId, Instant.now(clock))
         );
     }
+
+    @Bean
+    FilterRegistrationBean<SessionVersionFilter> sessionVersionFilterRegistration(SessionVersionFilter filter) {
+        FilterRegistrationBean<SessionVersionFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
 }

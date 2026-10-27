@@ -42,7 +42,7 @@ Prefijo /api/v1. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCULA
 | Idempotency-Key | Request | **Obligatoria** en POST autenticado que cambie estado o dinero | UUID generado en el dispositivo al tocar el botón |
 | X-Device-Id | Request | Auth y registro de token push | Identificador estable de instalación |
 | X-Request-Id | Request/Response | Opcional en request; siempre en response | Identificador de traza; se repite en traceId del error |
-| Location | Response | 201 | URL del recurso creado |
+| Location | Response | 201 |URL del recurso creado, solo cuando el recurso tiene un GET propio (no aplica a POST /reportes ni a POST /calificaciones) |
 | Idempotent-Replayed: true | Response | Cuando se devuelve una respuesta guardada | Indica repetición, no una nueva operación |
 | Retry-After | Response | 429, 503 | Segundos de espera |
 | Cache-Control: no-store | Response | Auth, pagos, ubicación, código de confirmación | Evita caché de datos sensibles |
@@ -80,7 +80,7 @@ Cuerpo de error: { "code": "...", "message": "mensaje para el usuario", "details
 | 409 | PHONE_ALREADY_REGISTERED / EMAIL_ALREADY_REGISTERED | Dato en uso |
 | 400 | INVALID_CURRENT_PASSWORD | Contraseña actual incorrecta |
 | 400 | PASSWORD_REUSED | Nueva igual a la actual (decisión provisional, ver RF-09) |
-| 409 | OUT_OF_STOCK | Inventario insuficiente al aceptar un pedido inmediato |
+| 409 | OUT_OF_STOCK | Inventario insuficiente al crear un pedido inmediato (RF-45) o al aceptarlo (RF-53) |
 | 409 | PRODUCT_UNAVAILABLE | Producto agotado en un pedido inmediato |
 | 409 | BANK_ACCOUNT_REQUIRED | Domicilio sin cuenta bancaria del vendedor |
 | 409 | PAYMENT_NOT_CONFIRMED | Publicar domicilio sin pago confirmado (ya listado) |
@@ -89,6 +89,8 @@ Cuerpo de error: { "code": "...", "message": "mensaje para el usuario", "details
 | 409 | NOT_AVAILABLE | Domicilio ya tomado o cancelado |
 | 429 | CODE_ATTEMPTS_LOCKED | 5 fallos del código de entrega: bloqueo de 15 min |
 | 503 | EXTERNAL_SERVICE_UNAVAILABLE | (existente) mapas, push, WhatsApp |
+| 400 | CODE_INVALID | Código de confirmación de entrega incorrecto; details.intentosRestantes (RF-24) |
+| 409 | ACTIVE_DELIVERY_EXISTS | El domiciliario ya tiene un domicilio activo (ASIGNADO, RECOGIDO o EN_CAMINO); details.domicilioActivoId (RF-19) |
 
 ### 2.3 Paginación, orden y filtros (query parameters)
 
@@ -150,6 +152,10 @@ Prefijo `/api/v1`. "Idem" = exige `Idempotency-Key`.
 | RF-01 | POST /calificaciones | cliente / vendedor / domiciliario | ✅ |
 | RF-02 | GET /calificaciones | todos | — |
 | RF-06 | GET /calificaciones (admin) · POST /calificaciones/{id}/eliminar-moderacion · PATCH /calificaciones/{id}/moderar-texto | administrador | ✅ en POST |
+| RF-63 | GET /vendedores/me/configuracion-pago | vendedor | — |
+| RF-44 | POST /tarifa-minima | administrador | ✅ |
+| RF-44 | GET /tarifa-minima | administrador | — |
+| RF-45 | POST /pedidos/cotizacion | cliente | — |
 
 ## 3. Modelo de datos
 
@@ -237,7 +243,9 @@ sin codigo_validado_at ni llegada_confirmada_at (la fecha de la entrega queda en
 | 16 | La modalidad DOMICILIO solo se ofrece al cliente si el vendedor de punto fijo tiene cuenta bancaria registrada. |
 | 17 | Las acciones de una reserva (iniciar entrega, marcar listo, publicar domicilio) solo se permiten desde reserva − margen (15 min). |
 | 18 | El administrador no verifica celular; su cuenta se siembra y no se registra por la API. |
-
+| 19 | Un domiciliario solo puede tener un domicilio activo (ASIGNADO, RECOGIDO o EN_CAMINO) a la vez: índice único parcial sobre domiciliario_id; aceptar otro responde 409 ACTIVE_DELIVERY_EXISTS (RF-19). |
+| 20 | Un reporte sobre un usuario solo es válido si el autor y el reportado compartieron al menos un pedido (RF-60). |
+| 21 | Cada rol solo puede calificar ciertos destinos de un pedido ENTREGADO: cliente → emprendimiento, productos y domiciliario; vendedor → cliente y (punto fijo) domiciliario; domiciliario → emprendimiento y cliente (RF-01). |
 
 ### 3.4 Tarifa del domicilio (RF-45 FR-006)
 
@@ -256,14 +264,14 @@ Distancia y duración vienen de `RoutingPort` (ruta A→B). Si el servicio falla
     *   **Confirmación de la entrega por código**: al llegar, el cliente le dice al domiciliario su código; el domiciliario lo ingresa (RF-24). Si es correcto, en la misma transacción el domicilio y el pedido pasan a ENTREGADO, se inserta el EventoTrazabilidad (domiciliario como autor) y se avisa al vendedor, que debe pagar la tarifa.
     *  Si el cliente no da el código o dice no haber recibido, el domicilio no avanza y sigue EN_CAMINO; el cliente puede crear un reporte (RF-60) y el administrador puede cancelar el domicilio (RF-13).
 *   **Pago**: PENDIENTE_CONFIRMACION → CONFIRMADO; la tarifa al domiciliario pasa por REGISTRADO (RF-43), que solo se habilita con el domicilio ENTREGADO.
-*   **Reporte** : PENDIENTE → EN_REVISION → RESUELTO.
-*   **Calificaciones** : se habilitan con el pedido ENTREGADO (en domicilio, cuando el domiciliario valida el código).
+*   **Reporte**: PENDIENTE → EN_REVISION → RESUELTO.
+*   **Calificaciones**: se habilitan con el pedido ENTREGADO; el autor puede editar su calificación (RF-04) o eliminarla (RF-05, estado ELIMINADA_AUTOR); el administrador la modera (RF-06).
 
 #### Puntos abiertos
 
 *  Si el cliente nunca da el código, el domicilio queda EN_CAMINO y el domiciliario no cobra (sin vencimiento automático en el MVP).
 *  Código de confirmación: Resuelto en D13 (se guarda en claro en `codigo_confirmacion`).
-*  Límite de domicilios simultáneos por domiciliario.
+*  Resuelto: un domiciliario solo puede atender un domicilio a la vez (restricción 19).
 *  Vencimientos de pedidos sin respuesta.
 *  Si el administrador cancela un domicilio ya pagado, la devolución del dinero ocurre fuera de la plataforma (la plataforma no procesa dinero).
 

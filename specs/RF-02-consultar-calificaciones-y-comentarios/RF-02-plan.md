@@ -320,7 +320,7 @@ frontend/__tests__/calificaciones/
 | Los listados incluyen calificaciones sin comentario (`comentario` nulo) porque aportan al promedio | UX | Se incluyen | Equipo |
 | El vendedor solo ve su propio emprendimiento y productos; la spec no menciona los ajenos | Alcance | Solo los suyos | Equipo |
 | Los roles administrador y vendedor como `tipoEntidad=USUARIO` no son consultables | Regla | `404` | Equipo |
-| Destino no permitido para el rol: `403` (en lugar de `404` como en RF-60) | Consistencia | `403`, porque no hay dato que ocultar | Equipo |
+| Destino no permitido para el rol: `403` (en RF-60 es `404`) | Consistencia | **Resuelto**: RF-60 devuelve `404` porque no debe revelar si existe un pedido o domicilio ajeno; aquí los datos de reputación son públicos y `403` es más claro | Equipo |
 | El administrador recibe `403` en este endpoint hasta que se construya RF-06 | Orden | RF-06 agrega su rama | Equipo |
 
 ## Plan Review Checklist

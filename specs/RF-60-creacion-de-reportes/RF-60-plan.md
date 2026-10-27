@@ -48,6 +48,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | FR-005 | Validar motivo y descripción antes de registrar | Bean Validation y reglas de `Reporte`: no vacíos ni en blanco, con longitud máxima | T016 |
 | SC-001 | < 1 min | Formulario corto | T040 |
 | SC-002 | Disponible de inmediato | Persistencia síncrona; consulta del administrador es RF-61 | T010 |
+| Decisión del equipo | Avisar al administrador cuando llega un reporte | E18 en el outbox y listener de RF-38 | T020 |
 | SC-003 | 100 % de rechazos sin motivo o descripción | Prueba parametrizada | T016 |
 | US1-E1 | Reporte del cliente | `201`, `PENDIENTE`, entidad relacionada del cliente | T010 |
 | US1-E2 | Reporte del vendedor | `201` asociado a su cuenta | T011 |
@@ -105,7 +106,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 `pedidoId`, `domicilioId` y `usuarioId` son opcionales y mutuamente excluyentes (a lo sumo uno). Sin ninguno, el reporte es sobre la plataforma.
 
-- **Respuestas exitosas**: `201` con `Location: /api/v1/reportes/{id}`, `X-Request-Id` y body `{ "id": "…", "estado": "PENDIENTE", "motivo": "…", "descripcion": "…", "createdAt": "…" }`.
+- **Respuestas exitosas**: `201` con `X-Request-Id` y body `{ "id": "…", "estado": "PENDIENTE", "motivo": "…", "descripcion": "…", "createdAt": "…" }`.
 - **Errores**:
 
 | HTTP | `code` | Cuándo ocurre | Mensaje |
@@ -116,13 +117,13 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | 404 | `NOT_FOUND` | La entidad no existe o no es suya | "No encontramos lo que quieres reportar" |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | Misma clave con cuerpo distinto | — |
 
-`GET /reportes/{id}` no está en el catálogo: el `Location` apunta a un recurso que consultará RF-61 (Open Questions).
+No se devuelve `Location`: el recurso no tiene `GET` propio en el catálogo (Open Questions).
 
 ## Events
 
 | Evento emitido | Lo emite el caso de uso | Momento |
 |---|---|---|
-| Ninguno | — | El catálogo no define un evento de reporte creado; el administrador lo ve al consultar (RF-61) |
+| E18 `reportes.reporte-creado` (`ReporteCreadoEvent`: `reporteId`, `autorId`) | `CrearReporteUseCase` | En la misma transacción de la creación (outbox). `notificaciones` avisa a los administradores activos (RF-38 T037) |
 
 **Eventos que consume esta feature**: ninguno.
 
@@ -169,6 +170,7 @@ specs/RF-60-creacion-de-reportes/
 ```text
 backend/src/main/java/co/edu/napa/reportes/
 ├── domain/
+│   ├── event/                    # ReporteCreadoEvent (E18)
 │   ├── model/                    # Reporte, EstadoReporte
 │   └── exception/                # ReporteInvalidoException
 ├── application/
@@ -201,7 +203,7 @@ frontend/__tests__/reportes/crear-reporte.test.tsx
 
 - [ ] T002 Migración `V12__reporte.sql` en `backend/src/main/resources/db/migration/`: tabla `reporte` (id, autor_id, motivo, descripcion, estado, nota_resolucion nulo, resuelto_por_id nulo, pedido_id nulo, domicilio_id nulo, usuario_reportado_id nulo, created_at, updated_at) con CHECK de a lo sumo una entidad y índices `(estado, created_at)` y `(autor_id, created_at)`
 - [ ] T003 Puertos `in` de lectura de participantes: `ConsultarParticipantesPedidoPort` (cliente, dueño, emprendimiento, ítems) y `ConsultarInteraccionEntreUsuariosPort` en `pedidos`, y `ConsultarParticipantesDomicilioPort` (cliente, dueño, domiciliario, estado) en `domicilios`
-- [ ] T004 Dominio `Reporte` y `EstadoReporte` en `reportes/domain/model/`, y `EntidadReportablePort` e `InteraccionEntreUsuariosPort` con sus adaptadores
+- [ ] T004 Dominio `Reporte`, `EstadoReporte` y `ReporteCreadoEvent` (E18) en `reportes/domain/`, y `EntidadReportablePort` e `InteraccionEntreUsuariosPort` con sus adaptadores
 
 **Checkpoint**: base lista.
 
@@ -219,11 +221,12 @@ frontend/__tests__/reportes/crear-reporte.test.tsx
 - [ ] T016 [P] [US1] Test parametrizado de motivo o descripción vacíos, en blanco o demasiado largos, y de dos entidades (`400`), en `.../reportes/CrearReporteValidacionIT.java`
 - [ ] T017 [P] [US1] Test de repetición con la misma `Idempotency-Key` (sin duplicado), clave reutilizada con otro cuerpo (`422`), falta de clave (`400`) y reportes distintos sobre lo mismo (se permiten) en `.../reportes/CrearReporteIdempotenciaIT.java`
 - [ ] T018 [P] [US1] Test de entidad ajena o inexistente (`404`), usuario sin pedido en común (`404`) y administrador (`403`) en `.../reportes/CrearReporteAutorizacionIT.java`
+- [ ] T020 [P] [US1] Test de integración: E18 queda en el outbox con `reporteId` y `autorId` en la misma transacción (y no se publica si la creación falla) en `.../reportes/CrearReporteEventoIT.java`
 - [ ] T030 [P] [US1] Test del formulario y de `BotonReportarProblema` (validación, parámetros por origen, outbox sin red) en `frontend/__tests__/reportes/crear-reporte.test.tsx`
 
 ### Implementation
 
-- [ ] T014 [US1] `CrearReporteUseCase` (rol, pertenencia de la entidad, creación) y `CrearReportePort` en `reportes/application/`
+- [ ] T014 [US1] `CrearReporteUseCase` (rol, pertenencia de la entidad, creación y publicación de E18) y `CrearReportePort` en `reportes/application/`
 - [ ] T015 [US1] `POST /reportes`, su DTO y `Location` en `ReporteController`
 - [ ] T019 [US1] Adaptadores de `EntidadReportablePort` e `InteraccionEntreUsuariosPort` sobre los puertos de `pedidos` y `domicilios`
 - [ ] T031 [US1] Servicio `crearReporte()` por el outbox en `frontend/src/services/reportes.ts`
@@ -269,8 +272,8 @@ frontend/__tests__/reportes/crear-reporte.test.tsx
 | El domiciliario solo puede referirse a domicilios asignados a él (y a usuarios con quienes compartió un pedido) | Alcance | Así | Equipo |
 | Edge 2: duplicados | Regla | Se permiten reportes distintos sobre lo mismo; solo se evita la duplicación por reenvío | Equipo |
 | Edge 3: el usuario no puede ver el estado de sus reportes (no hay RF ni ruta) | Alcance | Fuera de la ola | Equipo |
-| No hay evento ni notificación para el administrador cuando se crea un reporte (el catálogo solo tiene E16, de resolución) | Operación | Sin aviso; el administrador consulta RF-61 | Equipo |
-| `Location` apunta a `GET /reportes/{id}`, que no está en el catálogo | Contrato | Se incluye según spec-general §2.1.1; RF-61 puede definir ese recurso | Equipo |
+| Aviso al administrador: se agrega el evento E18 `reportes.reporte-creado` al catálogo (decidido) | Catálogo | E18 → notificaciones a todos los administradores `ACTIVA` (RF-38 T037); hay que agregarlo a `eventos.md` | Equipo |
+| spec-general §2.1.1 pide `Location` en todo `201`, pero este recurso no tiene `GET` propio | Contrato | **Resuelto**: no se devuelve `Location`; §2.1.1 debe decir "cuando el recurso tiene GET propio". Si RF-61 agrega `GET /reportes/{id}`, se incluye | Equipo |
 
 ## Plan Review Checklist
 

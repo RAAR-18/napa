@@ -49,7 +49,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | SC-003 | 100 % notificados | E17 y listener de RF-38 | T013 |
 | US1-E1 | Eliminar un comentario que incumple | `200`, estado `ELIMINADA_MODERACION` | T010 |
 | US2-E1 | Editar un comentario | `200`, texto nuevo, mismo puntaje | T040 |
-| Edge 1 | Eliminar un comentario que el autor editó | No hay edición del autor en el catálogo; se modera sobre el texto vigente | — |
+| Edge 1 | Eliminar un comentario que el autor editó | RF-04 permite la edición del autor; el administrador modera sobre el texto vigente | T019 |
 | Edge 2 | ¿Se notifica al autor? | Sí, E17 | T013 |
 | Edge 3 | Distinguir eliminación del autor de la de moderación | Estados `ELIMINADA_AUTOR` y `ELIMINADA_MODERACION`, y `ModeracionComentario` | T012 |
 
@@ -229,6 +229,7 @@ frontend/__tests__/calificaciones/
 - [ ] T016 [P] [US1] Test de concurrencia: dos administradores eliminan la misma calificación (uno `200`, otro `409`) en `.../comentarios/ModeracionConcurrenciaIT.java`
 - [ ] T017 [P] [US1] Test de migración V14 en `.../comentarios/MigracionV14Test.java`
 - [ ] T018 [P] [US1] Test de integración del modo administrador de `GET /calificaciones` (sin filtros, `estado`, `tipoEntidad`, orden; otros roles con `estado` dan `400`) en `.../comentarios/ListarAdminIT.java`
+- [ ] T019 [P] [US1] Test de integración: moderar (eliminar y editar) sobre el texto vigente tras una edición del autor, y calificación `ELIMINADA_AUTOR` no moderable (`409`); se deshabilita hasta que existan RF-04 y RF-05, en `.../comentarios/ModeracionTrasAutorIT.java`
 - [ ] T030 [P] [US1] Test de la lista y de la acción de eliminar con confirmación en `frontend/__tests__/calificaciones/moderacion-eliminar.test.tsx`
 
 ### Implementation
@@ -272,7 +273,7 @@ frontend/__tests__/calificaciones/
 ## Dependencies & Execution Order
 
 - Setup → Foundational → US1 → US2 → Polish.
-- Dependencias entre RF: requiere RF-01 (tabla y estados), RF-02 (consulta que excluye lo eliminado), RF-38 (listener E17) y RF-10 (sesión de administrador).
+- Dependencias entre RF: comparte estados con RF-04 y RF-05 (ola 7); requiere RF-01 (tabla y estados), RF-02 (consulta que excluye lo eliminado), RF-38 (listener E17) y RF-10 (sesión de administrador).
 - Tareas `[P]` pueden ejecutarse en paralelo.
 
 ## Open Questions
@@ -283,7 +284,7 @@ frontend/__tests__/calificaciones/
 | Moderar una calificación sin comentario | Regla | `422 BUSINESS_RULE`: no hay comentario que moderar | Equipo |
 | Editar a un texto vacío | Regla | `400`; para quitar el comentario se elimina | Equipo |
 | Editar con el mismo texto | Regla | `400`, así no se crean registros vacíos | Equipo |
-| Edge 1: el autor ya había editado; el catálogo no tiene RF para que el autor edite ni elimine (`ELIMINADA_AUTOR` queda sin uso) | Alcance | Se modera sobre el texto vigente; cuando exista ese RF, el único estado `ACTIVA` sigue siendo el que se puede moderar | Equipo |
+| Edge 1: RF-04 y RF-05 (P2, ola 7) dejan al autor editar y eliminar; RF-05 fija `ELIMINADA_AUTOR` | Regla | El administrador modera sobre el texto vigente; solo se modera `ACTIVA`. El autor puede editar un comentario ya editado por el administrador (RF-04 lo confirmará) y no uno eliminado por moderación | Equipo |
 | La spec no pide que el administrador indique un motivo | Datos | Sin motivo (el modelo `ModeracionComentario` no tiene el campo) | Equipo |
 | No hay endpoint ni pantalla para ver el historial de moderación de una calificación | Alcance | Solo se guarda (SC-001); si se necesita verlo hay que agregar una ruta | Equipo |
 | `PATCH` sin `Idempotency-Key` | Contrato | spec-general §2.4 solo la exige en el `POST` | Equipo |

@@ -93,7 +93,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 |---|---|---|---|---|---|
 | Calificacion | (no existe) | `ACTIVA` | El usuario califica | Pedido `ENTREGADO`; autor y destino válidos; sin calificación previa igual | Entra al promedio del destino (RF-02) |
 
-`ELIMINADA_MODERACION` la fija RF-06. `ELIMINADA_AUTOR` existe en el modelo pero ningún RF del catálogo la produce (Open Questions).
+`ELIMINADA_MODERACION` la fija RF-06. `ELIMINADA_AUTOR` la fija RF-05 (ola 7).
 
 ## Authorization
 
@@ -121,7 +121,7 @@ Cualquier otra combinación responde `404` (no hay interacción) o `403` si el r
 
 `tipoEntidad`: EMPRENDIMIENTO, PRODUCTO o USUARIO. `comentario` es opcional.
 
-- **Respuestas exitosas**: `201` con `Location: /api/v1/calificaciones/{id}`, `X-Request-Id` y body `{ "id": "…", "pedidoId": "…", "tipoEntidad": "…", "entidadId": "…", "puntaje": 5, "comentario": "…", "estado": "ACTIVA", "createdAt": "…" }`.
+- **Respuestas exitosas**: `201` con `X-Request-Id` y body `{ "id": "…", "pedidoId": "…", "tipoEntidad": "…", "entidadId": "…", "puntaje": 5, "comentario": "…", "estado": "ACTIVA", "createdAt": "…" }`.
 - **Errores**:
 
 | HTTP | `code` | Cuándo ocurre | Mensaje |
@@ -142,7 +142,7 @@ Los listados de calificaciones son RF-02 (`GET /calificaciones`).
 |---|---|---|
 | Ninguno | — | El catálogo no define un evento de calificación creada |
 
-**Eventos que consume esta feature**: ninguno; la elegibilidad se lee del estado del pedido (E07 solo habilita la pantalla).
+**Eventos que consume esta feature**: ninguno; la elegibilidad se lee del estado del pedido (E07 solo habilita la pantalla; la invitación a calificar la manda RF-38 al comprador).
 
 ## Offline & Concurrency Strategy
 
@@ -245,7 +245,7 @@ frontend/__tests__/calificaciones/
 ### Implementation
 
 - [ ] T020 [US1] `CalificarUseCase` y `CalificarPort`: valida estado, participantes, destino y rol, y crea la calificación, en `comentarios/application/`
-- [ ] T021 [US1] `POST /calificaciones`, su DTO y `Location` en `CalificacionController`
+- [ ] T021 [US1] `POST /calificaciones` y su DTO en `CalificacionController`
 - [ ] T022 [US1] Adaptador de `PedidoCalificablePort` sobre `ConsultarParticipantesPedidoPort`
 - [ ] T023 [US1] Adaptador de persistencia que traduce la violación del índice único a `CONFLICT`
 - [ ] T031 [US1] Servicio `calificar()` por el outbox en `frontend/src/services/calificaciones.ts`
@@ -309,8 +309,9 @@ frontend/__tests__/calificaciones/
 | `Calificacion` no tiene `created_at` en spec-general y RF-02 necesita ordenar por fecha | Modelo | Agregar `created_at` y `updated_at` como auditoría | Equipo |
 | Una calificación por llamada; el cliente puede querer calificar emprendimiento y 3 productos de una vez | UX | Una por llamada, cada una con su `Idempotency-Key`; la app envía varias por el outbox | Equipo |
 | `409 CONFLICT` por duplicado: la app no sabe qué destinos ya calificó (en otro dispositivo o sesión) | UX | Marcar "ya calificado" al recibir el `409`. Mejora posible: que el detalle del pedido (RF-51) devuelva qué destinos ya calificó el usuario | Equipo |
-| SC-001 (60 % en 48 h) sin recordatorio no es alcanzable por diseño; el catálogo no tiene evento de "califica tu pedido" | Meta | Sin recordatorio. Mejora posible: notificación después de E07 (cambia el catálogo) | Equipo |
-| `ELIMINADA_AUTOR` existe en el modelo pero ningún RF permite que el autor edite o elimine su calificación | Alcance | Sin ruta; se resuelve cuando exista el RF. El único (autor, pedido, destino) incluye todos los estados, así que no podría volver a calificar | Equipo |
+| SC-001 (60 % en 48 h) necesita una invitación a calificar | Meta | **Resuelto**: RF-38 invita al comprador con el aviso de entrega (E07 fuera de domicilio; E12 en domicilio). Vendedor y domiciliario no reciben invitación | Equipo |
+| spec-general §2.1.1 pide `Location` en todo `201`, pero la calificación no tiene `GET` propio | Contrato | **Resuelto**: no se devuelve `Location` (la nota de §2.1.1 es "cuando el recurso tiene GET propio") | Equipo |
+| RF-04 (editar) y RF-05 (eliminar), ambos P2 de la ola 7, permiten al autor cambiar su calificación; RF-05 fija `ELIMINADA_AUTOR` | Alcance | Fuera de este plan. El único (autor, pedido, destino) incluye todos los estados, así que tras eliminar no podría volver a calificar; RF-05 debe confirmarlo | Equipo |
 | Un pedido de DOMICILIO que se cancela después de ENTREGADO, o una cuenta eliminada del destino | Datos | Se puede calificar mientras el pedido esté `ENTREGADO`, aunque el destino esté inactivo | Equipo |
 | FR-003 limita calificar al domiciliario al vendedor de punto fijo; el ambulante no tiene domicilios | Regla | Rol VENDEDOR_PUNTO_FIJO exigido | Equipo |
 | Spec-general no tiene `ALREADY_RATED`; se usa el genérico `CONFLICT` | Catálogo | `CONFLICT` | Equipo |

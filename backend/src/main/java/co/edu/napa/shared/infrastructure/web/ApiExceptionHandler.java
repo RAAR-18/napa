@@ -162,15 +162,18 @@ public class ApiExceptionHandler {
 
     private HttpStatus statusFor(String code) {
         return switch (code) {
-            case "VALIDATION_ERROR" -> HttpStatus.BAD_REQUEST;
-            case "UNAUTHORIZED", "TOKEN_EXPIRED", "ACCOUNT_NOT_VERIFIED" -> HttpStatus.UNAUTHORIZED;
-            case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
+            case "VALIDATION_ERROR", "OTP_INVALID", "OTP_EXPIRED",
+                 "INVALID_CURRENT_PASSWORD", "PASSWORD_REUSED" -> HttpStatus.BAD_REQUEST;
+            case "UNAUTHORIZED", "TOKEN_EXPIRED", "INVALID_CREDENTIALS" -> HttpStatus.UNAUTHORIZED;
+            case "FORBIDDEN", "ACCOUNT_NOT_VERIFIED" -> HttpStatus.FORBIDDEN;
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "METHOD_NOT_ALLOWED" -> HttpStatus.METHOD_NOT_ALLOWED;
             case "INVALID_STATE", "ALREADY_CONFIRMED", "CONFLICT", "PAYMENT_NOT_CONFIRMED",
-                    "ALREADY_PUBLISHED" -> HttpStatus.CONFLICT;
+                 "ALREADY_PUBLISHED", "PHONE_ALREADY_REGISTERED", "EMAIL_ALREADY_REGISTERED",
+                 "OTP_ATTEMPTS_EXHAUSTED", "OUT_OF_STOCK", "PRODUCT_UNAVAILABLE",
+                 "BANK_ACCOUNT_REQUIRED", "RESERVATION_NOT_DUE", "NOT_AVAILABLE" -> HttpStatus.CONFLICT;
             case "IDEMPOTENCY_KEY_REUSED", "BUSINESS_RULE" -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case "RATE_LIMITED" -> HttpStatus.TOO_MANY_REQUESTS;
+            case "RATE_LIMITED", "CODE_ATTEMPTS_LOCKED" -> HttpStatus.TOO_MANY_REQUESTS;
             case "EXTERNAL_SERVICE_UNAVAILABLE" -> HttpStatus.SERVICE_UNAVAILABLE;
             case "INTERNAL_ERROR" -> HttpStatus.INTERNAL_SERVER_ERROR;
             default -> HttpStatus.UNPROCESSABLE_CONTENT;

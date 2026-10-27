@@ -34,7 +34,7 @@ public class AuthController {
         this.authUseCase = authUseCase;
     }
 
-    @PostMapping("/registro")
+    @PostMapping("/register")
     public ResponseEntity<RegistroResponse> registrar(
             @Valid @RequestBody RegistroRequest request,
             @RequestHeader("X-Device-Id") String deviceId,
@@ -55,7 +55,7 @@ public class AuthController {
                 .body(new RegistroResponse(result.usuarioId(), result.estado(), true));
     }
 
-    @PostMapping("/verificaciones-celular")
+    @PostMapping("/verify-phone")
     public ResponseEntity<Map<String, String>> solicitarVerificacion(
             @Valid @RequestBody SolicitarVerificacionRequest request,
             HttpServletRequest servletRequest
@@ -70,7 +70,7 @@ public class AuthController {
                 .body(Map.of("estado", "SOLICITADA"));
     }
 
-    @PostMapping("/verificaciones-celular/confirmar")
+    @PostMapping("/confirm")
     public ResponseEntity<AuthTokens> confirmarRegistro(
             @Valid @RequestBody ConfirmarRegistroRequest request,
             @RequestHeader("X-Device-Id") String deviceId
@@ -114,7 +114,7 @@ public class AuthController {
                 .build();
     }
 
-    @PostMapping("/cambio-contrasena")
+    @PostMapping("/password/change")
     public ResponseEntity<Void> cambiarContrasena(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CambioContrasenaRequest request
@@ -130,7 +130,7 @@ public class AuthController {
                 .build();
     }
 
-    @PostMapping("/recuperar-contrasena")
+    @PostMapping("/password/recover/request")
     public ResponseEntity<Void> recuperarContrasena(@Valid @RequestBody RecuperarContrasenaRequest request) {
         authUseCase.recuperarContrasena(
                 request.celular(),

@@ -25,8 +25,8 @@ public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort {
             return repository.saveAndFlush(new UsuarioJpaEntity(usuario)).toDomain();
         } catch (DataIntegrityViolationException exception) {
             if (exception.getCause() instanceof ConstraintViolationException violation
-                    && ("uq_usuario_celular".equals(violation.getConstraintName())
-                    || "uq_usuario_correo_normalizado".equals(violation.getConstraintName()))) {
+                    && ("PHONE_ALREADY_REGISTERED".equals(violation.getConstraintName())
+                    || "EMAIL_ALREADY_REGISTERED".equals(violation.getConstraintName()))) {
                 throw new DomainException("CONFLICT", "El celular o correo ya está registrado.");
             }
             throw exception;
