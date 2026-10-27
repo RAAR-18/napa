@@ -1,6 +1,6 @@
 # Implementation Plan: Calificar y comentar entidades
 
-**Date**: 2026-10-25
+**Date**: 2026-10-26
 **Spec**: [RF-01-calificar-y-comentar-entidades.md](./RF-01-calificar-y-comentar-entidades.md) (misma carpeta; es la fuente de verdad)
 **Spec general**: [spec-general.md](../general/spec-general.md) (roles, API, modelo y estados) · [eventos](../general/eventos.md)
 **Requerimiento funcional**: RF-01
@@ -167,7 +167,7 @@ Los listados de calificaciones son RF-02 (`GET /calificaciones`).
 | Unitarias | `Calificacion.crear` (puntaje, comentario, estado inicial, un solo destino) | FR-008 |
 | Integración | Cada combinación de la tabla de autorización; pedido no entregado en cada estado; destino fuera del pedido; duplicada; carrera de dos envíos; idempotencia | FR-001–FR-008, Edge 1–4 |
 | Migración | V13 aplica sobre V12: CHECKs y único | FR-006, FR-008 |
-| Arquitectura | `comentarios` usa `pedidos`, `domicilios` y `usuarios` solo por sus puertos `in` | RNF13, RNF25 |
+| Arquitectura | `comentarios` usa `pedidos`, `domicilios` y `cuentas` solo por sus puertos `in` | RNF13, RNF25 |
 | Frontend | Jest: estrellas, formulario, destinos según el rol, outbox, `409` | US1–US3 |
 
 **Cobertura mínima**: todos los escenarios Given/When/Then tienen al menos un test.

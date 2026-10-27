@@ -52,8 +52,8 @@ Como administrador, quiero editar el texto de comentarios, para gestionar conten
 - **FR-001**: El sistema MUST permitir al administrador eliminar cualquier comentario publicado en la plataforma.
 - **FR-002**: El sistema MUST permitir al administrador editar únicamente el texto de cualquier comentario publicado.
 - **FR-003**:“El sistema DEBE recalcular el promedio de calificación solo tras una eliminación; una edición administrativa no lo cambia.
-- **FR-004**: El sistema MUST registrar que una acción de moderación (edición o eliminación) fue realizada por un administrador, distinguiéndola de las acciones del autor original.
-- **FR-005**: El sistema MUST notificar al autor del comentario cuando este sea editado o eliminado por moderación.
+- **FR-004**: El sistema MUST registrar que una acción de moderación (edición o eliminación) fue realizada por un administrador, con su motivo, distinguiéndola de las acciones del autor original.
+- **FR-005**: El sistema MUST notificar al autor del comentario, indicando la acción y el motivo, cuando este sea editado o eliminado por moderación.
 
 ### Key Entities
 

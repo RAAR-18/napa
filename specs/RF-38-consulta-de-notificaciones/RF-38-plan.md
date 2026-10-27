@@ -144,7 +144,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | E14 `PagoTarifaRegistrado` | Domiciliario | `PAGO_TARIFA_REGISTRADO` |
 | E15 `DomicilioCancelado` | Comprador, vendedor y domiciliario si existe | `DOMICILIO_CANCELADO` |
 | E16 `ReporteResuelto` | Autor del reporte | `REPORTE_RESUELTO` |
-| E17 `ComentarioModerado` | Autor del comentario | `COMENTARIO_MODERADO` |
+| E17 `ComentarioModerado` | Autor del comentario; el texto dice qué se hizo (`accion`) y el `motivo` que trae el evento | `COMENTARIO_MODERADO` |
 | E18 `ReporteCreado` | Todos los administradores con cuenta `ACTIVA` | `REPORTE_CREADO` |
 
 E09 no está en la lista mínima de RF-38 FR-004, pero está en el catálogo y la exige RF-19 SC-002 (FR-004 dice "como mínimo").

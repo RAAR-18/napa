@@ -1,6 +1,6 @@
 # Implementation Plan: Consultar calificaciones y comentarios
 
-**Date**: 2026-10-25
+**Date**: 2026-10-26
 **Spec**: [RF-02-consultar-calificaciones-y-comentarios.md](./RF-02-consultar-calificaciones-y-comentarios.md) (misma carpeta; es la fuente de verdad)
 **Spec general**: [spec-general.md](../general/spec-general.md) (roles, API, modelo y estados) · [eventos](../general/eventos.md)
 **Requerimiento funcional**: RF-02
@@ -18,7 +18,7 @@
 
 ## Estado actual del código
 
-No existe aún la consulta. Las calificaciones y la tabla `calificacion` con sus índices las crea RF-01 (V13). Los puertos de lectura de emprendimientos, productos y usuarios no existen todavía (T002).
+No existe aún la consulta. Las calificaciones y la tabla `calificacion` con sus índices las crea RF-01 (V13). Los puertos de lectura de emprendimientos, productos y cuentas no existen todavía (T002).
 
 ## Actors
 
@@ -107,13 +107,13 @@ El administrador lo consulta en RF-06. Un destino no permitido para el rol respo
 
 ```json
 {
-  "content": [ { "id": "…", "puntaje": 5, "comentario": "Muy frescas", "autorNombre": "María", "createdAt": "…" } ],
+  "content": [ { "id": "…", "puntaje": 5, "comentario": "Muy frescas", "autorNombre": "María", "esMia": false, "createdAt": "…" } ],
   "page": 0, "size": 20, "totalElements": 1,
   "resumen": { "promedio": 4.6, "total": 12 }
 }
 ```
 
-`promedio` va con un decimal y es `null` si no hay calificaciones; `comentario` puede ser `null`.
+`promedio` va con un decimal y es `null` si no hay calificaciones; `comentario` puede ser `null`. `esMia` es `true` cuando la calificación es del usuario autenticado: la app lo usa para ofrecer editar (RF-04) y eliminar (RF-05).
 
 - **Errores**:
 
@@ -158,7 +158,7 @@ El administrador lo consulta en RF-06. Un destino no permitido para el rol respo
 | Integración | Endpoint con Testcontainers: cada celda de la tabla de autorización; paginación y orden; filtros inválidos; sin calificaciones; eliminadas y editadas; entidad inactiva, eliminada e inexistente | FR-001–FR-005, Edge 1–3 |
 | Consistencia | El promedio devuelto coincide con el promedio de los puntajes `ACTIVA` leídos de la tabla, con altas y eliminaciones intercaladas | SC-002 |
 | Rendimiento | 10 000 calificaciones de un destino: < 2 s | SC-001 |
-| Arquitectura | `comentarios` consulta `emprendimientos`, `productos`, `usuarios` y `pedidos` solo por puertos `in` | RNF13, RNF25 |
+| Arquitectura | `comentarios` consulta `emprendimientos`, `productos`, `cuentas` y `pedidos` solo por puertos `in` | RNF13, RNF25 |
 | Frontend | Jest: estrellas, lista paginada, caché sin red, vistas por rol | US1–US4 |
 
 **Cobertura mínima**: todos los escenarios Given/When/Then tienen al menos un test.
@@ -189,7 +189,7 @@ backend/src/main/java/co/edu/napa/comentarios/
 
 backend/src/main/java/co/edu/napa/emprendimientos/application/ports/in/   # ConsultarEmprendimientoReputablePort
 backend/src/main/java/co/edu/napa/productos/application/ports/in/         # ConsultarProductoReputablePort
-backend/src/main/java/co/edu/napa/usuarios/application/ports/in/          # ConsultarUsuarioReputablePort
+backend/src/main/java/co/edu/napa/cuentas/application/ports/in/          # ConsultarUsuarioReputablePort
 backend/src/test/java/co/edu/napa/comentarios/
 
 frontend/src/app/(cliente)/emprendimientos/[id]/calificaciones.tsx     # reputación del emprendimiento
@@ -209,7 +209,7 @@ frontend/__tests__/calificaciones/
 
 ## Phase 2: Foundational
 
-- [ ] T002 Puertos `in` de lectura: `ConsultarEmprendimientoReputablePort` (estado, dueño), `ConsultarProductoReputablePort` (estado, emprendimiento y dueño) y `ConsultarUsuarioReputablePort` (rol, estado, nombre)
+- [ ] T002 Puertos `in` de lectura: `ConsultarEmprendimientoReputablePort` (estado, dueño, nombre), `ConsultarProductoReputablePort` (estado, emprendimiento, dueño, nombre) y `ConsultarUsuarioReputablePort` (rol, estado, nombre)
 - [ ] T003 `ResumenCalificaciones` en `comentarios/domain/model/`
 - [ ] T004 Métodos `listarActivas` y `resumen` en `CalificacionRepositoryPort` y los puertos de salida de lectura y visibilidad
 
@@ -223,7 +223,7 @@ frontend/__tests__/calificaciones/
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración de `GET /calificaciones` del emprendimiento (resumen, comentarios, paginación y orden) en `backend/src/test/java/co/edu/napa/comentarios/ConsultarEmprendimientoIT.java`
+- [ ] T010 [P] [US1] Test de integración de `GET /calificaciones` del emprendimiento (resumen, comentarios, `esMia`, paginación y orden) en `backend/src/test/java/co/edu/napa/comentarios/ConsultarEmprendimientoIT.java`
 - [ ] T011 [P] [US1] Test de integración del producto en `.../comentarios/ConsultarProductoIT.java`
 - [ ] T012 [P] [US1] Test de entidad sin calificaciones (promedio nulo, total 0, lista vacía) en `.../comentarios/ConsultarSinCalificacionesIT.java`
 - [ ] T013 [P] [US1] Test de calificaciones eliminadas por moderación o por el autor (fuera del promedio y de la lista) y editadas (siguen) en `.../comentarios/ConsultarModeradasIT.java`
@@ -237,7 +237,7 @@ frontend/__tests__/calificaciones/
 
 - [ ] T020 [US1] `ConsultarCalificacionesUseCase` y `ConsultarCalificacionesPort` (validación de filtros, existencia y estado del destino, visibilidad, consulta) en `comentarios/application/`
 - [ ] T021 [US1] `GET /calificaciones` y su DTO en `CalificacionController`
-- [ ] T022 [US1] Adaptadores de los puertos de lectura de emprendimientos, productos y usuarios
+- [ ] T022 [US1] Adaptadores de los puertos de lectura de emprendimientos, productos y cuentas
 - [ ] T023 [US1] Consulta JPA agregada (promedio con un decimal y total) y listado paginado con orden permitido
 - [ ] T031 [US1] `consultarCalificaciones()` con caché SQLite en `frontend/src/services/calificaciones.ts`
 - [ ] T032 [US1] `ResumenCalificaciones` y `ListaCalificaciones` en `frontend/src/components/calificaciones/`

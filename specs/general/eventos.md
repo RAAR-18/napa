@@ -49,5 +49,5 @@
 | E14 | `pagos.pago-tarifa-registrado` (`PagoTarifaRegistradoEvent`) | RF-43 | El vendedor registra el pago de la tarifa | `pagoId`, `domicilioId`, `domiciliarioId`, `monto` | notificaciones → avisar al domiciliario |
 | E15 | `domicilios.domicilio-cancelado` (`DomicilioCanceladoEvent`) | RF-13 | El administrador cancela (el pedido pasa a `CANCELADO` en la misma transacción) | `domicilioId`, `pedidoId`, `compradorId`, `vendedorId`, `domiciliarioId?` | notificaciones → avisar a las partes |
 | E16 | `reportes.reporte-resuelto` (`ReporteResueltoEvent`) | RF-62 | El administrador cierra el reporte | `reporteId`, `autorId` | notificaciones → avisar al autor |
-| E17 | `calificaciones.comentario-moderado` (`ComentarioModeradoEvent`) | RF-06 | El administrador edita o elimina | `calificacionId`, `autorId`, `accion` | notificaciones → avisar al autor |
+| E17 | `calificaciones.comentario-moderado` (`ComentarioModeradoEvent`) | RF-06 | El administrador edita o elimina | `calificacionId`, `autorId`, `accion`, `motivo` | notificaciones → avisar al autor de lo que se hizo y por qué |
 | E18 | `reportes.reporte-creado` (`ReporteCreadoEvent`) | RF-60 · `CrearReporteUseCase` | Un usuario crea un reporte | `reporteId`, `autorId` | notificaciones → avisar a todos los administradores con cuenta ACTIVA |

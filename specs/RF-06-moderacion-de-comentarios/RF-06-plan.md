@@ -1,6 +1,6 @@
 # Implementation Plan: Moderación de comentarios
 
-**Date**: 2026-10-25
+**Date**: 2026-10-27
 **Spec**: [RF-06-moderacion-de-comentarios.md](./RF-06-moderacion-de-comentarios.md) (misma carpeta; es la fuente de verdad)
 **Spec general**: [spec-general.md](../general/spec-general.md) (roles, API, modelo y estados) · [eventos](../general/eventos.md)
 **Requerimiento funcional**: RF-06
@@ -14,7 +14,7 @@
 
 ## Summary
 
-El administrador modera las calificaciones con comentario desde la app: lista (`GET /calificaciones` en modo administrador, que RF-02 deja preparado), **elimina** una calificación (`POST /calificaciones/{id}/eliminar-moderacion`, pasa a `ELIMINADA_MODERACION` y sale del promedio) o **edita solo el texto** del comentario (`PATCH /calificaciones/{id}/moderar-texto`, el puntaje y el promedio no cambian). Cada acción crea un registro `ModeracionComentario` (acción, administrador, fecha y el texto anterior) en la misma transacción, lo que distingue la moderación de cualquier acción del autor, y emite E17 `ComentarioModeradoEvent` para avisar al autor (el listener ya lo planea RF-38). La app del administrador incluye la pantalla de moderación con filtros por estado, entidad y texto.
+El administrador modera las calificaciones con comentario desde la app: lista (`GET /calificaciones` en modo administrador, que RF-02 deja preparado), **elimina** una calificación (`POST /calificaciones/{id}/eliminar-moderacion`, pasa a `ELIMINADA_MODERACION` y sale del promedio) o **edita solo el texto** del comentario (`PATCH /calificaciones/{id}/moderar-texto`, el puntaje y el promedio no cambian). Cada acción exige un **motivo** (por qué se moderó) y crea un registro `ModeracionComentario` (acción, administrador, fecha, motivo y el texto anterior) en la misma transacción, lo que distingue la moderación de cualquier acción del autor, y emite E17 `ComentarioModeradoEvent` con el motivo para avisar al autor (el aviso le dice qué se hizo y por qué) (el listener ya lo planea RF-38). La app del administrador incluye la pantalla de moderación con filtros por estado, entidad y texto.
 
 ## Estado actual del código
 
@@ -39,11 +39,11 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 | Spec | Descripción corta | Cubierto por | Tareas |
 |---|---|---|---|
-| FR-001 | El administrador elimina cualquier comentario publicado | `POST /calificaciones/{id}/eliminar-moderacion` | T010, T020, T021 |
+| FR-001 | El administrador elimina cualquier comentario publicado | `POST /calificaciones/{id}/eliminar-moderacion` con `motivo` | T010, T020, T021 |
 | FR-002 | El administrador edita solo el texto | `PATCH /calificaciones/{id}/moderar-texto`; el puntaje no se toca | T040, T042, T043 |
 | FR-003 | Recalcular el promedio solo tras eliminar | Estado `ELIMINADA_MODERACION` sale de la consulta de RF-02; la edición deja `ACTIVA` | T011, T041 |
-| FR-004 | Registrar que fue una acción de moderación | `ModeracionComentario` y estado propio de la calificación | T012, T022 |
-| FR-005 | Notificar al autor | E17 con el outbox | T013, T023 |
+| FR-004 | Registrar que fue una acción de moderación | `ModeracionComentario` (con administrador, fecha, `motivo` y texto anterior) y estado propio de la calificación | T012, T022 |
+| FR-005 | Notificar al autor | E17 con el outbox; el aviso incluye la acción y el `motivo` | T013, T023 |
 | SC-001 | 100 % registradas con responsable, fecha y tipo | Registro en la misma transacción | T012 |
 | SC-002 | Reflejado en < 5 s | Consulta directa; revalidación en la app | T014, T032 |
 | SC-003 | 100 % notificados | E17 y listener de RF-38 | T013 |
@@ -71,7 +71,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | Entidad (spec-general) | Lee / escribe | Restricciones |
 |---|---|---|
 | Calificacion | Escribe | Solo `ACTIVA` se puede moderar; el texto cambia en edición; el puntaje nunca |
-| ModeracionComentario | Escribe | `accion` EDITADO o ELIMINADO; `contenido_anterior`; administrador; sin `updated_at` |
+| ModeracionComentario | Escribe | `accion` EDITADO o ELIMINADO; `motivo` obligatorio; `contenido_anterior`; administrador; sin `updated_at` |
 | Usuario | Lee | Administrador que modera y autor que se notifica |
 
 ## State Transitions
@@ -97,25 +97,25 @@ Los otros roles reciben `403` en los dos endpoints de moderación y el modo admi
 
 ### GET /api/v1/calificaciones (modo administrador)
 
-- **Rol**: administrador · **Query params**: `tipoEntidad`, `entidadId`, `estado` (ACTIVA, ELIMINADA_AUTOR, ELIMINADA_MODERACION), `page`, `size`, `sort`, todos opcionales. Para los demás roles `estado` no es un filtro válido (`400`) y `tipoEntidad`/`entidadId` siguen siendo obligatorios (RF-02).
+- **Rol**: administrador · **Query params**: `tipoEntidad`, `entidadId`, `estado` (ACTIVA, ELIMINADA_AUTOR, ELIMINADA_MODERACION), `page`, `size`, `sort`, todos opcionales; sin `estado` se devuelven solo las `ACTIVA` (RF-03). Para los demás roles `estado` no es un filtro válido (`400`) y `tipoEntidad`/`entidadId` siguen siendo obligatorios (RF-02).
 - **Respuesta**: `200` con `{ content, page, size, totalElements }`; cada elemento lleva `id`, `puntaje`, `comentario`, `estado`, `tipoEntidad`, `entidadId`, `pedidoId`, `autor { id, nombre }` y `createdAt`. Sin `resumen` cuando no hay `tipoEntidad` y `entidadId`.
 
 ### POST /api/v1/calificaciones/{id}/eliminar-moderacion
 
-- **Rol**: administrador · **Path params**: `id` · **Cabeceras**: `Authorization` ✅, `Idempotency-Key` ✅. **Body**: ninguno.
+- **Rol**: administrador · **Path params**: `id` · **Cabeceras**: `Authorization` ✅, `Idempotency-Key` ✅. **Body**: `{ "motivo": "Lenguaje ofensivo" }` (de 5 a 200 caracteres).
 - **Respuesta**: `200` con `{ "id": "…", "estado": "ELIMINADA_MODERACION" }`.
 
 ### PATCH /api/v1/calificaciones/{id}/moderar-texto
 
 - **Rol**: administrador · **Path params**: `id` · **Cabeceras**: `Authorization` ✅, `Content-Type: application/json`.
-- **Body**: `{ "comentario": "Texto corregido" }`, de 1 a 300 caracteres.
+- **Body**: `{ "comentario": "Texto corregido", "motivo": "Se quitó un insulto" }` (`comentario` de 1 a 300 caracteres; `motivo` de 5 a 200).
 - **Respuesta**: `200` con `{ "id": "…", "estado": "ACTIVA", "comentario": "Texto corregido" }`.
 
 - **Errores (ambos)**:
 
 | HTTP | `code` | Cuándo ocurre | Mensaje |
 |---|---|---|---|
-| 400 | `VALIDATION_ERROR` | Falta `Idempotency-Key` (eliminar); texto vacío, de más de 300 o igual al actual (editar) | Indica el campo |
+| 400 | `VALIDATION_ERROR` | Falta `Idempotency-Key` (eliminar); `motivo` ausente, en blanco, de menos de 5 o más de 200 caracteres; texto vacío, de más de 300 o igual al actual (editar) | Indica el campo |
 | 401 | `UNAUTHORIZED` | Sin sesión | — |
 | 403 | `FORBIDDEN` | No es administrador | — |
 | 404 | `NOT_FOUND` | La calificación no existe | "No encontramos esa calificación" |
@@ -129,7 +129,7 @@ Los otros roles reciben `403` en los dos endpoints de moderación y el modo admi
 
 | Evento emitido | Lo emite el caso de uso | Momento |
 |---|---|---|
-| E17 `calificaciones.comentario-moderado` (`ComentarioModeradoEvent`: `calificacionId`, `autorId`, `accion`) | `EliminarCalificacionModeracionUseCase` y `EditarTextoModeracionUseCase` | En la misma transacción del cambio (outbox) |
+| E17 `calificaciones.comentario-moderado` (`ComentarioModeradoEvent`: `calificacionId`, `autorId`, `accion`, `motivo`) | `EliminarCalificacionModeracionUseCase` y `EditarTextoModeracionUseCase` | En la misma transacción del cambio (outbox) |
 
 **Eventos que consume esta feature**: ninguno. El listener de E17 y su notificación `COMENTARIO_MODERADO` están en RF-38.
 
@@ -154,7 +154,7 @@ Los otros roles reciben `403` en los dos endpoints de moderación y el modo admi
 | Tipo | Qué cubre | Escenarios |
 |---|---|---|
 | Unitarias | `Calificacion.eliminarPorModeracion` y `editarTexto` (estados, puntaje intacto, texto anterior) | FR-002, FR-003 |
-| Integración | Endpoints con Testcontainers: eliminar y editar; promedio tras cada uno; registro con administrador, fecha y texto anterior; E17 en el outbox; estados no `ACTIVA`; sin comentario; roles; modo administrador del listado | FR-001–FR-005, SC-001–SC-003 |
+| Integración | Endpoints con Testcontainers: eliminar y editar; promedio tras cada uno; registro con administrador, fecha, motivo y texto anterior; E17 con el motivo en el outbox; estados no `ACTIVA`; sin comentario; roles; modo administrador del listado | FR-001–FR-005, SC-001–SC-003 |
 | Concurrencia | Dos administradores sobre la misma calificación | RNF08 |
 | Migración | V14 aplica sobre V13 | FR-004 |
 | Arquitectura | `comentarios` publica E17 solo con `domain/event` | RNF13 |
@@ -206,7 +206,7 @@ frontend/__tests__/calificaciones/
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V14__moderacion_comentario.sql` en `backend/src/main/resources/db/migration/`: tabla `moderacion_comentario` (id, calificacion_id, administrador_id, accion, contenido_anterior, created_at) con índice `(calificacion_id, created_at)`
+- [ ] T002 Migración `V14__moderacion_comentario.sql` en `backend/src/main/resources/db/migration/`: tabla `moderacion_comentario` (id, calificacion_id, administrador_id, accion, motivo, contenido_anterior, created_at) con índice `(calificacion_id, created_at)`
 - [ ] T003 Dominio `ModeracionComentario`, `AccionModeracion` y `ComentarioModeradoEvent` (E17) en `comentarios/domain/`, y métodos `eliminarPorModeracion` y `editarTexto` en `Calificacion`
 - [ ] T004 `ModeracionRepositoryPort` y su adaptador
 
@@ -220,17 +220,17 @@ frontend/__tests__/calificaciones/
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración de `eliminar-moderacion` (`200`, estado, puntaje fuera del promedio) en `backend/src/test/java/co/edu/napa/comentarios/EliminarModeracionIT.java`
+- [ ] T010 [P] [US1] Test de integración de `eliminar-moderacion` con `motivo` (`200`, estado, puntaje fuera del promedio) en `backend/src/test/java/co/edu/napa/comentarios/EliminarModeracionIT.java`
 - [ ] T011 [P] [US1] Test de integración: el promedio de RF-02 se recalcula tras eliminar en `.../comentarios/EliminarRecalculaPromedioIT.java`
-- [ ] T012 [P] [US1] Test de integración: registro `ELIMINADO` con administrador, fecha y `contenido_anterior`; distinto de `ELIMINADA_AUTOR` en `.../comentarios/ModeracionRegistroIT.java`
-- [ ] T013 [P] [US1] Test de integración: E17 en el outbox con `calificacionId`, `autorId` y `accion`, y notificación al autor con el listener de RF-38 en `.../comentarios/ModeracionNotificacionIT.java`
+- [ ] T012 [P] [US1] Test de integración: registro `ELIMINADO` con administrador, fecha, `motivo` y `contenido_anterior`; distinto de `ELIMINADA_AUTOR` en `.../comentarios/ModeracionRegistroIT.java`
+- [ ] T013 [P] [US1] Test de integración: E17 en el outbox con `calificacionId`, `autorId`, `accion` y `motivo`, y notificación al autor con la acción y el motivo con el listener de RF-38 en `.../comentarios/ModeracionNotificacionIT.java`
 - [ ] T014 [P] [US1] Test de integración: la calificación eliminada ya no aparece en `GET /calificaciones` de los demás roles en `.../comentarios/ModeracionVisibilidadIT.java`
-- [ ] T015 [P] [US1] Test de estados no `ACTIVA` (`409`), sin comentario (`422`), inexistente (`404`), no administrador (`403`), reintento con la misma `Idempotency-Key`, clave reutilizada (`422`), falta de clave (`400`) en `.../comentarios/EliminarModeracionErroresIT.java`
+- [ ] T015 [P] [US1] Test de `motivo` ausente, en blanco, corto y largo (`400`), de estados no `ACTIVA` (`409`), sin comentario (`422`), inexistente (`404`), no administrador (`403`), reintento con la misma `Idempotency-Key`, clave reutilizada (`422`), falta de clave (`400`) en `.../comentarios/EliminarModeracionErroresIT.java`
 - [ ] T016 [P] [US1] Test de concurrencia: dos administradores eliminan la misma calificación (uno `200`, otro `409`) en `.../comentarios/ModeracionConcurrenciaIT.java`
 - [ ] T017 [P] [US1] Test de migración V14 en `.../comentarios/MigracionV14Test.java`
 - [ ] T018 [P] [US1] Test de integración del modo administrador de `GET /calificaciones` (sin filtros, `estado`, `tipoEntidad`, orden; otros roles con `estado` dan `400`) en `.../comentarios/ListarAdminIT.java`
 - [ ] T019 [P] [US1] Test de integración: moderar (eliminar y editar) sobre el texto vigente tras una edición del autor, y calificación `ELIMINADA_AUTOR` no moderable (`409`); se deshabilita hasta que existan RF-04 y RF-05, en `.../comentarios/ModeracionTrasAutorIT.java`
-- [ ] T030 [P] [US1] Test de la lista y de la acción de eliminar con confirmación en `frontend/__tests__/calificaciones/moderacion-eliminar.test.tsx`
+- [ ] T030 [P] [US1] Test de la lista y de la acción de eliminar con confirmación y motivo obligatorio en `frontend/__tests__/calificaciones/moderacion-eliminar.test.tsx`
 
 ### Implementation
 
@@ -241,7 +241,7 @@ frontend/__tests__/calificaciones/
 - [ ] T024 [US1] `ListarCalificacionesAdminUseCase` y rama administrador de `GET /calificaciones`
 - [ ] T031 [US1] Servicio `moderacion.ts` (listar y eliminar)
 - [ ] T032 [US1] Pantalla `(administrador)/calificaciones/index.tsx` con filtros, `ItemModeracion` y revalidación al volver a la lista
-- [ ] T033 [US1] Detalle `(administrador)/calificaciones/[id].tsx` con la acción de eliminar y la confirmación
+- [ ] T033 [US1] Detalle `(administrador)/calificaciones/[id].tsx` con la acción de eliminar, el campo de motivo y la confirmación
 
 ## Phase 4: User Story 2 - Editar el texto de un comentario (Priority: P2)
 
@@ -253,14 +253,14 @@ frontend/__tests__/calificaciones/
 
 - [ ] T040 [P] [US2] Test de integración de `moderar-texto` (`200`, texto nuevo, puntaje igual) en `.../comentarios/EditarModeracionIT.java`
 - [ ] T041 [P] [US2] Test de integración: el promedio no cambia tras editar en `.../comentarios/EditarNoCambiaPromedioIT.java`
-- [ ] T044 [P] [US2] Test de integración: registro `EDITADO` con el texto anterior (también en ediciones sucesivas), E17 con `accion=EDITADO`, y errores (vacío, 301 caracteres, igual al actual, estado no `ACTIVA`, sin comentario, `403`) en `.../comentarios/EditarModeracionErroresIT.java`
-- [ ] T045 [P] [US2] Test del diálogo de edición en `frontend/__tests__/calificaciones/moderacion-editar.test.tsx`
+- [ ] T044 [P] [US2] Test de integración: registro `EDITADO` con el `motivo` y el texto anterior (también en ediciones sucesivas), E17 con `accion=EDITADO` y `motivo`, y errores (motivo ausente o corto, vacío, 301 caracteres, igual al actual, estado no `ACTIVA`, sin comentario, `403`) en `.../comentarios/EditarModeracionErroresIT.java`
+- [ ] T045 [P] [US2] Test del diálogo de edición con motivo obligatorio en `frontend/__tests__/calificaciones/moderacion-editar.test.tsx`
 
 ### Implementation
 
 - [ ] T042 [US2] `EditarTextoModeracionUseCase` y su puerto
 - [ ] T043 [US2] `PATCH /calificaciones/{id}/moderar-texto`
-- [ ] T046 [US2] `DialogoEditarComentario` y la acción de editar en el detalle del administrador
+- [ ] T046 [US2] `DialogoEditarComentario` (texto y motivo) y la acción de editar en el detalle del administrador
 
 **Checkpoint**: US1 y US2 funcionales.
 
@@ -285,7 +285,7 @@ frontend/__tests__/calificaciones/
 | Editar a un texto vacío | Regla | `400`; para quitar el comentario se elimina | Equipo |
 | Editar con el mismo texto | Regla | `400`, así no se crean registros vacíos | Equipo |
 | Edge 1: RF-04 y RF-05 (P2, ola 7) dejan al autor editar y eliminar; RF-05 fija `ELIMINADA_AUTOR` | Regla | El administrador modera sobre el texto vigente; solo se modera `ACTIVA`. El autor puede editar un comentario ya editado por el administrador (RF-04 lo confirmará) y no uno eliminado por moderación | Equipo |
-| La spec no pide que el administrador indique un motivo | Datos | Sin motivo (el modelo `ModeracionComentario` no tiene el campo) | Equipo |
+| El administrador indica un motivo (por qué moderó), decidido en la ola 7a. Requiere agregar `motivo` a `ModeracionComentario` en spec-general §3.2, a FR-004 y FR-005 de la spec de RF-06 y al payload de E17 en `eventos.md` | Modelo, spec y catálogo | Obligatorio, de 5 a 200 caracteres, guardado en el registro y enviado al autor en la notificación | Equipo |
 | No hay endpoint ni pantalla para ver el historial de moderación de una calificación | Alcance | Solo se guarda (SC-001); si se necesita verlo hay que agregar una ruta | Equipo |
 | `PATCH` sin `Idempotency-Key` | Contrato | spec-general §2.4 solo la exige en el `POST` | Equipo |
 | La lista del administrador sin `tipoEntidad`/`entidadId` no lleva `resumen` | Contrato | Sin `resumen` | Equipo |

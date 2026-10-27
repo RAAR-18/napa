@@ -1,6 +1,6 @@
 # Implementation Plan: Creación de reportes
 
-**Date**: 2026-10-25
+**Date**: 2026-10-26
 **Spec**: [RF-60-creacion-de-reportes.md](./RF-60-creacion-de-reportes.md) (misma carpeta; es la fuente de verdad)
 **Spec general**: [spec-general.md](../general/spec-general.md) (roles, API, modelo y estados) · [eventos](../general/eventos.md)
 **Requerimiento funcional**: RF-60
@@ -150,7 +150,7 @@ No se devuelve `Location`: el recurso no tiene `GET` propio en el catálogo (Ope
 | Unitarias | `Reporte.crear` (estado inicial, motivo y descripción, una sola entidad) | FR-004, FR-005 |
 | Integración | Endpoint con Testcontainers: cliente, vendedor ambulante y de punto fijo, y domiciliario; con cada tipo de entidad y sin ella; entidad ajena; usuario sin pedido en común; administrador (`403`); campos vacíos o en blanco; dos entidades; repetición con la misma clave | US1-E1–E2, US2-E1, FR-001–FR-005 |
 | Migración | V12 aplica sobre V11: CHECK de una sola entidad | Restricción 5 |
-| Arquitectura | `reportes` usa `pedidos`, `domicilios` y `usuarios` solo por sus puertos `in` | RNF13, RNF25 |
+| Arquitectura | `reportes` usa `pedidos`, `domicilios` y `cuentas` solo por sus puertos `in` | RNF13, RNF25 |
 | Frontend | Jest: formulario, validación, entrada desde pedido y domicilio, outbox sin red | SC-001, SC-003 |
 
 **Cobertura mínima**: todos los escenarios Given/When/Then tienen al menos un test.
@@ -179,7 +179,7 @@ backend/src/main/java/co/edu/napa/reportes/
 │   └── usecase/                  # CrearReporteUseCase
 └── infrastructure/adapters/
     ├── in/web/                   # ReporteController (POST /reportes), DTO
-    └── out/persistence/          # ReporteJpaEntity y adaptadores a los puertos `in` de pedidos, domicilios y usuarios
+    └── out/persistence/          # ReporteJpaEntity y adaptadores a los puertos `in` de pedidos, domicilios y cuentas
 
 backend/src/main/java/co/edu/napa/pedidos/application/ports/in/      # ConsultarParticipantesPedidoPort, ConsultarInteraccionEntreUsuariosPort
 backend/src/main/java/co/edu/napa/domicilios/application/ports/in/   # ConsultarParticipantesDomicilioPort
@@ -209,7 +209,7 @@ frontend/__tests__/reportes/crear-reporte.test.tsx
 
 ## Phase 3: User Story 1 - Cliente o vendedor reportan un problema (Priority: P1)
 
-**Goal**: el administrador recibe los problemas de pedidos, domicilios y usuarios.
+**Goal**: el administrador recibe los problemas de pedidos, domicilios y cuentas.
 **Independent Test**: crear un reporte como cliente y como vendedor y verlo `PENDIENTE`.
 **Cubre**: FR-001, FR-002, FR-004, FR-005, SC-001–SC-003, US1-E1–E2, Edge 1–2.
 
