@@ -18,7 +18,7 @@ El usuario consulta y edita su perfil. `GET /usuarios/me` devuelve su perfil; `P
 
 ## Estado actual del código
 
-`cuentas` ya tiene `Usuario`, `UsuarioJpaEntity`, `UbicacionJpaEntity` y, por RF-07 y RF-70, el registro y `VerificarCelularPort`/`ConfirmarVerificacionPort` con el propósito `CAMBIO`. RF-07 devuelve `Location: /api/v1/usuarios/me` al registrar, pero esa ruta todavía no existe (no hay ningún `GET` de perfil); este plan la crea. No hay almacenamiento de imágenes en el stack (foundations), de modo que la foto necesita un puerto nuevo con una decisión pendiente (Open Questions).
+`cuentas` ya tiene `Usuario`, `UsuarioJpaEntity`, `UbicacionJpaEntity` y, por RF-07 y RF-70, el registro y `VerificarCelularPort`/`ConfirmarVerificacionPort` con el propósito `CAMBIO`. RF-07 devuelve `Location: /api/v1/usuarios/me` al registrar, pero esa ruta todavía no existe (no hay ningún `GET` de perfil); este plan la crea. No hay almacenamiento de imágenes en el stack (foundations): la foto se guarda en un volumen local detrás de un puerto nuevo (decisión del equipo; Open Questions).
 
 ## Actors
 
@@ -248,7 +248,7 @@ frontend/__tests__/perfil/
 
 ## Phase 2: Foundational
 
-- [ ] T002 `FotoPerfilStoragePort` (guardar y reemplazar) y su adaptador en `cuentas/infrastructure/adapters/out/storage/` (proveedor: Open Questions)
+- [ ] T002 `FotoPerfilStoragePort` (guardar y reemplazar) y su adaptador en `cuentas/infrastructure/adapters/out/storage/` (volumen local, decisión del equipo)
 - [ ] T003 `CambioCelularPendientePort` y su adaptador Redis con la clave `cambio-cel:{usuarioId}` y TTL de 10 minutos
 - [ ] T004 Método de actualización en su lugar en `UbicacionRepositoryPort` (compartido con RF-29)
 
@@ -326,8 +326,8 @@ frontend/__tests__/perfil/
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| ¿Dónde se guardan las fotos? El stack no tiene almacenamiento de objetos (foundations) y RF-54 dice "sin foto" para productos | Infraestructura | Puerto `FotoPerfilStoragePort` con un adaptador de volumen local servido por la API en el piloto; cambiar a S3 o similar es cambiar el adaptador. **Necesita decisión del equipo** | Equipo |
-| spec-general no tiene `GET /usuarios/me` (RF-07 ya lo usa en `Location`) ni `PUT /usuarios/me/foto` | Contrato | Se agregan a Spec-general (ver `cambios-spec-general-y-eventos.md`) | Equipo |
+| ¿Dónde se guardan las fotos? El stack no tiene almacenamiento de objetos (foundations) y RF-54 dice "sin foto" para productos | Infraestructura | **Decidido: volumen local** servido por la API, detrás de `FotoPerfilStoragePort`. Si el despliegue gratuito tiene disco efímero (se borra al redesplegar), hay que montar un volumen persistente o cambiar el adaptador por un servicio gratuito de objetos, sin tocar el resto | Equipo |
+| spec-general no tiene `GET /usuarios/me` (RF-07 ya lo usa en `Location`) ni `PUT /usuarios/me/foto` | Contrato | Se agregan a Spec general| Equipo |
 | El correo no se edita (FR-001 no lo lista; el administrador inicia sesión con él) | Alcance | No editable en esta feature | Equipo |
 | Edge 4: la spec pregunta por una ubicación que el proveedor de mapas no valida | Regla | Solo se valida el rango de coordenadas, como RF-28; no se llama al proveedor | Equipo |
 | Al cambiar el celular las sesiones activas siguen abiertas y el login pasa a usar el número nuevo | Seguridad | No se revocan sesiones; se confirma con el código del número nuevo | Equipo |

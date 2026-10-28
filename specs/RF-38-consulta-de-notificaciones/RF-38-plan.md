@@ -43,7 +43,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | Spec | Descripción corta | Cubierto por | Tareas |
 |---|---|---|---|
 | FR-001 | Consultar notificaciones | `GET /notificaciones`, `ConsultarNotificacionesUseCase` | T010, T013, T014 |
-| FR-002 | Ordenadas por fecha, leídas vs. no leídas | `sort=created_at,desc` por defecto; filtro `leida`; `POST /notificaciones/{id}/leer` (204, spec-general §2.2) | T011, T015, T016 |
+| FR-002 | Ordenadas por fecha, leídas vs. no leídas | `sort=created_at,desc` por defecto; filtro `leida`; `POST /notificaciones/{id}/leer` (204, spec-general) | T011, T015, T016 |
 | FR-003 | Generar notificaciones ante eventos relevantes | Listeners por evento + `EnviarNotificacionPort` | T020–T029, T037 |
 | FR-004 | Notificar como mínimo la lista de eventos | Tabla "Listeners" (abajo): E01–E07 (E07 solo si el pedido no es de domicilio), E08–E12, E14–E18 | T020–T031 |
 | SC-001 | Visibles en < 1 min | Relay cada 500 ms + prueba de latencia | T040 |
@@ -162,8 +162,8 @@ E09 no está en la lista mínima de RF-38 FR-004, pero está en el catálogo y l
 | FCM falla | La notificación queda guardada; se reintenta con retroceso; tras el límite, `DEAD` y alerta | foundations D7 |
 | Token FCM inválido | Se borra el `DispositivoToken` | foundations |
 | Destinatario con cuenta `ELIMINADA` | No se envía push (decisión pendiente) | Edge 3 |
-| Preferencia deshabilitada (RF-39) | Se guarda sin push o no se genera: decisión pendiente | RF-39 |
-| Filtro desconocido | 400 | spec-general §2.3 |
+| Preferencia deshabilitada (RF-39) | No se genera (ni fila ni push); lo implementa RF-39 | RF-39 |
+| Filtro desconocido | 400 | spec-general|
 
 ## Testing Strategy
 
@@ -278,7 +278,7 @@ frontend/__tests__/notificaciones/
 | Retención del historial de notificaciones | Edge 2 | Ninguna | Equipo |
 | Notificaciones críticas no silenciables | RF-39 | **Cerrado (foundations)**: no hay excepciones, se respetan las preferencias | Equipo |
 | Notificaciones del administrador: E18 `ReporteCreado` las genera (decidido en la ola 6) | US1 | Todos los administradores activos reciben `REPORTE_CREADO` | Equipo |
-| Preferencia deshabilitada: ¿se guarda la notificación sin push o no se genera? | RF-39 | Pendiente | Equipo |
+| Preferencia deshabilitada: ¿se guarda la notificación sin push o no se genera? | RF-39 | **Cerrado**: no se genera (ni fila ni push); lo implementa RF-39 en `EnviarNotificacionUseCase` | Equipo |
 | E07 (corrige un error de este plan, que decía "sin notificación" y contradecía eventos.md, RF-37 y RF-65): el comprador recibe el aviso de entrega con invitación a calificar solo fuera de domicilio; en domicilio lo hace E12 con el mismo texto. Vendedor y domiciliario no reciben invitación | FR-004 | Así | Equipo |
 
 ## Plan Review Checklist
@@ -302,4 +302,4 @@ frontend/__tests__/notificaciones/
 
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
-- Evitar tareas vagas y conflictos en un mismo archivo.
+- Evitar tareas vagas y conflictos en un mismo archivo. 

@@ -14,7 +14,7 @@
 
 ## Summary
 
-El vendedor edita su emprendimiento con `PATCH /emprendimientos/me`: descripción, hora de apertura, hora de cierre y ubicación (uno o varios campos). Un vendedor ambulante actualiza su ubicación de venta con el mismo endpoint cada vez que cambia de zona, desde un botón "Estoy aquí" que toma el GPS del teléfono. `GET /emprendimientos/me` devuelve su emprendimiento activo para precargar el formulario (y cierra la pregunta abierta de RF-28 sobre cómo saber si ya tiene uno). Los cambios se validan antes de guardar y los ven los clientes de inmediato, porque RF-31 y RF-32 leen la misma fila. El nombre y la categoría no se editan.
+El vendedor edita su emprendimiento con `PATCH /emprendimientos/me`: descripción, hora de apertura, hora de cierre y ubicación (uno o varios campos). Un vendedor ambulante actualiza su ubicación de venta con el mismo endpoint cada vez que cambia de zona, desde un botón "Estoy aquí" que toma el GPS del teléfono. `GET /emprendimientos/me` devuelve su emprendimiento activo para precargar el formulario (y cierra la pregunta abierta de RF-28 sobre cómo saber si ya tiene uno). Los cambios se validan antes de guardar y los ven los clientes de inmediato, porque RF-31 y RF-32 leen la misma fila. Un vendedor de punto fijo no puede cambiar su ubicación mientras tenga pedidos pendientes (`409 HAS_PENDING_ORDERS`), para que ningún cliente ni domiciliario llegue a un lugar equivocado; el ambulante sí puede, porque cambiar de zona es su operación normal. El nombre y la categoría no se editan.
 
 ## Estado actual del código
 
@@ -49,7 +49,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | SC-002 | 100 % de ediciones inválidas rechazadas | Pruebas parametrizadas | T011, T012 |
 | US1-E1 | Edición exitosa de un campo | `200` con el emprendimiento actualizado | T010 |
 | US1-E2 | Datos inválidos | `400 VALIDATION_ERROR` con el campo | T011, T012 |
-| Edge 1 | Cambiar la ubicación con pedidos o domicilios en curso | Se permite; los domicilios ya publicados conservan su punto A y los pedidos su ubicación de entrega (Open Questions) | T015 |
+| Edge 1 | Cambiar la ubicación con pedidos o domicilios en curso | El punto fijo con pedidos pendientes recibe `409 HAS_PENDING_ORDERS` y no cambia la ubicación; el ambulante siempre puede, y los domicilios ya publicados conservan su punto A | T015, T018, T024 |
 | Edge 2 | Edición concurrente desde dos sesiones | Última escritura gana por campo; el choque real de dos escrituras simultáneas da `409 CONFLICT` por versión | T016 |
 | Edge 3 | Editar un emprendimiento eliminado | `404`: `/me` solo resuelve el emprendimiento `ACTIVO` | T017 |
 
@@ -71,7 +71,8 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | Entidad (spec-general) | Lee / escribe | Restricciones |
 |---|---|---|
 | Emprendimiento | Lee / escribe (`descripcion`, `hora_apertura`, `hora_cierre`) | Solo el `ACTIVO` del vendedor; `nombre` y `categoria` no se editan |
-| Ubicacion | Escribe (en su lugar) | Una fila propia por emprendimiento; el punto fijo exige `direccion` (como RF-28) |
+| Ubicacion | Escribe (en su lugar) | Una fila propia por emprendimiento; el punto fijo exige `direccion` (como RF-28) y no se cambia con pedidos pendientes |
+| Pedido | Lee (puerto) | Pendiente: `PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER`, `EN_CAMINO` |
 
 ## State Transitions
 
@@ -123,6 +124,7 @@ No cambia estados: el emprendimiento sigue `ACTIVO`. Solo se edita el emprendimi
 | 403 | `FORBIDDEN` | Rol distinto de vendedor | — |
 | 404 | `NOT_FOUND` | El vendedor no tiene un emprendimiento `ACTIVO` (no existe o fue eliminado) | "Aún no tienes un emprendimiento activo" |
 | 409 | `CONFLICT` | Dos escrituras simultáneas sobre el mismo emprendimiento | "Tu emprendimiento cambió; vuelve a intentarlo" |
+| 409 | `HAS_PENDING_ORDERS` | Vendedor de punto fijo que envía `ubicacion` con pedidos pendientes | "No puedes cambiar tu ubicación mientras tengas pedidos pendientes"; `details.pedidosPendientes` |
 
 ## Events
 
@@ -146,6 +148,7 @@ No cambia estados: el emprendimiento sigue `ACTIVO`. Solo se edita el emprendimi
 | Apertura igual al cierre | `400` | RF-28 |
 | Sin emprendimiento activo o eliminado | `404` | Edge 3 |
 | Choque de escrituras | `409 CONFLICT`; la app reintenta | Edge 2 |
+| Punto fijo cambia la ubicación con pedidos pendientes | `409 HAS_PENDING_ORDERS`; el resto de campos del mismo cuerpo no se aplica (todo o nada) | Edge 1 |
 | Sin red | Se encola la última ubicación | RNF28 |
 
 ## Testing Strategy
@@ -155,7 +158,7 @@ No cambia estados: el emprendimiento sigue `ACTIVO`. Solo se edita el emprendimi
 | Unitario | Reglas de `Emprendimiento` al editar (horario que cruza la medianoche, apertura igual al cierre, dirección obligatoria en punto fijo) | FR-002 |
 | Integración | Endpoints con Testcontainers: edición de un campo y de varios, datos inválidos, sin cambios, sin emprendimiento, eliminado, rol distinto, sin sesión | FR-001, FR-002, US1-E1–E2, Edge 3 |
 | Integración | Lo editado aparece de inmediato en `GET /emprendimientos` y `GET /emprendimientos/{id}` (RF-31, RF-32), incluida la distancia nueva | FR-003, SC-001 |
-| Integración | Cambio de ubicación con un domicilio publicado y un pedido en curso: no los altera | Edge 1 |
+| Integración | Punto fijo con pedidos pendientes: la ubicación no cambia (`409`), pero la descripción y el horario sí; el ambulante cambia de ubicación con pedidos pendientes | Edge 1 |
 | Integración | Dos `PATCH` simultáneos | Edge 2 |
 | Frontend | Jest: formulario, botón "Estoy aquí", cola local con una sola entrada pendiente | FR-004 |
 
@@ -205,6 +208,7 @@ frontend/__tests__/emprendimientos/
 - [ ] T002 Columna `version` y `@Version` en `EmprendimientoJpaEntity` en la siguiente migración libre de `backend/src/main/resources/db/migration/` (si RF-28 no la creó)
 - [ ] T003 Método de actualización en su lugar de la ubicación en `UbicacionRepositoryPort` (compartido con RF-08), recalculando el punto PostGIS
 - [ ] T004 Método de búsqueda del emprendimiento `ACTIVO` por vendedor en `EmprendimientoRepositoryPort`
+- [ ] T005 `PedidosPendientesPort` (puerto `out`) y su adaptador sobre `ConsultarPedidosPendientesDeUsuarioPort` de `pedidos` (RF-11 T002)
 
 **Checkpoint**: base lista.
 
@@ -221,7 +225,8 @@ frontend/__tests__/emprendimientos/
 - [ ] T012 [P] [US1] Test unitario de las reglas de edición de `Emprendimiento` en `.../emprendimientos/EmprendimientoEdicionTest.java`
 - [ ] T013 [P] [US1] Test de que el cambio aparece de inmediato en RF-31 y RF-32, con la distancia nueva, en `.../emprendimientos/EditarEmprendimientoVisibilidadIT.java`
 - [ ] T014 [P] [US1] Test de actualizar solo la ubicación varias veces seguidas (una sola fila de ubicación) en `.../emprendimientos/ActualizarUbicacionIT.java`
-- [ ] T015 [P] [US1] Test de cambio de ubicación con un domicilio publicado y un pedido en curso en `.../emprendimientos/EditarUbicacionConPendientesIT.java`
+- [ ] T015 [P] [US1] Test de ambulante que cambia de ubicación con pedidos pendientes y con un domicilio publicado, sin alterarlos, en `.../emprendimientos/EditarUbicacionAmbulanteIT.java`
+- [ ] T018 [P] [US1] Test de punto fijo con pedidos pendientes (`409 HAS_PENDING_ORDERS`, nada se aplica) y sin pendientes (cambia), y de que descripción y horario sí se editan, en `.../emprendimientos/EditarUbicacionPuntoFijoIT.java`
 - [ ] T016 [P] [US1] Test de dos `PATCH` simultáneos (`409 CONFLICT` en el choque, sin pérdida de campos distintos) en `.../emprendimientos/EditarEmprendimientoConcurrenciaIT.java`
 - [ ] T017 [P] [US1] Test de sin emprendimiento, eliminado, rol distinto y sin sesión en `.../emprendimientos/EditarEmprendimientoAutorizacionIT.java`
 - [ ] T030 [P] [US1] Test del formulario de edición precargado y de su validación en `frontend/__tests__/emprendimientos/editar-emprendimiento.test.tsx`
@@ -233,6 +238,7 @@ frontend/__tests__/emprendimientos/
 - [ ] T021 [US1] `ConsultarMiEmprendimientoUseCase` y `EditarEmprendimientoUseCase` con sus puertos `in`
 - [ ] T022 [US1] `GET` y `PATCH /emprendimientos/me` y su DTO parcial en `EmprendimientoVendedorController`
 - [ ] T023 [US1] Reintento único ante `409 CONFLICT` en el caso de uso y mapeo del error
+- [ ] T024 [US1] Regla en `EditarEmprendimientoUseCase`: si el vendedor es de punto fijo y el cuerpo trae `ubicacion`, consulta `PedidosPendientesPort` y responde `409 HAS_PENDING_ORDERS` sin aplicar nada
 - [ ] T032 [US1] `FormularioEmprendimiento` compartido con RF-28 y pantalla `emprendimiento/editar.tsx`
 - [ ] T033 [US1] `BotonEstoyAqui` (GPS), `services/emprendimientos.ts` y la cola `ubicacion_emprendimiento` con envío al recuperar la red
 
@@ -246,16 +252,16 @@ frontend/__tests__/emprendimientos/
 ## Dependencies & Execution Order
 
 - Setup → Foundational → US1 → Polish.
-- Dependencias entre RF: requiere RF-28 (emprendimiento y ubicación) y RF-10; los datos editados los muestran RF-31 y RF-32; aporta `GET /emprendimientos/me` que RF-28 dejó pendiente.
+- Dependencias entre RF: requiere RF-28 (emprendimiento y ubicación), RF-10 y el puerto de pedidos pendientes de RF-11 (T002); los datos editados los muestran RF-31 y RF-32; aporta `GET /emprendimientos/me` que RF-28 dejó pendiente.
 - Tareas `[P]` pueden ejecutarse en paralelo.
 
 ## Open Questions
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| Edge 1: la spec pregunta qué pasa si cambia la ubicación con pedidos o domicilios en curso | Regla | Se permite sin aviso: el domicilio conserva su punto A y el pedido su ubicación de entrega. Un cliente con un pedido de recogida pendiente verá la ubicación nueva. **Confirmar**, o bloquear al punto fijo con pedidos de recogida en curso | Equipo |
+| Edge 1: la spec pregunta qué pasa si cambia la ubicación con pedidos o domicilios en curso | Regla | **Decidido**: el punto fijo no puede cambiarla con pedidos pendientes (de cualquier modalidad, porque el domicilio copia el punto A al publicarse); el ambulante sí. Código `HAS_PENDING_ORDERS`, compartido con RF-58 | Equipo |
 | FR-001 no incluye el nombre ni la categoría | Alcance | No se editan | Equipo |
-| Ruta `/emprendimientos/me` (no listada en spec-general) y `GET /me` | Contrato | Se agregan a spec-general | Equipo |
+| Ruta `/emprendimientos/me` (no listada en spec-general) y `GET /me` | Contrato | Se agregan a Spec-general | Equipo |
 | Un emprendimiento `INACTIVO` (¿quién lo produce?) no se resuelve con `/me` | Estado | Solo el `ACTIVO`; revisar con RF-30 | Equipo |
 | La ubicación del ambulante no guarda historial | Datos | Se actualiza en su lugar | Equipo |
 | Descripción máxima de 500 caracteres | Validación | Igual que RF-28 | Equipo |

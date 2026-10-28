@@ -139,7 +139,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 ### Puerto `in` de `pagos` (no es endpoint)
 
-`RegistrarPagoPedidoPendientePort.registrar(pedidoId, monto, medio)` crea el `Pago` `PEDIDO` en `PENDIENTE_CONFIRMACION`; falla si ya existe uno para ese pedido.
+`RegistrarPagoPedidoPendientePort.registrar(pedidoId, compradorId, vendedorId, monto, medio)` crea el `Pago` `PEDIDO` en `PENDIENTE_CONFIRMACION` y copia `comprador_id` y `vendedor_id` (copias físicas para el listado de RF-40/41, sin cambio de ER); falla si ya existe uno para ese pedido.
 
 ## Events
 
@@ -226,7 +226,7 @@ frontend/__tests__/pedidos/respuesta.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V9__pago.sql`: tabla `pago` (id, tipo, monto `bigint`, medio, estado, confirmado_at, pedido_id único nulo, domicilio_id único nulo, created_at, updated_at) con CHECK de que tiene exactamente uno de `pedido_id` o `domicilio_id`, en `backend/src/main/resources/db/migration/`
+- [ ] T002 Migración `V9__pago.sql`: tabla `pago` (id, tipo, monto `bigint`, medio, estado, confirmado_at, pedido_id único nulo, domicilio_id único nulo, `comprador_id`, `vendedor_id`, `domiciliario_id` (nulos; copias físicas para RF-40/41, sin cambio de ER) con índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)`, created_at, updated_at) con CHECK de que tiene exactamente uno de `pedido_id` o `domicilio_id`, en `backend/src/main/resources/db/migration/`
 - [ ] T003 Dominio `Pago` y `RegistrarPagoPedidoPendienteUseCase` con su puerto `in` en `pagos/`
 - [ ] T004 `PedidoRepositoryPort.bloquearPorId` con `SELECT ... FOR UPDATE`
 
@@ -323,4 +323,4 @@ frontend/__tests__/pedidos/respuesta.test.tsx
 
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
-- Evitar tareas vagas y conflictos en un mismo archivo.
+- Evitar tareas vagas y conflictos en un mismo archivo. 

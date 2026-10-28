@@ -179,10 +179,25 @@ Prefijo `/api/v1`. "Idem" = exige `Idempotency-Key`.
 | RF-27 | GET /pedidos/{id}/domiciliario | cliente / vendedor de punto fijo | — |
 | RF-29 | GET /emprendimientos/me · PATCH /emprendimientos/me | vendedor | — |
 | RF-49 | POST /pedidos/{id}/contactar | cliente | ✅ | | RF-52 | GET /pedidos/{id}/cliente | vendedor | — |
+| RF-52 | GET /pedidos/{id}/cliente | vendedor | — |
 | RF-56 | PATCH /productos/{id} | vendedor | — |
 | RF-58 | POST /productos/{id}/eliminar | vendedor | ✅ |
 | RF-66 | GET /usuarios/{id} | administrador | — |
 | RF-69 | GET /usuarios | administrador | — |
+
+### 2.4 Catálogo de rutas (planes P2/P3)
+
+| RF | Método y ruta | Rol | Idem |
+| ------ | ------ | ------ | ------ |
+| RF-12 | GET /domicilios (rama administrador: estado, desde, hasta, vendedorId, domiciliarioId) · GET /domicilios/{id} (rama administrador) | administrador | — |
+| RF-13 | POST /domicilios/{id}/cancelar | administrador | ✅ |
+| RF-30 | POST /emprendimientos/me/eliminar | vendedor | ✅ |
+| RF-34 | GET /emprendimientos/{id}/vendedor | autenticado | — |
+| RF-39 | GET /notificaciones/preferencias · PUT /notificaciones/preferencias/{tipo} | autenticado | — |
+| RF-40 | GET /pagos (ramas cliente, vendedor y domiciliario: medio, estado, tipo, desde, hasta) | cliente / vendedor / domiciliario | — |
+| RF-41 | GET /pagos (rama administrador) | administrador | — |
+| RF-67 | PATCH /usuarios/{id} | administrador | — |
+| RF-68 | POST /usuarios/{id}/eliminar | administrador | ✅ |
 
 ## 3. Modelo de datos
 
@@ -194,6 +209,8 @@ El diagrama de ERDPlus es la fuente de verdad. Esta sección lo transcribe. Conv
 - ConfiguracionPago: la relación con Usuario ahora admite también a los domiciliarios.
 - ModeracionComentario: atributo `motivo`.
 - Calificacion: atributos `created_at` y `updated_at`.
+
+pago guarda comprador_id, vendedor_id y domiciliario_id como copias físicas (con índice (x_id, created_at DESC)) para listar sin cruzar módulos, igual que domicilio.vendedor_id.
 
 ![Modelo entidad-relación de Ñapa](img/modelo-er.png)
 

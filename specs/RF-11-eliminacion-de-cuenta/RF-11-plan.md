@@ -14,7 +14,7 @@
 
 ## Summary
 
-El usuario elimina su propia cuenta con `POST /usuarios/me/eliminar` (cuerpo `{ "confirmar": true }`, 204). Antes de eliminar, el sistema revisa que no tenga operaciones pendientes: pedidos en curso (como comprador o como vendedor), domicilios activos (como vendedor o como domiciliario) y, si es vendedor, un emprendimiento activo. Si las tiene, responde `409 HAS_PENDING_OPERATIONS` con el detalle de qué debe resolver. Si no, la cuenta pasa a `ELIMINADA` (borrado lógico: la fila y su historial se conservan), se revocan todas sus sesiones y no puede volver a iniciar sesión. Las calificaciones, los pedidos y los domicilios ya terminados siguen existiendo.
+El usuario elimina su propia cuenta con `POST /usuarios/me/eliminar` (cuerpo `{ "confirmar": true }`, 204). Antes de eliminar, el sistema revisa que no tenga operaciones pendientes: pedidos en curso (como comprador o como vendedor), domicilios pendientes (activos, o entregados con la tarifa sin pagar, como vendedor o como domiciliario) y, si es vendedor, un emprendimiento activo. Si las tiene, responde `409 HAS_PENDING_OPERATIONS` con el detalle de qué debe resolver. Si no, la cuenta pasa a `ELIMINADA` (borrado lógico: la fila y su historial se conservan), se revocan todas sus sesiones y no puede volver a iniciar sesión. Las calificaciones, los pedidos y los domicilios ya terminados siguen existiendo.
 
 ## Estado actual del código
 
@@ -42,7 +42,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | Spec | Descripción corta | Cubierto por | Tareas |
 |---|---|---|---|
 | FR-001 | El usuario solicita eliminar su cuenta | `POST /usuarios/me/eliminar` | T010, T020, T021 |
-| FR-002 | Verificar que no haya pedidos, emprendimientos o domicilios pendientes | `ConsultarOperacionesPendientesPort` de cada módulo y `409 HAS_PENDING_OPERATIONS` con `details` | T011, T012, T022, T023, T024 |
+| FR-002 | Verificar que no haya pedidos, emprendimientos o domicilios pendientes (incluida la tarifa de un domicilio entregado sin pagar) | `ConsultarOperacionesPendientesPort` de cada módulo y `409 HAS_PENDING_OPERATIONS` con `details` | T011, T012, T017, T022, T023, T024, T027 |
 | FR-003 | Impedir el inicio de sesión | Estado `ELIMINADA`, revocación de sesiones y `sv` | T013, T025 |
 | SC-001 | 100 % de rechazos con pendientes | Pruebas por cada tipo de pendiente | T011, T012 |
 | SC-002 | 100 % de intentos posteriores rechazados | Login y access token anteriores fallan | T013 |
@@ -71,7 +71,8 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | Usuario | Lee / escribe (`estado`) | `ACTIVA → ELIMINADA`; la fila no se borra; `updated_at` queda como fecha de la eliminación |
 | Sesion | Escribe (`revoked_at`) | Se revocan todas las del usuario |
 | Pedido | Lee (puerto) | Pendiente: `PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER` o `EN_CAMINO` |
-| Domicilio | Lee (puerto) | Activo: `DISPONIBLE`, `ASIGNADO`, `RECOGIDO` o `EN_CAMINO` |
+| Domicilio | Lee (puerto) | Pendiente: `DISPONIBLE`, `ASIGNADO`, `RECOGIDO`, `EN_CAMINO`, o `ENTREGADO` con la tarifa sin confirmar |
+| Pago | Lee (puerto) | Pago `TARIFA_DOMICILIO` que no está `CONFIRMADO` (o que aún no se registró) |
 | Emprendimiento | Lee (puerto) | Pendiente si está `ACTIVO` |
 
 ## State Transitions
@@ -109,7 +110,7 @@ Una cuenta `ELIMINADA` es terminal: no se reactiva. Eliminar una cuenta que ya n
 | 400 | `VALIDATION_ERROR` | Falta `confirmar` o no es `true` | "Confirma la eliminación" |
 | 401 | `UNAUTHORIZED` | Sin sesión | — |
 | 403 | `FORBIDDEN` | Es administrador | "Esta cuenta no se puede eliminar aquí" |
-| 409 | `HAS_PENDING_OPERATIONS` | Hay pedidos, domicilios o un emprendimiento pendientes | "Resuelve tus operaciones pendientes antes de eliminar la cuenta"; `details`: `{ "pedidosPendientes": 2, "domiciliosActivos": 1, "emprendimientoActivo": true }` |
+| 409 | `HAS_PENDING_OPERATIONS` | Hay pedidos, domicilios o un emprendimiento pendientes | "Resuelve tus operaciones pendientes antes de eliminar la cuenta"; `details`: `{ "pedidosPendientes": 2, "domiciliosActivos": 1, "tarifasPendientes": 1, "emprendimientoActivo": true }` |
 | 409 | `INVALID_STATE` | La cuenta no está `ACTIVA` | `details.estadoActual` |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | Misma clave con otro cuerpo | — |
 
@@ -135,6 +136,7 @@ Una cuenta `ELIMINADA` es terminal: no se reactiva. Eliminar una cuenta que ya n
 |---|---|---|
 | Pedido o domicilio pendiente | `409 HAS_PENDING_OPERATIONS` con conteos | US1-E2 |
 | Vendedor con emprendimiento activo | `409` con `emprendimientoActivo: true` | FR-002 |
+| Tarifa de un domicilio entregado sin pagar | `409` con `tarifasPendientes` | FR-002 |
 | Sin `confirmar: true` | `400` | FR-001 |
 | Administrador | `403` | Alcance |
 | Cuenta que intenta ingresar después | `401 INVALID_CREDENTIALS` (RF-10) | FR-003 |
@@ -143,7 +145,7 @@ Una cuenta `ELIMINADA` es terminal: no se reactiva. Eliminar una cuenta que ya n
 
 | Tipo | Qué cubre | Escenarios |
 |---|---|---|
-| Integración | Eliminación sin pendientes; con pedido pendiente como comprador y como vendedor; con domicilio activo como vendedor y como domiciliario; vendedor con emprendimiento activo; administrador; sin `confirmar`; repetición | FR-001, FR-002, US1-E1–E2 |
+| Integración | Eliminación sin pendientes; con pedido pendiente como comprador y como vendedor; con domicilio activo como vendedor y como domiciliario; con tarifa de un domicilio entregado sin pagar como vendedor y como domiciliario; vendedor con emprendimiento activo; administrador; sin `confirmar`; repetición | FR-001, FR-002, US1-E1–E2 |
 | Integración | Después de eliminar: login falla, el access token anterior y el refresh fallan, los datos históricos de otros usuarios no cambian | FR-003, SC-002, Edge 1, Edge 3 |
 | Arquitectura | `cuentas` solo usa puertos `in` de `pedidos`, `domicilios` y `emprendimientos` | RNF13 |
 | Frontend | Jest: cuadro de confirmación, avisos con los conteos, limpieza local tras eliminar | FR-001, US1-E2 |
@@ -175,6 +177,7 @@ backend/src/main/java/co/edu/napa/cuentas/
 backend/src/main/java/co/edu/napa/pedidos/application/ports/in/         # ConsultarPedidosPendientesDeUsuarioPort
 backend/src/main/java/co/edu/napa/domicilios/application/ports/in/      # ConsultarDomiciliosActivosDeUsuarioPort
 backend/src/main/java/co/edu/napa/emprendimientos/application/ports/in/ # ConsultarEmprendimientoActivoDeVendedorPort
+backend/src/main/java/co/edu/napa/pagos/application/ports/in/            # ConsultarTarifasSinConfirmarPort
 backend/src/test/java/co/edu/napa/cuentas/
 
 frontend/src/app/(comun)/perfil/eliminar-cuenta.tsx        # aviso, pendientes y confirmación
@@ -192,7 +195,8 @@ frontend/__tests__/perfil/eliminar-cuenta.test.tsx
 ## Phase 2: Foundational
 
 - [ ] T002 `ConsultarPedidosPendientesDeUsuarioPort` en `pedidos` (como comprador o como dueño del emprendimiento; estados `PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER`, `EN_CAMINO`)
-- [ ] T003 `ConsultarDomiciliosActivosDeUsuarioPort` en `domicilios` (como vendedor por `vendedor_id` o como domiciliario; estados `DISPONIBLE`, `ASIGNADO`, `RECOGIDO`, `EN_CAMINO`)
+- [ ] T003 `ConsultarDomiciliosActivosDeUsuarioPort` en `domicilios` (como vendedor por `vendedor_id` o como domiciliario; estados `DISPONIBLE`, `ASIGNADO`, `RECOGIDO`, `EN_CAMINO`, y los `ENTREGADO` cuya tarifa no está confirmada)
+- [ ] T007 `ConsultarTarifasSinConfirmarPort` en `pagos` (recibe ids de domicilio y devuelve cuántos no tienen un pago `TARIFA_DOMICILIO` `CONFIRMADO`)
 - [ ] T004 `ConsultarEmprendimientoActivoDeVendedorPort` en `emprendimientos`
 - [ ] T005 `OperacionesPendientesPort` en `cuentas` y su adaptador, que agrega los tres conteos
 - [ ] T006 Métodos `revocarTodas` en `SesionRepositoryPort` y bloqueo de la fila en `UsuarioRepositoryPort`
@@ -213,7 +217,8 @@ frontend/__tests__/perfil/eliminar-cuenta.test.tsx
 - [ ] T013 [P] [US1] Test de que, eliminada la cuenta, el login, el access token anterior y el refresh fallan, en `.../cuentas/EliminarCuentaSesionesIT.java`
 - [ ] T014 [P] [US1] Test de que los pedidos terminados, las calificaciones y los domicilios entregados de la cuenta se conservan y siguen visibles a la otra parte, en `.../cuentas/EliminarCuentaHistorialIT.java`
 - [ ] T015 [P] [US1] Test de administrador (`403`), sin `confirmar` (`400`), sin sesión (`401`) y cuenta ya eliminada (`INVALID_STATE`), en `.../cuentas/EliminarCuentaAutorizacionIT.java`
-- [ ] T016 [P] [US1] Test de arquitectura de los tres puertos `in` en `.../cuentas/ArquitecturaEliminarCuentaTest.java`
+- [ ] T016 [P] [US1] Test de arquitectura de los puertos `in` en `.../cuentas/ArquitecturaEliminarCuentaTest.java`
+- [ ] T017 [P] [US1] Test de domicilio `ENTREGADO` con tarifa sin pagar y con pago `REGISTRADO` (bloquean) y con pago `CONFIRMADO` (no bloquea), como vendedor y como domiciliario, en `.../cuentas/EliminarCuentaTarifaPendienteIT.java`
 - [ ] T030 [P] [US1] Test de la pantalla `eliminar-cuenta` (confirmación, conteos de pendientes, limpieza local) en `frontend/__tests__/perfil/eliminar-cuenta.test.tsx`
 
 ### Implementation
@@ -223,6 +228,7 @@ frontend/__tests__/perfil/eliminar-cuenta.test.tsx
 - [ ] T022 [US1] Adaptador de `ConsultarPedidosPendientesDeUsuarioPort` en `pedidos`
 - [ ] T023 [US1] Adaptador de `ConsultarDomiciliosActivosDeUsuarioPort` en `domicilios`
 - [ ] T024 [US1] Adaptador de `ConsultarEmprendimientoActivoDeVendedorPort` en `emprendimientos`
+- [ ] T027 [US1] Adaptador de `ConsultarTarifasSinConfirmarPort` en `pagos` y su uso desde el puerto de `domicilios` (ids de domicilios `ENTREGADO` del usuario, en lote)
 - [ ] T025 [US1] Incremento de `sv:{userId}` en Redis y revocación de refresh tokens
 - [ ] T026 [US1] Error `HAS_PENDING_OPERATIONS` con `details` en el manejador de errores y en `INVALID_STATE` para una cuenta no activa
 - [ ] T031 [US1] `eliminarCuenta()` en `frontend/src/services/perfil.ts` y limpieza de SQLite y tokens
@@ -245,11 +251,12 @@ frontend/__tests__/perfil/eliminar-cuenta.test.tsx
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| FR-002 dice "emprendimientos pendientes": ¿un emprendimiento activo bloquea la eliminación o se elimina junto con la cuenta? | Regla | Lo bloquea; el vendedor lo elimina antes con RF-30. **Confirmar** | Equipo |
-| ¿Una tarifa de domicilio entregado sin pagar (vendedor que debe, domiciliario que cobra) bloquea la eliminación? | Regla | No bloquea; la spec solo habla de domicilios pendientes. **Confirmar** | Equipo |
-| Edge 2: período de arrepentimiento | Regla | Ninguno: eliminación inmediata, sin reactivación y sin purga automática; el celular y el correo quedan reservados y no se pueden volver a registrar | Equipo |
+| FR-002 dice "emprendimientos pendientes": ¿un emprendimiento activo bloquea la eliminación o se elimina junto con la cuenta? | Regla | **Decidido: lo bloquea**; el vendedor lo elimina antes con RF-30 | Equipo |
+| Tarifa de domicilio entregado sin pagar (vendedor que debe, domiciliario que cobra) | Regla | **Decidido: bloquea** la eliminación (cuenta como domicilio pendiente). Si el otro nunca paga, la cuenta queda bloqueada hasta que se resuelva; el administrador no tiene acción para forzarlo en el MVP | Equipo |
+| Edge 2: período de arrepentimiento | Regla | **Decidido**: ninguno; eliminación inmediata, sin reactivación y sin purga automática; el celular y el correo quedan reservados y no se pueden volver a registrar | Equipo |
 | `confirmar: true` en el cuerpo y sin pedir la contraseña | Seguridad | Solo el cuerpo; pedir la contraseña sería comportamiento nuevo | Equipo |
 | Código nuevo `HAS_PENDING_OPERATIONS` (409) | Contrato | Se agrega al catálogo de spec-general | Equipo |
+| Una cuenta con deuda de tarifa que nadie salda | Operación | Fuera del MVP: no hay forma de cerrarla; revisar con RF-43 y el administrador | Equipo |
 | Ventana de carrera: un pedido entra entre la verificación y el commit | Concurrencia | Aceptada; la sesión revocada impide nuevos pedidos del comprador, y el vendedor ya no tiene emprendimiento activo | Equipo |
 | La fecha de eliminación no tiene columna propia | Auditoría | `updated_at`, porque `ELIMINADA` es terminal | Equipo |
 | El administrador no puede eliminarse por esta ruta | Alcance | `403` | Equipo |
