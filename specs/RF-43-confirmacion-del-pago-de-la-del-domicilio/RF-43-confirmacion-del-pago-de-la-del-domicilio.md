@@ -77,6 +77,7 @@ Como domiciliario, quiero confirmar que recibí el pago de mi tarifa por el domi
 - **FR-005**: El sistema DEBE impedir que un domiciliario confirme el pago de un domicilio que no tiene asignado, y que un vendedor registre el pago de un domicilio que no es suyo.
 - **FR-006**: El sistema NO DEBE ofrecer la opción de registrar la tarifa en efectivo: el domicilio exige exclusivamente pago digital.
 - **FR-007**: El sistema DEBE notificar al domiciliario cuando el vendedor registre el pago de su tarifa.
+- **FR-008**: El sistema DEBE permitir al domiciliario registrar su cuenta bancaria (banco, número y tipo) y mostrársela al vendedor, solo cuando el domicilio esté entregado, para que sepa a dónde transferir la tarifa.
 
 ### Key Entities
 

@@ -93,12 +93,12 @@ public class IdempotencyFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        boolean authenticationRequestWithoutReplay =
-                path.equals("/api/v1/auth/login")
-                        || path.equals("/api/v1/auth/refresh")
-                        || path.startsWith("/api/v1/auth/verificaciones-celular");
-        return authenticationRequestWithoutReplay
-                || !(path.startsWith("/api/v1/")
+        boolean exempt = path.equals("/api/v1/auth/login")
+                || path.equals("/api/v1/auth/refresh")
+                || path.equals("/api/v1/auth/logout")
+                || path.startsWith("/api/v1/auth/verify-phone")
+                || path.equals("/api/v1/auth/password/recover/request");
+        return exempt || !(path.startsWith("/api/v1/")
                 && ("POST".equalsIgnoreCase(request.getMethod())
                 || "PATCH".equalsIgnoreCase(request.getMethod())));
     }

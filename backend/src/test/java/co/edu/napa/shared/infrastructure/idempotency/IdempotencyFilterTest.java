@@ -45,10 +45,9 @@ class IdempotencyFilterTest {
         IdempotencyFilter filter = filter(redisTemplate);
 
         for (String path : new String[]{
-                "/api/v1/auth/login",
-                "/api/v1/auth/refresh",
-                "/api/v1/auth/verificaciones-celular",
-                "/api/v1/auth/verificaciones-celular/confirmar"
+                "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout",
+                "/api/v1/auth/verify-phone/request", "/api/v1/auth/verify-phone/confirm",
+                "/api/v1/auth/password/recover/request"
         }) {
             MockHttpServletRequest request = new MockHttpServletRequest();
             request.setMethod("POST");

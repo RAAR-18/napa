@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-20
 **Spec**: [spec.md](./RF-38-consulta-de-notificaciones.md) (misma carpeta; es la fuente de verdad)
-**Spec general**: [specs/general/spec-general.md](../general/spec-general.md) · [eventos](../general/eventos.md)
+**Spec general**: [specs/general/spec-general.md](../general/spec-general.md) · [eventos](../general/eventos.md) · cambios pendientes en `cambios/spec-general-cambios.md`
 **Requerimiento funcional**: RF-38
 **Historias de usuario**: HU-63
 **Prioridad (la mayor de la spec)**: P1
@@ -15,7 +15,7 @@
 
 ## Summary
 
-Consulta paginada de notificaciones con estado de lectura, y listeners en `notificaciones/infrastructure/adapters/in/event` que traducen cada evento del catálogo (E01–E17) en una `Notificacion` y un envío FCM, de forma idempotente por `eventId`.
+Consulta paginada de notificaciones con estado de lectura, y listeners en `notificaciones/infrastructure/adapters/in/event` que traducen cada evento del catálogo (E01–E18) en una `Notificacion` y un envío FCM, de forma idempotente por `eventId`.
 
 ## Estado actual del código
 
@@ -43,11 +43,11 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | Spec | Descripción corta | Cubierto por | Tareas |
 |---|---|---|---|
 | FR-001 | Consultar notificaciones | `GET /notificaciones`, `ConsultarNotificacionesUseCase` | T010, T013, T014 |
-| FR-002 | Ordenadas por fecha, leídas vs. no leídas | `sort=created_at,desc` por defecto; filtro `leida`; `POST /notificaciones/{id}/leer` (204, spec-general §2.2) | T011, T015, T016 |
-| FR-003 | Generar notificaciones ante eventos relevantes | Listeners por evento + `EnviarNotificacionPort` | T020–T031 |
-| FR-004 | Notificar como mínimo la lista de eventos | Tabla "Listeners" (abajo): E01–E06, E08–E12, E14–E17 | T020–T031 |
+| FR-002 | Ordenadas por fecha, leídas vs. no leídas | `sort=created_at,desc` por defecto; filtro `leida`; `POST /notificaciones/{id}/leer` (204, spec-general) | T011, T015, T016 |
+| FR-003 | Generar notificaciones ante eventos relevantes | Listeners por evento + `EnviarNotificacionPort` | T020–T029, T037 |
+| FR-004 | Notificar como mínimo la lista de eventos | Tabla "Listeners" (abajo): E01–E07 (E07 solo si el pedido no es de domicilio), E08–E12, E14–E18 | T020–T031 |
 | SC-001 | Visibles en < 1 min | Relay cada 500 ms + prueba de latencia | T040 |
-| SC-002 | 100 % de eventos relevantes generan notificación | Un test por evento del catálogo | T032 |
+| SC-002 | 100 % de eventos relevantes generan notificación | Un test por evento del catálogo | T032, T038 |
 | US1-E1 | Notificaciones pendientes ordenadas, con no leídas | `GET /notificaciones` | T010 |
 | US1-E2 | Sin notificaciones | `200` con `content: []` y mensaje de lista vacía en la app | T012 |
 | Edge 1 | Múltiples notificaciones del mismo evento | Idempotencia por `eventId` (único) | T021 |
@@ -135,16 +135,17 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | E04 `PagoPedidoConfirmado` | Comprador | `PAGO_PEDIDO_CONFIRMADO` |
 | E05 `EntregaDirectaIniciada` | Comprador | `ENTREGA_DIRECTA_INICIADA` |
 | E06 `PedidoListoParaRecoger` | Comprador | `PEDIDO_LISTO_PARA_RECOGER` |
-| E07 `PedidoEntregado` | Ninguno (no genera notificación; evita duplicar E12) | — |
+| E07 `PedidoEntregado` | Comprador, **solo si `domicilioId` es nulo** (entrega directa o retiro): aviso de entrega con invitación a calificar (RF-01). En domicilio no hace nada porque E12 ya avisa al comprador | `PEDIDO_ENTREGADO` |
 | E08 `DomicilioPublicado` | Todos los domiciliarios con cuenta `ACTIVA` (decidido) | `DOMICILIO_DISPONIBLE` |
 | E09 `DomicilioAsignado` | Comprador y vendedor | `DOMICILIO_ASIGNADO` |
 | E10 `DomicilioRecogido` | Vendedor | `DOMICILIO_RECOGIDO` |
 | E11 `DomicilioEnCamino` | Comprador | `DOMICILIO_EN_CAMINO` |
-| E12 `DomicilioEntregado` | Vendedor (pagar la tarifa) y comprador (aviso de entrega) | `DOMICILIO_ENTREGADO_VENDEDOR` / `DOMICILIO_ENTREGADO_CLIENTE` |
+| E12 `DomicilioEntregado` | Vendedor (pagar la tarifa) y comprador (aviso de entrega) | `DOMICILIO_ENTREGADO_VENDEDOR` / `DOMICILIO_ENTREGADO_CLIENTE`; el texto del comprador incluye la invitación a calificar (RF-01) |
 | E14 `PagoTarifaRegistrado` | Domiciliario | `PAGO_TARIFA_REGISTRADO` |
 | E15 `DomicilioCancelado` | Comprador, vendedor y domiciliario si existe | `DOMICILIO_CANCELADO` |
 | E16 `ReporteResuelto` | Autor del reporte | `REPORTE_RESUELTO` |
-| E17 `ComentarioModerado` | Autor del comentario | `COMENTARIO_MODERADO` |
+| E17 `ComentarioModerado` | Autor del comentario; el texto dice qué se hizo (`accion`) y el `motivo` que trae el evento | `COMENTARIO_MODERADO` |
+| E18 `ReporteCreado` | Todos los administradores con cuenta `ACTIVA` | `REPORTE_CREADO` |
 
 E09 no está en la lista mínima de RF-38 FR-004, pero está en el catálogo y la exige RF-19 SC-002 (FR-004 dice "como mínimo").
 
@@ -161,8 +162,8 @@ E09 no está en la lista mínima de RF-38 FR-004, pero está en el catálogo y l
 | FCM falla | La notificación queda guardada; se reintenta con retroceso; tras el límite, `DEAD` y alerta | foundations D7 |
 | Token FCM inválido | Se borra el `DispositivoToken` | foundations |
 | Destinatario con cuenta `ELIMINADA` | No se envía push (decisión pendiente) | Edge 3 |
-| Preferencia deshabilitada (RF-39) | Se guarda sin push o no se genera: decisión pendiente | RF-39 |
-| Filtro desconocido | 400 | spec-general §2.3 |
+| Preferencia deshabilitada (RF-39) | No se genera (ni fila ni push); lo implementa RF-39 | RF-39 |
+| Filtro desconocido | 400 | spec-general|
 
 ## Testing Strategy
 
@@ -247,7 +248,9 @@ frontend/__tests__/notificaciones/
 - [ ] T026 [US1] Listener E12 `DomicilioEntregado` → vendedor y comprador
 - [ ] T027 [US1] Listeners E14, E15 en `.../in/event/`
 - [ ] T028 [US1] Listeners E16, E17 en `.../in/event/`
-- [ ] T029 [US1] Confirmar que no existe listener para E07 (prueba de arquitectura)
+- [ ] T029 [US1] Listener E07 `PedidoEntregado` → comprador solo si `domicilioId` es nulo, en `.../in/event/`
+- [ ] T037 [US1] Listener E18 `ReporteCreado` → todos los administradores activos, en `.../in/event/`
+- [ ] T038 [P] [US1] Test de E07 (con y sin `domicilioId`; sin duplicar E12) y de E18 (llega a todos los administradores activos) en `.../notificaciones/NotificacionesE07E18IT.java`
 - [ ] T033 [US1] No enviar push a cuentas `ELIMINADA`
 - [ ] T035 [P] [US1] Test de la pantalla (orden, no leídas, lista vacía, marcar leída, lista desde caché sin conexión) en `frontend/__tests__/notificaciones/notificaciones.test.tsx`
 - [ ] T036 [US1] Servicio de notificaciones y registro del token FCM en `frontend/src/services/` (reutiliza foundations F042)
@@ -264,7 +267,7 @@ frontend/__tests__/notificaciones/
 ## Dependencies & Execution Order
 
 - Setup → Foundational → US1 → Polish.
-- Dependencias entre RF: requiere el outbox (F011), RF-10 y los eventos que cada RF emita; los listeners de E02–E17 se activan a medida que se construyen los RF emisores (ola 3 en adelante).
+- Dependencias entre RF: requiere el outbox (F011), RF-10 y los eventos que cada RF emita; los listeners de E02–E18 se activan a medida que se construyen los RF emisores (ola 3 en adelante).
 - Tareas `[P]` pueden ejecutarse en paralelo.
 
 ## Open Questions
@@ -274,9 +277,9 @@ frontend/__tests__/notificaciones/
 | E08 va a todos los domiciliarios activos (decidido). Con muchos domiciliarios habrá más push y costo; revisar si crece | Volumen de push | Todos | Equipo |
 | Retención del historial de notificaciones | Edge 2 | Ninguna | Equipo |
 | Notificaciones críticas no silenciables | RF-39 | **Cerrado (foundations)**: no hay excepciones, se respetan las preferencias | Equipo |
-| Notificaciones del administrador: no hay eventos dirigidos a él en el catálogo | US1 | Sin notificaciones por ahora | Equipo |
-| Preferencia deshabilitada: ¿se guarda la notificación sin push o no se genera? | RF-39 | Pendiente | Equipo |
-| Sin eventos de pedido entregado fuera de domicilio (E07) | FR-004 | No genera notificación | Equipo |
+| Notificaciones del administrador: E18 `ReporteCreado` las genera (decidido en la ola 6) | US1 | Todos los administradores activos reciben `REPORTE_CREADO` | Equipo |
+| Preferencia deshabilitada: ¿se guarda la notificación sin push o no se genera? | RF-39 | **Cerrado**: no se genera (ni fila ni push); lo implementa RF-39 en `EnviarNotificacionUseCase` | Equipo |
+| E07 (corrige un error de este plan, que decía "sin notificación" y contradecía eventos.md, RF-37 y RF-65): el comprador recibe el aviso de entrega con invitación a calificar solo fuera de domicilio; en domicilio lo hace E12 con el mismo texto. Vendedor y domiciliario no reciben invitación | FR-004 | Así | Equipo |
 
 ## Plan Review Checklist
 
@@ -299,4 +302,4 @@ frontend/__tests__/notificaciones/
 
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
-- Evitar tareas vagas y conflictos en un mismo archivo.
+- Evitar tareas vagas y conflictos en un mismo archivo. 

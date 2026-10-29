@@ -42,7 +42,7 @@ Prefijo /api/v1. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCULA
 | Idempotency-Key | Request | **Obligatoria** en POST autenticado que cambie estado o dinero | UUID generado en el dispositivo al tocar el botón |
 | X-Device-Id | Request | Auth y registro de token push | Identificador estable de instalación |
 | X-Request-Id | Request/Response | Opcional en request; siempre en response | Identificador de traza; se repite en traceId del error |
-| Location | Response | 201 | URL del recurso creado |
+| Location | Response | 201 | URL del recurso creado, solo cuando el recurso tiene un GET propio (no aplica a POST /reportes ni a POST /calificaciones) |
 | Idempotent-Replayed: true | Response | Cuando se devuelve una respuesta guardada | Indica repetición, no una nueva operación |
 | Retry-After | Response | 429, 503 | Segundos de espera |
 | Cache-Control: no-store | Response | Auth, pagos, ubicación, código de confirmación | Evita caché de datos sensibles |
@@ -65,6 +65,8 @@ Prefijo /api/v1. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCULA
 | 429 | Límite de intentos (login, OTP, código de entrega) | RATE_LIMITED |
 | 500 | Error inesperado | INTERNAL_ERROR |
 | 503 | Servicio externo caído (mapas, push, WhatsApp) | EXTERNAL_SERVICE_UNAVAILABLE |
+| 409 | HAS_PENDING_OPERATIONS | Eliminar la cuenta con pedidos, domicilios o un emprendimiento pendientes; details trae los conteos (RF-11) |
+| 409 | HAS_PENDING_ORDERS | Eliminar un producto con pedidos pendientes; details.pedidosPendientes (RF-58) |
 
 Cuerpo de error: { "code": "...", "message": "mensaje para el usuario", "details": {...}, "traceId": "...", "timestamp": "..." }. INVALID_STATE incluye details.estadoActual.
 
@@ -80,7 +82,7 @@ Cuerpo de error: { "code": "...", "message": "mensaje para el usuario", "details
 | 409 | PHONE_ALREADY_REGISTERED / EMAIL_ALREADY_REGISTERED | Dato en uso |
 | 400 | INVALID_CURRENT_PASSWORD | Contraseña actual incorrecta |
 | 400 | PASSWORD_REUSED | Nueva igual a la actual (decisión provisional, ver RF-09) |
-| 409 | OUT_OF_STOCK | Inventario insuficiente al aceptar un pedido inmediato |
+| 409 | OUT_OF_STOCK | Inventario insuficiente al crear un pedido inmediato (RF-45) o al aceptarlo (RF-53) |
 | 409 | PRODUCT_UNAVAILABLE | Producto agotado en un pedido inmediato |
 | 409 | BANK_ACCOUNT_REQUIRED | Domicilio sin cuenta bancaria del vendedor |
 | 409 | PAYMENT_NOT_CONFIRMED | Publicar domicilio sin pago confirmado (ya listado) |
@@ -89,6 +91,9 @@ Cuerpo de error: { "code": "...", "message": "mensaje para el usuario", "details
 | 409 | NOT_AVAILABLE | Domicilio ya tomado o cancelado |
 | 429 | CODE_ATTEMPTS_LOCKED | 5 fallos del código de entrega: bloqueo de 15 min |
 | 503 | EXTERNAL_SERVICE_UNAVAILABLE | (existente) mapas, push, WhatsApp |
+| 400 | CODE_INVALID | Código de confirmación de entrega incorrecto; details.intentosRestantes (RF-24) |
+| 409 | ACTIVE_DELIVERY_EXISTS | El domiciliario ya tiene un domicilio activo (ASIGNADO, RECOGIDO o EN_CAMINO); details.domicilioActivoId (RF-19) |
+| 409 | FEE_NOT_REGISTERED | El domiciliario intenta confirmar la tarifa antes de que el vendedor la registre (RF-43) |
 
 ### 2.3 Paginación, orden y filtros (query parameters)
 
@@ -96,8 +101,8 @@ Todo listado acepta page (desde 0), size (por defecto 20, máximo 100) y sort=ca
 
 | Endpoint | RF | Filtros |
 | ------ | ------ | ------ |
-| GET /emprendimientos | RF-31 | tipoVendedor (según usuario.rol del dueño), lat, lng, radioMetros, orden=cercania |
-| GET /emprendimientos/{id}/productos | RF-33 | sort |
+| GET /emprendimientos | RF-31 | tipoEntidad (EMPRENDIMIENTO, PRODUCTO, USUARIO), entidadId; se traducen a la relación de destino de la calificación. El administrador añade estado (ACTIVA por defecto; ELIMINADA_AUTOR, ELIMINADA_MODERACION). Los demás roles reciben 400 si envían estado. |
+| GET /emprendimientos/{id}/productos | RF-33 | sort por nombre o precio|
 | GET /productos (del vendedor) | RF-55 | estado (DISPONIBLE, AGOTADO) |
 | GET /pedidos (limitado al usuario autenticado) | RF-47, RF-50 | estado, modalidad, reserva (true = con fecha acordada), desde, hasta |
 | GET /domicilios | RF-15, RF-12 | estado, desde, hasta; el administrador añade vendedorId, domiciliarioId |
@@ -106,7 +111,7 @@ Todo listado acepta page (desde 0), size (por defecto 20, máximo 100) y sort=ca
 | GET /calificaciones | RF-02, RF-03 | tipoEntidad (EMPRENDIMIENTO, PRODUCTO, USUARIO), entidadId; se traducen a la relación de destino de la calificación |
 | GET /notificaciones | RF-38 | leida |
 | GET /reportes | RF-61 | estado |
-| GET /usuarios | RF-69 | rol, estado |
+| GET /usuarios | RF-69 | rol (los cinco roles del modelo, y el alias VENDEDOR para los dos tipos de vendedor), estado, q (texto de al menos 2 caracteres: nombre, o inicio del celular o del correo) |
 
 
 ### 2.4 Catálogo de rutas (planes P1) 
@@ -119,7 +124,7 @@ Prefijo `/api/v1`. "Idem" = exige `Idempotency-Key`.
 | RF-70 | POST /auth/verify-phone/request (reenvío / canal SMS) · POST /auth/verify-phone/confirm · GET /auth/verify-phone/mensajes/{mensajeId} · POST /webhooks/twilio/status | público / Twilio | — |
 | RF-10 | POST /auth/login · POST /auth/refresh · POST /auth/logout | público / autenticado | — |
 | RF-09 | POST /auth/password/change · POST /auth/password/recover/request · POST /auth/password/recover/confirm | autenticado / público | ✅ en change y confirm |
-| RF-08 | PATCH /usuarios/me · POST /usuarios/me/celular/solicitar-cambio · POST /usuarios/me/celular/confirmar | autenticado | ✅ en los POST |
+| RF-08 | GET /usuarios/me · PATCH /usuarios/me · PUT /usuarios/me/foto · POST /usuarios/me/celular/solicitar-cambio · POST /usuarios/me/celular/confirmar | autenticado | ✅ en los POST |
 | RF-38 | GET /notificaciones · POST /notificaciones/{id}/leer · POST /dispositivos | autenticado | — |
 | RF-28 | POST /emprendimientos | vendedor | ✅ |
 | RF-31 | GET /emprendimientos | cliente | — |
@@ -149,13 +154,63 @@ Prefijo `/api/v1`. "Idem" = exige `Idempotency-Key`.
 | RF-60 | POST /reportes | cliente / vendedor / domiciliario | ✅ |
 | RF-01 | POST /calificaciones | cliente / vendedor / domiciliario | ✅ |
 | RF-02 | GET /calificaciones | todos | — |
-| RF-06 | GET /calificaciones (admin) · POST /calificaciones/{id}/eliminar-moderacion · PATCH /calificaciones/{id}/moderar-texto | administrador | ✅ en POST |
+| RF-03 y RF-06| GET /calificaciones (admin) · POST /calificaciones/{id}/eliminar-moderacion · PATCH /calificaciones/{id}/moderar-texto | administrador | ✅ en POST |
+| RF-63 | GET /vendedores/me/configuracion-pago | vendedor | — |
+| RF-44 | POST /tarifa-minima | administrador | ✅ |
+| RF-44 | GET /tarifa-minima | administrador | — |
+| RF-45 | POST /pedidos/cotizacion | cliente | — |
+
+### 2.4 Catálogo de rutas (planes P2)
+
+| RF | Método y ruta | Rol | Idem |
+| ------ | ------ | ------ | ------ |
+| RF-33 | GET /emprendimientos/{id}/productos | cliente | — | 
+| RF-47 | GET /pedidos (rama del cliente, comparte ruta con RF-50) | cliente | — | 
+| RF-15 | GET /domicilios | vendedor de punto fijo | — | 
+| RF-17 | POST /domicilios/{id}/rechazar | domiciliario | ✅ | 
+| RF-43 | POST /domicilios/{id}/pago-tarifa · POST /domicilios/{id}/pago-tarifa/confirmar | vendedor de punto fijo · domiciliario | ✅ |
+| RF-43 | GET /domicilios/{id}/pago-tarifa | vendedor de punto fijo / domiciliario | — |
+| RF-43 | PUT /domiciliarios/me/configuracion-pago · GET /domiciliarios/me/configuracion-pago | domiciliario | — | 
+| RF-61 | GET /reportes · GET /reportes/{id} | administrador | — | 
+| RF-62 | POST /reportes/{id}/resolver | administrador | ✅ |
+| RF-04 | PATCH /calificaciones/{id} | autor de la calificación | — |
+| RF-05 | POST /calificaciones/{id}/eliminar | autor de la calificación | ✅ |
+| RF-11 | POST /usuarios/me/eliminar | cliente / vendedor / domiciliario | ✅ |
+| RF-27 | GET /pedidos/{id}/domiciliario | cliente / vendedor de punto fijo | — |
+| RF-29 | GET /emprendimientos/me · PATCH /emprendimientos/me | vendedor | — |
+| RF-49 | POST /pedidos/{id}/contactar | cliente | ✅ | | RF-52 | GET /pedidos/{id}/cliente | vendedor | — |
+| RF-52 | GET /pedidos/{id}/cliente | vendedor | — |
+| RF-56 | PATCH /productos/{id} | vendedor | — |
+| RF-58 | POST /productos/{id}/eliminar | vendedor | ✅ |
+| RF-66 | GET /usuarios/{id} | administrador | — |
+| RF-69 | GET /usuarios | administrador | — |
+
+### 2.4 Catálogo de rutas (planes P2/P3)
+
+| RF | Método y ruta | Rol | Idem |
+| ------ | ------ | ------ | ------ |
+| RF-12 | GET /domicilios (rama administrador: estado, desde, hasta, vendedorId, domiciliarioId) · GET /domicilios/{id} (rama administrador) | administrador | — |
+| RF-13 | POST /domicilios/{id}/cancelar | administrador | ✅ |
+| RF-30 | POST /emprendimientos/me/eliminar | vendedor | ✅ |
+| RF-34 | GET /emprendimientos/{id}/vendedor | autenticado | — |
+| RF-39 | GET /notificaciones/preferencias · PUT /notificaciones/preferencias/{tipo} | autenticado | — |
+| RF-40 | GET /pagos (ramas cliente, vendedor y domiciliario: medio, estado, tipo, desde, hasta) | cliente / vendedor / domiciliario | — |
+| RF-41 | GET /pagos (rama administrador) | administrador | — |
+| RF-67 | PATCH /usuarios/{id} | administrador | — |
+| RF-68 | POST /usuarios/{id}/eliminar | administrador | ✅ |
 
 ## 3. Modelo de datos
 
 El diagrama de ERDPlus es la fuente de verdad. Esta sección lo transcribe. Convenciones: id uuid; dinero bigint en pesos; los estados y valores fijos (rol, estado, modalidad, medio, tipo) son **atributos enumerados**, no entidades. Todas las tablas llevan created_at y updated_at (RNF16), salvo las indicadas en cada entidad.
 
 ### 3.1 Diagrama entidad-relación
+
+- Domicilio: sin cambios (`vendedor_id` es una copia física, no una relación del ER).
+- ConfiguracionPago: la relación con Usuario ahora admite también a los domiciliarios.
+- ModeracionComentario: atributo `motivo`.
+- Calificacion: atributos `created_at` y `updated_at`.
+
+pago guarda comprador_id, vendedor_id y domiciliario_id como copias físicas (con índice (x_id, created_at DESC)) para listar sin cruzar módulos, igual que domicilio.vendedor_id.
 
 ![Modelo entidad-relación de Ñapa](img/modelo-er.png)
 
@@ -208,8 +263,8 @@ erDiagram
 ```
 #### 3.2 Entidades
 
-**Usuario** — id, nombre, celular (único; opcional solo para ADMINISTRADOR), correo (único; obligatorio para ADMINISTRADOR, opcional para otros), password_hash, foto_url (opcional), rol (CLIENTE, VENDEDOR_AMBULANTE, VENDEDOR_PUNTO_FIJO, DOMICILIARIO, ADMINISTRADOR), estado (PENDIENTE_VERIFICACION, ACTIVA, ELIMINADA), celular_verificado_at, created_at (fecha de registro), updated_at. Restricción CHECK por rol. El administrador inicia sesión con correo y contraseña, y se siembra desde la BD. No existe entidad Cuenta. session_version es solo una nota de implementación. **Ubicacion** — id, latitud, longitud, direccion, referencia (opcional). Cada uso crea su propia fila (no se comparte). La usan: Usuario (0..1), Emprendimiento (1:1), Pedido (0..1; no aplica en RECOGIDA) y Domicilio solo para el punto A (1:1). La columna geography(Point,4326) es detalle de implementación derivado de latitud y longitud.  **Sesion** — id, token_hash, device_id, created_at, expires_at, revoked_at (opcional). Usuario inicia Sesion (1:N). "Activa" se deduce de revoked_at y expires_at.  **DispositivoToken** — id, token (FCM), plataforma (ANDROID, IOS), ultima_conexion_at. Usuario registra DispositivoToken (1:N); único (usuario, token). Independiente de Sesion.device_id.  **Emprendimiento** — id, nombre, categoria (enumerado: FRUTAS_VERDURAS, PESCADO_MARISCOS, ALIMENTOS_PREPARADOS, BEBIDAS, SNACKS, OTROS), descripcion, hora_apertura y hora_cierre (hora local, time; reemplazan horario; único rango diario que puede cruzar la medianoche), estado (ACTIVO, INACTIVO, ELIMINADO). Sin tipo_vendedor (sale de Usuario.rol). Usuario dirige Emprendimiento (1:N); solo uno ACTIVO por usuario (índice único parcial). Se ubica en una Ubicacion (1:1).  **Producto** — id, nombre (único por emprendimiento entre productos no ELIMINADO), descripcion, unidad (UNIDAD, KG, LIBRA, LITRO, PORCION), precio (> 0), cantidad_disponible (numeric(10,2), ≥ 0), estado (DISPONIBLE, AGOTADO, ELIMINADO). Emprendimiento ofrece Producto (1:N); cada producto pertenece a un solo emprendimiento. Sin foto.  **Pedido** — id, modalidad (ENTREGA_DIRECTA, RECOGIDA, DOMICILIO), estado, reserva (fecha y hora acordadas; nulo = pedido inmediato), medio_pago (medio real con el que paga el cliente, elegido entre los habilitados por el vendedor; Pago.medio lo copia al crearse), tarifa_domicilio (solo DOMICILIO; calculada al pedir con piso de la tarifa mínima; el Domicilio no la repite), total (valor congelado). Sin subtotal (derivado) ni receptor_* (el receptor es el cliente). Relaciones: Usuario realiza Pedido (1:N); Emprendimiento recibe Pedido (1:N); Pedido se entrega en Ubicacion (0..1); contiene ItemPedido (1:N); genera Domicilio (0..N, uno activo); se paga con Pago (0..1 de tipo PEDIDO); habilita Calificacion (1:N) y CanalContacto (1:N).  **ItemPedido** — id, cantidad, precio_unitario (copia al comprar). El nombre se obtiene del Producto. Pedido contiene ItemPedido; Producto aparece en ItemPedido (1:N).  **ConfiguracionPago** — id, acepta_efectivo, banco, numero_cuenta, tipo_cuenta (los tres últimos opcionales y van juntos). Usuario configura ConfiguracionPago (0..1). Limitación conocida: al ser editable no conserva la cuenta con la que se publicó un domicilio en curso (RF-63).  **Pago** — id, tipo (PEDIDO, TARIFA_DOMICILIO), monto, medio (EFECTIVO, CUENTA_BANCARIA; la tarifa siempre CUENTA_BANCARIA), estado (PENDIENTE_CONFIRMACION, REGISTRADO, CONFIRMADO), confirmado_at. La fila de pago se crea en PENDIENTE_CONFIRMACION cuando el vendedor **acepta** el pedido (RF-53), con monto = total y medio = Pedido.medio_pago (CUENTA_BANCARIA en domicilio). Relaciones 1:1 opcionales con Pedido (tipo PEDIDO) y con Domicilio (tipo TARIFA_DOMICILIO); la regla "de un pedido o de un domicilio, nunca ambos ni ninguno". No guarda quién registra ni quién confirma: se deduce. En el pago del pedido, el vendedor es el dueño del emprendimiento del pedido; en el pago de la tarifa, registra el vendedor del pedido del domicilio y confirma el domiciliario que reparte ese domicilio (que no se reasigna). confirmado_at conserva cuándo se confirmó.  **TarifaMinima** — id, valor (> 0), created_at. Cada cambio es una fila nueva; la vigente es la última y el valor anterior de cada cambio es el valor de la fila previa (RF-44 FR-005). Sin relación con Pedido ni Domicilio. Usuario (administrador) define TarifaMinima (opcional del lado de TarifaMinima). La mínima por defecto del primer despliegue es un **parámetro de configuración** (RF-44 FR-006): mientras no haya filas, rige ese parámetro.  **Domicilio** — id, estado, codigo_confirmacion, motivo_cancelacion (opcional). Sin tarifa, sin receptor_*, sin vendedor_id, sin punto B (se lee de la ubicación de entrega del Pedido, inmutable),
-sin codigo_validado_at ni llegada_confirmada_at (la fecha de la entrega queda en el EventoTrazabilidad de ENTREGADO, con el domiciliario como autor). version es una nota de implementación. Relaciones: Pedido genera Domicilio (uno activo; único parcial donde estado <> 'CANCELADO'); recoge en Ubicacion (punto A, copia del punto fijo al publicar); Usuario (domiciliario) reparte Domicilio (0..1); registra EventoTrazabilidad (1:N, mínimo 1); recibe DomicilioRechazo (1:N); paga su tarifa con Pago (0..1). Inmutables tras publicar: pedido y punto A. **Código de confirmación**: se genera al asignar (RF-19), solo lo ve el cliente (RF-25) y el domiciliario lo ingresa al entregar (RF-24); es la única confirmación de la entrega. Se guarda tal cual (6 dígitos aleatorios generados al asignar) y deja de servir al entregarse o cancelarse el domicilio.  **EventoTrazabilidad** — id, estado, ocurrido_at. Inmutable, sin updated_at. Domicilio registra EventoTrazabilidad (1:N); Usuario origina EventoTrazabilidad (1:N). El caso de uso lo inserta en la misma transacción que el cambio de estado.  **DomicilioRechazo** — created_at. Entidad débil con PK compuesta (domiciliario, domicilio). Usuario realiza / Domicilio recibe, ambas identificadoras. Irreversible y no consultable desde la app; solo filtra la lista de disponibles (RF-16 FR-003).  **Calificacion** — id, puntaje entero 1–5 obligatorio, comentario opcional (máximo 300 caracteres), estado (ACTIVA, ELIMINADA_AUTOR, ELIMINADA_MODERACION). Tres relaciones opcionales de destino (Emprendimiento recibe, Producto recibe, Usuario es valorado en); exactamente una por calificación. Usuario escribe Calificacion (obligatoria). Pedido habilita Calificacion (obligatoria; el domicilio se deduce del pedido). Único (autor, pedido, destino). El promedio es derivado, no se guarda.  **ModeracionComentario** — id, accion (EDITADO, ELIMINADO), contenido_anterior (texto del comentario antes de la acción, para auditoría), created_at. El administrador solo edita el texto del comentario; el puntaje no se modifica. Calificacion es moderada en ModeracionComentario (1:N); Usuario (administrador) realiza ModeracionComentario (1:N). Sin updated_at.  **Reporte** — id, motivo, descripcion, estado (PENDIENTE, EN_REVISION, RESUELTO), nota_resolucion. Sin rol_autor (sale del autor) ni entidad_tipo/entidad_id. Usuario crea (obligatoria); Usuario (administrador) resuelve (opcional); tres relaciones opcionales: Pedido, Domicilio, Usuario reportado (como máximo una; puede no haber ninguna).  **Notificacion** — id, tipo, titulo, cuerpo, leida_at, created_at. Sin event_id (la idempotencia es detalle de implementación). Usuario recibe Notificacion (1:N).  **PreferenciaNotificacion** — tipo, habilitada. Entidad débil con PK (usuario, tipo). Usuario define PreferenciaNotificacion (identificadora).  **CanalContacto** (RF-49 FR-004) — id, tipo (MENSAJE, LLAMADA), destinatario (VENDEDOR, DOMICILIARIO), created_at. Pedido habilita CanalContacto (1:N). No guarda contenido de conversaciones.
+**Usuario** — id, nombre, celular (único; opcional solo para ADMINISTRADOR), correo (único; obligatorio para ADMINISTRADOR, opcional para otros), password_hash, foto_url (opcional), rol (CLIENTE, VENDEDOR_AMBULANTE, VENDEDOR_PUNTO_FIJO, DOMICILIARIO, ADMINISTRADOR), estado (PENDIENTE_VERIFICACION, ACTIVA, ELIMINADA), celular_verificado_at, created_at (fecha de registro), updated_at. Restricción CHECK por rol. El administrador inicia sesión con correo y contraseña, y se siembra desde la BD. No existe entidad Cuenta. session_version es solo una nota de implementación. **Ubicacion** — id, latitud, longitud, direccion, referencia (opcional). Cada uso crea su propia fila (no se comparte). La usan: Usuario (0..1), Emprendimiento (1:1), Pedido (0..1; no aplica en RECOGIDA) y Domicilio solo para el punto A (1:1). La columna geography(Point,4326) es detalle de implementación derivado de latitud y longitud.  **Sesion** — id, token_hash, device_id, created_at, expires_at, revoked_at (opcional). Usuario inicia Sesion (1:N). "Activa" se deduce de revoked_at y expires_at.  **DispositivoToken** — id, token (FCM), plataforma (ANDROID, IOS), ultima_conexion_at. Usuario registra DispositivoToken (1:N); único (usuario, token). Independiente de Sesion.device_id.  **Emprendimiento** — id, nombre, categoria (enumerado: FRUTAS_VERDURAS, PESCADO_MARISCOS, ALIMENTOS_PREPARADOS, BEBIDAS, SNACKS, OTROS), descripcion, hora_apertura y hora_cierre (hora local, time; reemplazan horario; único rango diario que puede cruzar la medianoche), estado (ACTIVO, INACTIVO, ELIMINADO). Sin tipo_vendedor (sale de Usuario.rol). Usuario dirige Emprendimiento (1:N); solo uno ACTIVO por usuario (índice único parcial). Se ubica en una Ubicacion (1:1).  **Producto** — id, nombre (único por emprendimiento entre productos no ELIMINADO), descripcion, unidad (UNIDAD, KG, LIBRA, LITRO, PORCION), precio (> 0), cantidad_disponible (numeric(10,2), ≥ 0), estado (DISPONIBLE, AGOTADO, ELIMINADO). Emprendimiento ofrece Producto (1:N); cada producto pertenece a un solo emprendimiento. Sin foto.  **Pedido** — id, modalidad (ENTREGA_DIRECTA, RECOGIDA, DOMICILIO), estado, reserva (fecha y hora acordadas; nulo = pedido inmediato), medio_pago (medio real con el que paga el cliente, elegido entre los habilitados por el vendedor; Pago.medio lo copia al crearse), tarifa_domicilio (solo DOMICILIO; calculada al pedir con piso de la tarifa mínima; el Domicilio no la repite), total (valor congelado). Sin subtotal (derivado) ni receptor_* (el receptor es el cliente). Relaciones: Usuario realiza Pedido (1:N); Emprendimiento recibe Pedido (1:N); Pedido se entrega en Ubicacion (0..1); contiene ItemPedido (1:N); genera Domicilio (0..N, uno activo); se paga con Pago (0..1 de tipo PEDIDO); habilita Calificacion (1:N) y CanalContacto (1:N).  **ItemPedido** — id, cantidad, precio_unitario (copia al comprar). El nombre se obtiene del Producto. Pedido contiene ItemPedido; Producto aparece en ItemPedido (1:N).  **ConfiguracionPago** — id, acepta_efectivo, banco, numero_cuenta, tipo_cuenta (los tres últimos opcionales y van juntos). Usuario (vendedor o domiciliario) configura ConfiguracionPago (0..1); en el domiciliario solo se usan banco, numero_cuenta y tipo_cuenta, y acepta_efectivo no aplica. Limitación conocida: al ser editable no conserva la cuenta con la que se publicó un domicilio en curso (RF-63).  **Pago** — id, tipo (PEDIDO, TARIFA_DOMICILIO), monto, medio (EFECTIVO, CUENTA_BANCARIA; la tarifa siempre CUENTA_BANCARIA), estado (PENDIENTE_CONFIRMACION, REGISTRADO, CONFIRMADO), confirmado_at. La fila de pago se crea en PENDIENTE_CONFIRMACION cuando el vendedor. El vendedor ve la cuenta bancaria del domiciliario (si la registró) cuando el domicilio está ENTREGADO, para saber a dónde transferir **acepta** el pedido (RF-53), con monto = total y medio = Pedido.medio_pago (CUENTA_BANCARIA en domicilio). Relaciones 1:1 opcionales con Pedido (tipo PEDIDO) y con Domicilio (tipo TARIFA_DOMICILIO); la regla "de un pedido o de un domicilio, nunca ambos ni ninguno". No guarda quién registra ni quién confirma: se deduce. En el pago del pedido, el vendedor es el dueño del emprendimiento del pedido; en el pago de la tarifa, registra el vendedor del pedido del domicilio y confirma el domiciliario que reparte ese domicilio (que no se reasigna). confirmado_at conserva cuándo se confirmó.  **TarifaMinima** — id, valor (> 0), created_at. Cada cambio es una fila nueva; la vigente es la última y el valor anterior de cada cambio es el valor de la fila previa (RF-44 FR-005). Sin relación con Pedido ni Domicilio. Usuario (administrador) define TarifaMinima (opcional del lado de TarifaMinima). La mínima por defecto del primer despliegue es un **parámetro de configuración** (RF-44 FR-006): mientras no haya filas, rige ese parámetro.  **Domicilio** — id, estado, codigo_confirmacion, motivo_cancelacion (opcional). Sin tarifa, sin receptor_*, el vendedor se deduce del pedido; la tabla guarda una copia (`vendedor_id`, inmutable) para listar sin leer otros módulos. Sin punto B (se lee de la ubicación de entrega del Pedido, inmutable),
+sin codigo_validado_at ni llegada_confirmada_at (la fecha de la entrega queda en el EventoTrazabilidad de ENTREGADO, con el domiciliario como autor). version es una nota de implementación. Relaciones: Pedido genera Domicilio (uno activo; único parcial donde estado <> 'CANCELADO'); recoge en Ubicacion (punto A, copia del punto fijo al publicar); Usuario (domiciliario) reparte Domicilio (0..1); registra EventoTrazabilidad (1:N, mínimo 1); recibe DomicilioRechazo (1:N); paga su tarifa con Pago (0..1). Inmutables tras publicar: pedido y punto A. **Código de confirmación**: se genera al asignar (RF-19), solo lo ve el cliente (RF-25) y el domiciliario lo ingresa al entregar (RF-24); es la única confirmación de la entrega. Se guarda tal cual (6 dígitos aleatorios generados al asignar) y deja de servir al entregarse o cancelarse el domicilio.  **EventoTrazabilidad** — id, estado, ocurrido_at. Inmutable, sin updated_at. Domicilio registra EventoTrazabilidad (1:N); Usuario origina EventoTrazabilidad (1:N). El caso de uso lo inserta en la misma transacción que el cambio de estado.  **DomicilioRechazo** — created_at. Entidad débil con PK compuesta (domiciliario, domicilio). Usuario realiza / Domicilio recibe, ambas identificadoras. Irreversible y no consultable desde la app; solo filtra la lista de disponibles (RF-16 FR-003).  **Calificacion** — id, puntaje entero 1–5 obligatorio, comentario opcional (máximo 300 caracteres), estado (ACTIVA, ELIMINADA_AUTOR, ELIMINADA_MODERACION), created_at, updated_at. Tres relaciones opcionales de destino (Emprendimiento recibe, Producto recibe, Usuario es valorado en); exactamente una por calificación. Usuario escribe Calificacion (obligatoria). Pedido habilita Calificacion (obligatoria; el domicilio se deduce del pedido). Único (autor, pedido, destino). El promedio es derivado, no se guarda.  **ModeracionComentario** — id, accion (EDITADO, ELIMINADO), motivo (obligatorio; por qué se moderó el comentario, de 5 a 200 caracteres), contenido_anterior (texto del comentario antes de la acción, para auditoría), created_at. El administrador solo edita el texto del comentario; el puntaje no se modifica. Calificacion es moderada en ModeracionComentario (1:N); Usuario (administrador) realiza ModeracionComentario (1:N). Sin updated_at.  **Reporte** — id, motivo, descripcion, estado (PENDIENTE, EN_REVISION, RESUELTO), nota_resolucion. Sin rol_autor (sale del autor) ni entidad_tipo/entidad_id. Usuario crea (obligatoria); Usuario (administrador) resuelve (opcional); tres relaciones opcionales: Pedido, Domicilio, Usuario reportado (como máximo una; puede no haber ninguna).  **Notificacion** — id, tipo, titulo, cuerpo, leida_at, created_at. Sin event_id (la idempotencia es detalle de implementación). Usuario recibe Notificacion (1:N).  **PreferenciaNotificacion** — tipo, habilitada. Entidad débil con PK (usuario, tipo). Usuario define PreferenciaNotificacion (identificadora).  **CanalContacto** (RF-49 FR-004) — id, tipo (MENSAJE, LLAMADA), destinatario (VENDEDOR, DOMICILIARIO), created_at. Pedido habilita CanalContacto (1:N). No guarda contenido de conversaciones.
 
 **Parámetros de configuración (no son tablas)**: `tarifa.base`, `tarifa.valor_por_km`, `tarifa.valor_por_min`, `tarifa.factor_linea_recta` (respaldo), `tarifa.minima_defecto` (RF-44 FR-006), `reserva.margen_minutos = 15`. Los valores en pesos y el factor los define el equipo.
 
@@ -219,7 +274,7 @@ sin codigo_validado_at ni llegada_confirmada_at (la fecha de la entrega queda en
 
 | # | Restricción |
 | ------ | ------ |
-| 1 | Solo un usuario con rol vendedor dirige un Emprendimiento y tiene ConfiguracionPago; solo uno ACTIVO por vendedor. |
+| 1 | Solo un usuario con rol vendedor dirige un Emprendimiento; solo uno ACTIVO por vendedor. Solo los vendedores y los domiciliarios tienen ConfiguracionPago (en el domiciliario solo la cuenta bancaria). |
 | 2 | Un pago es de un pedido o de un domicilio, nunca ambos ni ninguno; un solo pago PEDIDO por pedido y un solo pago TARIFA_DOMICILIO por domicilio. |
 | 3 | Quién registra y quién confirma un pago no se guarda: en el pago del pedido confirma el vendedor dueño del emprendimiento; en el pago de la tarifa registra el vendedor del pedido y confirma el domiciliario asignado al domicilio. El caso de uso valida esa pertenencia. |
 | 4 | Una calificación apunta a un solo destino; única por (autor, pedido, destino). |
@@ -237,7 +292,10 @@ sin codigo_validado_at ni llegada_confirmada_at (la fecha de la entrega queda en
 | 16 | La modalidad DOMICILIO solo se ofrece al cliente si el vendedor de punto fijo tiene cuenta bancaria registrada. |
 | 17 | Las acciones de una reserva (iniciar entrega, marcar listo, publicar domicilio) solo se permiten desde reserva − margen (15 min). |
 | 18 | El administrador no verifica celular; su cuenta se siembra y no se registra por la API. |
-
+| 19 | Un domiciliario solo puede tener un domicilio activo (ASIGNADO, RECOGIDO o EN_CAMINO) a la vez: índice único parcial sobre domiciliario_id; aceptar otro responde 409 ACTIVE_DELIVERY_EXISTS (RF-19). |
+| 20 | Un reporte sobre un usuario solo es válido si el autor y el reportado compartieron al menos un pedido (RF-60). |
+| 21 | Cada rol solo puede calificar ciertos destinos de un pedido ENTREGADO: cliente → emprendimiento, productos y domiciliario; vendedor → cliente y (punto fijo) domiciliario; domiciliario → emprendimiento y cliente (RF-01). |
+| 22 | La eliminación de una calificación, por el autor o por moderación, es lógica: la fila se conserva con su estado y su texto para auditoría y la calificación sale del promedio. Una calificación eliminada no se puede volver a hacer sobre el mismo pedido y destino (RF-05). |
 
 ### 3.4 Tarifa del domicilio (RF-45 FR-006)
 
@@ -256,14 +314,14 @@ Distancia y duración vienen de `RoutingPort` (ruta A→B). Si el servicio falla
     *   **Confirmación de la entrega por código**: al llegar, el cliente le dice al domiciliario su código; el domiciliario lo ingresa (RF-24). Si es correcto, en la misma transacción el domicilio y el pedido pasan a ENTREGADO, se inserta el EventoTrazabilidad (domiciliario como autor) y se avisa al vendedor, que debe pagar la tarifa.
     *  Si el cliente no da el código o dice no haber recibido, el domicilio no avanza y sigue EN_CAMINO; el cliente puede crear un reporte (RF-60) y el administrador puede cancelar el domicilio (RF-13).
 *   **Pago**: PENDIENTE_CONFIRMACION → CONFIRMADO; la tarifa al domiciliario pasa por REGISTRADO (RF-43), que solo se habilita con el domicilio ENTREGADO.
-*   **Reporte** : PENDIENTE → EN_REVISION → RESUELTO.
-*   **Calificaciones** : se habilitan con el pedido ENTREGADO (en domicilio, cuando el domiciliario valida el código).
+*   **Reporte**: PENDIENTE → EN_REVISION → RESUELTO. Agregar una nota: "En el MVP no hay acción que lleve un reporte a EN_REVISION; RF-62 permite resolver desde PENDIENTE o EN_REVISION.
+*   **Calificaciones**: se habilitan con el pedido ENTREGADO; el autor puede editar su calificación (RF-04) o eliminarla (RF-05, estado ELIMINADA_AUTOR); el administrador la modera (RF-06) y la supervisa (RF-03).
 
 #### Puntos abiertos
 
 *  Si el cliente nunca da el código, el domicilio queda EN_CAMINO y el domiciliario no cobra (sin vencimiento automático en el MVP).
 *  Código de confirmación: Resuelto en D13 (se guarda en claro en `codigo_confirmacion`).
-*  Límite de domicilios simultáneos por domiciliario.
+*  Resuelto: un domiciliario solo puede atender un domicilio a la vez (restricción 19).
 *  Vencimientos de pedidos sin respuesta.
 *  Si el administrador cancela un domicilio ya pagado, la devolución del dinero ocurre fuera de la plataforma (la plataforma no procesa dinero).
 

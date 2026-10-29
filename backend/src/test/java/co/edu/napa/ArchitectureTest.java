@@ -19,7 +19,9 @@ class ArchitectureTest {
                 .resideInAnyPackage(
                         "org.springframework..",
                         "jakarta.persistence..",
-                        "com.fasterxml.jackson..");
+                        "com.fasterxml.jackson..",
+                        // Spring Boot 4 usa Jackson 3, cuyo paquete es tools.jackson
+                        "tools.jackson..");
 
         rule.allowEmptyShould(true).check(classes);
     }
@@ -32,6 +34,16 @@ class ArchitectureTest {
                 .resideInAnyPackage(
                         "co.edu.napa..application..",
                         "co.edu.napa..infrastructure..");
+
+        rule.allowEmptyShould(true).check(classes);
+    }
+
+    @Test
+    void applicationMustNotDependOnInfrastructure() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("co.edu.napa..application..")
+                .should().dependOnClassesThat()
+                .resideInAPackage("co.edu.napa..infrastructure..");
 
         rule.allowEmptyShould(true).check(classes);
     }

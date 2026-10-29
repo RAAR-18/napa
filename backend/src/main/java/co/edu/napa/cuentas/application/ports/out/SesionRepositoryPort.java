@@ -19,6 +19,9 @@ public interface SesionRepositoryPort {
             Instant now
     );
 
+    /** Cambia el refresh token de una sesión vigente sin conocer el anterior (p. ej. tras cambiar la contraseña). */
+    Optional<Sesion> replaceRefreshToken(UUID sessionId, String nextTokenHash, Instant now);
+
     List<Sesion> revokeOtherSessions(UUID usuarioId, UUID currentSessionId, Instant revokedAt);
 
     List<Sesion> revokeAllSessions(UUID usuarioId, Instant revokedAt);
