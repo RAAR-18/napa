@@ -1,12 +1,14 @@
 package co.edu.napa.cuentas.application.usecase;
 
+import co.edu.napa.cuentas.application.ports.in.AuthTokens;
 import co.edu.napa.cuentas.application.ports.in.CambiarContrasenaPort;
 import co.edu.napa.cuentas.application.ports.out.PasswordHashingPort;
 import co.edu.napa.cuentas.application.ports.out.SesionRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.SessionVersionPort;
+import co.edu.napa.cuentas.application.ports.out.TokenServicePort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
-import co.edu.napa.cuentas.domain.model.Contrasena;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
+import co.edu.napa.cuentas.domain.model.PasswordPolicy;
 import co.edu.napa.cuentas.domain.model.Sesion;
 import co.edu.napa.cuentas.domain.model.Usuario;
 import co.edu.napa.shared.domain.DomainException;
@@ -26,6 +28,7 @@ public class CambiarContrasenaUseCase implements CambiarContrasenaPort {
     private final SesionRepositoryPort sesiones;
     private final SessionVersionPort sessionVersions;
     private final PasswordHashingPort passwordHashing;
+    private final TokenServicePort tokenService;
     private final Clock clock;
 
     public CambiarContrasenaUseCase(
@@ -33,32 +36,43 @@ public class CambiarContrasenaUseCase implements CambiarContrasenaPort {
             SesionRepositoryPort sesiones,
             SessionVersionPort sessionVersions,
             PasswordHashingPort passwordHashing,
+            TokenServicePort tokenService,
             Clock clock
     ) {
         this.usuarios = Objects.requireNonNull(usuarios, "usuarios");
         this.sesiones = Objects.requireNonNull(sesiones, "sesiones");
         this.sessionVersions = Objects.requireNonNull(sessionVersions, "sessionVersions");
         this.passwordHashing = Objects.requireNonNull(passwordHashing, "passwordHashing");
+        this.tokenService = Objects.requireNonNull(tokenService, "tokenService");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     @Override
     @Transactional
-    public void cambiar(UUID usuarioId, UUID sesionActualId, String contrasenaActual, String contrasenaNueva) {
-        Contrasena.validar(contrasenaNueva);
+    public AuthTokens cambiar(UUID usuarioId, UUID sesionActualId, String passwordActual, String passwordNueva) {
+        PasswordPolicy.validar(passwordNueva);
         Usuario usuario = usuarios.findById(usuarioId)
                 .filter(cuenta -> cuenta.estado() == EstadoUsuario.ACTIVA)
                 .orElseThrow(() -> new DomainException("UNAUTHORIZED", "La cuenta no está activa."));
-        if (!passwordHashing.matches(contrasenaActual, usuario.passwordHash())) {
+        if (!passwordHashing.matches(passwordActual, usuario.passwordHash())) {
             throw new DomainException("INVALID_CURRENT_PASSWORD", "La contraseña actual es incorrecta.");
         }
         // La actual ya se verificó, así que basta comparar los textos para saber si es la misma.
-        if (contrasenaNueva.equals(contrasenaActual)) {
+        if (passwordNueva.equals(passwordActual)) {
             throw new DomainException("PASSWORD_REUSED", "Elige una contraseña distinta.");
         }
+
         Instant now = Instant.now(clock);
-        usuarios.save(usuario.cambiarContrasena(passwordHashing.hash(contrasenaNueva), now));
+        Usuario actualizado = usuario.cambiarContrasena(passwordHashing.hash(passwordNueva), now);
+        usuarios.save(actualizado);
         revocar(sesiones.revokeOtherSessions(usuarioId, sesionActualId, now), now);
+
+        // Tras cambiar credenciales se rota también el refresh token de la sesión en curso.
+        String nuevoRefresh = tokenService.newRefreshToken();
+        Sesion actual = sesiones
+                .replaceRefreshToken(sesionActualId, tokenService.hashRefreshToken(nuevoRefresh), now)
+                .orElseThrow(() -> new DomainException("UNAUTHORIZED", "La sesión no es válida."));
+        return AuthTokens.desde(tokenService.issue(actual, actualizado, nuevoRefresh), actualizado);
     }
 
     private void revocar(List<Sesion> revocadas, Instant now) {

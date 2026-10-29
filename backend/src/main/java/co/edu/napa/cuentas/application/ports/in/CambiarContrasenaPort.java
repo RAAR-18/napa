@@ -2,7 +2,7 @@ package co.edu.napa.cuentas.application.ports.in;
 
 import java.util.UUID;
 
-/** RF-09: cambia la contraseña con la actual y revoca las demás sesiones. */
+/** RF-09: cambia la contraseña con la actual, cierra las demás sesiones y rota los tokens de la sesión en curso. */
 public interface CambiarContrasenaPort {
-    void cambiar(UUID usuarioId, UUID sesionActualId, String contrasenaActual, String contrasenaNueva);
+    AuthTokens cambiar(UUID usuarioId, UUID sesionActualId, String passwordActual, String passwordNueva);
 }

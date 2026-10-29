@@ -92,7 +92,7 @@ class IniciarSesionUseCaseTest {
 
         assertEquals("access", tokens.accessToken());
         assertEquals("opaque-refresh", tokens.refreshToken());
-        assertEquals("CLIENTE", tokens.rol());
+        assertEquals("CLIENTE", tokens.usuario().rol());
         verify(loginAttempts).clearIdentifier("ana@example.com");
         verify(sesiones).save(any(Sesion.class));
     }

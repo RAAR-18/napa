@@ -79,4 +79,15 @@ public class SesionPersistenceAdapter implements SesionRepositoryPort {
                     return session.toDomain();
                 });
     }
+
+    @Override
+    @Transactional
+    public Optional<Sesion> replaceRefreshToken(UUID sessionId, String nextTokenHash, Instant now) {
+        return repository.findByIdAndRevokedAtIsNullAndExpiresAtAfter(sessionId, now)
+                .map(session -> {
+                    session.rotate(nextTokenHash);
+                    repository.flush();
+                    return session.toDomain();
+                });
+    }
 }

@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Objects;
 
 @Component
@@ -58,19 +57,7 @@ public class ConfirmarRegistroUseCase implements ConfirmarRegistroPort {
                 EstadoVerificacion.REGISTRO,
                 codigo
         );
-        if (resultado.estado() != VerificacionResultado.Estado.APROBADA) {
-            String message = switch (resultado.estado()) {
-                case VENCIDA -> "El código venció. Solicita uno nuevo.";
-                case AGOTADA -> "Se agotaron los intentos. Solicita un código nuevo.";
-                case INCORRECTA -> "El código no es válido.";
-                case APROBADA -> throw new IllegalStateException("Approved result should not be rejected");
-            };
-            throw new DomainException(
-                    "VALIDATION_ERROR",
-                    message,
-                    Map.of("attemptsRemaining", resultado.intentosRestantes())
-            );
-        }
+        ResultadoOtp.exigirAprobado(resultado);
 
         Instant now = Instant.now(clock);
         Usuario activado = usuario.activar(now);

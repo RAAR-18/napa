@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -39,12 +40,11 @@ public class AuthSecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(
-                                "/api/v1/auth/registro",
+                                "/api/v1/auth/register",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh",
-                                "/api/v1/auth/verificaciones-celular",
-                                "/api/v1/auth/verificaciones-celular/**",
-                                "/api/v1/auth/recuperar-contrasena"
+                                "/api/v1/auth/verify-phone/**",
+                                "/api/v1/auth/password/recover/**"
                         ).permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer

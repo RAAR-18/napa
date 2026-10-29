@@ -5,7 +5,7 @@ import co.edu.napa.cuentas.application.ports.out.PasswordHashingPort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.domain.model.Celular;
-import co.edu.napa.cuentas.domain.model.Contrasena;
+import co.edu.napa.cuentas.domain.model.PasswordPolicy;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
 import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
@@ -58,7 +58,7 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
         String celular = Celular.desde(celularInput).valor();
         String correo = normalizarCorreo(correoInput);
         validarNombre(nombre);
-        Contrasena.validar(password);
+        PasswordPolicy.validar(password);
         if (!Objects.equals(password, confirmacionPassword)) {
             throw new DomainException(
                     "VALIDATION_ERROR",

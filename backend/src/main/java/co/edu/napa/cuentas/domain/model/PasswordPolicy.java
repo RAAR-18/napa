@@ -3,11 +3,11 @@ package co.edu.napa.cuentas.domain.model;
 import co.edu.napa.shared.domain.DomainException;
 
 /** Regla de contraseñas (decisión D14): entre 8 y 128 caracteres, sin reglas de composición. */
-public final class Contrasena {
+public final class PasswordPolicy {
     public static final int LONGITUD_MINIMA = 8;
     public static final int LONGITUD_MAXIMA = 128;
 
-    private Contrasena() {
+    private PasswordPolicy() {
     }
 
     public static void validar(String password) {

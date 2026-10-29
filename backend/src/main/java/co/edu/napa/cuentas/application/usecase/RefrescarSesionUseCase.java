@@ -1,7 +1,7 @@
 package co.edu.napa.cuentas.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.AuthTokens;
-import co.edu.napa.cuentas.application.ports.in.RenovarSesionPort;
+import co.edu.napa.cuentas.application.ports.in.RefrescarSesionPort;
 import co.edu.napa.cuentas.application.ports.out.SesionRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.TokenServicePort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
@@ -17,13 +17,15 @@ import java.time.Instant;
 import java.util.Objects;
 
 @Component
-public class RenovarSesionUseCase implements RenovarSesionPort {
+public class RefrescarSesionUseCase implements RefrescarSesionPort {
+    private static final String REFRESH_INVALIDO = "La sesión de renovación no es válida.";
+
     private final UsuarioRepositoryPort usuarios;
     private final SesionRepositoryPort sesiones;
     private final TokenServicePort tokenService;
     private final Clock clock;
 
-    public RenovarSesionUseCase(
+    public RefrescarSesionUseCase(
             UsuarioRepositoryPort usuarios,
             SesionRepositoryPort sesiones,
             TokenServicePort tokenService,
@@ -37,16 +39,20 @@ public class RenovarSesionUseCase implements RenovarSesionPort {
 
     @Override
     @Transactional
-    public AuthTokens renovar(String refreshToken) {
+    public AuthTokens refrescar(String refreshToken, String deviceId) {
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new DomainException("UNAUTHORIZED", "La sesión de renovación no es válida.");
+            throw new DomainException("UNAUTHORIZED", REFRESH_INVALIDO);
         }
+        Sesion.validarDeviceId(deviceId);
         String hashActual = tokenService.hashRefreshToken(refreshToken);
         Sesion sesion = sesiones.findByRefreshTokenHash(hashActual)
-                .orElseThrow(() -> new DomainException("UNAUTHORIZED", "La sesión de renovación no es válida."));
+                .orElseThrow(() -> new DomainException("UNAUTHORIZED", REFRESH_INVALIDO));
         Instant now = Instant.now(clock);
         if (!sesion.estaActiva(now)) {
-            throw new DomainException("UNAUTHORIZED", "La sesión de renovación venció o fue revocada.");
+            throw new DomainException("TOKEN_EXPIRED", "La sesión venció o fue revocada. Inicia sesión de nuevo.");
+        }
+        if (!sesion.deviceId().equals(deviceId)) {
+            throw new DomainException("UNAUTHORIZED", REFRESH_INVALIDO);
         }
         Usuario usuario = usuarios.findById(sesion.usuarioId())
                 .filter(cuenta -> cuenta.estado() == EstadoUsuario.ACTIVA)
