@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;

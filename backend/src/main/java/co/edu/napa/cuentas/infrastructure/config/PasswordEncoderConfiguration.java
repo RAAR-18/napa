@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.config;
 
 import co.edu.napa.shared.infrastructure.idempotency.IdempotencyFilter;
 import co.edu.napa.shared.infrastructure.web.ApiError;
@@ -9,18 +9,22 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import tools.jackson.databind.ObjectMapper;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.web.cors.CorsConfiguration;
 
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 @Configuration
 public class AuthSecurityConfiguration {
@@ -34,6 +38,15 @@ public class AuthSecurityConfiguration {
             Clock clock
     ) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(request -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOriginPatterns(List.of("*"));
+                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(List.of("*"));
+                    config.setExposedHeaders(List.of("Idempotent-Replayed", "Location", "X-Request-Id"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -46,6 +59,16 @@ public class AuthSecurityConfiguration {
                                 "/api/v1/auth/verify-phone/**",
                                 "/api/v1/auth/password/recover/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/emprendimientos")
+                        .hasRole("CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/emprendimientos")
+                        .hasAnyRole("VENDEDOR_AMBULANTE", "VENDEDOR_PUNTO_FIJO")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/productos/mios")
+                        .hasAnyRole("VENDEDOR_AMBULANTE", "VENDEDOR_PUNTO_FIJO")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/productos")
+                        .hasRole("CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/productos")
+                        .hasAnyRole("VENDEDOR_AMBULANTE", "VENDEDOR_PUNTO_FIJO")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
@@ -83,11 +106,14 @@ public class AuthSecurityConfiguration {
 
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
-        authorities.setAuthoritiesClaimName("rol");
-        authorities.setAuthorityPrefix("ROLE_");
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authorities);
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            String rol = jwt.getClaimAsString("rol");
+            if (rol == null || rol.isBlank()) {
+                return Collections.emptyList();
+            }
+            return List.of(new SimpleGrantedAuthority("ROLE_" + rol));
+        });
         return converter;
     }
 
