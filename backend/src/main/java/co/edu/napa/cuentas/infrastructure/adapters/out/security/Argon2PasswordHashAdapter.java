@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.adapters.out.security;
 
 import co.edu.napa.cuentas.application.ports.out.PasswordHashingPort;
 import org.springframework.security.crypto.password.PasswordEncoder;

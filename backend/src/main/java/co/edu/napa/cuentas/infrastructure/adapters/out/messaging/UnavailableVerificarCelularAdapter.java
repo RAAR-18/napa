@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.adapters.out.messaging;
 
 import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
