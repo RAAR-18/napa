@@ -31,6 +31,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 - Solicitar el código responde ≤ 1,5 s p95 (SC-001); la entrega depende de Twilio y no tiene SLO propio.
 - ≥ 90 % de los códigos llega en < 30 s (SC-002, meta a validar con datos reales).
+- Límites internos para controlar consumo: 1 envío/minuto y 5/hora por celular; 20 envíos/hora por IP. No representan ni garantizan una cuota gratuita de Twilio; F022 debe verificar la tarifa aplicable en Colombia y establecer el tope mensual global.
 - Dependencias: Twilio Verify (WhatsApp con respaldo SMS), Redis (límites y contadores), Spring Data JPA (`mensaje`).
 
 ## Spec Coverage
@@ -40,7 +41,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | FR-001 | Código de 6 dígitos, un solo uso, ≤ 10 min | Lo garantiza Twilio Verify; test de contrato que verifica la configuración del servicio (longitud y vigencia) | T020, T021 |
 | FR-002 | WhatsApp con plantilla aprobada y SMS de respaldo | `TwilioVerifyAdapter` (canal `whatsapp`, respaldo `sms`); `GET /auth/verify-phone/mensajes/{id}` ofrece SMS si falló | T022, T023, T026 |
 | FR-003 | 5 intentos por código; invalidar al agotar | Contador `verif-att:{celular}:{proposito}` en Redis; `OTP_ATTEMPTS_EXHAUSTED` | T012, T024 |
-| FR-004 | 1/min y 5/hora por celular y por IP; `429` + `Retry-After` | `verif-rl:{celular}` y `verif-rl-ip:{ip}` en Redis | T011, T025 |
+| FR-004 | 1/min y 5/hora por celular; 20/hora por IP; `429` + `Retry-After` | Contadores Redis por celular y por IP | T011, T025 |
 | FR-005 | Un código nuevo invalida el anterior | Reenvío vía Verify; si Verify no cancela la verificación previa, cancelarla explícitamente (pregunta abierta de foundations) | T027 |
 | FR-006 | Misma respuesta con celular registrado o no (recuperación) | `SolicitarVerificacionUseCase` responde `202` idéntico y no llama a Twilio si no existe cuenta | T013, T028 |
 | FR-007 | Activar la cuenta e iniciar sesión al verificar el registro | `ConfirmarVerificacionUseCase` → `ActivarCuentaPort` (RF-07) → emite tokens | T029 |
@@ -246,7 +247,7 @@ frontend/__tests__/auth/verificar-celular.test.tsx
 ### Tests (antes de implementar)
 
 - [ ] T010 [P] [US1] Test de integración de confirmación correcta, incorrecta y vencida en `backend/src/test/java/co/edu/napa/cuenta/VerificacionRegistroIT.java`
-- [ ] T011 [P] [US1] Test de límites 1/min y 5/hora por celular e IP en `.../cuenta/VerificacionLimitesIT.java`
+- [ ] T011 [P] [US1] Test de límites 1/min y 5/hora por celular, y 20/hora por IP, en `.../cuenta/VerificacionLimitesIT.java`
 - [ ] T012 [P] [US1] Test de 5 intentos agotados en `.../cuenta/VerificacionIntentosIT.java`
 - [ ] T021 [P] [US1] Test de contrato del adaptador (longitud y vigencia) en `.../cuenta/TwilioVerifyContractTest.java`
 

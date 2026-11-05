@@ -45,9 +45,19 @@ public class RegistroController {
                 deviceId,
                 servletRequest.getRemoteAddr()
         );
+        RegistrarCuentaPort.VerificacionInfo verificacion = result.verificacion();
         return ResponseEntity.created(URI.create("/api/v1/usuarios/me"))
                 .cacheControl(CacheControl.noStore())
-                .body(new RegistroResponse(result.usuarioId(), result.estado()));
+                .body(new RegistroResponse(
+                        result.usuarioId(),
+                        result.estado(),
+                        new VerificacionResponse(
+                                verificacion.mensajeId(),
+                                verificacion.canal(),
+                                verificacion.reenvioDisponibleEn(),
+                                verificacion.estado()
+                        )
+                ));
     }
 
     public record RegistroRequest(
@@ -60,6 +70,9 @@ public class RegistroController {
     ) {
     }
 
-    public record RegistroResponse(UUID usuarioId, String estado) {
+    public record RegistroResponse(UUID usuarioId, String estado, VerificacionResponse verificacion) {
+    }
+
+    public record VerificacionResponse(UUID mensajeId, String canal, long reenvioDisponibleEn, String estado) {
     }
 }

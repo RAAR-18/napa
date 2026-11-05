@@ -1,13 +1,14 @@
 package co.edu.napa.cuentas.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.RegistrarCuentaPort;
+import co.edu.napa.cuentas.application.ports.in.SolicitarVerificacionPort;
 import co.edu.napa.cuentas.application.ports.out.PasswordHashingPort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
-import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.domain.model.Celular;
 import co.edu.napa.cuentas.domain.model.PasswordPolicy;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
-import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
+import co.edu.napa.cuentas.domain.model.CanalVerificacion;
+import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import co.edu.napa.cuentas.domain.model.Sesion;
 import co.edu.napa.cuentas.domain.model.Usuario;
@@ -27,18 +28,18 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
     private static final int LONGITUD_MAXIMA_NOMBRE = 120;
 
     private final UsuarioRepositoryPort usuarios;
-    private final VerificarCelularPort verificarCelular;
+    private final SolicitarVerificacionPort solicitarVerificacion;
     private final PasswordHashingPort passwordHashing;
     private final Clock clock;
 
     public RegistrarCuentaUseCase(
             UsuarioRepositoryPort usuarios,
-            VerificarCelularPort verificarCelular,
+            SolicitarVerificacionPort solicitarVerificacion,
             PasswordHashingPort passwordHashing,
             Clock clock
     ) {
         this.usuarios = Objects.requireNonNull(usuarios, "usuarios");
-        this.verificarCelular = Objects.requireNonNull(verificarCelular, "verificarCelular");
+        this.solicitarVerificacion = Objects.requireNonNull(solicitarVerificacion, "solicitarVerificacion");
         this.passwordHashing = Objects.requireNonNull(passwordHashing, "passwordHashing");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
@@ -91,8 +92,31 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
                 now
         );
         usuarios.save(usuario);
-        verificarCelular.solicitar(celular, EstadoVerificacion.REGISTRO, ipAddress);
-        return new RegistroResultado(usuario.id(), usuario.estado().name());
+        VerificacionInfo verificacion = solicitarCodigo(celular, ipAddress);
+        return new RegistroResultado(usuario.id(), usuario.estado().name(), verificacion);
+    }
+
+    /** Si el proveedor falla, la cuenta se conserva y se informa el envío fallido (RF-07). */
+    private VerificacionInfo solicitarCodigo(String celular, String ipAddress) {
+        try {
+            SolicitarVerificacionPort.EnvioSolicitado envio = solicitarVerificacion.solicitar(
+                    celular, PropositoVerificacion.REGISTRO, CanalVerificacion.WHATSAPP, ipAddress
+            );
+            return new VerificacionInfo(
+                    envio.mensajeId(), envio.canal().name(), envio.reenvioDisponibleEn(), "ENVIADO"
+            );
+        } catch (DomainException exception) {
+            if (!"EXTERNAL_SERVICE_UNAVAILABLE".equals(exception.code())) {
+                throw exception;
+            }
+            Object mensajeId = exception.details().get("mensajeId");
+            return new VerificacionInfo(
+                    mensajeId == null ? null : UUID.fromString(mensajeId.toString()),
+                    CanalVerificacion.WHATSAPP.name(),
+                    0,
+                    "FALLIDO"
+            );
+        }
     }
 
     private String normalizarCorreo(String correoInput) {

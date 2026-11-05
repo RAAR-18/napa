@@ -1,16 +1,15 @@
 package co.edu.napa.cuentas.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.AuthTokens;
+import co.edu.napa.cuentas.application.ports.in.ConfirmarVerificacionPort;
 import co.edu.napa.cuentas.application.ports.out.IssuedTokens;
 import co.edu.napa.cuentas.application.ports.out.PasswordHashingPort;
 import co.edu.napa.cuentas.application.ports.out.SesionRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.SessionVersionPort;
 import co.edu.napa.cuentas.application.ports.out.TokenServicePort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
-import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
-import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
-import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
+import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import co.edu.napa.cuentas.domain.model.Sesion;
 import co.edu.napa.cuentas.domain.model.Usuario;
@@ -27,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,7 +48,7 @@ class ConfirmarRecuperacionUseCaseTest {
     @Mock private UsuarioRepositoryPort usuarios;
     @Mock private SesionRepositoryPort sesiones;
     @Mock private SessionVersionPort sessionVersions;
-    @Mock private VerificarCelularPort verificarCelular;
+    @Mock private ConfirmarVerificacionPort confirmarVerificacion;
     @Mock private PasswordHashingPort passwordHashing;
     @Mock private TokenServicePort tokenService;
 
@@ -58,7 +59,7 @@ class ConfirmarRecuperacionUseCaseTest {
         lenient().when(passwordHashing.hash(anyString())).thenAnswer(invocation ->
                 "hashed:" + invocation.getArgument(0, String.class));
         useCase = new ConfirmarRecuperacionUseCase(
-                usuarios, sesiones, sessionVersions, verificarCelular, passwordHashing, tokenService,
+                usuarios, sesiones, sessionVersions, confirmarVerificacion, passwordHashing, tokenService,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -71,8 +72,6 @@ class ConfirmarRecuperacionUseCaseTest {
                 oldSessionId, user.id(), "old-hash", "old-device", 2,
                 NOW.minusSeconds(60), NOW.plusSeconds(3600), NOW
         );
-        when(verificarCelular.confirmar("+573001234567", EstadoVerificacion.RECUPERACION_CONTRASENA, "123456"))
-                .thenReturn(new VerificacionResultado(VerificacionResultado.Estado.APROBADA, 5));
         when(usuarios.findByCelular("+573001234567")).thenReturn(Optional.of(user));
         when(usuarios.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(sesiones.revokeAllSessions(user.id(), NOW)).thenReturn(List.of(revoked));
@@ -94,9 +93,11 @@ class ConfirmarRecuperacionUseCaseTest {
     }
 
     @Test
-    void wrongCodeReportsRemainingAttemptsAndChangesNothing() {
-        when(verificarCelular.confirmar("+573001234567", EstadoVerificacion.RECUPERACION_CONTRASENA, "000000"))
-                .thenReturn(new VerificacionResultado(VerificacionResultado.Estado.INCORRECTA, 4));
+    void aRejectedCodeChangesNothing() {
+        doThrow(new DomainException(
+                "OTP_INVALID", "Código incorrecto", Map.of("intentosRestantes", 4)
+        )).when(confirmarVerificacion)
+                .confirmar("+573001234567", PropositoVerificacion.RECUPERACION, "000000");
 
         DomainException exception = assertThrows(
                 DomainException.class,
@@ -110,19 +111,6 @@ class ConfirmarRecuperacionUseCaseTest {
     }
 
     @Test
-    void expiredCodeIsReportedAsExpired() {
-        when(verificarCelular.confirmar("+573001234567", EstadoVerificacion.RECUPERACION_CONTRASENA, "123456"))
-                .thenReturn(new VerificacionResultado(VerificacionResultado.Estado.VENCIDA, 0));
-
-        DomainException exception = assertThrows(
-                DomainException.class,
-                () -> useCase.confirmar("+573001234567", "123456", "new-password", "device-1")
-        );
-
-        assertEquals("OTP_EXPIRED", exception.code());
-    }
-
-    @Test
     void rejectsAShortNewPasswordBeforeCheckingTheCode() {
         DomainException exception = assertThrows(
                 DomainException.class,
@@ -130,7 +118,7 @@ class ConfirmarRecuperacionUseCaseTest {
         );
 
         assertEquals("VALIDATION_ERROR", exception.code());
-        verify(verificarCelular, never()).confirmar(anyString(), any(), anyString());
+        verify(confirmarVerificacion, never()).confirmar(anyString(), any(), anyString());
     }
 
     private Usuario activeUser() {

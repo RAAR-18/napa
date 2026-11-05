@@ -17,6 +17,10 @@ public interface RegistrarCuentaPort {
             String ipAddress
     );
 
-    record RegistroResultado(UUID usuarioId, String estado) {
+    record RegistroResultado(UUID usuarioId, String estado, VerificacionInfo verificacion) {
+    }
+
+    /** Si el envío falló, estado es FALLIDO y la cuenta se conserva: el usuario puede reenviar. */
+    record VerificacionInfo(UUID mensajeId, String canal, long reenvioDisponibleEn, String estado) {
     }
 }

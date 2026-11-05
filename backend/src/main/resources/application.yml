@@ -44,3 +44,7 @@ napa:
       phone: ${NAPA_ADMIN_PHONE:}
       email: ${NAPA_ADMIN_EMAIL:}
       password: ${NAPA_ADMIN_PASSWORD:}
+
+  verification:
+    provider: ${NAPA_VERIFICATION_PROVIDER:unavailable}   # unavailable | console | twilio (pendiente)
+    console-code: ${NAPA_VERIFICATION_CONSOLE_CODE:123456}

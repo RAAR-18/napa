@@ -2,15 +2,15 @@ package co.edu.napa.cuentas.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.AuthTokens;
 import co.edu.napa.cuentas.application.ports.in.ConfirmarRecuperacionPort;
+import co.edu.napa.cuentas.application.ports.in.ConfirmarVerificacionPort;
 import co.edu.napa.cuentas.application.ports.out.PasswordHashingPort;
 import co.edu.napa.cuentas.application.ports.out.SesionRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.SessionVersionPort;
 import co.edu.napa.cuentas.application.ports.out.TokenServicePort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
-import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.domain.model.Celular;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
-import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
+import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.cuentas.domain.model.PasswordPolicy;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import co.edu.napa.cuentas.domain.model.Sesion;
@@ -30,7 +30,7 @@ public class ConfirmarRecuperacionUseCase implements ConfirmarRecuperacionPort {
     private final UsuarioRepositoryPort usuarios;
     private final SesionRepositoryPort sesiones;
     private final SessionVersionPort sessionVersions;
-    private final VerificarCelularPort verificarCelular;
+    private final ConfirmarVerificacionPort confirmarVerificacion;
     private final PasswordHashingPort passwordHashing;
     private final TokenServicePort tokenService;
     private final Clock clock;
@@ -39,7 +39,7 @@ public class ConfirmarRecuperacionUseCase implements ConfirmarRecuperacionPort {
             UsuarioRepositoryPort usuarios,
             SesionRepositoryPort sesiones,
             SessionVersionPort sessionVersions,
-            VerificarCelularPort verificarCelular,
+            ConfirmarVerificacionPort confirmarVerificacion,
             PasswordHashingPort passwordHashing,
             TokenServicePort tokenService,
             Clock clock
@@ -47,7 +47,7 @@ public class ConfirmarRecuperacionUseCase implements ConfirmarRecuperacionPort {
         this.usuarios = Objects.requireNonNull(usuarios, "usuarios");
         this.sesiones = Objects.requireNonNull(sesiones, "sesiones");
         this.sessionVersions = Objects.requireNonNull(sessionVersions, "sessionVersions");
-        this.verificarCelular = Objects.requireNonNull(verificarCelular, "verificarCelular");
+        this.confirmarVerificacion = Objects.requireNonNull(confirmarVerificacion, "confirmarVerificacion");
         this.passwordHashing = Objects.requireNonNull(passwordHashing, "passwordHashing");
         this.tokenService = Objects.requireNonNull(tokenService, "tokenService");
         this.clock = Objects.requireNonNull(clock, "clock");
@@ -59,9 +59,7 @@ public class ConfirmarRecuperacionUseCase implements ConfirmarRecuperacionPort {
         String celular = Celular.desde(celularInput).valor();
         PasswordPolicy.validar(passwordNueva);
         Sesion.validarDeviceId(deviceId);
-        ResultadoOtp.exigirAprobado(
-                verificarCelular.confirmar(celular, EstadoVerificacion.RECUPERACION_CONTRASENA, codigo)
-        );
+        confirmarVerificacion.confirmar(celular, PropositoVerificacion.RECUPERACION, codigo);
         Usuario usuario = usuarios.findByCelular(celular)
                 .filter(cuenta -> cuenta.estado() == EstadoUsuario.ACTIVA)
                 .filter(cuenta -> cuenta.rol() != RolUsuario.ADMINISTRADOR)

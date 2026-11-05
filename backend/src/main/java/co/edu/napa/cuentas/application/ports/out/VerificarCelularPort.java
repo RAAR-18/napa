@@ -1,9 +1,16 @@
 package co.edu.napa.cuentas.application.ports.out;
 
-import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
+import co.edu.napa.cuentas.domain.model.CanalVerificacion;
+import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 
+/** Proveedor que genera, entrega y valida los códigos (Twilio Verify, o el adaptador de consola en desarrollo). */
 public interface VerificarCelularPort {
-    void solicitar(String celular, EstadoVerificacion estado, String ipAddress);
+    /** Pide al proveedor que genere y envíe un código; invalida el anterior del mismo celular y propósito. */
+    EnvioVerificacion iniciar(String celular, PropositoVerificacion proposito, CanalVerificacion canal);
 
-    VerificacionResultado confirmar(String celular, EstadoVerificacion estado, String codigo);
+    /** Devuelve APROBADA, INCORRECTA o VENCIDA. Los intentos y el bloqueo (AGOTADA) los lleva Ñapa. */
+    VerificacionResultado.Estado confirmar(String celular, PropositoVerificacion proposito, String codigo);
+
+    record EnvioVerificacion(String proveedorId) {
+    }
 }
