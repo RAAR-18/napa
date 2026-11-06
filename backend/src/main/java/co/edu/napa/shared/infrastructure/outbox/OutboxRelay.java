@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -47,13 +46,16 @@ public class OutboxRelay {
         this.transactionTemplate = new TransactionTemplate(
                 Objects.requireNonNull(transactionManager, "transactionManager")
         );
-        this.handlers = handlers.stream().collect(Collectors.toUnmodifiableMap(
-                OutboxEventHandler::eventType,
-                Function.identity(),
-                (first, second) -> {
-                    throw new IllegalStateException("Multiple outbox handlers registered for one event type");
-                }
-        ));
+        this.handlers = handlers.stream()
+                .flatMap(handler -> handler.eventTypes().stream()
+                        .map(eventType -> Map.entry(eventType, handler)))
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (first, second) -> {
+                            throw new IllegalStateException("Multiple outbox handlers registered for one event type");
+                        }
+                ));
     }
 
     @Scheduled(fixedDelayString = "${napa.outbox.poll-interval-ms:500}")

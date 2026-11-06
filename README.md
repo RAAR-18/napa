@@ -71,17 +71,18 @@ cd backend
 .\gradlew.bat test
 ```
 
-Para iniciar la API localmente, conserva la base de datos de Compose y ejecuta:
+Para iniciar la API localmente con el adaptador OTP de desarrollo, conserva la base de datos de Compose y ejecuta:
 
 ```powershell
 $env:DATABASE_PASSWORD = "napa_local_dev_only"
 $env:NAPA_JWT_SECRET = "replace-with-at-least-32-random-local-bytes"
-.\gradlew.bat bootRun
+$env:NAPA_OTP_CONSOLE_CODE = "123456"
+.\gradlew.bat bootRun --args="--spring.profiles.active=otp-console"
 ```
 
 El secreto JWT es obligatorio y debe tener al menos 32 bytes. Para crear el administrador inicial, configura una sola vez `NAPA_ADMIN_BOOTSTRAP_ENABLED=true`, `NAPA_ADMIN_NAME`, `NAPA_ADMIN_PHONE` (formato E.164) y `NAPA_ADMIN_PASSWORD` (8–128 caracteres). El bootstrap se marca como completado en la base de datos; no vuelvas a habilitarlo para reemplazar la cuenta.
 
-La integración de entrega OTP con Twilio está diferida hasta aprobar presupuesto. Mientras no exista un proveedor de verificación configurado, las rutas de verificación responden `503`; no se escribe ni registra ningún código OTP.
+El adaptador `otp-console` no envía ni registra el código; solo valida el valor configurado (`123456` en el ejemplo) y guarda temporalmente en Redis el estado de intentos (10 minutos, máximo 5). El límite de solicitudes se aplica por celular y por IP (1 por minuto, 5 por hora). Este perfil es exclusivo para desarrollo/pruebas: no lo actives en producción. Sin este perfil, las rutas de verificación responden `503` mientras Twilio siga deshabilitado.
 
 Para habilitar el cálculo de rutas, configura una clave de OpenRouteService con Routes API habilitada:
 
@@ -89,14 +90,33 @@ Para habilitar el cálculo de rutas, configura una clave de OpenRouteService con
 $env:ORS_API_KEY = "tu-clave-local"
 ```
 
-En otra terminal, prepara y valida la app móvil:
+El envío push con Firebase Cloud Messaging está desactivado por defecto. Para habilitarlo en un entorno local, configura credenciales de Google Application Default Credentials fuera del repositorio y activa el adapter:
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS = "C:\ruta\fuera-del-repo\firebase-service-account.json"
+$env:NAPA_NOTIFICATIONS_FCM_ENABLED = "true"
+```
+
+En otra terminal, prepara e inicia la app móvil:
 
 ```powershell
 cd frontend
 npm ci
+npm run lint
 npm run typecheck
 npm start
 ```
+
+Escanea el QR con Expo Go. El frontend utiliza la dirección de red del servidor Expo como dirección del backend y asume que ambos dispositivos están en la misma red Wi-Fi. Si usas un túnel de Expo, un emulador o la detección automática no funciona, configura la IP local del computador antes de arrancar Expo:
+
+```powershell
+$env:EXPO_PUBLIC_API_URL = "http://192.168.1.25:8080"
+npm start
+```
+
+Reemplaza `192.168.1.25` por la IPv4 del computador en tu red local. No uses `localhost` en un teléfono físico: apuntaría al propio teléfono. El backend debe estar ejecutándose en el puerto `8080`.
+
+La app incluye registro (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), verificación del celular, inicio/cierre de sesión, recuperación y cambio de contraseña. En el perfil `otp-console`, ingresa en la pantalla de verificación el código configurado en `NAPA_OTP_CONSOLE_CODE`. Después de iniciar sesión se muestra el perfil; las pantallas funcionales de los demás módulos todavía no están implementadas.
 
 El entorno de Compose usa credenciales exclusivamente locales. No las reutilices en producción.
 

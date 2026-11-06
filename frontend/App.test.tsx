@@ -1,10 +1,10 @@
 import { render } from '@testing-library/react-native';
 
-import App from './App';
+import WelcomeContent from './src/components/WelcomeContent';
 
-describe('App', () => {
+describe('WelcomeContent', () => {
   it('shows the Ñapa brand and purpose', async () => {
-    const { getByRole, getByText } = await render(<App />);
+    const { getByRole, getByText } = await render(<WelcomeContent />);
 
     expect(getByRole('header')).toBeTruthy();
     expect(getByText('Ñapa')).toBeTruthy();

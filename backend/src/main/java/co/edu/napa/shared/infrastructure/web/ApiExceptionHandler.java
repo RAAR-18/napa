@@ -130,7 +130,10 @@ public class ApiExceptionHandler {
                 Instant.now(clock)
         );
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(status);
-        if (request.getRequestURI().startsWith("/api/v1/auth/")) {
+        String requestPath = request.getRequestURI();
+        if (requestPath.startsWith("/api/v1/auth/")
+                || requestPath.equals("/api/v1/notificaciones")
+                || requestPath.startsWith("/api/v1/notificaciones/")) {
             builder.header(HttpHeaders.CACHE_CONTROL, "no-store");
         }
         if ("RATE_LIMITED".equals(code)) {
