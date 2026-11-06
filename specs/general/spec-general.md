@@ -101,7 +101,7 @@ Todo listado acepta page (desde 0), size (por defecto 20, máximo 100) y sort=ca
 
 | Endpoint | RF | Filtros |
 | ------ | ------ | ------ |
-| GET /emprendimientos | RF-31 | tipoEntidad (EMPRENDIMIENTO, PRODUCTO, USUARIO), entidadId; se traducen a la relación de destino de la calificación. El administrador añade estado (ACTIVA por defecto; ELIMINADA_AUTOR, ELIMINADA_MODERACION). Los demás roles reciben 400 si envían estado. |
+| GET /emprendimientos | RF-31 | tipoVendedor (AMBULANTE, PUNTO_FIJO), lat, lng, radioMetros, orden=cercania, page, size, sort. lat y lng se envían juntos; radioMetros y orden=cercania requieren coordenadas. |
 | GET /emprendimientos/{id}/productos | RF-33 | sort por nombre o precio|
 | GET /productos (del vendedor) | RF-55 | estado (DISPONIBLE, AGOTADO) |
 | GET /pedidos (limitado al usuario autenticado) | RF-47, RF-50 | estado, modalidad, reserva (true = con fecha acordada), desde, hasta |

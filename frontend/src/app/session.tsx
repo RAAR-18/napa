@@ -146,6 +146,12 @@ export default function SessionScreen() {
               onPress={() => router.push('/emprendimiento')}
             />
           ) : null}
+          {session.rol === 'CLIENTE' ? (
+            <PrimaryButton
+              title="Explorar emprendimientos"
+              onPress={() => router.push('/emprendimientos')}
+            />
+          ) : null}
         </>
       ) : null}
       <ErrorBanner message={error} />

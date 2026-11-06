@@ -2,8 +2,14 @@ package co.edu.napa.emprendimientos.infrastructure.adapters.in.web;
 
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import co.edu.napa.emprendimientos.application.ports.in.CrearEmprendimientoPort;
+import co.edu.napa.emprendimientos.application.ports.in.ListarEmprendimientosPort;
+import co.edu.napa.emprendimientos.application.ports.out.CampoOrdenEmprendimientos;
+import co.edu.napa.emprendimientos.application.ports.out.DireccionOrdenEmprendimientos;
+import co.edu.napa.emprendimientos.application.ports.out.FiltroEmprendimientos;
 import co.edu.napa.emprendimientos.application.usecase.CrearEmprendimientoCommand;
 import co.edu.napa.emprendimientos.application.usecase.CrearEmprendimientoResult;
+import co.edu.napa.emprendimientos.application.usecase.EmprendimientosPagina;
+import co.edu.napa.emprendimientos.application.usecase.ListarEmprendimientosQuery;
 import co.edu.napa.emprendimientos.domain.model.CategoriaEmprendimiento;
 import co.edu.napa.emprendimientos.domain.model.Emprendimiento;
 import co.edu.napa.emprendimientos.domain.model.EstadoEmprendimiento;
@@ -50,12 +56,77 @@ class EmprendimientoControllerTest {
     private static final Instant NOW = Instant.parse("2026-10-21T12:00:00Z");
 
     @Mock private CrearEmprendimientoPort crearEmprendimiento;
+    @Mock private ListarEmprendimientosPort listarEmprendimientos;
 
     private EmprendimientoController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new EmprendimientoController(crearEmprendimiento);
+        controller = new EmprendimientoController(crearEmprendimiento, listarEmprendimientos);
+    }
+
+    @Test
+    void parsesListingFiltersAndReturnsThePagedResult() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addParameter("tipoVendedor", "AMBULANTE");
+        request.addParameter("lat", "11.24");
+        request.addParameter("lng", "-74.21");
+        request.addParameter("radioMetros", "2000");
+        request.addParameter("orden", "cercania");
+        request.addParameter("page", "1");
+        request.addParameter("size", "10");
+        EmprendimientosPagina page = new EmprendimientosPagina(List.of(), 1, 10, 0);
+        when(listarEmprendimientos.listar(any())).thenReturn(page);
+
+        var response = controller.listar(request);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(page, response.getBody());
+        verify(listarEmprendimientos).listar(new ListarEmprendimientosQuery(
+                new FiltroEmprendimientos(
+                        co.edu.napa.emprendimientos.domain.model.TipoVendedor.AMBULANTE,
+                        11.24,
+                        -74.21,
+                        2000,
+                        true,
+                        CampoOrdenEmprendimientos.CREATED_AT,
+                        DireccionOrdenEmprendimientos.DESC
+                ),
+                1,
+                10
+        ));
+    }
+
+    @Test
+    void rejectsUnknownListingFilters() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addParameter("tipoEntidad", "EMPRENDIMIENTO");
+
+        DomainException exception = assertThrows(DomainException.class, () -> controller.listar(request));
+
+        assertEquals("VALIDATION_ERROR", exception.code());
+        verify(listarEmprendimientos, never()).listar(any());
+    }
+
+    @Test
+    void rejectsMalformedListingNumbersAndUnsupportedOrdering() {
+        MockHttpServletRequest malformedNumber = new MockHttpServletRequest();
+        malformedNumber.addParameter("lat", "norte");
+        DomainException numberException = assertThrows(
+                DomainException.class,
+                () -> controller.listar(malformedNumber)
+        );
+        assertEquals("VALIDATION_ERROR", numberException.code());
+
+        MockHttpServletRequest invalidOrder = new MockHttpServletRequest();
+        invalidOrder.addParameter("orden", "popularidad");
+        DomainException orderException = assertThrows(
+                DomainException.class,
+                () -> controller.listar(invalidOrder)
+        );
+        assertEquals("VALIDATION_ERROR", orderException.code());
+
+        verify(listarEmprendimientos, never()).listar(any());
     }
 
     @Test
@@ -176,7 +247,7 @@ class EmprendimientoControllerTest {
             context.registerBean(CrearEmprendimientoPort.class, () -> crearEmprendimiento);
             context.registerBean(
                     EmprendimientoController.class,
-                    () -> new EmprendimientoController(crearEmprendimiento)
+                    () -> new EmprendimientoController(crearEmprendimiento, listarEmprendimientos)
             );
             context.register(MethodSecurityTestConfiguration.class);
             context.refresh();
@@ -206,6 +277,34 @@ class EmprendimientoControllerTest {
             SecurityContextHolder.clearContext();
         }
         verify(crearEmprendimiento, never()).crear(any());
+    }
+
+    @Test
+    void listingRequiresClientRoleBeforeInvokingTheUseCase() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(CrearEmprendimientoPort.class, () -> crearEmprendimiento);
+            context.registerBean(ListarEmprendimientosPort.class, () -> listarEmprendimientos);
+            context.registerBean(
+                    EmprendimientoController.class,
+                    () -> new EmprendimientoController(crearEmprendimiento, listarEmprendimientos)
+            );
+            context.register(MethodSecurityTestConfiguration.class);
+            context.refresh();
+            SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                    USER_ID.toString(),
+                    "unused",
+                    List.of(new SimpleGrantedAuthority("ROLE_VENDEDOR_AMBULANTE"))
+            ));
+
+            EmprendimientoController securedController = context.getBean(EmprendimientoController.class);
+            assertThrows(
+                    AccessDeniedException.class,
+                    () -> securedController.listar(new MockHttpServletRequest())
+            );
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+        verify(listarEmprendimientos, never()).listar(any());
     }
 
     private Jwt jwt(RolUsuario rol) {

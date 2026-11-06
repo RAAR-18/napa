@@ -1,9 +1,17 @@
 package co.edu.napa.emprendimientos.infrastructure.persistence;
 
 import co.edu.napa.emprendimientos.application.ports.out.EmprendimientoRepositoryPort;
+import co.edu.napa.emprendimientos.application.ports.in.ListarEmprendimientosPort;
+import co.edu.napa.emprendimientos.application.ports.out.CampoOrdenEmprendimientos;
+import co.edu.napa.emprendimientos.application.ports.out.DireccionOrdenEmprendimientos;
+import co.edu.napa.emprendimientos.application.ports.out.FiltroEmprendimientos;
+import co.edu.napa.emprendimientos.application.usecase.ListarEmprendimientosQuery;
 import co.edu.napa.emprendimientos.domain.model.CategoriaEmprendimiento;
 import co.edu.napa.emprendimientos.domain.model.Emprendimiento;
 import co.edu.napa.emprendimientos.domain.model.EstadoEmprendimiento;
+import co.edu.napa.emprendimientos.domain.model.TipoVendedor;
+import co.edu.napa.cuentas.domain.model.EstadoUsuario;
+import co.edu.napa.cuentas.domain.model.RolUsuario;
 import co.edu.napa.shared.application.ports.out.UbicacionRepositoryPort;
 import co.edu.napa.shared.domain.DomainException;
 import co.edu.napa.shared.domain.geo.Ubicacion;
@@ -54,6 +62,9 @@ class EmprendimientoPersistenceIntegrationTest {
 
     @Autowired
     private EmprendimientoRepositoryPort emprendimientos;
+
+    @Autowired
+    private ListarEmprendimientosPort listarEmprendimientos;
 
     @Autowired
     private UbicacionRepositoryPort ubicaciones;
@@ -138,6 +149,75 @@ class EmprendimientoPersistenceIntegrationTest {
         }
     }
 
+    @Test
+    void listingExcludesInactiveAccountsAndPaginatesActiveBusinesses() {
+        UUID visibleUser = insertActiveSeller(RolUsuario.VENDEDOR_PUNTO_FIJO, EstadoUsuario.ACTIVA);
+        UUID hiddenUser = insertActiveSeller(
+                RolUsuario.VENDEDOR_PUNTO_FIJO,
+                EstadoUsuario.PENDIENTE_VERIFICACION
+        );
+        UUID inactiveBusinessUser = insertActiveSeller(
+                RolUsuario.VENDEDOR_PUNTO_FIJO,
+                EstadoUsuario.ACTIVA
+        );
+        UUID deletedBusinessUser = insertActiveSeller(
+                RolUsuario.VENDEDOR_PUNTO_FIJO,
+                EstadoUsuario.ACTIVA
+        );
+        Ubicacion visibleLocation = saveLocation(Instant.now(), 11.2408, -74.211);
+        Ubicacion hiddenLocation = saveLocation(Instant.now(), 11.241, -74.211);
+        Ubicacion inactiveBusinessLocation = saveLocation(Instant.now(), 11.242, -74.211);
+        Ubicacion deletedBusinessLocation = saveLocation(Instant.now(), 11.243, -74.211);
+        emprendimientos.save(business(visibleUser, visibleLocation.id(), "Visible"));
+        emprendimientos.save(business(hiddenUser, hiddenLocation.id(), "Oculto"));
+        emprendimientos.save(business(
+                inactiveBusinessUser,
+                inactiveBusinessLocation.id(),
+                "Inactivo",
+                EstadoEmprendimiento.INACTIVO
+        ));
+        emprendimientos.save(business(
+                deletedBusinessUser,
+                deletedBusinessLocation.id(),
+                "Eliminado",
+                EstadoEmprendimiento.ELIMINADO
+        ));
+        FiltroEmprendimientos filter = filter(TipoVendedor.PUNTO_FIJO, null, null, null, false);
+
+        var firstPage = listarEmprendimientos.listar(new ListarEmprendimientosQuery(filter, 0, 1));
+        var secondPage = listarEmprendimientos.listar(new ListarEmprendimientosQuery(filter, 1, 1));
+
+        assertEquals(1, firstPage.totalElements());
+        assertEquals(1, firstPage.content().size());
+        assertEquals("Visible", firstPage.content().getFirst().nombre());
+        assertEquals(0, secondPage.content().size());
+        assertEquals(1, secondPage.totalElements());
+    }
+
+    @Test
+    void filtersByPostgisRadiusAndOrdersByDistance() {
+        UUID nearUser = insertActiveSeller(RolUsuario.VENDEDOR_PUNTO_FIJO, EstadoUsuario.ACTIVA);
+        UUID farUser = insertActiveSeller(RolUsuario.VENDEDOR_PUNTO_FIJO, EstadoUsuario.ACTIVA);
+        Ubicacion nearLocation = saveLocation(Instant.now(), 4.711, -74.0721);
+        Ubicacion farLocation = saveLocation(Instant.now(), 4.8, -74.1);
+        emprendimientos.save(business(nearUser, nearLocation.id(), "Cercano"));
+        emprendimientos.save(business(farUser, farLocation.id(), "Lejano"));
+        FiltroEmprendimientos filter = filter(
+                TipoVendedor.PUNTO_FIJO,
+                4.711,
+                -74.0721,
+                2_000,
+                true
+        );
+
+        var page = listarEmprendimientos.listar(new ListarEmprendimientosQuery(filter, 0, 20));
+
+        assertEquals(1, page.totalElements());
+        assertEquals(1, page.content().size());
+        assertEquals("Cercano", page.content().getFirst().nombre());
+        assertTrue(page.content().getFirst().distanciaMetros() < 1);
+    }
+
     private boolean tryCreate(
             UUID userId,
             Ubicacion location,
@@ -160,6 +240,10 @@ class EmprendimientoPersistenceIntegrationTest {
     }
 
     private UUID insertActiveSeller() {
+        return insertActiveSeller(RolUsuario.VENDEDOR_AMBULANTE, EstadoUsuario.ACTIVA);
+    }
+
+    private UUID insertActiveSeller(RolUsuario role, EstadoUsuario status) {
         UUID userId = UUID.randomUUID();
         Instant now = Instant.now();
         String celular = "+573" + String.format(
@@ -171,10 +255,12 @@ class EmprendimientoPersistenceIntegrationTest {
                 INSERT INTO usuario (
                     id, nombre, celular, password_hash, rol, estado,
                     celular_verificado_at, created_at, updated_at
-                ) VALUES (?, 'Vendedor', ?, 'hash', 'VENDEDOR_AMBULANTE', 'ACTIVA', ?, ?, ?)
+                ) VALUES (?, 'Vendedor', ?, 'hash', ?, ?, ?, ?, ?)
                 """,
                 userId,
                 celular,
+                role.name(),
+                status.name(),
                 Timestamp.from(now),
                 Timestamp.from(now),
                 Timestamp.from(now)
@@ -183,10 +269,14 @@ class EmprendimientoPersistenceIntegrationTest {
     }
 
     private Ubicacion saveLocation(Instant now) {
+        return saveLocation(now, 11.2408, -74.211);
+    }
+
+    private Ubicacion saveLocation(Instant now, double latitude, double longitude) {
         return ubicaciones.save(new Ubicacion(
                 UUID.randomUUID(),
-                11.2408,
-                -74.211,
+                latitude,
+                longitude,
                 null,
                 "Zona de venta",
                 now,
@@ -195,19 +285,50 @@ class EmprendimientoPersistenceIntegrationTest {
     }
 
     private Emprendimiento business(UUID userId, UUID locationId) {
+        return business(userId, locationId, "Frutas Doña Rosa");
+    }
+
+    private Emprendimiento business(UUID userId, UUID locationId, String name) {
+        return business(userId, locationId, name, EstadoEmprendimiento.ACTIVO);
+    }
+
+    private Emprendimiento business(
+            UUID userId,
+            UUID locationId,
+            String name,
+            EstadoEmprendimiento state
+    ) {
         Instant now = Instant.now();
         return new Emprendimiento(
                 UUID.randomUUID(),
                 userId,
                 locationId,
-                "Frutas Doña Rosa",
+                name,
                 CategoriaEmprendimiento.FRUTAS_VERDURAS,
                 "Frutas frescas del día",
                 LocalTime.of(6, 0),
                 LocalTime.of(18, 0),
-                EstadoEmprendimiento.ACTIVO,
+                state,
                 now,
                 now
+        );
+    }
+
+    private FiltroEmprendimientos filter(
+            TipoVendedor sellerType,
+            Double latitude,
+            Double longitude,
+            Integer radius,
+            boolean nearest
+    ) {
+        return new FiltroEmprendimientos(
+                sellerType,
+                latitude,
+                longitude,
+                radius,
+                nearest,
+                CampoOrdenEmprendimientos.CREATED_AT,
+                DireccionOrdenEmprendimientos.DESC
         );
     }
 }

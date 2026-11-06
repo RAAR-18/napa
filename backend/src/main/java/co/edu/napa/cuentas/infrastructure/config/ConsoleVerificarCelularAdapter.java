@@ -8,13 +8,11 @@ import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.shared.domain.DomainException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,8 +21,6 @@ import java.time.Duration;
 import java.util.HexFormat;
 import java.util.List;
 
-@Component
-@Profile("otp-console")
 public class ConsoleVerificarCelularAdapter implements VerificarCelularPort {
     private static final Logger log = LoggerFactory.getLogger(ConsoleVerificarCelularAdapter.class);
     private static final int MAX_ATTEMPTS = 5;
@@ -66,15 +62,27 @@ public class ConsoleVerificarCelularAdapter implements VerificarCelularPort {
         }
     }
 
+    @Override
     public void solicitar(String celular, Enum<?> estado, String ipAddress) {
-        PropositoVerificacion proposito = estado instanceof PropositoVerificacion p
-                ? p
-                : PropositoVerificacion.valueOf(((EstadoVerificacion) estado).name());
+        PropositoVerificacion proposito = proposito(estado);
         iniciar(celular, proposito, CanalVerificacion.WHATSAPP);
     }
 
     @Override
     public VerificacionResultado.Estado confirmar(String celular, PropositoVerificacion proposito, String codigo) {
+        return confirmarConResultado(celular, proposito, codigo).estado();
+    }
+
+    @Override
+    public VerificacionResultado confirmar(String celular, Enum<?> estado, String codigo) {
+        return confirmarConResultado(celular, proposito(estado), codigo);
+    }
+
+    private VerificacionResultado confirmarConResultado(
+            String celular,
+            PropositoVerificacion proposito,
+            String codigo
+    ) {
         String key = key(celular, proposito);
         if (codigo != null && MessageDigest.isEqual(
                 expectedCode,
@@ -82,9 +90,12 @@ public class ConsoleVerificarCelularAdapter implements VerificarCelularPort {
         )) {
             try {
                 Boolean consumed = redisTemplate.delete(key);
-                return Boolean.TRUE.equals(consumed)
-                        ? VerificacionResultado.Estado.APROBADA
-                        : VerificacionResultado.Estado.VENCIDA;
+                return new VerificacionResultado(
+                        Boolean.TRUE.equals(consumed)
+                                ? VerificacionResultado.Estado.APROBADA
+                                : VerificacionResultado.Estado.VENCIDA,
+                        0
+                );
             } catch (DataAccessException exception) {
                 throw unavailable(exception);
             }
@@ -100,15 +111,21 @@ public class ConsoleVerificarCelularAdapter implements VerificarCelularPort {
                 throw unavailable(new IllegalStateException("Redis returned no verification attempt result"));
             }
             if (attemptsRemaining < 0) {
-                return VerificacionResultado.Estado.VENCIDA;
+                return new VerificacionResultado(VerificacionResultado.Estado.VENCIDA, 0);
             }
             if (attemptsRemaining == 0) {
-                return VerificacionResultado.Estado.AGOTADA;
+                return new VerificacionResultado(VerificacionResultado.Estado.AGOTADA, 0);
             }
-            return VerificacionResultado.Estado.INCORRECTA;
+            return new VerificacionResultado(VerificacionResultado.Estado.INCORRECTA, attemptsRemaining.intValue());
         } catch (DataAccessException exception) {
             throw unavailable(exception);
         }
+    }
+
+    private PropositoVerificacion proposito(Enum<?> estado) {
+        return estado instanceof PropositoVerificacion p
+                ? p
+                : PropositoVerificacion.valueOf(((EstadoVerificacion) estado).name());
     }
 
     private String key(String celular, PropositoVerificacion proposito) {

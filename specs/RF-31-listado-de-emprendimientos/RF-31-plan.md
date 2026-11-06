@@ -18,7 +18,7 @@ Listado paginado de emprendimientos `ACTIVO` para el cliente, con nombre, catego
 
 ## Estado actual del código
 
-No existe el módulo `emprendimientos` ni la consulta. Existen `ubicacion.punto` con índice GiST (V3) y `TimeConfiguration` en `shared/infrastructure/config`.
+RF-28 implementa el módulo `emprendimientos`, su tabla y endpoint de creación; existen `ubicacion.punto` con índice GiST (V3) y un `Clock` global UTC en `shared/infrastructure/config`. RF-31 ya cuenta con consulta paginada PostGIS, endpoint autenticado de cliente, filtros, pantalla Expo Router, permiso de ubicación bajo demanda y caché SQLite. El cálculo de horario convierte el instante inyectado a `America/Bogota` sin cambiar la zona del reloj global.
 
 ## Actors
 
@@ -168,16 +168,14 @@ backend/src/main/java/co/edu/napa/emprendimientos/
     └── out/persistence/          # consulta PostGIS (ST_DWithin / ST_Distance)
 backend/src/test/java/co/edu/napa/emprendimientos/
 
-frontend/src/app/(cliente)/emprendimientos/index.tsx          # ruta Expo Router: listado
-frontend/src/components/emprendimiento/TarjetaEmprendimiento.tsx
-frontend/src/components/emprendimiento/FiltrosEmprendimientos.tsx
-frontend/src/services/emprendimientos.ts                      # listarEmprendimientos()
-frontend/src/hooks/useLocation.ts                             # permiso y posición del cliente
-frontend/src/database/schema/emprendimientos_cache.ts         # caché de lectura
-frontend/__tests__/emprendimientos/listado.test.tsx
+frontend/src/app/emprendimientos.tsx                           # ruta Expo Router: listado
+frontend/src/lib/emprendimientos.ts                            # servicio y tipos del listado
+frontend/src/lib/emprendimientos-cache.ts                      # caché SQLite de lectura
+frontend/src/app/__tests__/emprendimientos.test.tsx            # filtros, vacío, offline, ubicación
+frontend/src/lib/emprendimientos-cache.test.ts                 # privacidad y validación de caché
 ```
 
-**Structure Decision**: módulo `emprendimientos`. La consulta espacial vive en el adaptador de persistencia; el dominio solo conoce `HorarioAtencion`. La hora actual sale del `Clock` configurado en `TimeConfiguration` (zona America/Bogota) para poder probar `abierto`.
+**Structure Decision**: módulo `emprendimientos`. La consulta espacial vive en el adaptador de persistencia; el dominio solo conoce `HorarioAtencion`. La hora actual sale del `Clock` configurado en `TimeConfiguration` (zona America/Bogota) para poder probar `abierto`. La pantalla reutiliza `OptionButton` compartido y mantiene sus tarjetas y filtros inline; no se crean componentes de presentación triviales.
 
 ## Phase 1: Setup
 
@@ -198,23 +196,23 @@ frontend/__tests__/emprendimientos/listado.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración del listado (activos, paginación, tamaño máximo) en `backend/src/test/java/co/edu/napa/emprendimientos/ListarEmprendimientosIT.java`
-- [ ] T011 [P] [US1] Test de exclusión de inactivos, eliminados y de vendedores con cuenta no activa en `.../emprendimientos/ListarEmprendimientosExclusionIT.java`
-- [ ] T012 [P] [US1] Test de filtro por `tipoVendedor`, `radioMetros` y `orden=cercania` en `.../emprendimientos/ListarEmprendimientosEspacialIT.java`
-- [ ] T019 [P] [US1] Test unitario de `abierto` (horario normal, cruza medianoche, igual a la hora de apertura y de cierre) en `.../emprendimientos/HorarioAtencionTest.java`
-- [ ] T018 [P] [US1] Test de listado vacío y de parámetros inválidos (`400`) en `.../emprendimientos/ListarEmprendimientosVacioIT.java`
-- [ ] T023 [P] [US1] Test de la pantalla (vacío, filtros, caché sin red, permiso denegado) en `frontend/__tests__/emprendimientos/listado.test.tsx`
+- [x] T010 [P] [US1] Test de integración del listado (activos, paginación, tamaño máximo) en `backend/src/test/java/co/edu/napa/emprendimientos/infrastructure/persistence/EmprendimientoPersistenceIntegrationTest.java`
+- [x] T011 [P] [US1] Test de exclusión de inactivos, eliminados y vendedores con cuenta no activa en `EmprendimientoPersistenceIntegrationTest.java`
+- [x] T012 [P] [US1] Test de filtro por `tipoVendedor`, `radioMetros` y `orden=cercania` en `EmprendimientoPersistenceIntegrationTest.java`
+- [x] T019 [P] [US1] Test unitario de `abierto` (incluye medianoche, apertura y cierre) en `backend/src/test/java/co/edu/napa/emprendimientos/domain/model/HorarioAtencionTest.java`
+- [x] T018 [P] [US1] Test de listado vacío y parámetros inválidos (`400`) en los tests de controller y persistencia
+- [x] T023 [P] [US1] Test de pantalla (vacío, filtros, caché sin red, permiso denegado y radio) en `frontend/src/app/__tests__/emprendimientos.test.tsx`
 
 ### Implementation
 
-- [ ] T013 [US1] `ListarEmprendimientosUseCase` en `emprendimientos/application/usecase/`
-- [ ] T014 [US1] `GET /emprendimientos` en `EmprendimientoController`
-- [ ] T015 [US1] DTO de ítem con `abierto` y `distanciaMetros`
-- [ ] T016 [US1] Filtros y validación de parámetros (incluye `400` ante desconocidos)
-- [ ] T017 [US1] Orden por cercanía con `ST_Distance` y radio con `ST_DWithin`
-- [ ] T020 [US1] Servicio `listarEmprendimientos()` con caché SQLite en `frontend/src/services/emprendimientos.ts` y `frontend/src/database/schema/emprendimientos_cache.ts`
-- [ ] T021 [US1] `TarjetaEmprendimiento` y `FiltrosEmprendimientos` en `frontend/src/components/emprendimiento/`
-- [ ] T022 [US1] Pantalla `frontend/src/app/(cliente)/emprendimientos/index.tsx` con scroll paginado, estado vacío y orden por cercanía si hay permiso
+- [x] T013 [US1] `ListarEmprendimientosUseCase` en `backend/src/main/java/co/edu/napa/emprendimientos/application/usecase/`
+- [x] T014 [US1] `GET /emprendimientos` para el rol cliente en `EmprendimientoController`
+- [x] T015 [US1] DTO de ítem con `abierto` y `distanciaMetros`
+- [x] T016 [US1] Filtros y validación de parámetros (incluye `400` ante desconocidos)
+- [x] T017 [US1] Orden por cercanía con `ST_Distance` y radio con `ST_DWithin`
+- [x] T020 [US1] Servicio y caché SQLite en `frontend/src/lib/emprendimientos.ts` y `emprendimientos-cache.ts`
+- [x] T021 [US1] Filtros con `OptionButton` compartido y tarjetas accesibles en la pantalla de listado
+- [x] T022 [US1] Pantalla `frontend/src/app/emprendimientos.tsx` con paginación, estado vacío y orden por cercanía bajo permiso
 - [ ] T024 [US1] Al recibir `404` desde el detalle (RF-32), quitar el emprendimiento de la lista y refrescar
 
 **Checkpoint**: US1 funcional.
@@ -222,8 +220,8 @@ frontend/__tests__/emprendimientos/listado.test.tsx
 ## Phase N: Polish & Cross-Cutting
 
 - [ ] T030 Medir el listado < 3 s y la consulta ≤ 100 ms p95 (SC-001)
-- [ ] T031 Revisar privacidad de la posición del cliente (RNF04)
-- [ ] T032 Actualizar `requerimientos/trazabilidad.md` si cambió algo
+- [x] T031 Revisar privacidad de la posición del cliente (RNF04); la app no guarda coordenadas y elimina distancias antes de persistir la respuesta en caché
+- [x] T032 Revisar trazabilidad: no existe `requerimientos/trazabilidad.md`; se actualizó el catálogo de rutas y filtros en `spec-general.md`
 
 ## Dependencies & Execution Order
 
@@ -246,18 +244,18 @@ frontend/__tests__/emprendimientos/listado.test.tsx
 
 *(Todo debe estar marcado antes de implementar.)*
 
-- [ ] La tabla Spec Coverage no tiene filas vacías
-- [ ] Todas las tareas de implementación y de testing están presentes
-- [ ] La arquitectura es coherente con los módulos existentes (RNF13, RNF25); solo hay `usecase`, sin capa `service` de aplicación
-- [ ] Entidades referenciadas a `spec-general.md` (sin redefinir el modelo); si hubo cambio de esquema, ya está en `spec-general.md`
-- [ ] Contratos de API con path/query params, headers, códigos HTTP exitosos y de error, y matriz de permisos
-- [ ] Eventos emitidos documentados en `eventos.md`; ningún listener planificado en este plan
-- [ ] Actores (comprador, vendedor, domiciliario, administrador) identificados
-- [ ] Errores y casos borde tienen comportamiento definido
-- [ ] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
-- [ ] Dependencias y librerías identificadas
-- [ ] Cada tarea es granular y nombra el archivo que toca
-- [ ] No se agregó comportamiento que no esté en la spec
+- [x] La tabla Spec Coverage no tiene filas vacías
+- [x] Todas las tareas de implementación y de testing están presentes
+- [x] La arquitectura es coherente con los módulos existentes (RNF13, RNF25); solo hay `usecase`, sin capa `service` de aplicación
+- [x] Entidades referenciadas a `spec-general.md` (sin redefinir el modelo); no se requiere cambio de esquema
+- [x] Contratos de API con path/query params, headers, códigos HTTP exitosos y de error, y matriz de permisos
+- [x] Eventos emitidos documentados en `eventos.md`; no hay listeners planificados
+- [x] Actores (comprador, vendedor, domiciliario, administrador) identificados
+- [x] Errores y casos borde tienen comportamiento definido
+- [x] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
+- [x] Dependencias identificadas: `expo-location` para pedir la posición y `expo-sqlite` para caché de lectura
+- [x] Cada tarea es granular y nombra el archivo que toca
+- [x] No se agregó comportamiento que no esté en la spec
 
 ## Notes
 

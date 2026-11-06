@@ -25,7 +25,14 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Ñapa usa tu ubicación solo para ordenar los emprendimientos cercanos."
+        }
+      ],
+      "expo-sqlite"
     ]
   }
 }

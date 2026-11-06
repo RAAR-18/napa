@@ -1,5 +1,9 @@
 import { jsonHeaders, requestJson } from './api';
-import { createEmprendimiento, type Emprendimiento } from './emprendimientos';
+import {
+  createEmprendimiento,
+  listEmprendimientos,
+  type Emprendimiento,
+} from './emprendimientos';
 import type { StoredSession } from './auth';
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'idempotency-id' }));
@@ -56,6 +60,39 @@ describe('createEmprendimiento', () => {
         headers: { Authorization: 'Bearer access' },
         body: JSON.stringify(input),
       }),
+    );
+  });
+});
+
+describe('listEmprendimientos', () => {
+  it('sends paging, seller, and proximity filters with the client session', async () => {
+    const session: StoredSession = {
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      expiresIn: 900,
+      expiresAt: Date.now() + 900_000,
+      tokenType: 'Bearer',
+      rol: 'CLIENTE',
+    };
+    const page = { content: [], page: 1, size: 20, totalElements: 0 };
+    jest.mocked(requestJson).mockResolvedValue(page);
+
+    await expect(
+      listEmprendimientos(session, {
+        page: 1,
+        size: 20,
+        tipoVendedor: 'AMBULANTE',
+        lat: 4.711,
+        lng: -74.0721,
+        radioMetros: 2_000,
+        cercania: true,
+      }),
+    ).resolves.toEqual(page);
+
+    expect(jsonHeaders).toHaveBeenCalledWith({ accessToken: 'access' });
+    expect(requestJson).toHaveBeenCalledWith(
+      '/api/v1/emprendimientos?page=1&size=20&tipoVendedor=AMBULANTE&lat=4.711&lng=-74.0721&radioMetros=2000&orden=cercania',
+      expect.objectContaining({ method: 'GET' }),
     );
   });
 });
