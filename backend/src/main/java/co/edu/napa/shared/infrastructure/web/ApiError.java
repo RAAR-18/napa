@@ -14,8 +14,16 @@ public record ApiError(
     public ApiError {
         Objects.requireNonNull(code, "code");
         Objects.requireNonNull(message, "message");
-        details = Map.copyOf(Objects.requireNonNull(details, "details"));
+        details = details == null ? Map.of() : Map.copyOf(details);
         Objects.requireNonNull(traceId, "traceId");
         Objects.requireNonNull(timestamp, "timestamp");
+    }
+
+    public ApiError(String code, String message, Map<String, Object> details, String traceId) {
+        this(code, message, details, traceId, Instant.now());
+    }
+
+    public ApiError(String code, String message, String traceId) {
+        this(code, message, Map.of(), traceId, Instant.now());
     }
 }

@@ -126,7 +126,7 @@ Como usuario que no recibió el código, quiero pedir uno nuevo o recibirlo por 
 - **FR-001**: El sistema DEBE solicitar a Twilio Verify un código de 6 dígitos de un solo uso con vigencia limitada (no mayor a 10 minutos); el proveedor lo genera y lo entrega.
 - **FR-002**: El sistema DEBE enviar el código por WhatsApp con una plantilla aprobada y ofrecer SMS como respaldo si el envío falla.
 - **FR-003**: El sistema DEBE permitir hasta 5 intentos por código; el proveedor valida el código y Ñapa lleva el contador de intentos e invalida la verificación al agotarlos.
-- **FR-004**: El sistema DEBE limitar los envíos por celular (1 por minuto, 5 por hora) y por IP, respondiendo `429` con `Retry-After`.
+- **FR-004**: Para controlar el consumo del proveedor y reducir abusos, el sistema DEBE limitar los envíos a 1 por minuto y 5 por hora por celular, y a 20 por hora por IP, respondiendo `429` con `Retry-After`. Estos son límites internos por identificador, no una garantía de mantenerse dentro de una tarifa gratuita del proveedor; F022 debe validar las cuotas y condiciones vigentes para Colombia y fijar un tope mensual global con alerta antes de habilitar envíos reales.
 - **FR-005**: El sistema DEBE invalidar el código anterior cuando se genera uno nuevo para el mismo celular y propósito.
 - **FR-006**: El sistema DEBE responder igual ante celulares registrados y no registrados en la recuperación de contraseña.
 - **FR-007**: El sistema DEBE activar la cuenta e iniciar sesión al verificarse el código de registro (RF-07 FR-004).
