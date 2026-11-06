@@ -9,6 +9,7 @@ public enum TipoNotificacion {
     PAGO_PEDIDO_CONFIRMADO("pagos.pago-pedido-confirmado"),
     ENTREGA_DIRECTA_INICIADA("entregas.entrega-directa-iniciada"),
     PEDIDO_LISTO_PARA_RECOGER("pedidos.pedido-listo-para-recoger"),
+    PEDIDO_ENTREGADO("pedidos.pedido-entregado"),
     DOMICILIO_PUBLICADO("domicilios.domicilio-publicado"),
     DOMICILIO_ASIGNADO("domicilios.domicilio-asignado"),
     DOMICILIO_RECOGIDO("domicilios.domicilio-recogido"),
@@ -17,7 +18,8 @@ public enum TipoNotificacion {
     PAGO_TARIFA_REGISTRADO("pagos.pago-tarifa-registrado"),
     DOMICILIO_CANCELADO("domicilios.domicilio-cancelado"),
     REPORTE_RESUELTO("reportes.reporte-resuelto"),
-    COMENTARIO_MODERADO("calificaciones.comentario-moderado");
+    COMENTARIO_MODERADO("calificaciones.comentario-moderado"),
+    REPORTE_CREADO("reportes.reporte-creado");
 
     private final String eventType;
 

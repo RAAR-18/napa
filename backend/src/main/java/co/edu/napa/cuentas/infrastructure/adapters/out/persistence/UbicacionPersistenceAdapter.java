@@ -1,7 +1,7 @@
-package co.edu.napa.cuentas.infrastructure.persistence;
+package co.edu.napa.cuentas.infrastructure.adapters.out.persistence;
 
-import co.edu.napa.cuentas.application.ports.out.UbicacionRepositoryPort;
-import co.edu.napa.cuentas.domain.model.Ubicacion;
+import co.edu.napa.shared.application.ports.out.UbicacionRepositoryPort;
+import co.edu.napa.shared.domain.geo.Ubicacion;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;

@@ -8,5 +8,7 @@ public interface NotificationAudiencePort {
 
     List<UUID> findActiveCouriers();
 
+    List<UUID> findActiveAdministrators();
+
     List<String> findPushTokens(UUID usuarioId);
 }

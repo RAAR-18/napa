@@ -11,7 +11,7 @@ import co.edu.napa.cuentas.application.ports.out.VerificationRateLimitPort;
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
-import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
+import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import co.edu.napa.cuentas.domain.model.Sesion;
 import co.edu.napa.cuentas.domain.model.Usuario;
@@ -119,16 +119,16 @@ public class AuthUseCase {
                 now
         );
         usuarios.save(usuario);
-        verificarCelular.solicitar(celular, EstadoVerificacion.REGISTRO, ipAddress);
+        verificarCelular.solicitar(celular, co.edu.napa.cuentas.domain.model.EstadoVerificacion.REGISTRO, ipAddress);
         return new RegistroResultado(usuario.id(), usuario.estado().name());
     }
 
-    public void solicitarVerificacion(String celularInput, EstadoVerificacion estado, String ipAddress) {
+    public void solicitarVerificacion(String celularInput, PropositoVerificacion proposito, String ipAddress) {
         String celular = normalizarCelular(celularInput);
-        if (estado == null) {
+        if (proposito == null) {
             throw new DomainException("VALIDATION_ERROR", "El propósito de la verificación es obligatorio.");
         }
-        if (estado == EstadoVerificacion.REGISTRO) {
+        if (proposito == PropositoVerificacion.REGISTRO) {
             Usuario usuario = usuarios.findByCelular(celular)
                     .orElseThrow(() -> new DomainException("NOT_FOUND", "No se encontró una cuenta pendiente."));
             if (usuario.estado() != EstadoUsuario.PENDIENTE_VERIFICACION) {
@@ -136,7 +136,7 @@ public class AuthUseCase {
             }
         }
         verificationRateLimits.checkAndRecord(celular, ipAddress);
-        verificarCelular.solicitar(celular, estado, ipAddress);
+        verificarCelular.solicitar(celular, co.edu.napa.cuentas.domain.model.EstadoVerificacion.valueOf(proposito.name()), ipAddress);
     }
 
     @Transactional
@@ -154,11 +154,12 @@ public class AuthUseCase {
         }
         VerificacionResultado resultado = verificarCelular.confirmar(
                 celular,
-                EstadoVerificacion.REGISTRO,
+                co.edu.napa.cuentas.domain.model.EstadoVerificacion.REGISTRO,
                 codigo
         );
-        if (resultado.estado() != VerificacionResultado.Estado.APROBADA) {
-            String message = switch (resultado.estado()) {
+        VerificacionResultado.Estado estado = resultado.estado();
+        if (estado != VerificacionResultado.Estado.APROBADA) {
+            String message = switch (estado) {
                 case VENCIDA -> "El código venció. Solicita uno nuevo.";
                 case AGOTADA -> "Se agotaron los intentos. Solicita un código nuevo.";
                 case INCORRECTA -> "El código no es válido.";
@@ -264,7 +265,7 @@ public class AuthUseCase {
         validarPassword(newPassword);
         VerificacionResultado resultado = verificarCelular.confirmar(
                 celular,
-                EstadoVerificacion.RECUPERACION_CONTRASENA,
+                co.edu.napa.cuentas.domain.model.EstadoVerificacion.RECUPERACION,
                 codigo
         );
         if (resultado.estado() != VerificacionResultado.Estado.APROBADA) {

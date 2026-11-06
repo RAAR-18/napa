@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.domain.model;
+package co.edu.napa.shared.domain.geo;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -21,8 +21,8 @@ public record Ubicacion(
         if (!Double.isFinite(longitud) || longitud < -180 || longitud > 180) {
             throw new IllegalArgumentException("longitud must be between -180 and 180");
         }
-        if (direccion == null || direccion.isBlank() || direccion.length() > 300) {
-            throw new IllegalArgumentException("direccion must contain between 1 and 300 characters");
+        if (direccion != null && (direccion.isBlank() || direccion.length() > 300)) {
+            throw new IllegalArgumentException("direccion must be null or contain between 1 and 300 characters");
         }
         if (referencia != null && referencia.length() > 300) {
             throw new IllegalArgumentException("referencia cannot exceed 300 characters");

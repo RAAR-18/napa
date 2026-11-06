@@ -18,7 +18,7 @@ El domiciliario descarta un domicilio `DISPONIBLE` con `POST /domicilios/{id}/re
 
 ## Estado actual del código
 
-La tabla `domicilio_rechazo` (clave compuesta domiciliario + domicilio) la crea RF-14 (V10) y RF-16 la usa para excluir los rechazados. RF-18 oculta el botón "Rechazar" hasta que exista este endpoint.
+La tabla `domicilio_rechazo` (clave compuesta domiciliario + domicilio) la crea RF-14 (V11) y RF-16 la usa para excluir los rechazados. RF-18 oculta el botón "Rechazar" hasta que exista este endpoint.
 
 ## Actors
 

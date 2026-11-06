@@ -126,16 +126,27 @@ export default function SessionScreen() {
         description="Tu cuenta ya está conectada con el servicio."
       />
       {session ? (
-        <View style={styles.card}>
-          <Text style={styles.label}>Perfil</Text>
-          <Text style={styles.role}>
-            {roleNames[session.rol] ?? session.rol}
-          </Text>
-          <Text style={styles.note}>
-            La aplicación ya puede autenticarse con la API. Las demás funciones
-            se irán habilitando en las próximas pantallas.
-          </Text>
-        </View>
+        <>
+          <View style={styles.card}>
+            <Text style={styles.label}>Perfil</Text>
+            <Text style={styles.role}>
+              {roleNames[session.rol] ?? session.rol}
+            </Text>
+            <Text style={styles.note}>
+              {session.rol === 'VENDEDOR_AMBULANTE' ||
+              session.rol === 'VENDEDOR_PUNTO_FIJO'
+                ? 'Publica tu negocio para que los clientes puedan encontrarte.'
+                : 'Tu cuenta ya está conectada con el servicio.'}
+            </Text>
+          </View>
+          {session.rol === 'VENDEDOR_AMBULANTE' ||
+          session.rol === 'VENDEDOR_PUNTO_FIJO' ? (
+            <PrimaryButton
+              title="Crear mi emprendimiento"
+              onPress={() => router.push('/emprendimiento')}
+            />
+          ) : null}
+        </>
       ) : null}
       <ErrorBanner message={error} />
       {error ? (

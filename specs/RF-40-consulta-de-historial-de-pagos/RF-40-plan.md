@@ -209,7 +209,7 @@ frontend/__tests__/pagos/historial.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Columnas `comprador_id`, `vendedor_id` y `domiciliario_id` (nulas según el tipo) e índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)` sobre `pago`: ya incluidas en `V9__pago.sql` (RF-53 T002); si V9 ya se aplicó, una migración nueva con relleno desde pedido y domicilio
+- [ ] T002 Columnas `comprador_id`, `vendedor_id` y `domiciliario_id` (nulas según el tipo) e índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)` sobre `pago`: ya incluidas en `V10__pago.sql` (RF-53 T002); si V10 ya se aplicó, una migración nueva con relleno desde pedido y domicilio
 - [ ] T003 `RegistrarPagoPedidoPendientePort` (RF-53) y `RegistrarPagoTarifaUseCase` (RF-43) fijan esas columnas al crear el pago
 - [ ] T004 `ConsultarModalidadPedidosPort` en `pedidos` (ids a modalidad, en lote) y `ModalidadPedidosPort` en `pagos`
 - [ ] T005 Método de consulta por usuario, rol y filtros en `PagoRepositoryPort`
@@ -290,7 +290,7 @@ frontend/__tests__/pagos/historial.test.tsx
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| **`pago` no guarda a qué usuarios pertenece** (spec-general: "se deduce"); listar por usuario sin unir módulos exige `comprador_id`, `vendedor_id` y `domiciliario_id` en la tabla | Modelo | Copias físicas fijadas al crear el pago, sin cambiar el ER (igual que `domicilio.vendedor_id`). Hay que ajustar V9 en RF-53 y la creación en RF-43. **Confirmar** | Equipo |
+| **`pago` no guarda a qué usuarios pertenece** (spec-general: "se deduce"); listar por usuario sin unir módulos exige `comprador_id`, `vendedor_id` y `domiciliario_id` en la tabla | Modelo | Copias físicas fijadas al crear el pago, sin cambiar el ER (igual que `domicilio.vendedor_id`). Hay que ajustar V10 en RF-53 y la creación en RF-43. **Confirmar** | Equipo |
 | El vendedor de punto fijo ve las tarifas que pagó; el ambulante no tiene domicilios | Alcance | Sus filas de tarifa serán siempre cero | Equipo |
 | `GET /pagos` comparte ruta con RF-41 (administrador) | Contrato | Una rama por rol, cada una con su caso de uso | Equipo |
 | FR-006 pide filtrar por medio; spec-general ya lista también `estado`, `tipo`, `desde` y `hasta` para esta ruta | Contrato | Los cinco filtros valen para todos los roles | Equipo |

@@ -21,6 +21,7 @@ public class NotificationOutboxEventHandler implements OutboxEventHandler {
             "pedidos.pedido-creado",
             "pedidos.pedido-aceptado",
             "pedidos.pedido-rechazado",
+            "pedidos.pedido-entregado",
             "pagos.pago-pedido-confirmado",
             "entregas.entrega-directa-iniciada",
             "pedidos.pedido-listo-para-recoger",
@@ -33,7 +34,8 @@ public class NotificationOutboxEventHandler implements OutboxEventHandler {
             "domicilios.domicilio-cancelado",
             "reportes.reporte-resuelto",
             "calificaciones.comentario-moderado",
-            "cuentas.cuenta-eliminada"
+            "cuentas.cuenta-eliminada",
+            "reportes.reporte-creado"
     );
 
     private final ProcessNotificationEventPort processNotification;

@@ -14,11 +14,11 @@
 
 ## Summary
 
-Un vendedor (ambulante o de punto fijo) crea su emprendimiento con nombre, categoría de una lista fija, descripción, hora de apertura y de cierre y una ubicación. Se crea `ACTIVO` y visible de inmediato. Un índice único parcial en BD garantiza un solo emprendimiento `ACTIVO` por vendedor, incluso con dos solicitudes simultáneas. El tipo de vendedor no se guarda: sale de `Usuario.rol`.
+Un vendedor (ambulante o de punto fijo) crea su emprendimiento con nombre, categoría de una lista fija, descripción, hora de apertura y de cierre y una ubicación. La dirección es obligatoria para punto fijo y opcional para ambulante, cuya ubicación es una zona aproximada con referencia. Se crea `ACTIVO` y visible de inmediato. Un índice único parcial en BD garantiza un solo emprendimiento `ACTIVO` por vendedor, incluso con dos solicitudes simultáneas. El tipo de vendedor no se guarda: sale de `Usuario.rol`.
 
 ## Estado actual del código
 
-El módulo `emprendimientos` no existe todavía. Ya existen la tabla `ubicacion` (con `punto` PostGIS e índice GiST, migración V3), `GeoPoint` en `shared/domain/geo` y la autenticación con roles en `cuentas`. `UbicacionRepositoryPort` hoy vive en `cuentas` (ver Open Questions).
+El backend de RF-28 ya tiene dominio, caso de uso, endpoint protegido, persistencia y migración V6. El frontend incluye servicio autenticado, validación de formulario, selección de categoría, horario, coordenadas y dirección condicional por rol; las pruebas del formulario y del contrato HTTP pasan. Las pruebas PostgreSQL/PostGIS de Testcontainers siguen pendientes de ejecución porque el motor Docker no está disponible. El listado público de RF-31 sigue pendiente. El modelo `Ubicacion` y su puerto de persistencia están en `shared`; el adaptador JPA existente en `cuentas` los implementa.
 
 ## Actors
 
@@ -45,7 +45,7 @@ Heredado de `specs/templates/plan-template.md` (stack fijo del proyecto). Objeti
 | FR-002 | Validar campos obligatorios | Bean Validation en el DTO + validaciones de dominio (`Emprendimiento`) | T011, T015 |
 | FR-003 | Impedir un segundo emprendimiento activo | Consulta previa + índice único parcial `uq_emprendimiento_activo_por_usuario` → `409 CONFLICT` | T012, T016 |
 | FR-004 | Visible de inmediato | `estado = ACTIVO` al crear; RF-31/RF-32 lo leen sin paso extra | T010 |
-| FR-005 | Interpretar la ubicación según el rol | Dominio: punto fijo exige `direccion`; ambulante usa la zona habitual (punto + referencia) | T017, T018 |
+| FR-005 | Interpretar la ubicación según el rol | Punto fijo exige `direccion`; ambulante permite zona habitual (punto + referencia) sin dirección | T011, T017, T018 |
 | FR-006 | Asociar el tipo de vendedor sin pedirlo | No se recibe en el body: se deduce de `Usuario.rol` del JWT; la respuesta lo devuelve como `tipoVendedor` | T013 |
 | SC-001 | < 3 min | Pantalla única de formulario; prueba de usabilidad en piloto | T031 |
 | SC-002 | 100 % visibles | Prueba de integración: crear y listar | T010 |
@@ -113,6 +113,8 @@ Heredado de `specs/templates/plan-template.md` (stack fijo del proyecto). Objeti
 }
 ```
 
+`ubicacion.direccion` es obligatoria para `VENDEDOR_PUNTO_FIJO`; para `VENDEDOR_AMBULANTE` puede omitirse o ser `null`.
+
 | Cabecera | Obligatoria | Contenido |
 |---|:---:|---|
 | Authorization | ✅ | `Bearer <JWT>` |
@@ -129,7 +131,6 @@ Heredado de `specs/templates/plan-template.md` (stack fijo del proyecto). Objeti
 | 403 | `FORBIDDEN` | Rol distinto de vendedor | "No tienes permiso" |
 | 409 | `CONFLICT` | Ya existe un emprendimiento `ACTIVO` del vendedor | "Ya tienes un emprendimiento activo" |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | Misma clave con cuerpo distinto | — |
-| 422 | `BUSINESS_RULE` | Ubicación fuera de cobertura (si el equipo la define) | Decisión pendiente |
 
 ## Events
 
@@ -173,7 +174,7 @@ Heredado de `specs/templates/plan-template.md` (stack fijo del proyecto). Objeti
 ```text
 specs/RF-28-creacion-de-emprendimiento/
 ├── RF-28-creacion-de-emprendimiento.md   # spec
-└── plan.md                               # este archivo
+└── RF-28-plan.md                         # este archivo
 ```
 
 ### Source Code
@@ -181,17 +182,18 @@ specs/RF-28-creacion-de-emprendimiento/
 ```text
 backend/src/main/java/co/edu/napa/emprendimientos/
 ├── domain/
-│   ├── model/                    # Emprendimiento, CategoriaEmprendimiento, EstadoEmprendimiento, HorarioAtencion
-│   └── exception/                # EmprendimientoActivoExistenteException
+│   └── model/                    # Emprendimiento, CategoriaEmprendimiento, EstadoEmprendimiento
 ├── application/
 │   ├── ports/in/                 # CrearEmprendimientoPort
-│   ├── ports/out/                # EmprendimientoRepositoryPort, UbicacionRepositoryPort
-│   └── usecase/                  # CrearEmprendimientoUseCase
+│   ├── ports/out/                # EmprendimientoRepositoryPort
+│   └── usecase/                  # CrearEmprendimientoUseCase, command y result
 └── infrastructure/adapters/
     ├── in/web/                   # EmprendimientoController, DTOs
     └── out/persistence/          # EmprendimientoJpaEntity, repositorio Spring Data, adaptador
-backend/src/main/resources/db/migration/   # V4__emprendimiento.sql
+backend/src/main/resources/db/migration/   # V6__emprendimiento.sql
 backend/src/test/java/co/edu/napa/emprendimientos/
+backend/src/main/java/co/edu/napa/shared/domain/geo/Ubicacion.java
+backend/src/main/java/co/edu/napa/shared/application/ports/out/UbicacionRepositoryPort.java
 
 frontend/src/app/(vendedor)/emprendimiento/crear.tsx   # ruta Expo Router (formulario)
 frontend/src/components/emprendimiento/                # FormularioEmprendimiento, SelectorCategoria, SelectorHorario, SelectorUbicacion
@@ -205,12 +207,12 @@ frontend/__tests__/emprendimientos/crear.test.tsx
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear el paquete `co.edu.napa.emprendimientos` y la regla ArchUnit del módulo en `backend/src/test/java/co/edu/napa/ArchitectureTest.java`
+- [x] T001 Crear el paquete `co.edu.napa.emprendimientos` y la regla ArchUnit del módulo en `backend/src/test/java/co/edu/napa/ArchitectureTest.java`
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V4__emprendimiento.sql`: tabla `emprendimiento` (id, usuario_id, ubicacion_id único, nombre, categoria, descripcion, hora_apertura `time`, hora_cierre `time`, estado, created_at, updated_at) e índice único parcial `uq_emprendimiento_activo_por_usuario` donde `estado = 'ACTIVO'` en `backend/src/main/resources/db/migration/`
-- [ ] T003 Resolver quién es dueño de `UbicacionRepositoryPort` (hoy en `cuentas`) según la decisión pendiente, en `shared/application/ports/out/`
+- [x] T002 Migración `V6__emprendimiento.sql`: volver nullable `ubicacion.direccion`; crear tabla `emprendimiento` (id, usuario_id, ubicacion_id único, nombre, categoria, descripcion, hora_apertura `time`, hora_cierre `time`, estado, created_at, updated_at) e índice único parcial `uq_emprendimiento_activo_por_usuario` donde `estado = 'ACTIVO'` en `backend/src/main/resources/db/migration/`
+- [x] T003 Mover `Ubicacion` a `shared/domain/geo` y `UbicacionRepositoryPort` a `shared/application/ports/out`; adaptar imports y hacer que el adaptador JPA existente implemente el puerto compartido.
 
 **Checkpoint**: base lista.
 
@@ -222,30 +224,30 @@ frontend/__tests__/emprendimientos/crear.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración de creación exitosa y visibilidad inmediata en `backend/src/test/java/co/edu/napa/emprendimientos/CrearEmprendimientoIT.java`
-- [ ] T011 [P] [US1] Test de validaciones (campos vacíos, categoría, horas, rango de lat/lng, dirección según rol) en `.../emprendimientos/CrearEmprendimientoValidacionIT.java`
-- [ ] T012 [P] [US1] Test de segundo emprendimiento y de carrera de dos creaciones en `.../emprendimientos/EmprendimientoActivoUnicoIT.java`
-- [ ] T017 [P] [US1] Test unitario de reglas de `Emprendimiento` (horario que cruza medianoche, dirección obligatoria en punto fijo) en `.../emprendimientos/EmprendimientoTest.java`
-- [ ] T019 [P] [US1] Test del formulario (campos obligatorios, error 409, envío con `Idempotency-Key`) en `frontend/__tests__/emprendimientos/crear.test.tsx`
+- [x] T010 [P] [US1] Testcontainers para migración, persistencia activa y ubicación sin dirección en `backend/src/test/java/co/edu/napa/emprendimientos/infrastructure/persistence/EmprendimientoPersistenceIntegrationTest.java`; consultar el listado público queda condicionado a RF-31
+- [x] T011 [P] [US1] Pruebas de validación del DTO, coordenadas y dirección por rol en `backend/src/test/java/co/edu/napa/emprendimientos/infrastructure/adapters/in/web/EmprendimientoControllerTest.java` y `backend/src/test/java/co/edu/napa/emprendimientos/application/usecase/CrearEmprendimientoUseCaseTest.java`
+- [x] T012 [P] [US1] Pruebas de segundo emprendimiento activo y carrera concurrente en `backend/src/test/java/co/edu/napa/emprendimientos/infrastructure/persistence/EmprendimientoPersistenceIntegrationTest.java`
+- [x] T017 [P] [US1] Test unitario de reglas de `Emprendimiento` (horario que cruza medianoche y rechazo de horas iguales) en `backend/src/test/java/co/edu/napa/emprendimientos/domain/model/EmprendimientoTest.java`
+- [x] T019 [P] [US1] Pruebas del formulario (campos obligatorios y error 409) y del servicio (envío con `Idempotency-Key`) en `frontend/src/app/__tests__/emprendimiento.test.tsx` y `frontend/src/lib/emprendimientos.test.ts`
 
 ### Implementation
 
-- [ ] T013 [US1] Dominio `Emprendimiento` y `CrearEmprendimientoUseCase` en `emprendimientos/domain/model/` y `emprendimientos/application/usecase/`
-- [ ] T014 [US1] `EmprendimientoController` (`POST /emprendimientos`) en `emprendimientos/infrastructure/adapters/in/web/`
-- [ ] T015 [US1] Validaciones del DTO y mapeo de errores a `VALIDATION_ERROR`
-- [ ] T016 [US1] Adaptador de persistencia y traducción de la violación del índice único a `CONFLICT` en `.../out/persistence/`
-- [ ] T018 [US1] Guardar `Ubicacion` con la columna `geography` derivada de latitud y longitud
-- [ ] T020 [US1] Servicio `crearEmprendimiento()` en `frontend/src/services/emprendimientos.ts`
-- [ ] T021 [US1] Componentes del formulario en `frontend/src/components/emprendimiento/` y `frontend/src/hooks/useLocation.ts`
-- [ ] T022 [US1] Pantalla `frontend/src/app/(vendedor)/emprendimiento/crear.tsx`; al `201` navega al panel del vendedor
+- [x] T013 [US1] Dominio `Emprendimiento` y `CrearEmprendimientoUseCase` en `emprendimientos/domain/model/` y `emprendimientos/application/usecase/`
+- [x] T014 [US1] `EmprendimientoController` (`POST /emprendimientos`) en `emprendimientos/infrastructure/adapters/in/web/`
+- [x] T015 [US1] Validaciones del DTO y mapeo de errores a `VALIDATION_ERROR`
+- [x] T016 [US1] Adaptador de persistencia y traducción de la violación del índice único a `CONFLICT` en `emprendimientos/infrastructure/adapters/out/persistence/`
+- [x] T018 [US1] Guardar `Ubicacion` con la columna `geography` derivada de latitud y longitud
+- [x] T020 [US1] Servicio `createEmprendimiento()` autenticado y con `Idempotency-Key` en `frontend/src/lib/emprendimientos.ts`
+- [x] T021 [US1] Formulario accesible con validación de campos, categoría, horario y ubicación manual en `frontend/src/app/emprendimiento.tsx`
+- [x] T022 [US1] Pantalla de creación de emprendimiento y acceso desde la sesión del vendedor; presenta el resultado `201` y permite volver al panel en `frontend/src/app/emprendimiento.tsx` y `frontend/src/app/session.tsx`
 
 **Checkpoint**: US1 funcional y probable por separado.
 
 ## Phase N: Polish & Cross-Cutting
 
-- [ ] T030 Revisar privacidad de la ubicación y permisos (RNF03, RNF04)
+- [x] T030 Revisar privacidad de la ubicación aproximada de ambulantes y autorización exclusiva de vendedores (RNF03, RNF04)
 - [ ] T031 Medir el tiempo de creación en el piloto (SC-001)
-- [ ] T032 Actualizar `requerimientos/trazabilidad.md` si cambió algo
+- [x] T032 Actualizar el enlace de RF-28 en `requerimientos/trazabilidad.md`
 
 ## Dependencies & Execution Order
 
@@ -259,10 +261,10 @@ frontend/__tests__/emprendimientos/crear.test.tsx
 |---|---|---|---|
 | Cobertura del servicio (Edge 2): ¿qué área es válida (p. ej. Santa Marta)? | Validación de ubicación | Solo validar rango de latitud/longitud | Equipo |
 | Nombre repetido (Edge 3): el modelo no pide unicidad de nombre ni define "zona" | Duplicados | Permitir nombres repetidos | Equipo |
-| `direccion` obligatoria para punto fijo (RF-32 la muestra) y opcional para ambulante (solo zona y referencia) | FR-005 | Así | Equipo |
+| `direccion` obligatoria para punto fijo (RF-32 la muestra) y opcional para ambulante (solo zona y referencia) | FR-005 | Aprobado: requerirla solo para punto fijo; cambiar el modelo y esquema compartidos para permitir `NULL` | Usuario |
 | `horaApertura` igual a `horaCierre` | Horario | Rechazar (400) | Equipo |
 | Límites de longitud de nombre (100) y descripción (500) | Validación | Esos valores | Equipo |
-| ¿Quién es dueño de `UbicacionRepositoryPort` (hoy en `cuentas`)? | Dependencia entre módulos | Moverlo a `shared/application/ports/out` | Equipo |
+| ¿Quién es dueño de `UbicacionRepositoryPort` (hoy en `cuentas`)? | Dependencia entre módulos | Aprobado: mover el modelo `Ubicacion` y su puerto juntos a `shared`; el adaptador JPA de `cuentas` implementa el puerto compartido | Usuario |
 | La app necesita saber si el vendedor ya tiene emprendimiento al iniciar sesión; no hay endpoint (`GET /emprendimientos/me` sería de RF-29) | Navegación | Detectarlo por el `409` al crear | Equipo |
 | ¿Crear el emprendimiento va por el outbox offline? | RNF28 | No, requiere conexión | Equipo |
 
@@ -270,18 +272,18 @@ frontend/__tests__/emprendimientos/crear.test.tsx
 
 *(Todo debe estar marcado antes de implementar.)*
 
-- [ ] La tabla Spec Coverage no tiene filas vacías
-- [ ] Todas las tareas de implementación y de testing están presentes
-- [ ] La arquitectura es coherente con los módulos existentes (RNF13, RNF25); solo hay `usecase`, sin capa `service` de aplicación
-- [ ] Entidades referenciadas a `spec-general.md` (sin redefinir el modelo); si hubo cambio de esquema, ya está en `spec-general.md`
-- [ ] Contratos de API con path/query params, headers, códigos HTTP exitosos y de error, y matriz de permisos
-- [ ] Eventos emitidos documentados en `eventos.md`; ningún listener planificado en este plan
-- [ ] Actores (comprador, vendedor, domiciliario, administrador) identificados
-- [ ] Errores y casos borde tienen comportamiento definido
-- [ ] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
-- [ ] Dependencias y librerías identificadas
-- [ ] Cada tarea es granular y nombra el archivo que toca
-- [ ] No se agregó comportamiento que no esté en la spec
+- [x] La tabla Spec Coverage no tiene filas vacías
+- [x] Todas las tareas de implementación y de testing están presentes
+- [x] La arquitectura es coherente con los módulos existentes (RNF13, RNF25); solo hay `usecase`, sin capa `service` de aplicación
+- [x] Entidades referenciadas a `spec-general.md` (sin redefinir el modelo); la opcionalidad de dirección y el cambio de esquema compartido están documentados
+- [x] Contratos de API con path/query params, headers, códigos HTTP exitosos y de error, y matriz de permisos
+- [x] Eventos emitidos documentados en `eventos.md`; ningún listener planificado en este plan
+- [x] Actores (comprador, vendedor, domiciliario, administrador) identificados
+- [x] Errores y casos borde tienen comportamiento definido
+- [x] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
+- [x] Dependencias y librerías identificadas
+- [x] Cada tarea es granular y nombra el archivo que toca
+- [x] No se agregó comportamiento que no esté en la spec
 
 ## Notes
 

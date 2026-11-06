@@ -133,7 +133,9 @@ public class ApiExceptionHandler {
         String requestPath = request.getRequestURI();
         if (requestPath.startsWith("/api/v1/auth/")
                 || requestPath.equals("/api/v1/notificaciones")
-                || requestPath.startsWith("/api/v1/notificaciones/")) {
+                || requestPath.startsWith("/api/v1/notificaciones/")
+                || requestPath.equals("/api/v1/emprendimientos")
+                || requestPath.startsWith("/api/v1/emprendimientos/")) {
             builder.header(HttpHeaders.CACHE_CONTROL, "no-store");
         }
         if ("RATE_LIMITED".equals(code)) {

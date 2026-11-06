@@ -98,13 +98,17 @@ export async function clearSession(): Promise<void> {
 }
 
 export async function register(input: RegistrationInput): Promise<void> {
-  await requestJson<{ usuarioId: string }>(`${AUTH_PATH}/registro`, {
+  const { confirmacionPassword, ...registration } = input;
+  await requestJson<{ usuarioId: string }>(`${AUTH_PATH}/register`, {
     method: 'POST',
     headers: jsonHeaders({
       deviceId: await deviceId(),
       idempotencyKey: Crypto.randomUUID(),
     }),
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      ...registration,
+      confirmPassword: confirmacionPassword,
+    }),
   });
 }
 
@@ -125,7 +129,7 @@ export async function confirmRegistration(
   codigo: string,
 ): Promise<StoredSession> {
   const tokens = await requestJson<AuthTokens>(
-    `${AUTH_PATH}/verificaciones-celular/confirmar`,
+    `${AUTH_PATH}/verify-phone/confirm`,
     {
       method: 'POST',
       headers: jsonHeaders({ deviceId: await deviceId() }),
@@ -139,10 +143,14 @@ export async function requestVerification(
   celular: string,
   proposito: VerificationPurpose,
 ): Promise<void> {
-  await requestJson(`${AUTH_PATH}/verificaciones-celular`, {
+  const path =
+    proposito === 'REGISTRO'
+      ? `${AUTH_PATH}/verify-phone/request`
+      : `${AUTH_PATH}/password/recover/request`;
+  await requestJson(path, {
     method: 'POST',
     headers: jsonHeaders(),
-    body: JSON.stringify({ celular, proposito }),
+    body: JSON.stringify({ celular }),
   });
 }
 
@@ -151,13 +159,13 @@ export async function resetPassword(
   codigo: string,
   contrasenaNueva: string,
 ): Promise<void> {
-  await requestVoid(`${AUTH_PATH}/recuperar-contrasena`, {
+  await requestVoid(`${AUTH_PATH}/password/recover/confirm`, {
     method: 'POST',
     headers: jsonHeaders({
       deviceId: await deviceId(),
       idempotencyKey: Crypto.randomUUID(),
     }),
-    body: JSON.stringify({ celular, codigo, contrasenaNueva }),
+    body: JSON.stringify({ celular, codigo, passwordNueva: contrasenaNueva }),
   });
 }
 
@@ -166,7 +174,7 @@ export async function refreshSession(
 ): Promise<StoredSession> {
   const tokens = await requestJson<AuthTokens>(`${AUTH_PATH}/refresh`, {
     method: 'POST',
-    headers: jsonHeaders(),
+    headers: jsonHeaders({ deviceId: await deviceId() }),
     body: JSON.stringify({ refreshToken: session.refreshToken }),
   });
   return saveSession(tokens);
@@ -199,12 +207,12 @@ export async function changePassword(
   contrasenaActual: string,
   contrasenaNueva: string,
 ): Promise<void> {
-  await requestVoid(`${AUTH_PATH}/cambio-contrasena`, {
+  await requestVoid(`${AUTH_PATH}/password/change`, {
     method: 'POST',
     headers: jsonHeaders({
       accessToken: session.accessToken,
       idempotencyKey: Crypto.randomUUID(),
     }),
-    body: JSON.stringify({ contrasenaActual, contrasenaNueva }),
+    body: JSON.stringify({ passwordActual: contrasenaActual, passwordNueva: contrasenaNueva }),
   });
 }

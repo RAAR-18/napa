@@ -15,7 +15,7 @@
 
 ## Summary
 
-Consulta paginada de notificaciones con estado de lectura, y listeners en `notificaciones/infrastructure/adapters/in/event` que traducen cada evento del catálogo (E01–E18) en una `Notificacion` y un envío FCM, de forma idempotente por `eventId`.
+Consulta paginada de notificaciones con estado de lectura, y listeners en `notificaciones/infrastructure/adapters/in/event` que traducen los eventos notificables del catálogo (E01–E17 y E19) en una `Notificacion` y un envío FCM, de forma idempotente por `eventId`. E18 elimina las notificaciones de una cuenta eliminada.
 
 ## Estado actual del código
 
@@ -45,7 +45,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | FR-001 | Consultar notificaciones | `GET /notificaciones`, `ConsultarNotificacionesUseCase` | T010, T013, T014 |
 | FR-002 | Ordenadas por fecha, leídas vs. no leídas | `sort=created_at,desc` por defecto; filtro `leida`; `POST /notificaciones/{id}/leer` (204, spec-general) | T011, T015, T016 |
 | FR-003 | Generar notificaciones ante eventos relevantes | Listeners por evento + `EnviarNotificacionPort` | T020–T029, T037 |
-| FR-004 | Notificar como mínimo la lista de eventos | Tabla "Listeners" (abajo): E01–E07 (E07 solo si el pedido no es de domicilio), E08–E12, E14–E18 | T020–T031 |
+| FR-004 | Notificar como mínimo la lista de eventos | Tabla "Listeners" (abajo): E01–E07 (E07 solo si el pedido no es de domicilio), E08–E12, E14–E17 y E19 | T020–T031 |
 | SC-001 | Visibles en < 1 min | Relay cada 500 ms + prueba de latencia | T040 |
 | SC-002 | 100 % de eventos relevantes generan notificación | Un test por evento del catálogo | T032, T038 |
 | US1-E1 | Notificaciones pendientes ordenadas, con no leídas | `GET /notificaciones` | T010 |
@@ -145,7 +145,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | E15 `DomicilioCancelado` | Comprador, vendedor y domiciliario si existe | `DOMICILIO_CANCELADO` |
 | E16 `ReporteResuelto` | Autor del reporte | `REPORTE_RESUELTO` |
 | E17 `ComentarioModerado` | Autor del comentario; el texto dice qué se hizo (`accion`) y el `motivo` que trae el evento | `COMENTARIO_MODERADO` |
-| E18 `ReporteCreado` | Todos los administradores con cuenta `ACTIVA` | `REPORTE_CREADO` |
+| E19 `ReporteCreado` | Todos los administradores con cuenta `ACTIVA` | `REPORTE_CREADO` |
 
 E09 no está en la lista mínima de RF-38 FR-004, pero está en el catálogo y la exige RF-19 SC-002 (FR-004 dice "como mínimo").
 
@@ -248,9 +248,9 @@ frontend/__tests__/notificaciones/
 - [ ] T026 [US1] Listener E12 `DomicilioEntregado` → vendedor y comprador
 - [ ] T027 [US1] Listeners E14, E15 en `.../in/event/`
 - [ ] T028 [US1] Listeners E16, E17 en `.../in/event/`
-- [ ] T029 [US1] Listener E07 `PedidoEntregado` → comprador solo si `domicilioId` es nulo, en `.../in/event/`
-- [ ] T037 [US1] Listener E18 `ReporteCreado` → todos los administradores activos, en `.../in/event/`
-- [ ] T038 [P] [US1] Test de E07 (con y sin `domicilioId`; sin duplicar E12) y de E18 (llega a todos los administradores activos) en `.../notificaciones/NotificacionesE07E18IT.java`
+- [x] T029 [US1] Listener E07 `PedidoEntregado` → comprador solo si `domicilioId` es nulo, en `.../in/event/`
+- [x] T037 [US1] Listener E19 `ReporteCreado` → todos los administradores activos, en `.../in/event/`
+- [x] T038 [P] [US1] Pruebas unitarias de E07 (con y sin `domicilioId`) y E19 (todos los administradores activos); el Testcontainers de búsqueda de administradores está pendiente de ejecución en Docker CI
 - [ ] T033 [US1] No enviar push a cuentas `ELIMINADA`
 - [ ] T035 [P] [US1] Test de la pantalla (orden, no leídas, lista vacía, marcar leída, lista desde caché sin conexión) en `frontend/__tests__/notificaciones/notificaciones.test.tsx`
 - [ ] T036 [US1] Servicio de notificaciones y registro del token FCM en `frontend/src/services/` (reutiliza foundations F042)
@@ -267,7 +267,7 @@ frontend/__tests__/notificaciones/
 ## Dependencies & Execution Order
 
 - Setup → Foundational → US1 → Polish.
-- Dependencias entre RF: requiere el outbox (F011), RF-10 y los eventos que cada RF emita; los listeners de E02–E18 se activan a medida que se construyen los RF emisores (ola 3 en adelante).
+- Dependencias entre RF: requiere el outbox (F011), RF-10 y los eventos que cada RF emita; los listeners de E02–E17 y E19 se activan a medida que se construyen los RF emisores (ola 3 en adelante).
 - Tareas `[P]` pueden ejecutarse en paralelo.
 
 ## Open Questions
@@ -277,7 +277,7 @@ frontend/__tests__/notificaciones/
 | E08 va a todos los domiciliarios activos (decidido). Con muchos domiciliarios habrá más push y costo; revisar si crece | Volumen de push | Todos | Equipo |
 | Retención del historial de notificaciones | Edge 2 | Ninguna | Equipo |
 | Notificaciones críticas no silenciables | RF-39 | **Cerrado (foundations)**: no hay excepciones, se respetan las preferencias | Equipo |
-| Notificaciones del administrador: E18 `ReporteCreado` las genera (decidido en la ola 6) | US1 | Todos los administradores activos reciben `REPORTE_CREADO` | Equipo |
+| Notificaciones del administrador: E19 `ReporteCreado` las genera (decidido en la ola 6) | US1 | Todos los administradores activos reciben `REPORTE_CREADO` | Equipo |
 | Preferencia deshabilitada: ¿se guarda la notificación sin push o no se genera? | RF-39 | **Cerrado**: no se genera (ni fila ni push); lo implementa RF-39 en `EnviarNotificacionUseCase` | Equipo |
 | E07 (corrige un error de este plan, que decía "sin notificación" y contradecía eventos.md, RF-37 y RF-65): el comprador recibe el aviso de entrega con invitación a calificar solo fuera de domicilio; en domicilio lo hace E12 con el mismo texto. Vendedor y domiciliario no reciben invitación | FR-004 | Así | Equipo |
 

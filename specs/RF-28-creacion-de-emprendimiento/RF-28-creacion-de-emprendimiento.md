@@ -41,7 +41,7 @@ Como vendedor, quiero crear mi emprendimiento indicando nombre, categoría, ubic
 - **FR-002**: El sistema DEBE validar que los campos obligatorios estén completos antes de publicar el emprendimiento.
 - **FR-003**: El sistema DEBE impedir que un vendedor cree un nuevo emprendimiento mientras ya tenga uno activo.
 - **FR-004**: El sistema DEBE publicar el emprendimiento como visible para los clientes inmediatamente después de su creación.
-- **FR-005**: El sistema DEBE interpretar la ubicación según el rol del vendedor: la dirección del punto fijo para un vendedor de punto fijo, o la zona habitual de venta para un vendedor ambulante.
+- **FR-005**: El sistema DEBE interpretar la ubicación según el rol del vendedor: exigir y guardar la dirección del punto fijo para un vendedor de punto fijo; para un vendedor ambulante, permitir una zona aproximada con referencia sin exigir dirección.
 - **FR-006**: El sistema DEBE asociar al emprendimiento el tipo de vendedor (ambulante o de punto fijo) definido en su cuenta, sin solicitarlo de nuevo en el formulario.
 
 ### Key Entities

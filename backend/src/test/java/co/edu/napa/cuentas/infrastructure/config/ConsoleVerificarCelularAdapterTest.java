@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.config;
 
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
@@ -10,7 +10,6 @@ import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;

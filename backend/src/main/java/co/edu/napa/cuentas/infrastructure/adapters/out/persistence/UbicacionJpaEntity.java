@@ -1,6 +1,6 @@
-package co.edu.napa.cuentas.infrastructure.persistence;
+package co.edu.napa.cuentas.infrastructure.adapters.out.persistence;
 
-import co.edu.napa.cuentas.domain.model.Ubicacion;
+import co.edu.napa.shared.domain.geo.Ubicacion;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -21,7 +21,7 @@ public class UbicacionJpaEntity {
     @Column(nullable = false)
     private double longitud;
 
-    @Column(nullable = false, length = 300)
+    @Column(length = 300)
     private String direccion;
 
     @Column(length = 300)

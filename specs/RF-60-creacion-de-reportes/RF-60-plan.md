@@ -48,7 +48,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | FR-005 | Validar motivo y descripción antes de registrar | Bean Validation y reglas de `Reporte`: no vacíos ni en blanco, con longitud máxima | T016 |
 | SC-001 | < 1 min | Formulario corto | T040 |
 | SC-002 | Disponible de inmediato | Persistencia síncrona; consulta del administrador es RF-61 | T010 |
-| Decisión del equipo | Avisar al administrador cuando llega un reporte | E18 en el outbox y listener de RF-38 | T020 |
+| Decisión del equipo | Avisar al administrador cuando llega un reporte | E19 en el outbox y listener de RF-38 | T020 |
 | SC-003 | 100 % de rechazos sin motivo o descripción | Prueba parametrizada | T016 |
 | US1-E1 | Reporte del cliente | `201`, `PENDIENTE`, entidad relacionada del cliente | T010 |
 | US1-E2 | Reporte del vendedor | `201` asociado a su cuenta | T011 |
@@ -123,7 +123,7 @@ No se devuelve `Location`: el recurso no tiene `GET` propio en el catálogo (Ope
 
 | Evento emitido | Lo emite el caso de uso | Momento |
 |---|---|---|
-| E18 `reportes.reporte-creado` (`ReporteCreadoEvent`: `reporteId`, `autorId`) | `CrearReporteUseCase` | En la misma transacción de la creación (outbox). `notificaciones` avisa a los administradores activos (RF-38 T037) |
+| E19 `reportes.reporte-creado` (`ReporteCreadoEvent`: `reporteId`, `autorId`) | `CrearReporteUseCase` | En la misma transacción de la creación (outbox). `notificaciones` avisa a los administradores activos (RF-38 T037) |
 
 **Eventos que consume esta feature**: ninguno.
 
@@ -149,7 +149,7 @@ No se devuelve `Location`: el recurso no tiene `GET` propio en el catálogo (Ope
 |---|---|---|
 | Unitarias | `Reporte.crear` (estado inicial, motivo y descripción, una sola entidad) | FR-004, FR-005 |
 | Integración | Endpoint con Testcontainers: cliente, vendedor ambulante y de punto fijo, y domiciliario; con cada tipo de entidad y sin ella; entidad ajena; usuario sin pedido en común; administrador (`403`); campos vacíos o en blanco; dos entidades; repetición con la misma clave | US1-E1–E2, US2-E1, FR-001–FR-005 |
-| Migración | V12 aplica sobre V11: CHECK de una sola entidad | Restricción 5 |
+| Migración | V13 aplica sobre V12: CHECK de una sola entidad | Restricción 5 |
 | Arquitectura | `reportes` usa `pedidos`, `domicilios` y `cuentas` solo por sus puertos `in` | RNF13, RNF25 |
 | Frontend | Jest: formulario, validación, entrada desde pedido y domicilio, outbox sin red | SC-001, SC-003 |
 
@@ -170,7 +170,7 @@ specs/RF-60-creacion-de-reportes/
 ```text
 backend/src/main/java/co/edu/napa/reportes/
 ├── domain/
-│   ├── event/                    # ReporteCreadoEvent (E18)
+│   ├── event/                    # ReporteCreadoEvent (E19)
 │   ├── model/                    # Reporte, EstadoReporte
 │   └── exception/                # ReporteInvalidoException
 ├── application/
@@ -183,7 +183,7 @@ backend/src/main/java/co/edu/napa/reportes/
 
 backend/src/main/java/co/edu/napa/pedidos/application/ports/in/      # ConsultarParticipantesPedidoPort, ConsultarInteraccionEntreUsuariosPort
 backend/src/main/java/co/edu/napa/domicilios/application/ports/in/   # ConsultarParticipantesDomicilioPort
-backend/src/main/resources/db/migration/                              # V12__reporte.sql
+backend/src/main/resources/db/migration/                              # V13__reporte.sql
 backend/src/test/java/co/edu/napa/reportes/
 
 frontend/src/app/(comun)/reportes/nuevo.tsx                    # ruta Expo Router: formulario (parámetros: tipo y id opcionales)
@@ -201,9 +201,9 @@ frontend/__tests__/reportes/crear-reporte.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V12__reporte.sql` en `backend/src/main/resources/db/migration/`: tabla `reporte` (id, autor_id, motivo, descripcion, estado, nota_resolucion nulo, resuelto_por_id nulo, pedido_id nulo, domicilio_id nulo, usuario_reportado_id nulo, created_at, updated_at) con CHECK de a lo sumo una entidad y índices `(estado, created_at)` y `(autor_id, created_at)`
+- [ ] T002 Migración `V13__reporte.sql` en `backend/src/main/resources/db/migration/`: tabla `reporte` (id, autor_id, motivo, descripcion, estado, nota_resolucion nulo, resuelto_por_id nulo, pedido_id nulo, domicilio_id nulo, usuario_reportado_id nulo, created_at, updated_at) con CHECK de a lo sumo una entidad y índices `(estado, created_at)` y `(autor_id, created_at)`
 - [ ] T003 Puertos `in` de lectura de participantes: `ConsultarParticipantesPedidoPort` (cliente, dueño, emprendimiento, ítems) y `ConsultarInteraccionEntreUsuariosPort` en `pedidos`, y `ConsultarParticipantesDomicilioPort` (cliente, dueño, domiciliario, estado) en `domicilios`
-- [ ] T004 Dominio `Reporte`, `EstadoReporte` y `ReporteCreadoEvent` (E18) en `reportes/domain/`, y `EntidadReportablePort` e `InteraccionEntreUsuariosPort` con sus adaptadores
+- [ ] T004 Dominio `Reporte`, `EstadoReporte` y `ReporteCreadoEvent` (E19) en `reportes/domain/`, y `EntidadReportablePort` e `InteraccionEntreUsuariosPort` con sus adaptadores
 
 **Checkpoint**: base lista.
 
@@ -221,12 +221,12 @@ frontend/__tests__/reportes/crear-reporte.test.tsx
 - [ ] T016 [P] [US1] Test parametrizado de motivo o descripción vacíos, en blanco o demasiado largos, y de dos entidades (`400`), en `.../reportes/CrearReporteValidacionIT.java`
 - [ ] T017 [P] [US1] Test de repetición con la misma `Idempotency-Key` (sin duplicado), clave reutilizada con otro cuerpo (`422`), falta de clave (`400`) y reportes distintos sobre lo mismo (se permiten) en `.../reportes/CrearReporteIdempotenciaIT.java`
 - [ ] T018 [P] [US1] Test de entidad ajena o inexistente (`404`), usuario sin pedido en común (`404`) y administrador (`403`) en `.../reportes/CrearReporteAutorizacionIT.java`
-- [ ] T020 [P] [US1] Test de integración: E18 queda en el outbox con `reporteId` y `autorId` en la misma transacción (y no se publica si la creación falla) en `.../reportes/CrearReporteEventoIT.java`
+- [ ] T020 [P] [US1] Test de integración: E19 queda en el outbox con `reporteId` y `autorId` en la misma transacción (y no se publica si la creación falla) en `.../reportes/CrearReporteEventoIT.java`
 - [ ] T030 [P] [US1] Test del formulario y de `BotonReportarProblema` (validación, parámetros por origen, outbox sin red) en `frontend/__tests__/reportes/crear-reporte.test.tsx`
 
 ### Implementation
 
-- [ ] T014 [US1] `CrearReporteUseCase` (rol, pertenencia de la entidad, creación y publicación de E18) y `CrearReportePort` en `reportes/application/`
+- [ ] T014 [US1] `CrearReporteUseCase` (rol, pertenencia de la entidad, creación y publicación de E19) y `CrearReportePort` en `reportes/application/`
 - [ ] T015 [US1] `POST /reportes`, su DTO y `Location` en `ReporteController`
 - [ ] T019 [US1] Adaptadores de `EntidadReportablePort` e `InteraccionEntreUsuariosPort` sobre los puertos de `pedidos` y `domicilios`
 - [ ] T031 [US1] Servicio `crearReporte()` por el outbox en `frontend/src/services/reportes.ts`
@@ -272,7 +272,7 @@ frontend/__tests__/reportes/crear-reporte.test.tsx
 | El domiciliario solo puede referirse a domicilios asignados a él (y a usuarios con quienes compartió un pedido) | Alcance | Así | Equipo |
 | Edge 2: duplicados | Regla | Se permiten reportes distintos sobre lo mismo; solo se evita la duplicación por reenvío | Equipo |
 | Edge 3: el usuario no puede ver el estado de sus reportes (no hay RF ni ruta) | Alcance | Fuera de la ola | Equipo |
-| Aviso al administrador: se agrega el evento E18 `reportes.reporte-creado` al catálogo (decidido) | Catálogo | E18 → notificaciones a todos los administradores `ACTIVA` (RF-38 T037); hay que agregarlo a `eventos.md` | Equipo |
+| Aviso al administrador: se agrega el evento E19 `reportes.reporte-creado` al catálogo (decidido) | Catálogo | E19 → notificaciones a todos los administradores `ACTIVA` (RF-38 T037); ya está en `eventos.md` | Equipo |
 | spec-general §2.1.1 pide `Location` en todo `201`, pero este recurso no tiene `GET` propio | Contrato | **Resuelto**: no se devuelve `Location`; §2.1.1 debe decir "cuando el recurso tiene GET propio". Si RF-61 agrega `GET /reportes/{id}`, se incluye | Equipo |
 
 ## Plan Review Checklist

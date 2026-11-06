@@ -1,4 +1,4 @@
--- RF-70: registro de cada envío de código de verificación.
+-- RF-70: registro de cada envío de código de verificación (V5).
 -- Nunca se guarda el código: lo genera y valida el proveedor.
 CREATE TABLE mensaje (
                          id UUID PRIMARY KEY,

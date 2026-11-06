@@ -55,7 +55,7 @@ Diagrama: [`gestionar_emprendimientos.puml`](../casos%20de%20uso/gestionar_empre
 
 | RF | Requerimiento | Historias de usuario | Actores | Casos de uso | Especificación |
 |---|---|---|---|---|---|
-| RF-28 | Creación de emprendimiento | HU-53 | Vendedor | Crear emprendimiento | [RF-28-creacion-de-emprendimiento](../specs/RF-28-creacion-de-emprendimiento/spec.md) |
+| RF-28 | Creación de emprendimiento | HU-53 | Vendedor | Crear emprendimiento | [RF-28-creacion-de-emprendimiento](../specs/RF-28-creacion-de-emprendimiento/RF-28-creacion-de-emprendimiento.md) |
 | RF-29 | Edición de emprendimiento | HU-54 | Vendedor | Editar emprendimiento | [RF-29-edicion-de-emprendimiento](../specs/RF-29-edicion-de-emprendimiento/spec.md) |
 | RF-30 | Eliminación de emprendimiento | HU-55 | Vendedor | Eliminar emprendimiento | [RF-30-eliminacion-de-emprendimiento](../specs/RF-30-eliminacion-de-emprendimiento/spec.md) |
 | RF-31 | Listado de emprendimientos | HU-56 | Cliente | Listar emprendimientos | [RF-31-listado-de-emprendimientos](../specs/RF-31-listado-de-emprendimientos/spec.md) |

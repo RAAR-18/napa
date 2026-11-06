@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.domain.model;
+package co.edu.napa.shared.domain.geo;
 
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,7 @@ class UbicacionTest {
     @Test
     void acceptsCoordinatesOnTheGeographicBoundaries() {
         assertDoesNotThrow(() -> new Ubicacion(
-                UUID.randomUUID(), 90, -180, "Dirección", null, now, now
+                UUID.randomUUID(), 90, -180, null, null, now, now
         ));
     }
 
@@ -30,6 +30,7 @@ class UbicacionTest {
 
     @Test
     void rejectsInvalidAddressData() {
+        assertDoesNotThrow(() -> new Ubicacion(UUID.randomUUID(), 0, 0, null, null, now, now));
         assertThrows(IllegalArgumentException.class, () -> new Ubicacion(
                 UUID.randomUUID(), 0, 0, " ", null, now, now
         ));

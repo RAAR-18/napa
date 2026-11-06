@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.config;
 
 import co.edu.napa.shared.infrastructure.idempotency.IdempotencyFilter;
 import co.edu.napa.shared.infrastructure.web.ApiError;
@@ -6,6 +6,7 @@ import co.edu.napa.shared.infrastructure.web.RequestIdFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -23,6 +24,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @Configuration
+@EnableMethodSecurity
 public class AuthSecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(

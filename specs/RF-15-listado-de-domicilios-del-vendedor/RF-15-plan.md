@@ -18,7 +18,7 @@ El vendedor de punto fijo lista los domicilios de sus pedidos con `GET /domicili
 
 ## Estado actual del código
 
-El módulo `domicilios` y su tabla `domicilio` los crea RF-14 (V10). RF-16 usa `GET /domicilios/disponibles` y RF-18 `GET /domicilios/{id}`; esta lista es otra ruta (`GET /domicilios`) sin parámetros de ruta. La tarifa se lee del pedido por `ConsultarPedidoParaDomicilioPort` (RF-14).
+El módulo `domicilios` y su tabla `domicilio` los crea RF-14 (V11). RF-16 usa `GET /domicilios/disponibles` y RF-18 `GET /domicilios/{id}`; esta lista es otra ruta (`GET /domicilios`) sin parámetros de ruta. La tarifa se lee del pedido por `ConsultarPedidoParaDomicilioPort` (RF-14).
 
 ## Actors
 
@@ -186,7 +186,7 @@ frontend/__tests__/domicilios/listado-vendedor.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Confirmar `vendedor_id` y el índice `(vendedor_id, created_at)` en V10 (RF-14 T002); si faltan, agregarlos en la siguiente migración libre de `backend/src/main/resources/db/migration/`
+- [ ] T002 Confirmar `vendedor_id` y el índice `(vendedor_id, created_at)` en V11 (RF-14 T002); si faltan, agregarlos en la siguiente migración libre de `backend/src/main/resources/db/migration/`
 - [ ] T003 Consulta por `vendedor_id` con filtros en `DomicilioRepositoryPort`
 - [ ] T004 Método en lote de tarifa en `PedidoParaDomicilioPort` (si RF-16 no lo trae ya)
 

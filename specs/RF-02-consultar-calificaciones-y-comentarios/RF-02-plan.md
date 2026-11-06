@@ -18,7 +18,7 @@
 
 ## Estado actual del código
 
-No existe aún la consulta. Las calificaciones y la tabla `calificacion` con sus índices las crea RF-01 (V13). Los puertos de lectura de emprendimientos, productos y cuentas no existen todavía (T002).
+No existe aún la consulta. Las calificaciones y la tabla `calificacion` con sus índices las crea RF-01 (V14). Los puertos de lectura de emprendimientos, productos y cuentas no existen todavía (T002).
 
 ## Actors
 
@@ -34,7 +34,7 @@ No existe aún la consulta. Las calificaciones y la tabla `calificacion` con sus
 
 Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
-- Promedio de una entidad en < 2 s (SC-001): consulta agregada con índice `(destino, estado, created_at)` de V13; sin caché del servidor.
+- Promedio de una entidad en < 2 s (SC-001): consulta agregada con índice `(destino, estado, created_at)` de V14; sin caché del servidor.
 - Promedio consistente con los valores individuales (SC-002): se calcula con la misma tabla en cada llamada; no hay valor guardado que pueda desfasarse.
 - Un comentario moderado se refleja en < 5 s (RF-06 SC-002): consulta directa a la base.
 
@@ -205,7 +205,7 @@ frontend/__tests__/calificaciones/
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar el paquete `comentarios`, su regla ArchUnit y los índices de destino de V13 (RF-01 T002)
+- [ ] T001 Confirmar el paquete `comentarios`, su regla ArchUnit y los índices de destino de V14 (RF-01 T002)
 
 ## Phase 2: Foundational
 

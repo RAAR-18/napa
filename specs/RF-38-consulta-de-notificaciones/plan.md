@@ -138,7 +138,7 @@ Implementar Consulta de notificaciones para todos los usuarios autenticados en e
 |---|---|---|
 | Ninguno | No aplica | Esta feature no emite evento según eventos.md; RF-70 usa llamada directa al puerto de verificación. |
 
-**Eventos que consume esta feature**: E01–E06, E08–E12, E14–E18. Los manejadores deduplican por `eventId`; E18 elimina las notificaciones del usuario que cambia a `ELIMINADA`.
+**Eventos que consume esta feature**: E01–E12, E14–E17 y E19. Los manejadores deduplican por `eventId`; E18 elimina las notificaciones del usuario que cambia a `ELIMINADA`.
 
 Los listeners no se planifican en el módulo emisor; pertenecen al módulo que reacciona (especialmente RF-38).
 

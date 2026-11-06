@@ -175,7 +175,7 @@ backend/src/main/java/co/edu/napa/productos/
 └── infrastructure/adapters/
     ├── in/web/                   # ProductoController, DTOs
     └── out/persistence/          # ProductoJpaEntity, repositorio, adaptador de EmprendimientoActivoPort
-backend/src/main/resources/db/migration/   # V5__producto.sql
+backend/src/main/resources/db/migration/   # V7__producto.sql
 backend/src/test/java/co/edu/napa/productos/
 
 frontend/src/app/(vendedor)/productos/nuevo.tsx       # ruta Expo Router
@@ -194,7 +194,7 @@ frontend/__tests__/productos/registro.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V5__producto.sql`: tabla `producto` (id, emprendimiento_id, nombre, descripcion, unidad, precio `bigint`, cantidad_disponible `numeric(10,2)`, estado, created_at, updated_at), CHECK `precio > 0` y `cantidad_disponible >= 0`, índice único parcial `(emprendimiento_id, lower(nombre))` donde `estado <> 'ELIMINADO'`, e índice `(emprendimiento_id, estado)` en `backend/src/main/resources/db/migration/`
+- [ ] T002 Migración `V7__producto.sql`: tabla `producto` (id, emprendimiento_id, nombre, descripcion, unidad, precio `bigint`, cantidad_disponible `numeric(10,2)`, estado, created_at, updated_at), CHECK `precio > 0` y `cantidad_disponible >= 0`, índice único parcial `(emprendimiento_id, lower(nombre))` donde `estado <> 'ELIMINADO'`, e índice `(emprendimiento_id, estado)` en `backend/src/main/resources/db/migration/`
 - [ ] T003 Puerto `in` de `emprendimientos` para consultar el emprendimiento `ACTIVO` de un usuario en `emprendimientos/application/ports/in/ConsultarEmprendimientoActivoPort.java`
 
 **Checkpoint**: base lista.

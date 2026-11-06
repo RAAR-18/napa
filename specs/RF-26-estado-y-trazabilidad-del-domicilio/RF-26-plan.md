@@ -18,7 +18,7 @@ Seguimiento del domicilio para las partes. El cliente o el vendedor del pedido c
 
 ## Estado actual del código
 
-`domicilio` y `evento_trazabilidad` los crea RF-14 (V10) y cada transición de RF-14, RF-19, RF-23 y RF-24 inserta su evento. Este plan crea la consulta, el envío de la ubicación y las pantallas del cliente y del vendedor. El bloque `domicilio` del detalle de pedido (RF-51 y RF-48) lo completa RF-14 y de ahí se llega a estas pantallas.
+`domicilio` y `evento_trazabilidad` los crea RF-14 (V11) y cada transición de RF-14, RF-19, RF-23 y RF-24 inserta su evento. Este plan crea la consulta, el envío de la ubicación y las pantallas del cliente y del vendedor. El bloque `domicilio` del detalle de pedido (RF-51 y RF-48) lo completa RF-14 y de ahí se llega a estas pantallas.
 
 ## Actors
 

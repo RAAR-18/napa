@@ -1,8 +1,10 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.config;
 
 import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
+import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
+import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.shared.domain.DomainException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,17 +57,25 @@ public class ConsoleVerificarCelularAdapter implements VerificarCelularPort {
     }
 
     @Override
-    public void solicitar(String celular, EstadoVerificacion estado, String ipAddress) {
+    public EnvioVerificacion iniciar(String celular, PropositoVerificacion proposito, CanalVerificacion canal) {
         try {
-            redisTemplate.opsForValue().set(key(celular, estado), "0", CODE_TTL);
+            redisTemplate.opsForValue().set(key(celular, proposito), "0", CODE_TTL);
+            return new EnvioVerificacion("console");
         } catch (DataAccessException exception) {
             throw unavailable(exception);
         }
     }
 
+    public void solicitar(String celular, Enum<?> estado, String ipAddress) {
+        PropositoVerificacion proposito = estado instanceof PropositoVerificacion p
+                ? p
+                : PropositoVerificacion.valueOf(((EstadoVerificacion) estado).name());
+        iniciar(celular, proposito, CanalVerificacion.WHATSAPP);
+    }
+
     @Override
-    public VerificacionResultado confirmar(String celular, EstadoVerificacion estado, String codigo) {
-        String key = key(celular, estado);
+    public VerificacionResultado.Estado confirmar(String celular, PropositoVerificacion proposito, String codigo) {
+        String key = key(celular, proposito);
         if (codigo != null && MessageDigest.isEqual(
                 expectedCode,
                 codigo.getBytes(StandardCharsets.UTF_8)
@@ -73,8 +83,8 @@ public class ConsoleVerificarCelularAdapter implements VerificarCelularPort {
             try {
                 Boolean consumed = redisTemplate.delete(key);
                 return Boolean.TRUE.equals(consumed)
-                        ? new VerificacionResultado(VerificacionResultado.Estado.APROBADA, MAX_ATTEMPTS)
-                        : new VerificacionResultado(VerificacionResultado.Estado.VENCIDA, 0);
+                        ? VerificacionResultado.Estado.APROBADA
+                        : VerificacionResultado.Estado.VENCIDA;
             } catch (DataAccessException exception) {
                 throw unavailable(exception);
             }
@@ -90,19 +100,19 @@ public class ConsoleVerificarCelularAdapter implements VerificarCelularPort {
                 throw unavailable(new IllegalStateException("Redis returned no verification attempt result"));
             }
             if (attemptsRemaining < 0) {
-                return new VerificacionResultado(VerificacionResultado.Estado.VENCIDA, 0);
+                return VerificacionResultado.Estado.VENCIDA;
             }
             if (attemptsRemaining == 0) {
-                return new VerificacionResultado(VerificacionResultado.Estado.AGOTADA, 0);
+                return VerificacionResultado.Estado.AGOTADA;
             }
-            return new VerificacionResultado(VerificacionResultado.Estado.INCORRECTA, attemptsRemaining.intValue());
+            return VerificacionResultado.Estado.INCORRECTA;
         } catch (DataAccessException exception) {
             throw unavailable(exception);
         }
     }
 
-    private String key(String celular, EstadoVerificacion estado) {
-        return "auth:verification:console:" + digest(celular + ":" + estado.name());
+    private String key(String celular, PropositoVerificacion proposito) {
+        return "auth:verification:console:" + digest(celular + ":" + proposito.name());
     }
 
     private String digest(String value) {

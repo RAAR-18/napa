@@ -18,7 +18,7 @@ El administrador cierra un reporte con `POST /reportes/{id}/resolver`, enviando 
 
 ## Estado actual del código
 
-RF-60 crea el reporte con las columnas `estado`, `nota_resolucion` y `resuelto_por_id` (V12) y RF-61 lo consulta. El listener de E16 en `notificaciones` está planeado en RF-38 (T028). No existe aún ninguna acción de resolver.
+RF-60 crea el reporte con las columnas `estado`, `nota_resolucion` y `resuelto_por_id` (V13) y RF-61 lo consulta. El listener de E16 en `notificaciones` está planeado en RF-38 (T028). No existe aún ninguna acción de resolver.
 
 ## Actors
 
@@ -174,7 +174,7 @@ frontend/__tests__/reportes/resolver-reporte.test.tsx
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar el módulo `reportes`, las columnas de V12 y que RF-38 (T028) escucha E16
+- [ ] T001 Confirmar el módulo `reportes`, las columnas de V13 y que RF-38 (T028) escucha E16
 
 ## Phase 2: Foundational
 

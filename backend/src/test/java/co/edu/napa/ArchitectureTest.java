@@ -47,4 +47,16 @@ class ArchitectureTest {
 
         rule.allowEmptyShould(true).check(classes);
     }
+
+    @Test
+    void emprendimientosDomainMustNotDependOnOtherFeatureModules() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("co.edu.napa.emprendimientos.domain..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage(
+                        "co.edu.napa.cuentas..",
+                        "co.edu.napa.notificaciones..");
+
+        rule.allowEmptyShould(true).check(classes);
+    }
 }

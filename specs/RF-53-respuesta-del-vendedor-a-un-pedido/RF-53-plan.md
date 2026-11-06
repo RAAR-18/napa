@@ -209,7 +209,7 @@ backend/src/main/java/co/edu/napa/pagos/
 ├── application/ports/in/         # RegistrarPagoPedidoPendientePort
 ├── application/usecase/          # RegistrarPagoPedidoPendienteUseCase
 └── infrastructure/adapters/out/persistence/   # PagoJpaEntity, repositorio
-backend/src/main/resources/db/migration/       # V9__pago.sql
+backend/src/main/resources/db/migration/       # V10__pago.sql
 backend/src/test/java/co/edu/napa/pedidos/
 
 frontend/src/components/pedidos/AccionesRespuestaPedido.tsx     # botones Aceptar y Rechazar con confirmación
@@ -226,7 +226,7 @@ frontend/__tests__/pedidos/respuesta.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V9__pago.sql`: tabla `pago` (id, tipo, monto `bigint`, medio, estado, confirmado_at, pedido_id único nulo, domicilio_id único nulo, `comprador_id`, `vendedor_id`, `domiciliario_id` (nulos; copias físicas para RF-40/41, sin cambio de ER) con índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)`, created_at, updated_at) con CHECK de que tiene exactamente uno de `pedido_id` o `domicilio_id`, en `backend/src/main/resources/db/migration/`
+- [ ] T002 Migración `V10__pago.sql`: tabla `pago` (id, tipo, monto `bigint`, medio, estado, confirmado_at, pedido_id único nulo, domicilio_id único nulo, `comprador_id`, `vendedor_id`, `domiciliario_id` (nulos; copias físicas para RF-40/41, sin cambio de ER) con índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)`, created_at, updated_at) con CHECK de que tiene exactamente uno de `pedido_id` o `domicilio_id`, en `backend/src/main/resources/db/migration/`
 - [ ] T003 Dominio `Pago` y `RegistrarPagoPedidoPendienteUseCase` con su puerto `in` en `pagos/`
 - [ ] T004 `PedidoRepositoryPort.bloquearPorId` con `SELECT ... FOR UPDATE`
 

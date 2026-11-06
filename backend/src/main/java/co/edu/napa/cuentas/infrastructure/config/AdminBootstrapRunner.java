@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.config;
 
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;

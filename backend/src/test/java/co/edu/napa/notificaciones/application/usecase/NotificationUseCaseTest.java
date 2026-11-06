@@ -170,6 +170,8 @@ class NotificationUseCaseTest {
         UUID vendorId = UUID.fromString("30000000-0000-0000-0000-000000000002");
         UUID courierId = UUID.fromString("30000000-0000-0000-0000-000000000003");
         UUID authorId = UUID.fromString("30000000-0000-0000-0000-000000000004");
+        UUID adminId = UUID.fromString("30000000-0000-0000-0000-000000000005");
+        UUID secondAdminId = UUID.fromString("30000000-0000-0000-0000-000000000006");
         List<NotificationEvent> events = List.of(
                 event("pedidos.pedido-creado", Map.of("vendedorId", vendorId)),
                 event("pedidos.pedido-aceptado", Map.of("compradorId", buyerId, "requierePagoDigital", true)),
@@ -177,6 +179,11 @@ class NotificationUseCaseTest {
                 event("pagos.pago-pedido-confirmado", Map.of("compradorId", buyerId)),
                 event("entregas.entrega-directa-iniciada", Map.of("compradorId", buyerId)),
                 event("pedidos.pedido-listo-para-recoger", Map.of("compradorId", buyerId)),
+                event("pedidos.pedido-entregado", Map.of("compradorId", buyerId)),
+                event("pedidos.pedido-entregado", Map.of(
+                        "compradorId", buyerId,
+                        "domicilioId", UUID.randomUUID()
+                )),
                 event("domicilios.domicilio-publicado", Map.of()),
                 event("domicilios.domicilio-asignado", Map.of("compradorId", buyerId, "vendedorId", vendorId)),
                 event("domicilios.domicilio-recogido", Map.of("vendedorId", vendorId)),
@@ -193,20 +200,37 @@ class NotificationUseCaseTest {
                         "domiciliarioId", courierId
                 )),
                 event("reportes.reporte-resuelto", Map.of("autorId", authorId)),
-                event("calificaciones.comentario-moderado", Map.of("autorId", authorId))
+                event("calificaciones.comentario-moderado", Map.of("autorId", authorId)),
+                event("reportes.reporte-creado", Map.of(
+                        "reporteId", UUID.randomUUID(),
+                        "autorId", authorId
+                ))
         );
         when(audience.isActiveUser(any())).thenReturn(true);
         when(audience.findActiveCouriers()).thenReturn(List.of(courierId));
+        when(audience.findActiveAdministrators()).thenReturn(List.of(adminId, secondAdminId));
         when(preferences.findByUsuario(any())).thenReturn(Map.of());
         when(notifications.saveIfAbsent(any(), any())).thenReturn(true);
 
         events.forEach(useCase::process);
 
         ArgumentCaptor<Notificacion> saved = ArgumentCaptor.forClass(Notificacion.class);
-        verify(notifications, times(19)).saveIfAbsent(any(), saved.capture());
+        verify(notifications, times(22)).saveIfAbsent(any(), saved.capture());
         assertTrue(saved.getAllValues().stream()
                 .filter(notification -> notification.tipo().equals(TipoNotificacion.PEDIDO_ACEPTADO.eventType()))
                 .allMatch(notification -> notification.cuerpo().contains("Transfiere el total")));
+        List<Notificacion> deliveredNotifications = saved.getAllValues().stream()
+                .filter(notification -> notification.tipo().equals(TipoNotificacion.PEDIDO_ENTREGADO.eventType()))
+                .toList();
+        assertEquals(1, deliveredNotifications.size());
+        assertEquals("Tu pedido fue entregado. ¡Califica tu experiencia!", deliveredNotifications.getFirst().cuerpo());
+
+        List<Notificacion> reportNotifications = saved.getAllValues().stream()
+                .filter(notification -> notification.tipo().equals(TipoNotificacion.REPORTE_CREADO.eventType()))
+                .toList();
+        assertEquals(2, reportNotifications.size());
+        assertTrue(reportNotifications.stream().anyMatch(notification -> notification.usuarioId().equals(adminId)));
+        assertTrue(reportNotifications.stream().anyMatch(notification -> notification.usuarioId().equals(secondAdminId)));
     }
 
     @Test

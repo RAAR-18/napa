@@ -199,6 +199,18 @@ public class NotificationPersistenceAdapter implements
     }
 
     @Override
+    public List<UUID> findActiveAdministrators() {
+        return jdbcTemplate.query(
+                """
+                SELECT id FROM usuario
+                WHERE rol = 'ADMINISTRADOR' AND estado = 'ACTIVA'
+                ORDER BY id
+                """,
+                (result, rowNumber) -> result.getObject("id", UUID.class)
+        );
+    }
+
+    @Override
     public List<String> findPushTokens(UUID usuarioId) {
         return jdbcTemplate.query(
                 """

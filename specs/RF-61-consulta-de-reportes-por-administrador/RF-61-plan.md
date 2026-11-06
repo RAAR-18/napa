@@ -18,7 +18,7 @@ El administrador ve los reportes que llegan desde RF-60. `GET /reportes` los lis
 
 ## Estado actual del código
 
-RF-60 crea la tabla `reporte` (V12) y el módulo `reportes`; su plan dejó sin definir el `GET`. Los puertos de lectura de `pedidos`, `domicilios` y `cuentas` existen en parte (RF-60 T003, RF-02 T002) y se amplían aquí. No existe ninguna pantalla del administrador para reportes.
+RF-60 crea la tabla `reporte` (V13) y el módulo `reportes`; su plan dejó sin definir el `GET`. Los puertos de lectura de `pedidos`, `domicilios` y `cuentas` existen en parte (RF-60 T003, RF-02 T002) y se amplían aquí. No existe ninguna pantalla del administrador para reportes.
 
 ## Actors
 
@@ -31,7 +31,7 @@ RF-60 crea la tabla `reporte` (V12) y el módulo `reportes`; su plan dejó sin d
 
 Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
-- Listado completo en < 2 s (SC-001): consulta paginada con el índice `(estado, created_at)` de RF-60 (V12) y nombres de autor en lote.
+- Listado completo en < 2 s (SC-001): consulta paginada con el índice `(estado, created_at)` de RF-60 (V13) y nombres de autor en lote.
 - 100 % de los reportes consultables (SC-002): sin filtro devuelve todos los estados; no hay reportes ocultos.
 
 ## Spec Coverage

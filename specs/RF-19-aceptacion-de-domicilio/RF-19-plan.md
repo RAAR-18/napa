@@ -18,7 +18,7 @@ El domiciliario acepta un domicilio `DISPONIBLE` con `POST /domicilios/{id}/acep
 
 ## Estado actual del código
 
-El domicilio `DISPONIBLE` lo crea RF-14 y la pantalla de información (con el botón Aceptar) RF-18. No existe la columna de código generado (la tabla `domicilio` ya tiene `codigo_confirmacion` nulo, V10).
+El domicilio `DISPONIBLE` lo crea RF-14 y la pantalla de información (con el botón Aceptar) RF-18. No existe la columna de código generado (la tabla `domicilio` ya tiene `codigo_confirmacion` nulo, V11).
 
 ## Actors
 
@@ -51,7 +51,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | SC-003 | < 10 s | Una llamada | T040 |
 | US1-E1 | Aceptación exitosa | `200`, `ASIGNADO`, código generado, trazabilidad y E09 | T010, T012 |
 | US1-E2 | Dos domiciliarios al mismo tiempo | Uno gana; el otro `409 NOT_AVAILABLE` | T011 |
-| Edge 1 | Límite de domicilios simultáneos por domiciliario | Decisión del equipo: máximo uno activo; verificación en el caso de uso y garantía final con el índice único parcial `(domiciliario_id)` de V10; `409 ACTIVE_DELIVERY_EXISTS` | T025, T026 |
+| Edge 1 | Límite de domicilios simultáneos por domiciliario | Decisión del equipo: máximo uno activo; verificación en el caso de uso y garantía final con el índice único parcial `(domiciliario_id)` de V11; `409 ACTIVE_DELIVERY_EXISTS` | T025, T026 |
 | Edge 2 | Cancelado justo antes de aceptar | La actualización condicional no afecta filas: `409 NOT_AVAILABLE` | T019 |
 
 ## Non-Functional Requirements Check

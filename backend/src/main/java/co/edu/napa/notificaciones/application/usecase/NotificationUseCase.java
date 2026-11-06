@@ -169,6 +169,16 @@ public class NotificationUseCase implements ProcessNotificationEventPort {
                     add(recipients, payloadUuid(event, "compradorId"), "Entrega en camino", "El vendedor inició la entrega directa.");
             case PEDIDO_LISTO_PARA_RECOGER ->
                     add(recipients, payloadUuid(event, "compradorId"), "Pedido listo", "Tu pedido está listo para recoger.");
+            case PEDIDO_ENTREGADO -> {
+                if (optionalPayloadUuid(event, "domicilioId") == null) {
+                    add(
+                            recipients,
+                            payloadUuid(event, "compradorId"),
+                            "Pedido entregado",
+                            "Tu pedido fue entregado. ¡Califica tu experiencia!"
+                    );
+                }
+            }
             case DOMICILIO_PUBLICADO -> audience.findActiveCouriers().forEach(userId ->
                     add(recipients, userId, "Nuevo domicilio disponible", "Hay un nuevo domicilio disponible para aceptar."));
             case DOMICILIO_ASIGNADO -> {
@@ -180,7 +190,12 @@ public class NotificationUseCase implements ProcessNotificationEventPort {
             case DOMICILIO_EN_CAMINO ->
                     add(recipients, payloadUuid(event, "compradorId"), "Domicilio en camino", "Tu pedido va en camino.");
             case DOMICILIO_ENTREGADO -> {
-                add(recipients, payloadUuid(event, "compradorId"), "Pedido entregado", "Tu pedido fue entregado.");
+                add(
+                        recipients,
+                        payloadUuid(event, "compradorId"),
+                        "Pedido entregado",
+                        "Tu pedido fue entregado. ¡Califica tu experiencia!"
+                );
                 add(recipients, payloadUuid(event, "vendedorId"), "Pedido entregado", "El pedido fue entregado. Registra el pago de la tarifa al domiciliario.");
             }
             case PAGO_TARIFA_REGISTRADO ->
@@ -197,6 +212,8 @@ public class NotificationUseCase implements ProcessNotificationEventPort {
                     add(recipients, payloadUuid(event, "autorId"), "Reporte resuelto", "El administrador resolvió tu reporte.");
             case COMENTARIO_MODERADO ->
                     add(recipients, payloadUuid(event, "autorId"), "Comentario moderado", "El administrador moderó uno de tus comentarios.");
+            case REPORTE_CREADO -> audience.findActiveAdministrators().forEach(userId ->
+                    add(recipients, userId, "Nuevo reporte", "Hay un nuevo reporte pendiente para revisar."));
         }
         return recipients;
     }

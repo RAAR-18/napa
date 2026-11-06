@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.persistence;
+package co.edu.napa.cuentas.infrastructure.adapters.out.persistence;
 
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
 import co.edu.napa.cuentas.domain.model.RolUsuario;

@@ -23,7 +23,7 @@ El `Pago` ya existe en `PENDIENTE_CONFIRMACION` desde que el vendedor aceptó (R
 
 ## Estado actual del código
 
-No existe `pagos` ni la tabla `pago`: la crean RF-53 (migración V9 y `RegistrarPagoPedidoPendientePort`). Este plan agrega la confirmación sobre ese módulo. El estado del pago se consulta por el puerto de RF-51.
+No existe `pagos` ni la tabla `pago`: la crean RF-53 (migración V10 y `RegistrarPagoPedidoPendientePort`). Este plan agrega la confirmación sobre ese módulo. El estado del pago se consulta por el puerto de RF-51.
 
 ## Actors
 

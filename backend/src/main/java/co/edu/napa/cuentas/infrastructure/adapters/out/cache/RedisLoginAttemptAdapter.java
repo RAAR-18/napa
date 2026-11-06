@@ -1,4 +1,4 @@
-package co.edu.napa.cuentas.infrastructure.security;
+package co.edu.napa.cuentas.infrastructure.adapters.out.cache;
 
 import co.edu.napa.cuentas.application.ports.out.LoginAttemptPort;
 import co.edu.napa.shared.domain.DomainException;

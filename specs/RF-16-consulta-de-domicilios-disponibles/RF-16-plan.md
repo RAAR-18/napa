@@ -18,7 +18,7 @@ El domiciliario consulta los domicilios `DISPONIBLE` con `GET /domicilios/dispon
 
 ## Estado actual del código
 
-El módulo `domicilios` y las tablas `domicilio` y `domicilio_rechazo` los crea el plan de RF-14 (V10). La tabla `ubicacion` y `DistanciaLineaRectaPort` (PostGIS) vienen de RF-45. No existe aún ninguna pantalla del domiciliario.
+El módulo `domicilios` y las tablas `domicilio` y `domicilio_rechazo` los crea el plan de RF-14 (V11). La tabla `ubicacion` y `DistanciaLineaRectaPort` (PostGIS) vienen de RF-45. No existe aún ninguna pantalla del domiciliario.
 
 ## Actors
 
@@ -190,11 +190,11 @@ frontend/__tests__/domicilios/disponibles.test.tsx
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar el módulo `domicilios`, V10 (`domicilio`, `domicilio_rechazo`) y `DistanciaLineaRectaPort` (RF-14 T002; RF-45 T005)
+- [ ] T001 Confirmar el módulo `domicilios`, V11 (`domicilio`, `domicilio_rechazo`) y `DistanciaLineaRectaPort` (RF-14 T002; RF-45 T005)
 
 ## Phase 2: Foundational
 
-- [ ] T002 Índice `(estado, created_at)` sobre `domicilio` en una migración `V11__indices_domicilio.sql` en `backend/src/main/resources/db/migration/`
+- [ ] T002 Índice `(estado, created_at)` sobre `domicilio` en una migración `V12__indices_domicilio.sql` en `backend/src/main/resources/db/migration/`
 - [ ] T003 Ampliar `PedidoParaDomicilioPort` con una consulta en lote de tarifa y destino por lista de pedidos (puerto `in` de `pedidos`)
 
 **Checkpoint**: base lista.

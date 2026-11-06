@@ -98,6 +98,7 @@ class NotificationSchemaIntegrationTest {
     void persistenceSupportsOwnedReadsPreferencesDeduplicationAndRetention() {
         UUID userId = insertActiveUser("CLIENTE");
         UUID courierId = insertActiveUser("DOMICILIARIO");
+        UUID adminId = insertActiveUser("ADMINISTRADOR");
         Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
         UUID firstId = UUID.randomUUID();
         UUID firstEventId = UUID.randomUUID();
@@ -143,6 +144,7 @@ class NotificationSchemaIntegrationTest {
         );
         assertTrue(notifications.isActiveUser(userId));
         assertTrue(notifications.findActiveCouriers().contains(courierId));
+        assertEquals(java.util.List.of(adminId), notifications.findActiveAdministrators());
         assertEquals(1, notifications.deleteCreatedBefore(now.minus(30, ChronoUnit.DAYS)));
         assertEquals(2, notifications.deleteByUsuario(userId));
     }

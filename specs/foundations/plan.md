@@ -72,7 +72,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 ### Notificaciones (RF-38, RF-39)
 
 - Entidades `Notificacion`, `PreferenciaNotificacion` y `DispositivoToken` (en `spec-general`).
-- El manejador de outbox de `notificaciones/infrastructure/event` enruta E01–E12 y E14–E18 al puerto de aplicación; el caso de uso consulta preferencias, persiste con deduplicación por `(eventId, usuarioId)` y prepara los envíos push.
+- El manejador de outbox de `notificaciones/infrastructure/event` enruta E01–E12 y E14–E19 al puerto de aplicación; E18 limpia notificaciones de cuentas eliminadas, y E19 avisa a los administradores de reportes nuevos.
 - El adaptador FCM usa `sendEachForMulticast` en lotes de 500; tokens `UNREGISTERED` se eliminan. Si FCM falla, la notificación sigue visible en RF-38 (degradación controlada, RNF19/RNF15).
 - El feed y las preferencias se consultan mediante endpoints autenticados; el detalle marca como leída al abrir. La retención se aplica diariamente a los 30 días.
 - Las preferencias de RF-39 se respetan para todos los tipos de notificación; no existen excepciones no silenciables.
@@ -132,34 +132,24 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [x] F012 `IdempotencyFilter` con Redis, integrado después de autenticación; pruebas de concurrencia en `shared/infrastructure/idempotency/`
 - [x] F013 Utilidades geo y `RoutingPort` con adaptador OpenRouteService en `shared/infrastructure/geo/`
 - [x] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
-- [x] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis); 3 pruebas por suite, sin omisiones ni fallos
+- [x] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis); 3 pruebas por suite pasaron en una ejecución previa. En la ejecución actual: 143 pruebas, 17 omitidas por falta de Docker y 0 fallos; repetir las suites en Docker CI.
 
 **Phase F2 – Identidad (RF-07, RF-09, RF-10, RF-11)**
-<<<<<<< HEAD
-- [x] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración (modelos, entidades JPA y adaptadores creados; migración y validación JPA comprobadas en PostgreSQL/PostGIS con Testcontainers)
-- [x] F021 Completar `SolicitarVerificacionUseCase` y `ConfirmarVerificacionUseCase` sobre `VerificarCelularPort`, con límites de envíos/intentos en Redis (puerto y flujos de aplicación iniciados)
-- [ ] F022 Crear el servicio de Twilio Verify, habilitar WhatsApp con respaldo SMS, confirmar vigencia, intentos, tarifa y elegibilidad/cuota gratuita para Colombia, y fijar un tope mensual global de gasto con alerta. No habilitar envíos reales hasta verificar estas condiciones y aprobar el presupuesto. Activar la cuenta de prueba solo al llegar a esta tarea (dura 30 días y solo envía a números verificados)
-=======
-- [ ] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración (modelos, entidades JPA y adaptadores creados; falta ejecutar validación de migración/JPA en PostgreSQL/PostGIS con Docker)
-- [ ] F021 Completar el flujo de solicitud/confirmación sobre `VerificarCelularPort`, con límites de envíos por celular/IP en Redis y adaptador de código fijo disponible solo en el perfil explícito `otp-console` (implementado; pendiente validar los scripts Redis con Testcontainers en Docker CI)
-- [ ] F022 Crear el servicio de Twilio Verify, habilitar WhatsApp con respaldo SMS, confirmar vigencia, intentos y tarifa para Colombia, y fijar un tope mensual de gasto con alerta. Activar la cuenta de prueba solo al llegar a esta tarea (dura 30 días y solo envía a números verificados)
->>>>>>> produ
+- [ ] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración (implementación presente; falta validar migración/JPA con PostgreSQL/PostGIS en Docker CI)
+- [ ] F021 Completar el flujo de solicitud/confirmación sobre `VerificarCelularPort`, límites de envíos e intentos en Redis y adaptador `otp-console` (implementado; los tests de integración Redis se omiten cuando Docker no está disponible)
+- [ ] F022 Integrar Twilio Verify solo después de confirmar elegibilidad, tarifas y presupuesto para Colombia; no habilitar envíos reales antes de aprobar el tope mensual de gasto.
 - [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover (rutas creadas; OTP queda cerrado con 503 hasta configurar un proveedor)
 - [x] F024 Filtro JWT con `sv` y bootstrap admin de un solo uso
 - [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado (hay pruebas unitarias de login/rate-limit y revocación; falta proveedor e integración Redis/PostgreSQL)
 
-<<<<<<< HEAD
-**Avance F2**: Argon2id, validación de contraseñas, JWT HS256 con expiración, refresh token opaco rotativo y guardado como hash, revocación de sesiones en Redis, limitación de login, bootstrap administrativo, endpoints de autenticación, modelos/adaptadores de persistencia para usuario, sesión, ubicación y token de dispositivo, y esquema de identidad están implementados. F015 pasó localmente con Testcontainers: las suites de Redis y PostgreSQL/PostGIS ejecutaron 3 pruebas cada una, sin omisiones ni fallos; el contexto Spring también validó el esquema JPA. El proveedor OTP real está deliberadamente diferido por presupuesto; la implementación falla de forma explícita con `503` en verificación, y no guarda ni registra OTP. RF-11 no expone endpoint hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes.
-=======
-**Avance F2**: Argon2id, validación de contraseñas, JWT HS256 con expiración, refresh token opaco rotativo y guardado como hash, revocación de sesiones en Redis, limitación de login y el código de límites para solicitudes OTP, bootstrap administrativo, endpoints de autenticación, modelos/adaptadores de persistencia para usuario, sesión, ubicación y token de dispositivo, y esquema de identidad están implementados. La verificación de desarrollo está disponible solo al activar el perfil `otp-console`; por defecto el proveedor OTP sigue deshabilitado y responde explícitamente `503`. Ningún OTP se guarda ni se registra; el estado efímero de la verificación de consola vive en Redis. Twilio real permanece diferido por presupuesto. F021 queda pendiente hasta ejecutar sus pruebas de Redis con Testcontainers en Docker CI. RF-11 no expone endpoint hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes. La migración V3 y la validación JPA/Testcontainers aún deben ejecutarse en Docker CI.
->>>>>>> produ
+**Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` es explícito; sin proveedor configurado la verificación responde `503`, y nunca se persiste ni registra el OTP. Las pruebas unitarias pasan; las suites de Redis y PostgreSQL/PostGIS se omiten cuando Docker no está disponible, por lo que su validación queda pendiente en CI. RF-11 se difiere hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes.
 
 **Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. El proveedor real de OTP y sus costos quedan diferidos hasta aprobar presupuesto. RF-11 se implementará después de los módulos de pedidos, emprendimientos y domicilios, porque aún no existen sus tablas para comprobar operaciones pendientes.
 
 **Phase F3 – Notificaciones (RF-38, RF-39)**
-- [ ] F030 Tablas `Notificacion` y `PreferenciaNotificacion` en V4; `DispositivoToken` ya existe en V3. Migración y prueba Testcontainers implementadas, pero falta validar en PostgreSQL/PostGIS con Docker CI.
+- [ ] F030 Tablas `Notificacion` y `PreferenciaNotificacion` en V4; `DispositivoToken` ya existe en V3. La migración está implementada, pero falta validar en PostgreSQL/PostGIS con Docker CI.
 - [x] F031 Adaptador FCM opt-in (Firebase Admin), lotes máximos de 500, limpieza de tokens `UNREGISTERED` y resultado explícito de entrega. Pruebas unitarias pasan; pendiente validar con credenciales/entorno FCM real.
-- [x] F032 Caso de uso, endpoints feed/detalle/preferencias, job de retención y manejador multi-evento para E01–E12, E14–E18 con deduplicación por destinatario.
+- [x] F032 Caso de uso, endpoints feed/detalle/preferencias, job de retención y manejador multi-evento para E01–E12, E14–E19 con deduplicación por destinatario. Pruebas unitarias pasan; la validación del esquema sigue pendiente en F030.
 - [ ] F033 Entidad `mensaje` y adaptador Twilio Verify de producción (RF-70); fuera del alcance aprobado para desarrollo, que mantiene OTP real deshabilitado.
 
 **Phase F4 – Frontend base**

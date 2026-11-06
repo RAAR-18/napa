@@ -228,7 +228,7 @@ backend/src/main/java/co/edu/napa/pedidos/
 └── infrastructure/adapters/
     ├── in/web/                   # PedidoController (POST /pedidos, POST /pedidos/cotizacion), DTOs
     └── out/persistence/          # PedidoJpaEntity, ItemPedidoJpaEntity, repositorios, adaptadores a los puertos `in` de otros módulos
-backend/src/main/resources/db/migration/   # V8__pedido.sql
+backend/src/main/resources/db/migration/   # V9__pedido.sql
 backend/src/main/resources/application.yml # tarifa.base, tarifa.valor_por_km, tarifa.valor_por_min, tarifa.factor_linea_recta
 backend/src/test/java/co/edu/napa/pedidos/
 
@@ -253,7 +253,7 @@ frontend/__tests__/pedidos/realizar.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T003 Migración `V8__pedido.sql`: tablas `pedido` (id, usuario_id, emprendimiento_id, modalidad, estado, reserva_at `timestamptz` nulo, medio_pago, tarifa_domicilio `bigint` nulo, total `bigint`, ubicacion_entrega_id único nulo, created_at, updated_at) e `item_pedido` (id, pedido_id, producto_id, cantidad `numeric(10,2)` > 0, precio_unitario `bigint`, único `(pedido_id, producto_id)`), con CHECK de modalidad/tarifa/medio/ubicación e índices `(emprendimiento_id, created_at desc)`, `(usuario_id, created_at desc)`, `(emprendimiento_id, estado)`, en `backend/src/main/resources/db/migration/`
+- [ ] T003 Migración `V9__pedido.sql`: tablas `pedido` (id, usuario_id, emprendimiento_id, modalidad, estado, reserva_at `timestamptz` nulo, medio_pago, tarifa_domicilio `bigint` nulo, total `bigint`, ubicacion_entrega_id único nulo, created_at, updated_at) e `item_pedido` (id, pedido_id, producto_id, cantidad `numeric(10,2)` > 0, precio_unitario `bigint`, único `(pedido_id, producto_id)`), con CHECK de modalidad/tarifa/medio/ubicación e índices `(emprendimiento_id, created_at desc)`, `(usuario_id, created_at desc)`, `(emprendimiento_id, estado)`, en `backend/src/main/resources/db/migration/`
 - [ ] T004 Puertos `in` auxiliares: `ConsultarEmprendimientoParaPedidoPort` en `emprendimientos` (id, estado, dueño, rol del dueño, ubicación del punto A)
 - [ ] T005 `UbicacionRepositoryPort` compartido y `DistanciaLineaRectaPort` con PostGIS (`ST_Distance` sobre `geography`) en `shared/application/ports/out/` y su adaptador
 

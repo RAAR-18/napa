@@ -166,7 +166,7 @@ Los listados de calificaciones son RF-02 (`GET /calificaciones`).
 |---|---|---|
 | Unitarias | `Calificacion.crear` (puntaje, comentario, estado inicial, un solo destino) | FR-008 |
 | Integración | Cada combinación de la tabla de autorización; pedido no entregado en cada estado; destino fuera del pedido; duplicada; carrera de dos envíos; idempotencia | FR-001–FR-008, Edge 1–4 |
-| Migración | V13 aplica sobre V12: CHECKs y único | FR-006, FR-008 |
+| Migración | V14 aplica sobre V13: CHECKs y único | FR-006, FR-008 |
 | Arquitectura | `comentarios` usa `pedidos`, `domicilios` y `cuentas` solo por sus puertos `in` | RNF13, RNF25 |
 | Frontend | Jest: estrellas, formulario, destinos según el rol, outbox, `409` | US1–US3 |
 
@@ -198,7 +198,7 @@ backend/src/main/java/co/edu/napa/comentarios/
     └── out/persistence/          # CalificacionJpaEntity, adaptadores de repositorio y de PedidoCalificablePort
 
 backend/src/main/java/co/edu/napa/pedidos/application/ports/in/   # ConsultarParticipantesPedidoPort (ampliado: estado, domiciliario, ítems)
-backend/src/main/resources/db/migration/                           # V13__calificacion.sql
+backend/src/main/resources/db/migration/                           # V14__calificacion.sql
 backend/src/test/java/co/edu/napa/comentarios/
 
 frontend/src/app/(comun)/calificar/[pedidoId].tsx          # ruta Expo Router: destinos calificables del pedido según el rol
@@ -216,7 +216,7 @@ frontend/__tests__/calificaciones/
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V13__calificacion.sql` en `backend/src/main/resources/db/migration/`: tabla `calificacion` (id, autor_id, pedido_id, emprendimiento_id nulo, producto_id nulo, usuario_id nulo, puntaje, comentario nulo, estado, created_at, updated_at); CHECK de exactamente un destino, de puntaje 1–5 y de comentario ≤ 300; único `(autor_id, pedido_id, COALESCE(emprendimiento_id, cero), COALESCE(producto_id, cero), COALESCE(usuario_id, cero))`; índices `(emprendimiento_id, estado, created_at)`, `(producto_id, estado, created_at)` y `(usuario_id, estado, created_at)` que usará RF-02
+- [ ] T002 Migración `V14__calificacion.sql` en `backend/src/main/resources/db/migration/`: tabla `calificacion` (id, autor_id, pedido_id, emprendimiento_id nulo, producto_id nulo, usuario_id nulo, puntaje, comentario nulo, estado, created_at, updated_at); CHECK de exactamente un destino, de puntaje 1–5 y de comentario ≤ 300; único `(autor_id, pedido_id, COALESCE(emprendimiento_id, cero), COALESCE(producto_id, cero), COALESCE(usuario_id, cero))`; índices `(emprendimiento_id, estado, created_at)`, `(producto_id, estado, created_at)` y `(usuario_id, estado, created_at)` que usará RF-02
 - [ ] T003 Ampliar `ConsultarParticipantesPedidoPort` (RF-60 T003) con estado, productos de los ítems y domiciliario del domicilio, en `pedidos/application/ports/in/`
 - [ ] T004 Dominio `Calificacion`, `EstadoCalificacion` y `TipoEntidadCalificable` en `comentarios/domain/model/`
 - [ ] T005 Puertos `CalificacionRepositoryPort` y `PedidoCalificablePort` y su adaptador sobre el puerto `in` de `pedidos`
@@ -239,7 +239,7 @@ frontend/__tests__/calificaciones/
 - [ ] T015 [P] [US1] Test parametrizado de puntaje nulo, 0, 6 y decimal, comentario de 301 caracteres, `tipoEntidad` o `entidadId` faltante (`400`) en `.../comentarios/CalificarValidacionIT.java`
 - [ ] T016 [P] [US1] Test de repetición con la misma `Idempotency-Key`, clave reutilizada con otro cuerpo (`422`) y falta de clave (`400`) en `.../comentarios/CalificarIdempotenciaIT.java`
 - [ ] T017 [P] [US1] Test de integración: pedido ajeno o inexistente (`404`), sin interacción (`404`) y administrador (`403`) en `.../comentarios/CalificarAutorizacionIT.java`
-- [ ] T018 [P] [US1] Test de migración V13 (CHECKs y único con las tres columnas de destino) en `.../comentarios/MigracionV13Test.java`
+- [ ] T018 [P] [US1] Test de migración V14 (CHECKs y único con las tres columnas de destino) en `.../comentarios/MigracionV14Test.java`
 - [ ] T030 [P] [US1] Test del selector de estrellas, del formulario y de la pantalla del cliente (destinos, `409`, outbox sin red) en `frontend/__tests__/calificaciones/calificar-cliente.test.tsx`
 
 ### Implementation

@@ -15,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,7 +65,8 @@ class NotificationOutboxEventHandlerTest {
         assertEquals(new NotificationEvent(eventId, event.type(), payload), applicationEvent.getValue());
         verify(pushNotifications).send(dispatch.tokens(), dispatch.title(), dispatch.body());
         assertEquals("pedidos.pedido-creado", handler.eventType());
-        assertEquals(16, handler.eventTypes().size());
+        assertEquals(18, handler.eventTypes().size());
         assertTrue(handler.eventTypes().contains("cuentas.cuenta-eliminada"));
+        assertTrue(handler.eventTypes().contains("reportes.reporte-creado"));
     }
 }

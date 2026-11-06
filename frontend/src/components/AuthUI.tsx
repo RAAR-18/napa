@@ -91,6 +91,7 @@ export function PrimaryButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={title}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || busy, busy }}
       disabled={disabled || busy}
@@ -120,6 +121,7 @@ export function TextButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={title}
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
@@ -158,6 +160,7 @@ export function OptionButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
       onPress={onPress}

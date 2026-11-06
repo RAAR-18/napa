@@ -156,7 +156,7 @@ Los otros roles reciben `403` en los dos endpoints de moderación y el modo admi
 | Unitarias | `Calificacion.eliminarPorModeracion` y `editarTexto` (estados, puntaje intacto, texto anterior) | FR-002, FR-003 |
 | Integración | Endpoints con Testcontainers: eliminar y editar; promedio tras cada uno; registro con administrador, fecha, motivo y texto anterior; E17 con el motivo en el outbox; estados no `ACTIVA`; sin comentario; roles; modo administrador del listado | FR-001–FR-005, SC-001–SC-003 |
 | Concurrencia | Dos administradores sobre la misma calificación | RNF08 |
-| Migración | V14 aplica sobre V13 | FR-004 |
+| Migración | V15 aplica sobre V14 | FR-004 |
 | Arquitectura | `comentarios` publica E17 solo con `domain/event` | RNF13 |
 | Frontend | Jest: pantalla de moderación, confirmación, edición y errores | US1, US2 |
 
@@ -187,7 +187,7 @@ backend/src/main/java/co/edu/napa/comentarios/
     ├── in/web/                   # rama administrador de CalificacionController, endpoints de moderación y DTO
     └── out/persistence/          # ModeracionJpaEntity y consulta administrativa
 
-backend/src/main/resources/db/migration/   # V14__moderacion_comentario.sql
+backend/src/main/resources/db/migration/   # V15__moderacion_comentario.sql
 backend/src/test/java/co/edu/napa/comentarios/
 
 frontend/src/app/(administrador)/calificaciones/index.tsx         # lista con filtros
@@ -206,7 +206,7 @@ frontend/__tests__/calificaciones/
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V14__moderacion_comentario.sql` en `backend/src/main/resources/db/migration/`: tabla `moderacion_comentario` (id, calificacion_id, administrador_id, accion, motivo, contenido_anterior, created_at) con índice `(calificacion_id, created_at)`
+- [ ] T002 Migración `V15__moderacion_comentario.sql` en `backend/src/main/resources/db/migration/`: tabla `moderacion_comentario` (id, calificacion_id, administrador_id, accion, motivo, contenido_anterior, created_at) con índice `(calificacion_id, created_at)`
 - [ ] T003 Dominio `ModeracionComentario`, `AccionModeracion` y `ComentarioModeradoEvent` (E17) en `comentarios/domain/`, y métodos `eliminarPorModeracion` y `editarTexto` en `Calificacion`
 - [ ] T004 `ModeracionRepositoryPort` y su adaptador
 
@@ -227,7 +227,7 @@ frontend/__tests__/calificaciones/
 - [ ] T014 [P] [US1] Test de integración: la calificación eliminada ya no aparece en `GET /calificaciones` de los demás roles en `.../comentarios/ModeracionVisibilidadIT.java`
 - [ ] T015 [P] [US1] Test de `motivo` ausente, en blanco, corto y largo (`400`), de estados no `ACTIVA` (`409`), sin comentario (`422`), inexistente (`404`), no administrador (`403`), reintento con la misma `Idempotency-Key`, clave reutilizada (`422`), falta de clave (`400`) en `.../comentarios/EliminarModeracionErroresIT.java`
 - [ ] T016 [P] [US1] Test de concurrencia: dos administradores eliminan la misma calificación (uno `200`, otro `409`) en `.../comentarios/ModeracionConcurrenciaIT.java`
-- [ ] T017 [P] [US1] Test de migración V14 en `.../comentarios/MigracionV14Test.java`
+- [ ] T017 [P] [US1] Test de migración V15 en `.../comentarios/MigracionV15Test.java`
 - [ ] T018 [P] [US1] Test de integración del modo administrador de `GET /calificaciones` (sin filtros, `estado`, `tipoEntidad`, orden; otros roles con `estado` dan `400`) en `.../comentarios/ListarAdminIT.java`
 - [ ] T019 [P] [US1] Test de integración: moderar (eliminar y editar) sobre el texto vigente tras una edición del autor, y calificación `ELIMINADA_AUTOR` no moderable (`409`); se deshabilita hasta que existan RF-04 y RF-05, en `.../comentarios/ModeracionTrasAutorIT.java`
 - [ ] T030 [P] [US1] Test de la lista y de la acción de eliminar con confirmación y motivo obligatorio en `frontend/__tests__/calificaciones/moderacion-eliminar.test.tsx`

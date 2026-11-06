@@ -296,6 +296,7 @@ sin codigo_validado_at ni llegada_confirmada_at (la fecha de la entrega queda en
 | 20 | Un reporte sobre un usuario solo es válido si el autor y el reportado compartieron al menos un pedido (RF-60). |
 | 21 | Cada rol solo puede calificar ciertos destinos de un pedido ENTREGADO: cliente → emprendimiento, productos y domiciliario; vendedor → cliente y (punto fijo) domiciliario; domiciliario → emprendimiento y cliente (RF-01). |
 | 22 | La eliminación de una calificación, por el autor o por moderación, es lógica: la fila se conserva con su estado y su texto para auditoría y la calificación sale del promedio. Una calificación eliminada no se puede volver a hacer sobre el mismo pedido y destino (RF-05). |
+| 23 | La dirección de una Ubicacion es obligatoria para vendedores de punto fijo; para vendedores ambulantes puede ser nula y la zona aproximada se define por sus coordenadas y referencia (RF-28). |
 
 ### 3.4 Tarifa del domicilio (RF-45 FR-006)
 

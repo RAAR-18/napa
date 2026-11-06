@@ -179,7 +179,7 @@ backend/src/main/java/co/edu/napa/pagos/
 └── infrastructure/adapters/
     ├── in/web/                   # ConfiguracionPagoController, DTOs
     └── out/persistence/          # ConfiguracionPagoJpaEntity, repositorio, adaptador
-backend/src/main/resources/db/migration/   # V6__configuracion_pago.sql
+backend/src/main/resources/db/migration/   # V8__configuracion_pago.sql
 backend/src/test/java/co/edu/napa/pagos/
 
 frontend/src/app/(vendedor)/configuracion/pagos.tsx     # ruta Expo Router
@@ -197,7 +197,7 @@ frontend/__tests__/pagos/configuracion.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V6__configuracion_pago.sql`: tabla `configuracion_pago` (id, usuario_id único, acepta_efectivo, banco, numero_cuenta, tipo_cuenta, created_at, updated_at) con CHECK de que banco, número y tipo van juntos o ninguno, en `backend/src/main/resources/db/migration/`
+- [ ] T002 Migración `V8__configuracion_pago.sql`: tabla `configuracion_pago` (id, usuario_id único, acepta_efectivo, banco, numero_cuenta, tipo_cuenta, created_at, updated_at) con CHECK de que banco, número y tipo van juntos o ninguno, en `backend/src/main/resources/db/migration/`
 - [ ] T003 Configurar Jackson para rechazar propiedades desconocidas en este DTO (`FAIL_ON_UNKNOWN_PROPERTIES`) en `pagos/infrastructure/adapters/in/web/`
 
 **Checkpoint**: base lista.
