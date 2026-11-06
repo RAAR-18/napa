@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Testcontainers(disabledWithoutDocker = true)
 class RedisLimitadorVerificacionAdapterRedisIntegrationTest {
+    @SuppressWarnings("resource")
     @Container
     private static final GenericContainer<?> redis = new GenericContainer<>(
             DockerImageName.parse("redis:7-alpine")
