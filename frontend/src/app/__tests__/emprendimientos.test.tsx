@@ -96,6 +96,14 @@ describe('EmprendimientosScreen', () => {
     );
   });
 
+  it('opens the product catalog for the selected business', async () => {
+    jest.mocked(listEmprendimientos).mockResolvedValue(oneBusinessPage);
+    const { getByRole } = await render(<EmprendimientosScreen />);
+    await waitFor(() => expect(getByRole('button', { name: 'Ver productos de Frutas de Ana' })).toBeTruthy());
+    fireEvent.press(getByRole('button', { name: 'Ver productos de Frutas de Ana' }));
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/catalogo', params: { emprendimientoId: 'business-id' } });
+  });
+
   it('applies the selected seller filter', async () => {
     const { getByRole } = await render(<EmprendimientosScreen />);
 
@@ -104,7 +112,6 @@ describe('EmprendimientosScreen', () => {
 
     await waitFor(() =>
       expect(listEmprendimientos).toHaveBeenLastCalledWith(
-        session,
         expect.objectContaining({ tipoVendedor: 'AMBULANTE', page: 0 }),
       ),
     );
@@ -141,7 +148,6 @@ describe('EmprendimientosScreen', () => {
 
     await waitFor(() =>
       expect(listEmprendimientos).toHaveBeenLastCalledWith(
-        session,
         expect.objectContaining({
           lat: 4.711,
           lng: -74.0721,
@@ -153,7 +159,6 @@ describe('EmprendimientosScreen', () => {
 
     await waitFor(() =>
       expect(listEmprendimientos).toHaveBeenLastCalledWith(
-        session,
         expect.objectContaining({ radioMetros: 2000, cercania: true }),
       ),
     );

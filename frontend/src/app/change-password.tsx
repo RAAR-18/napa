@@ -15,8 +15,6 @@ import { ApiError } from '../lib/api';
 import {
   changePassword,
   clearSession,
-  getValidSession,
-  type StoredSession,
 } from '../lib/auth';
 
 export default function ChangePasswordScreen() {
@@ -31,35 +29,21 @@ export default function ChangePasswordScreen() {
     setMessage(null);
     setBusy(true);
     try {
-      let session: StoredSession;
-      try {
-        session = await getValidSession();
-      } catch (cause) {
-        if (cause instanceof ApiError && cause.status === 401) {
-          await clearSession();
-          router.replace('/login');
-          return;
-        }
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : 'No se pudo recuperar la sesión.',
-        );
+      await changePassword(contrasenaActual, contrasenaNueva);
+      setMessage('Tu contraseña se actualizó correctamente.');
+      setContrasenaActual('');
+      setContrasenaNueva('');
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 401) {
+        await clearSession();
+        router.replace('/login');
         return;
       }
-
-      try {
-        await changePassword(session, contrasenaActual, contrasenaNueva);
-        setMessage('Tu contraseña se actualizó correctamente.');
-        setContrasenaActual('');
-        setContrasenaNueva('');
-      } catch (cause) {
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : 'No se pudo cambiar la contraseña.',
-        );
-      }
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'No se pudo cambiar la contraseña.',
+      );
     } finally {
       setBusy(false);
     }

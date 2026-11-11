@@ -222,10 +222,10 @@ frontend/__tests__/auth/registro.test.tsx   # Jest + React Native Testing Librar
 ### Tests (antes de implementar)
 
 - [ ] T010 [P] [US1] Test unitario de validación (rol, contraseñas, formato) en `backend/src/test/java/co/edu/napa/cuenta/RegistrarCuentaUseCaseTest.java`
-- [ ] T011 [P] [US1] Test de integración de únicos de celular y correo en `.../cuenta/UsuarioUniquenessIT.java`
-- [ ] T011a [P] [US1] Test de que el 100 % de duplicados se rechaza (SC-002) en `.../cuenta/RegistroDuplicadoIT.java`
+- [x] T011 [P] [US1] Test de integración de únicos de celular y correo con inserciones concurrentes y una sola fila persistida en `backend/src/test/java/co/edu/napa/cuentas/infrastructure/persistence/UsuarioPersistenceIntegrationTest.java`
+- [x] T011a [P] [US1] Test de rechazo de duplicados (SC-002), incluidos celular normalizado y correo sin distinguir mayúsculas, en `backend/src/test/java/co/edu/napa/cuentas/infrastructure/adapters/in/web/ConsoleIdentityIntegrationTest.java`
 - [ ] T012a [P] [US1] Test de integración del escenario 1 (registro → verificación → sesión) en `.../cuenta/RegistroE2EIT.java`
-- [ ] T012b [P] [US1] Test de integración del escenario 2 (dato ya usado) en `.../cuenta/RegistroDuplicadoIT.java`
+- [x] T012b [P] [US1] Test de integración del escenario 2 con solicitudes simultáneas: una respuesta 201 y otra 409 con `PHONE_ALREADY_REGISTERED` o `EMAIL_ALREADY_REGISTERED`, en `backend/src/test/java/co/edu/napa/cuentas/infrastructure/adapters/in/web/ConsoleIdentityIntegrationTest.java`
 - [ ] T012c [P] [US1] Test del escenario 3 (cuenta `PENDIENTE_VERIFICACION` no activa) en `.../cuenta/EstadoInicialIT.java`
 
 ### Implementation

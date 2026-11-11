@@ -1,97 +1,63 @@
 package co.edu.napa.cuentas.infrastructure.adapters.out.messaging;
 
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
-import co.edu.napa.cuentas.domain.model.CanalVerificacion;
-import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
+import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ConsolaVerificacionAdapterTest {
-    private static final String CELULAR = "+573001234567";
-
-    private final AjustableClock clock = new AjustableClock(Instant.parse("2026-10-20T12:00:00Z"));
-    private final ConsolaVerificacionAdapter adapter = new ConsolaVerificacionAdapter(clock, "123456");
-
     @Test
-    void approvesTheConfiguredCodeOnlyOnce() {
-        adapter.iniciar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.WHATSAPP);
+    void requiresAConfiguredSixDigitCode() {
+        StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
 
-        assertEquals(VerificacionResultado.Estado.APROBADA,
-                adapter.confirmar(CELULAR, PropositoVerificacion.REGISTRO, "123456"));
-        assertEquals(VerificacionResultado.Estado.VENCIDA,
-                adapter.confirmar(CELULAR, PropositoVerificacion.REGISTRO, "123456"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new ConsolaVerificacionAdapter(redisTemplate, "not-a-code")
+        );
     }
 
     @Test
-    void rejectsAWrongCodeWithoutConsumingTheVerification() {
-        adapter.iniciar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.WHATSAPP);
+    void createsTenMinuteVerificationStateWithoutStoringTheCode() {
+        StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
+        @SuppressWarnings("unchecked")
+        ValueOperations<String, String> values = mock(ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(values);
+        ConsolaVerificacionAdapter adapter = new ConsolaVerificacionAdapter(redisTemplate, "123456");
 
-        assertEquals(VerificacionResultado.Estado.INCORRECTA,
-                adapter.confirmar(CELULAR, PropositoVerificacion.REGISTRO, "000000"));
-        assertEquals(VerificacionResultado.Estado.APROBADA,
-                adapter.confirmar(CELULAR, PropositoVerificacion.REGISTRO, "123456"));
+        adapter.solicitar("+573001234567", EstadoVerificacion.REGISTRO, "192.0.2.10");
+
+        verify(values).set(anyString(), eq("0"), eq(Duration.ofMinutes(10)));
     }
 
     @Test
-    void expiresTheCodeAfterTenMinutes() {
-        adapter.iniciar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.WHATSAPP);
-        clock.avanzar(Duration.ofMinutes(11));
+    void doesNotAllowAValidCodeToBeUsedTwice() {
+        StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
+        when(redisTemplate.delete(anyString())).thenReturn(true, false);
+        ConsolaVerificacionAdapter adapter = new ConsolaVerificacionAdapter(redisTemplate, "123456");
 
-        assertEquals(VerificacionResultado.Estado.VENCIDA,
-                adapter.confirmar(CELULAR, PropositoVerificacion.REGISTRO, "123456"));
-    }
+        VerificacionResultado first = adapter.confirmar(
+                "+573001234567",
+                EstadoVerificacion.REGISTRO,
+                "123456"
+        );
+        VerificacionResultado replay = adapter.confirmar(
+                "+573001234567",
+                EstadoVerificacion.REGISTRO,
+                "123456"
+        );
 
-    @Test
-    void doesNotApproveWithoutAPendingVerificationOrForAnotherPurpose() {
-        assertEquals(VerificacionResultado.Estado.VENCIDA,
-                adapter.confirmar(CELULAR, PropositoVerificacion.REGISTRO, "123456"));
-
-        adapter.iniciar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.WHATSAPP);
-        assertEquals(VerificacionResultado.Estado.VENCIDA,
-                adapter.confirmar(CELULAR, PropositoVerificacion.RECUPERACION, "123456"));
-    }
-
-    @Test
-    void returnsAProviderIdWithoutExposingTheCode() {
-        String proveedorId = adapter.iniciar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.SMS)
-                .proveedorId();
-
-        assertTrue(proveedorId.startsWith("console-"));
-        assertTrue(!proveedorId.contains("123456"));
-    }
-
-    private static final class AjustableClock extends Clock {
-        private Instant ahora;
-
-        private AjustableClock(Instant ahora) {
-            this.ahora = ahora;
-        }
-
-        void avanzar(Duration duracion) {
-            ahora = ahora.plus(duracion);
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return ahora;
-        }
+        assertEquals(VerificacionResultado.Estado.APROBADA, first.estado());
+        assertEquals(VerificacionResultado.Estado.VENCIDA, replay.estado());
     }
 }

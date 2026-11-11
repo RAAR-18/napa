@@ -18,9 +18,11 @@ El vendedor fija la cantidad disponible de un producto (decimal ≥ 0). Si queda
 
 ## Estado actual del código
 
-No existe código de productos. La tabla `producto` (con `cantidad_disponible numeric(10,2)` y CHECK `>= 0`) la crea RF-54.
+Primera entrega de inventario manual implementada el 2026-11-11. `V7__productos.sql` incluye `cantidad_disponible numeric(10,2)` y restricciones coherentes con el estado. `POST /api/v1/productos/{id}/inventario` fija la cantidad, valida la pertenencia y toma la fila con `SELECT ... FOR UPDATE`; usa el filtro de idempotencia existente. `Producto.conInventario` marca agotado al llegar a cero y disponible al reponer. La pantalla `mis-productos.tsx` permite ambas acciones. Las pruebas comprueban decimales, negativos, agotamiento, reposición, permisos y reenvíos. Quedan pendientes la cola sin conexión y los puertos de consulta/descuento al aceptar pedidos, junto con sus pruebas de sobreventa; esta entrega no implementa RF-45/RF-53 ni completa FR-003/FR-006.
 
 ## Actors
+
+Ampliación del 2026-11-11: V8 añade `version`. El ajuste manual sigue bloqueando la fila e incrementa la versión mediante un `UPDATE` condicionado. Las pruebas concurrentes con edición verifican que una escritura no restaure el inventario anterior. Esto no incorpora todavía descuento de stock ni bloqueo de creación de pedidos.
 
 | Actor | Participación en esta feature |
 |---|---|

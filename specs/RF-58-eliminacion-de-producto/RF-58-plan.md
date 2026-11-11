@@ -18,7 +18,13 @@ El vendedor retira un producto que ya no vende con `POST /productos/{id}/elimina
 
 ## Estado actual del código
 
-RF-54 define `producto.estado` con `ELIMINADO`; RF-33 y RF-55 ya lo excluyen y RF-51 ya muestra `productoEliminado: true` en los ítems. Falta la acción y la consulta de pedidos pendientes por producto, que vive en `pedidos`. RF-57 responde `409 INVALID_STATE` sobre un producto `ELIMINADO`.
+Entrega parcial en línea implementada el 2026-11-11. `ProductosPort`/`ProductosUseCase` y `ProductoController` exponen `POST /api/v1/productos/{id}/eliminar`: propietario autenticado, cuerpo exactamente `{ "confirmar": true }`, `Idempotency-Key` y respuesta `204`. La operación bloquea el producto, comprueba pendientes, cambia a `ELIMINADO` e incrementa `version` (V8). Ambos listados dejan de mostrarlo y el nombre queda libre, conservando la fila original. Misma clave devuelve el `204` anterior; otra clave devuelve `409 INVALID_STATE`.
+
+La consulta está aislada mediante `PedidosPendientesProductoPort`. No existe todavía un módulo de pedidos ni el detalle RF-51: su marca `productoEliminado` es un objetivo del diseño, no código entregado. `PedidosProductoConfiguration` proporciona cero pendientes solo con `napa.pedidos.enabled=false` (predeterminado mientras no existen pedidos). Al implementar RF-45 debe añadirse un adaptador real, activar `NAPA_PEDIDOS_ENABLED=true` y respetar el orden de bloqueo producto → pedido. Con la opción activa y sin adaptador, el arranque falla; no se instala el proveedor de cero pendientes.
+
+`GestionProductoIntegrationTest` prueba borrado lógico, visibilidad en ambos listados, reutilización del nombre, confirmación estricta, permisos, idempotencia y carrera con edición usando PostgreSQL/Redis. El rechazo `HAS_PENDING_ORDERS` y el error de comprobación usan conteos simulados; no validan estados ni concurrencia de pedidos reales. `PedidosProductoConfigurationTest` prueba la selección del adaptador. `ProductosUI.tsx` incorpora confirmación/cancelación, conserva el producto cuando falla y actualiza la paginación tras eliminar el último elemento de una página. Las pruebas de UI/HTTP están en los archivos `productos.test.tsx` y `productos.test.ts` del frontend.
+
+Pendientes: adaptador y pruebas por estado de pedido/reserva, historial RF-51, carrera con creación de pedido, rendimiento y prueba manual. La eliminación requiere conexión; el diseño completo siguiente sigue siendo la referencia para esas integraciones.
 
 ## Actors
 
@@ -180,14 +186,16 @@ frontend/__tests__/productos/eliminar-producto.test.tsx
 
 **Structure Decision**: módulo `productos`, dueño de `Producto`, con la acción como `POST …/eliminar` (spec-general). La pregunta por pedidos pendientes va por un puerto `in` de `pedidos`. El borrado es lógico (`ELIMINADO`) como en el resto del proyecto, lo que conserva el historial de pedidos y calificaciones.
 
+Las tareas marcadas se cubren en los archivos reales citados arriba; los nombres de archivo de los bloques originales son orientativos.
+
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar el módulo `productos` y su regla ArchUnit
+- [x] T001 Confirmar el módulo `productos` y su regla ArchUnit
 
 ## Phase 2: Foundational
 
 - [ ] T002 `ConsultarPedidosPendientesDeProductoPort` en `pedidos` (cuenta pedidos en `PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER` o `EN_CAMINO` que contienen el producto) con índice sobre `item_pedido(producto_id)` en la siguiente migración libre de `backend/src/main/resources/db/migration/` (si RF-45 no lo creó)
-- [ ] T003 Consulta con bloqueo `FOR UPDATE` del producto en `ProductoRepositoryPort`
+- [x] T003 Consulta con bloqueo `FOR UPDATE` del producto en `ProductoRepositoryPort`
 
 **Checkpoint**: base lista.
 
@@ -199,22 +207,22 @@ frontend/__tests__/productos/eliminar-producto.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración de `POST /productos/{id}/eliminar` sin pedidos (`204`, estado `ELIMINADO`, repetición con la misma clave) en `backend/src/test/java/co/edu/napa/productos/EliminarProductoIT.java`
+- [x] T010 [P] [US1] Test de integración de `POST /productos/{id}/eliminar` sin pedidos (`204`, estado `ELIMINADO`, repetición con la misma clave) en `backend/src/test/java/co/edu/napa/productos/EliminarProductoIT.java`
 - [ ] T011 [P] [US1] Test de rechazo con pedido en cada estado pendiente (incluida una reserva) y de que los pedidos terminados o rechazados no bloquean, en `.../productos/EliminarProductoPendientesIT.java`
-- [ ] T012 [P] [US1] Test de que sin `confirmar: true` no se elimina (`400`) en `.../productos/EliminarProductoConfirmacionIT.java`
-- [ ] T013 [P] [US1] Test de que RF-33 y RF-55 dejan de mostrarlo de inmediato (< 5 s) en `.../productos/EliminarProductoVisibilidadIT.java`
+- [x] T012 [P] [US1] Test de que sin `confirmar: true` no se elimina (`400`) en `.../productos/EliminarProductoConfirmacionIT.java`
+- [x] T013 [P] [US1] Test de que RF-33 y RF-55 dejan de mostrarlo de inmediato (< 5 s) en `.../productos/EliminarProductoVisibilidadIT.java`
 - [ ] T014 [P] [US1] Test de que los pedidos terminados siguen mostrando el producto marcado y de que el nombre se puede reutilizar, en `.../productos/EliminarProductoHistorialIT.java`
 - [ ] T015 [P] [US1] Test de eliminación y creación de pedido simultáneas en `.../productos/EliminarProductoConcurrenciaIT.java`
-- [ ] T016 [P] [US1] Test de producto ya `ELIMINADO` (`409 INVALID_STATE`), ajeno (`403`), inexistente (`404`), rol distinto y sin sesión en `.../productos/EliminarProductoAutorizacionIT.java`
-- [ ] T030 [P] [US1] Test de `ConfirmarEliminarProducto` (confirmar, cancelar, aviso de pendientes) en `frontend/__tests__/productos/eliminar-producto.test.tsx`
+- [x] T016 [P] [US1] Test de producto ya `ELIMINADO` (`409 INVALID_STATE`), ajeno (`403`), inexistente (`404`), rol distinto y sin sesión en `.../productos/EliminarProductoAutorizacionIT.java`
+- [x] T030 [P] [US1] Test de `ConfirmarEliminarProducto` (confirmar, cancelar, aviso de pendientes) en `frontend/__tests__/productos/eliminar-producto.test.tsx`
 
 ### Implementation
 
-- [ ] T020 [US1] `EliminarProductoPort` y `EliminarProductoUseCase`: bloquea el producto, consulta pendientes y cambia el estado en una transacción
-- [ ] T021 [US1] `POST /productos/{id}/eliminar` y su DTO en `ProductoController`
+- [x] T020 [US1] `EliminarProductoPort` y `EliminarProductoUseCase`: bloquea el producto, consulta pendientes y cambia el estado en una transacción
+- [x] T021 [US1] `POST /productos/{id}/eliminar` y su DTO en `ProductoController`
 - [ ] T022 [US1] Adaptador de `PedidosPendientesDeProductoPort` y error `HAS_PENDING_ORDERS` con `details.pedidosPendientes`
-- [ ] T031 [US1] `ConfirmarEliminarProducto` y `eliminarProducto()` en `frontend/src/`
-- [ ] T032 [US1] Acción "Eliminar" en el listado de productos del vendedor (RF-55) con el aviso de pendientes
+- [x] T031 [US1] `ConfirmarEliminarProducto` y `eliminarProducto()` en `frontend/src/`
+- [x] T032 [US1] Acción "Eliminar" en el listado de productos del vendedor (RF-55) con el aviso de pendientes
 
 **Checkpoint**: el producto se retira o se explica por qué no.
 

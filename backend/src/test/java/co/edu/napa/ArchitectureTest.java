@@ -59,4 +59,21 @@ class ArchitectureTest {
 
         rule.allowEmptyShould(true).check(classes);
     }
+
+    @Test
+    void productosDomainMustNotDependOnOtherFeatureModules() {
+        noClasses().that().resideInAPackage("co.edu.napa.productos.domain..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "co.edu.napa.cuentas..", "co.edu.napa.emprendimientos..", "co.edu.napa.notificaciones..")
+                .check(classes);
+    }
+
+    @Test
+    void productosApplicationUsesOnlyTheIncomingEmprendimientosPort() {
+        noClasses().that().resideInAPackage("co.edu.napa.productos.application..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "co.edu.napa.emprendimientos.domain..", "co.edu.napa.emprendimientos.infrastructure..",
+                        "co.edu.napa.emprendimientos.application.ports.out..", "co.edu.napa.emprendimientos.application.usecase..")
+                .check(classes);
+    }
 }
