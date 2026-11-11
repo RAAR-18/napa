@@ -18,9 +18,11 @@ Listado paginado de los productos del emprendimiento `ACTIVO` del vendedor auten
 
 ## Estado actual del código
 
-La tabla `producto` la crea el plan de RF-54 (migración V5). No hay código de lectura todavía.
+Primera entrega en línea implementada el 2026-11-11 sobre `V7__productos.sql`. `GET /api/v1/productos` usa `ProductosUseCase` y `ProductoPersistenceAdapter`; pagina, ordena por nombre o precio y admite el filtro de estado. Solo devuelve productos no eliminados del emprendimiento activo del vendedor autenticado; un vendedor sin emprendimiento recibe lista vacía. `frontend/src/app/mis-productos.tsx` muestra precio, unidad, cantidad, estado y acciones de inventario. Las pruebas HTTP cubren aislamiento entre vendedores, paginación y filtrado. Pendientes la caché SQLite de este listado y la medición de rendimiento.
 
 ## Actors
+
+Ampliación del 2026-11-11: cada tarjeta permite editar y eliminar con confirmación explícita. Al volver de editar se consulta la versión actual; tras eliminar el último elemento de una página, el listado vuelve a la última página válida. Las pruebas de UI cubren estas transiciones. RF-56 funciona en línea y RF-58 conserva pendiente su integración con pedidos reales.
 
 | Actor | Participación en esta feature |
 |---|---|

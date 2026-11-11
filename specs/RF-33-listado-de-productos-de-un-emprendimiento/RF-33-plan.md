@@ -18,9 +18,11 @@ El cliente abre el catálogo de un emprendimiento con `GET /emprendimientos/{id}
 
 ## Estado actual del código
 
-No existe aún la consulta del cliente. El módulo `productos`, la tabla `producto` y el listado del vendedor (`GET /productos`) vienen de RF-54 y RF-55; el detalle del emprendimiento y su estado, de RF-28 y RF-32. El plan de RF-45 ya depende de este catálogo para su pantalla de armar el pedido.
+Primera entrega en línea implementada el 2026-11-11. `ProductoController` expone `GET /api/v1/emprendimientos/{id}/productos` para clientes; consulta la vigencia del emprendimiento por el puerto de entrada de ese módulo. Devuelve disponibles primero y agotados después, paginados y ordenados por nombre o precio, con `soloReserva` calculado en el servidor. `frontend/src/app/catalogo.tsx` se abre desde cada tarjeta del listado, muestra el estado vacío y se refresca al volver a la pantalla, al primer plano o manualmente. Hay pruebas HTTP con PostgreSQL/Redis y pruebas de pantalla y refresco. Pendientes la caché sin conexión, la medición con 5000 productos y la integración con pedidos RF-45; el detalle completo RF-32 todavía no existe.
 
 ## Actors
+
+Ampliación del 2026-11-11: las pruebas HTTP de gestión comprueban que el catálogo refleje nombre/precio editados y excluya inmediatamente los productos retirados por RF-58. El refresco desde la app sigue siendo al abrir, volver al primer plano o pulsar actualizar; no hay notificación en vivo a una pantalla que permanece abierta.
 
 | Actor | Participación en esta feature |
 |---|---|

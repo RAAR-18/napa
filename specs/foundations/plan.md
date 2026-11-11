@@ -92,7 +92,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 ### Idempotencia (RNF27)
 
-- Todas las operaciones `POST/PATCH` que cambian estado o dinero exigen `Idempotency-Key` (UUID generado en el dispositivo al tocar el botón).
+- Las operaciones `POST/PATCH` que cambian estado o dinero exigen `Idempotency-Key` (UUID generado en el dispositivo al tocar el botón), salvo las excepciones de cada contrato. RF-56 usa PATCH parcial sin esta clave y detecta conflictos con versión; la app envía `If-Match`.
 - Redis `idem:{userId}:{key}` guarda hash de la petición + estado (`IN_PROGRESS`/`DONE`) + respuesta; `SET NX` para el bloqueo. Misma clave y mismo cuerpo → misma respuesta; mismo clave y distinto cuerpo → 422.
 - Garantía final en BD: único por pago de pedido, único por pago de tarifa, único por calificación (autor + entidad + interacción), un domicilio activo por pedido, etc.
 
@@ -136,13 +136,13 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 **Phase F2 – Identidad (RF-07, RF-09, RF-10, RF-11)**
 - [ ] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración (implementación presente; falta validar migración/JPA con PostgreSQL/PostGIS en Docker CI)
-- [ ] F021 Completar el flujo de solicitud/confirmación sobre `VerificarCelularPort`, límites de envíos e intentos en Redis y adaptador `otp-console` (implementado; los tests de integración Redis se omiten cuando Docker no está disponible)
+- [x] F021 Completar el flujo de solicitud/confirmación sobre `VerificarCelularPort`, límites de envíos e intentos en Redis y adaptador `otp-console` (un único adaptador Redis, perfil y código configurados desde el README; pruebas de contexto y recorrido HTTP con Docker validadas localmente)
 - [ ] F022 Integrar Twilio Verify solo después de confirmar elegibilidad, tarifas y presupuesto para Colombia; no habilitar envíos reales antes de aprobar el tope mensual de gasto.
 - [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover (rutas creadas; OTP queda cerrado con 503 hasta configurar un proveedor)
 - [x] F024 Filtro JWT con `sv` y bootstrap admin de un solo uso
-- [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado (hay pruebas unitarias de login/rate-limit y revocación; falta proveedor e integración Redis/PostgreSQL)
+- [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado (pruebas unitarias y suites Redis/PostgreSQL validadas localmente; el recorrido HTTP verifica OTP agotado, consumo único, rotación y revocación. Pendiente proveedor real y confirmar la ejecución en CI)
 
-**Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` es explícito; sin proveedor configurado la verificación responde `503`, y nunca se persiste ni registra el OTP. Las pruebas unitarias pasan; las suites de Redis y PostgreSQL/PostGIS se omiten cuando Docker no está disponible, por lo que su validación queda pendiente en CI. RF-11 se difiere hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes.
+**Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` selecciona un único `ConsolaVerificacionAdapter` basado en Redis; `NAPA_OTP_CONSOLE_CODE` exige seis dígitos y no tiene valor predeterminado. No puede activarse junto con `prod`. Sin proveedor configurado, solicitar o confirmar la verificación responde `503`; el registro conserva la cuenta pendiente con envío `FALLIDO`. Nunca se persiste ni registra el OTP. La ejecución local con Docker pasó 194 pruebas, sin omisiones, incluyendo el recorrido HTTP de identidad, los registros simultáneos con celular o correo duplicado, CORS para orígenes web explícitos y las integraciones Redis/PostgreSQL/PostGIS; falta confirmar la ejecución en CI. RF-11 se difiere hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes.
 
 **Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. El proveedor real de OTP y sus costos quedan diferidos hasta aprobar presupuesto. RF-11 se implementará después de los módulos de pedidos, emprendimientos y domicilios, porque aún no existen sus tablas para comprobar operaciones pendientes.
 
@@ -159,6 +159,10 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [ ] F043 Pruebas Jest de outbox (sin red, reintento, duplicado)
 
 **Checkpoint**: se puede registrar un usuario, verificar su celular, iniciar sesión, recibir una notificación push y reenviar una acción creada sin conexión sin duplicarla.
+
+**Avance de oferta (2026-11-11)**: primera entrega en línea de RF-54/RF-55, inventario manual de RF-57 y catálogo de RF-33. V7 crea productos; los endpoints derivan la propiedad del vendedor autenticado, rechazan nombres duplicados por emprendimiento, conservan decimales de cantidad y usan idempotencia y bloqueo de fila al fijar inventario. La app publica, lista, marca agotado y repone, y el cliente consulta el catálogo con la etiqueta Solo reserva. Pasaron 194 pruebas backend y 56 frontend, lint, TypeScript y exportaciones iOS/web; V7 aplicada en napa_dev. El usuario confirmó que la prueba manual de esta entrega funcionó correctamente. Pendientes caché y outbox de productos, RF-56/RF-58 y los puertos de descuento/consulta para RF-45/RF-53. Las reservas y los pedidos no están implementados.
+
+**Ampliación de catálogo (2026-11-11)**: RF-56 permite editar nombre, precio y descripción; RF-58 permite retirar con confirmación explícita y borrado lógico. V8 añade versión y las escrituras JDBC comparan/incrementan esa versión, incluido inventario. La app conserva el borrador ante `409` y ofrece recargar; no reintenta automáticamente con una versión nueva. La eliminación conserva el producto visible si falla y corrige la paginación tras retirar el último elemento. Pasaron 209 pruebas backend en 50 suites (48 de integración en diez suites), 68 frontend, lint, TypeScript y exportaciones iOS/web. Queda pendiente la prueba manual de estas acciones. La referencia anterior a RF-56/RF-58 pendientes queda acotada a outbox y a las integraciones con pedidos reales: la consulta de pendientes usa un puerto y cero solo mientras `NAPA_PEDIDOS_ENABLED=false`; al activar el módulo se exige un adaptador real. RF-45/RF-51 no están implementados; faltan historial de precios, estados pendientes y bloqueo concurrente al crear pedidos.
 
 ## Orden de planes por RF (P1 primero, respetando dependencias)
 

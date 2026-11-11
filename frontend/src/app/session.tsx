@@ -85,8 +85,7 @@ export default function SessionScreen() {
     setError(null);
     setBusy(true);
     try {
-      const validSession = await getValidSession();
-      await logout(validSession);
+      await logout();
       setSession(null);
       router.replace('/');
     } catch (cause) {
@@ -141,10 +140,13 @@ export default function SessionScreen() {
           </View>
           {session.rol === 'VENDEDOR_AMBULANTE' ||
           session.rol === 'VENDEDOR_PUNTO_FIJO' ? (
-            <PrimaryButton
-              title="Crear mi emprendimiento"
-              onPress={() => router.push('/emprendimiento')}
-            />
+            <>
+              <PrimaryButton title="Mis productos" onPress={() => router.push('/mis-productos')} />
+              <TextButton
+                title="Crear mi emprendimiento"
+                onPress={() => router.push('/emprendimiento')}
+              />
+            </>
           ) : null}
           {session.rol === 'CLIENTE' ? (
             <PrimaryButton

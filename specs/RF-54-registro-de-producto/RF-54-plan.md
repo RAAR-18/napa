@@ -18,7 +18,7 @@ El vendedor registra un producto con nombre, precio en pesos, unidad (UNIDAD, KG
 
 ## Estado actual del código
 
-El módulo `productos` no existe todavía. Este plan crea la tabla `producto` y el módulo; RF-55, RF-57 y los demás RF de productos lo extienden.
+Primera entrega en línea implementada el 2026-11-11. `V7__productos.sql` crea la tabla; `productos/application/ports/in/ProductosPort`, `ProductosUseCase`, `ProductoPersistenceAdapter` y `ProductoController` implementan el registro. El emprendimiento activo se consulta por `ConsultarEmprendimientoPort`, no leyendo su tabla desde productos. `frontend/src/app/nuevo-producto.tsx` publica desde la sesión actual y `mis-productos.tsx` permite comprobar el resultado. Hay pruebas de dominio y HTTP con PostgreSQL/Redis, incluido el conflicto por nombre concurrente y la idempotencia. Pendiente la cola de creación sin conexión y la medición de tiempos con usuarios; no se considera cerrado todo el plan.
 
 ## Actors
 

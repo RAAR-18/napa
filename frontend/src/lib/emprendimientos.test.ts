@@ -4,7 +4,7 @@ import {
   listEmprendimientos,
   type Emprendimiento,
 } from './emprendimientos';
-import type { StoredSession } from './auth';
+import { withValidSession, type StoredSession } from './auth';
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'idempotency-id' }));
 jest.mock('./api', () => ({
@@ -12,11 +12,23 @@ jest.mock('./api', () => ({
   requestJson: jest.fn(),
 }));
 
-describe('createEmprendimiento', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+jest.mock('./auth', () => ({ withValidSession: jest.fn() }));
 
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest.mocked(withValidSession).mockImplementation(async (request) =>
+    request({
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      expiresIn: 900,
+      expiresAt: Date.now() + 900_000,
+      tokenType: 'Bearer',
+      rol: 'CLIENTE',
+    }),
+  );
+});
+
+describe('createEmprendimiento', () => {
   it('sends the authenticated creation request with an idempotency key', async () => {
     const session: StoredSession = {
       accessToken: 'access',
@@ -47,7 +59,8 @@ describe('createEmprendimiento', () => {
     };
     jest.mocked(requestJson).mockResolvedValue(created);
 
-    await expect(createEmprendimiento(session, input)).resolves.toEqual(created);
+    jest.mocked(withValidSession).mockImplementation(async (request) => request(session));
+    await expect(createEmprendimiento(input)).resolves.toEqual(created);
 
     expect(jsonHeaders).toHaveBeenCalledWith({
       accessToken: 'access',
@@ -66,19 +79,11 @@ describe('createEmprendimiento', () => {
 
 describe('listEmprendimientos', () => {
   it('sends paging, seller, and proximity filters with the client session', async () => {
-    const session: StoredSession = {
-      accessToken: 'access',
-      refreshToken: 'refresh',
-      expiresIn: 900,
-      expiresAt: Date.now() + 900_000,
-      tokenType: 'Bearer',
-      rol: 'CLIENTE',
-    };
     const page = { content: [], page: 1, size: 20, totalElements: 0 };
     jest.mocked(requestJson).mockResolvedValue(page);
 
     await expect(
-      listEmprendimientos(session, {
+      listEmprendimientos({
         page: 1,
         size: 20,
         tipoVendedor: 'AMBULANTE',

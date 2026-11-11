@@ -116,11 +116,10 @@ export default function EmprendimientosScreen() {
       return;
     }
     let active = true;
-    const currentSession = session;
 
     async function load() {
       try {
-        const result = await listEmprendimientos(currentSession, filter);
+        const result = await listEmprendimientos(filter);
         if (!active) {
           return;
         }
@@ -365,6 +364,9 @@ export default function EmprendimientosScreen() {
                   A {Math.round(item.distanciaMetros)} m
                 </Text>
               ) : null}
+              <TextButton title={`Ver productos de ${item.nombre}`} onPress={() => router.push({
+                pathname: '/catalogo', params: { emprendimientoId: item.id },
+              })} />
             </View>
           ))
         : null}

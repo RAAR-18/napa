@@ -83,7 +83,7 @@ describe('EmprendimientoScreen', () => {
     await fireEvent.press(getByRole('button', { name: 'Publicar emprendimiento' }));
 
     await waitFor(() => {
-      expect(createEmprendimiento).toHaveBeenCalledWith(session, {
+      expect(createEmprendimiento).toHaveBeenCalledWith({
         nombre: 'Frutas de Ana',
         categoria: 'FRUTAS_VERDURAS',
         descripcion: 'Frutas frescas.',

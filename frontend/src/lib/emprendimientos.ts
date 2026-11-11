@@ -1,7 +1,7 @@
 import * as Crypto from 'expo-crypto';
 
 import { jsonHeaders, requestJson } from './api';
-import type { StoredSession } from './auth';
+import { withValidSession } from './auth';
 
 export type TipoVendedor = 'AMBULANTE' | 'PUNTO_FIJO';
 
@@ -67,21 +67,22 @@ export type EmprendimientosFilter = {
 };
 
 export async function createEmprendimiento(
-  session: StoredSession,
   input: CrearEmprendimientoInput,
 ): Promise<Emprendimiento> {
-  return requestJson<Emprendimiento>('/api/v1/emprendimientos', {
-    method: 'POST',
-    headers: jsonHeaders({
-      accessToken: session.accessToken,
-      idempotencyKey: Crypto.randomUUID(),
+  const idempotencyKey = Crypto.randomUUID();
+  return withValidSession((session) =>
+    requestJson<Emprendimiento>('/api/v1/emprendimientos', {
+      method: 'POST',
+      headers: jsonHeaders({
+        accessToken: session.accessToken,
+        idempotencyKey,
+      }),
+      body: JSON.stringify(input),
     }),
-    body: JSON.stringify(input),
-  });
+  );
 }
 
 export async function listEmprendimientos(
-  session: StoredSession,
   filter: EmprendimientosFilter,
 ): Promise<EmprendimientosPage> {
   const query = new URLSearchParams({
@@ -101,11 +102,13 @@ export async function listEmprendimientos(
   if (filter.cercania) {
     query.set('orden', 'cercania');
   }
-  return requestJson<EmprendimientosPage>(
-    `/api/v1/emprendimientos?${query.toString()}`,
-    {
-      method: 'GET',
-      headers: jsonHeaders({ accessToken: session.accessToken }),
-    },
+  return withValidSession((session) =>
+    requestJson<EmprendimientosPage>(
+      `/api/v1/emprendimientos?${query.toString()}`,
+      {
+        method: 'GET',
+        headers: jsonHeaders({ accessToken: session.accessToken }),
+      },
+    ),
   );
 }

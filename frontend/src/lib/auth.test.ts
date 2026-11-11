@@ -26,6 +26,13 @@ const tokens = {
   rol: 'CLIENTE',
 };
 
+const authResponse = {
+  accessToken: tokens.accessToken,
+  refreshToken: tokens.refreshToken,
+  expiresIn: tokens.expiresIn,
+  usuario: { id: 'user-1', nombre: 'Ana', rol: tokens.rol },
+};
+
 function mockResponse(body = '{}'): Response {
   return {
     ok: true,
@@ -94,7 +101,7 @@ describe('auth API contract', () => {
   });
 
   it('confirms registration and stores the returned session', async () => {
-    fetchMock.mockResolvedValue(mockResponse(JSON.stringify(tokens)));
+    fetchMock.mockResolvedValue(mockResponse(JSON.stringify(authResponse)));
 
     await confirmRegistration('+573001234567', '123456');
 
@@ -131,7 +138,7 @@ describe('auth API contract', () => {
   });
 
   it('refreshes with a device ID and changes password using backend names', async () => {
-    fetchMock.mockResolvedValue(mockResponse(JSON.stringify(tokens)));
+    fetchMock.mockResolvedValue(mockResponse(JSON.stringify(authResponse)));
     const session: StoredSession = { ...tokens, expiresAt: 0 };
     await refreshSession(session);
 
@@ -143,7 +150,12 @@ describe('auth API contract', () => {
       }),
     );
 
-    await changePassword(session, 'old-password', 'new-password');
+    jest.mocked(SecureStore.getItemAsync).mockImplementation(async (key) =>
+      key === 'napa.auth.session'
+        ? JSON.stringify({ ...tokens, expiresAt: Date.now() + 900_000 })
+        : 'device-1',
+    );
+    await changePassword('old-password', 'new-password');
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
@@ -158,7 +170,7 @@ describe('auth API contract', () => {
   });
 
   it('sends login with the device ID required by the backend', async () => {
-    fetchMock.mockResolvedValue(mockResponse(JSON.stringify(tokens)));
+    fetchMock.mockResolvedValue(mockResponse(JSON.stringify(authResponse)));
 
     await login('+573001234567', 'password');
 

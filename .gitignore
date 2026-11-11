@@ -6,6 +6,7 @@
 # Java / Gradle
 .gradle/
 **/build/
+/backend/bin/
 *.class
 
 # Node / Expo

@@ -18,7 +18,15 @@ El vendedor corrige un producto publicado con `PATCH /productos/{id}`: nombre, p
 
 ## Estado actual del código
 
-El módulo `productos`, la tabla `producto` y el registro vienen de RF-54; el catálogo del cliente (RF-33) y el listado del vendedor (RF-55) leen la misma fila. RF-57 actualiza el inventario con un `UPDATE` condicionado y define las respuestas para producto ajeno (`403`) y `ELIMINADO` (`409 INVALID_STATE`); este plan usa las mismas.
+Entrega en línea implementada el 2026-11-11. `ProductosPort`/`ProductosUseCase` y `ProductoController` exponen `GET /api/v1/productos/{id}` y `PATCH /api/v1/productos/{id}` al propietario. La edición parcial valida todo antes de guardar, permite borrar la descripción con `null`, rechaza campos ajenos y conserva unidad, inventario y estado. El índice único resuelve nombres duplicados con `409`.
+
+`V8__producto_version.sql` añade `version`. La persistencia existente es JDBC: usa `UPDATE ... WHERE version = ? RETURNING *`, sin entidad JPA ni `@Version`. También se incrementa al ajustar inventario o eliminar. La consulta devuelve `ETag` y `version`; el formulario `frontend/src/app/editar-producto.tsx` envía `If-Match`. Esta cabecera es opcional para clientes externos; todas las escrituras comparan además la versión leída en la transacción. El endpoint PATCH queda exceptuado de `Idempotency-Key`, conforme al contrato específico de esta RF.
+
+Ante conflicto, se devuelve `409` y se conserva el borrador con una acción explícita para recargar, en lugar del reintento automático propuesto más abajo: repetir con una versión nueva podría sobrescribir cambios que el vendedor aún no ha visto. Se reutilizan los campos y validadores compartidos; creación y edición mantienen pantallas separadas.
+
+`GestionProductoIntegrationTest` y `ProductoTest` cubren edición parcial/múltiple, datos inválidos sin cambios parciales, precisión monetaria, duplicados, permisos, visibilidad, CORS con `If-Match` y carreras edición/edición, edición/inventario y edición/eliminación. Las pruebas de pantalla y cliente HTTP están en `frontend/src/app/__tests__/productos.test.tsx` y `frontend/src/lib/productos.test.ts`.
+
+Pendientes: outbox de edición sin conexión, conservación de precios en pedidos reales (RF-45/RF-51 aún no implementados), rendimiento y prueba manual de esta pantalla. Las secciones de diseño siguientes conservan el objetivo completo; no implican que esos pendientes estén entregados.
 
 ## Actors
 
@@ -175,14 +183,16 @@ frontend/__tests__/productos/editar-producto.test.tsx
 
 **Structure Decision**: módulo `productos`, dueño de `Producto`. `PATCH` parcial porque la spec edita campos sueltos y no es una transición de estado. La pertenencia se resuelve por el emprendimiento del vendedor, igual que RF-57. El formulario es el mismo de RF-54.
 
+Las tareas marcadas se cubren en los archivos reales citados arriba; los nombres de archivo de los bloques originales son orientativos.
+
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar el módulo `productos` y su regla ArchUnit (RF-54)
+- [x] T001 Confirmar el módulo `productos` y su regla ArchUnit (RF-54)
 
 ## Phase 2: Foundational
 
-- [ ] T002 Columna `version` y `@Version` en `ProductoJpaEntity` en la siguiente migración libre de `backend/src/main/resources/db/migration/`; el `UPDATE` de inventario de RF-57 debe incrementarla
-- [ ] T003 Método de búsqueda del producto con su emprendimiento y consulta de nombre duplicado en `ProductoRepositoryPort`
+- [x] T002 Columna `version` en V8 y comparación condicional JDBC en `ProductoPersistenceAdapter`; inventario incrementa la versión
+- [x] T003 Búsqueda en `ProductoRepositoryPort`, pertenencia por puerto de emprendimientos y unicidad en PostgreSQL
 
 **Checkpoint**: base lista.
 
@@ -194,20 +204,20 @@ frontend/__tests__/productos/editar-producto.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración de `PATCH /productos/{id}` con uno y con varios campos en `backend/src/test/java/co/edu/napa/productos/EditarProductoIT.java`
-- [ ] T011 [P] [US1] Test parametrizado de datos inválidos (cuerpo vacío, nombre vacío o largo, precio negativo, cero o decimal, descripción larga, campos no editables) con el valor anterior intacto, en `.../productos/EditarProductoValidacionIT.java`
-- [ ] T012 [P] [US1] Test unitario de `Producto.editar` en `.../productos/ProductoEdicionTest.java`
-- [ ] T013 [P] [US1] Test de que RF-33 y RF-55 muestran el cambio de inmediato en `.../productos/EditarProductoVisibilidadIT.java`
+- [x] T010 [P] [US1] Test de integración de `PATCH /productos/{id}` con uno y con varios campos en `backend/src/test/java/co/edu/napa/productos/EditarProductoIT.java`
+- [x] T011 [P] [US1] Test parametrizado de datos inválidos (cuerpo vacío, nombre vacío o largo, precio negativo, cero o decimal, descripción larga, campos no editables) con el valor anterior intacto, en `.../productos/EditarProductoValidacionIT.java`
+- [x] T012 [P] [US1] Test unitario de `Producto.editar` en `.../productos/ProductoEdicionTest.java`
+- [x] T013 [P] [US1] Test de que RF-33 y RF-55 muestran el cambio de inmediato en `.../productos/EditarProductoVisibilidadIT.java`
 - [ ] T014 [P] [US1] Test de un pedido pendiente que conserva el precio anterior en `.../productos/EditarProductoPedidosIT.java`
-- [ ] T015 [P] [US1] Test de dos `PATCH` simultáneos y de un `PATCH` junto con un ajuste de inventario (`409 CONFLICT`, sin pérdida) en `.../productos/EditarProductoConcurrenciaIT.java`
-- [ ] T016 [P] [US1] Test de nombre duplicado (`409`), producto `ELIMINADO` (`409 INVALID_STATE`), ajeno (`403`), inexistente (`404`), rol distinto y sin sesión en `.../productos/EditarProductoAutorizacionIT.java`
+- [x] T015 [P] [US1] Test de dos `PATCH` simultáneos y de un `PATCH` junto con un ajuste de inventario (`409 CONFLICT`, sin pérdida) en `.../productos/EditarProductoConcurrenciaIT.java`
+- [x] T016 [P] [US1] Test de nombre duplicado (`409`), producto `ELIMINADO` (`409 INVALID_STATE`), ajeno (`403`), inexistente (`404`), rol distinto y sin sesión en `.../productos/EditarProductoAutorizacionIT.java`
 - [ ] T030 [P] [US1] Test del formulario de edición y del valor pendiente de enviar en `frontend/__tests__/productos/editar-producto.test.tsx`
 
 ### Implementation
 
-- [ ] T020 [US1] `Producto.editar` con sus reglas en `productos/domain/model/Producto.java`
-- [ ] T021 [US1] `EditarProductoPort` y `EditarProductoUseCase`: valida pertenencia y estado, aplica todo o nada
-- [ ] T022 [US1] `PATCH /productos/{id}` y su DTO parcial en `ProductoController`
+- [x] T020 [US1] `Producto.editar` con sus reglas en `productos/domain/model/Producto.java`
+- [x] T021 [US1] `EditarProductoPort` y `EditarProductoUseCase`: valida pertenencia y estado, aplica todo o nada
+- [x] T022 [US1] `PATCH /productos/{id}` y su DTO parcial en `ProductoController`
 - [ ] T023 [US1] Mapeo de `OptimisticLockException` a `409 CONFLICT` y reintento único
 - [ ] T031 [US1] `editarProducto()` con la outbox en `frontend/src/services/productos.ts`
 - [ ] T032 [US1] Pantalla `productos/[id]/editar.tsx` con `FormularioProducto` compartido con RF-54

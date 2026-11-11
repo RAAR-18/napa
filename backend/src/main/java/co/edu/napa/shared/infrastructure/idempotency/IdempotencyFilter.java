@@ -98,7 +98,9 @@ public class IdempotencyFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/auth/logout")
                 || path.startsWith("/api/v1/auth/verify-phone")
                 || path.equals("/api/v1/auth/password/recover/request");
-        return exempt || !(path.startsWith("/api/v1/")
+        boolean productEdit = "PATCH".equalsIgnoreCase(request.getMethod())
+                && path.matches("/api/v1/productos/[^/]+");
+        return exempt || productEdit || !(path.startsWith("/api/v1/")
                 && ("POST".equalsIgnoreCase(request.getMethod())
                 || "PATCH".equalsIgnoreCase(request.getMethod())));
     }

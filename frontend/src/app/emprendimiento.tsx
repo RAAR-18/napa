@@ -148,7 +148,7 @@ export default function EmprendimientoScreen() {
 
     setBusy(true);
     try {
-      setCreated(await createEmprendimiento(session, input));
+      setCreated(await createEmprendimiento(input));
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) {
         await clearSession();
@@ -194,6 +194,10 @@ export default function EmprendimientoScreen() {
           <Text style={styles.successText}>Estado: {created.estado}</Text>
         </View>
         <PrimaryButton
+          title="Agregar mis productos"
+          onPress={() => router.replace('/mis-productos')}
+        />
+        <TextButton
           title="Volver a mi cuenta"
           onPress={() => router.replace('/session')}
         />

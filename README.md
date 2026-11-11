@@ -82,7 +82,25 @@ $env:NAPA_OTP_CONSOLE_CODE = "123456"
 
 El secreto JWT es obligatorio y debe tener al menos 32 bytes. Para crear el administrador inicial, configura una sola vez `NAPA_ADMIN_BOOTSTRAP_ENABLED=true`, `NAPA_ADMIN_NAME`, `NAPA_ADMIN_PHONE` (formato E.164) y `NAPA_ADMIN_PASSWORD` (8–128 caracteres). El bootstrap se marca como completado en la base de datos; no vuelvas a habilitarlo para reemplazar la cuenta.
 
-El adaptador `otp-console` no envía ni registra el código; solo valida el valor configurado (`123456` en el ejemplo) y guarda temporalmente en Redis el estado de intentos (10 minutos, máximo 5). El límite de solicitudes se aplica por celular y por IP (1 por minuto, 5 por hora). Este perfil es exclusivo para desarrollo/pruebas: no lo actives en producción. Sin este perfil, las rutas de verificación responden `503` mientras Twilio siga deshabilitado.
+El perfil `otp-console` selecciona el único adaptador de consola, `ConsolaVerificacionAdapter`. El código se configura con `NAPA_OTP_CONSOLE_CODE` y debe tener exactamente seis dígitos; no hay un código predeterminado y la API rechaza el arranque de ese perfil si falta o es inválido. El adaptador no envía mensajes ni guarda o imprime el código: mantiene en Redis el estado de verificación durante 10 minutos, con un máximo de 5 intentos y consumo único al acertar. Los límites de envío son 1 por minuto y 5 por hora por celular, y 20 por hora por IP.
+
+Este perfil es exclusivo para desarrollo/pruebas y no puede combinarse con `prod`. Por defecto se selecciona el proveedor `unavailable`: solicitar o confirmar un código responde `503` y no se contacta a Twilio. El registro conserva la cuenta pendiente y devuelve `verificacion.estado = FALLIDO` si el envío no está disponible, para permitir reintentarlo después.
+
+Si el arranque falla con `Migration checksum mismatch`, compara primero `flyway_schema_history` con los archivos de `backend/src/main/resources/db/migration`. Una base creada desde otra rama puede tener migraciones distintas con los mismos números. En el entorno local revisado, la base `napa` contenía V4 `emprendimiento`, V5 `producto` y V6 `imagen_emprendimiento`, mientras que esta versión contiene V4 `notifications`, V5 `mensaje` y V6 `emprendimiento`. Modificar solo el historial con `repair` no adapta esas tablas.
+
+Para probar esta versión conservando la base anterior, crea una base separada una sola vez. Desde `backend/`, con Docker activo:
+
+```powershell
+docker compose -f ..\docker-compose.yml exec -T postgres createdb -U napa -O napa napa_dev
+```
+
+Antes de ejecutar `bootRun`, configura en esa misma terminal:
+
+```powershell
+$env:DATABASE_URL = "jdbc:postgresql://localhost:5432/napa_dev"
+```
+
+Mantén también las variables de contraseña, secreto JWT y OTP del ejemplo anterior. Flyway creará el esquema de esta versión en `napa_dev`. Las variables de PowerShell se aplican a esa terminal; configura `DATABASE_URL` nuevamente al abrir otra. La base `napa` y sus datos se conservan; las cuentas de esa base no aparecerán en `napa_dev`.
 
 Para habilitar el cálculo de rutas, configura una clave de OpenRouteService con Routes API habilitada:
 
@@ -116,7 +134,52 @@ npm start
 
 Reemplaza `192.168.1.25` por la IPv4 del computador en tu red local. No uses `localhost` en un teléfono físico: apuntaría al propio teléfono. El backend debe estar ejecutándose en el puerto `8080`.
 
-La app incluye registro (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), verificación del celular, inicio/cierre de sesión, recuperación y cambio de contraseña. En el perfil `otp-console`, ingresa en la pantalla de verificación el código configurado en `NAPA_OTP_CONSOLE_CODE`. Después de iniciar sesión se muestra el perfil; las pantallas funcionales de los demás módulos todavía no están implementadas.
+`EXPO_PUBLIC_API_URL` debe contener solo el origen del backend, por ejemplo `http://192.168.1.25:8080`, sin `/api/v1`: el cliente añade las rutas de la API. Reinicia Expo si cambias esta variable. Para probar el iPhone, abre el proyecto con Expo Go escaneando el QR; la vista del navegador es la versión web. La sesión y el identificador del dispositivo usan SecureStore en iOS/Android y `localStorage` en web. Si el navegador bloquea ese almacenamiento, la app muestra un mensaje para habilitarlo.
+
+`metro.config.js` incluye soporte para los archivos `.wasm` de SQLite y añade `Cross-Origin-Embedder-Policy: credentialless` y `Cross-Origin-Opener-Policy: same-origin` al servidor de desarrollo. Si se despliega la versión web, el hosting debe servir esas cabeceras y un contexto seguro para usar SQLite en navegador. Reinicia Expo cuando cambies su configuración de Metro.
+
+Para acceder a la API desde el navegador, el perfil `otp-console` permite CORS desde `http://localhost:8081` y `http://127.0.0.1:8081`. Para otro origen (otra IP o puerto), configura `NAPA_WEB_ALLOWED_ORIGINS` en la terminal del backend con una lista separada por comas y reinícialo, por ejemplo:
+
+```powershell
+$env:NAPA_WEB_ALLOWED_ORIGINS = "http://localhost:8081,http://192.168.1.25:8081"
+```
+
+Cada origen incluye esquema, host y puerto, sin ruta ni barra final. Esta variable reemplaza la lista predeterminada. Fuera de `otp-console` no se permiten orígenes web adicionales salvo configuración explícita. Las solicitudes nativas de Expo Go no necesitan CORS; las rutas protegidas siguen exigiendo un token válido.
+
+La app incluye registro (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), verificación del celular, inicio/cierre de sesión, recuperación y cambio de contraseña. En el perfil `otp-console`, ingresa en la pantalla de verificación el código configurado en `NAPA_OTP_CONSOLE_CODE`. Después de iniciar sesión, el cliente puede explorar emprendimientos y sus productos; el vendedor puede crear su emprendimiento, publicar productos y actualizar sus cantidades.
+
+### Productos e inventario: gestión en línea
+
+La migración `V7__productos.sql` añade el catálogo y `V8__producto_version.sql` incorpora la versión para evitar sobrescrituras simultáneas, sin cambiar las migraciones anteriores. Usa `napa_dev` si conservas la base local incompatible descrita arriba. Cada producto pertenece al emprendimiento activo del vendedor autenticado; no se acepta elegir otro propietario en el formulario.
+
+| Operación | Endpoint | Perfil |
+|---|---|---|
+| Publicar producto | `POST /api/v1/productos` | Vendedor |
+| Mis productos | `GET /api/v1/productos` | Vendedor |
+| Consultar para editar | `GET /api/v1/productos/{id}` | Vendedor propietario |
+| Editar nombre, precio o descripción | `PATCH /api/v1/productos/{id}` | Vendedor propietario |
+| Retirar del catálogo | `POST /api/v1/productos/{id}/eliminar` | Vendedor propietario |
+| Fijar cantidad actual | `POST /api/v1/productos/{id}/inventario` | Vendedor propietario |
+| Catálogo del emprendimiento | `GET /api/v1/emprendimientos/{id}/productos` | Cliente |
+
+El precio es un entero positivo en pesos colombianos por unidad de venta. Las unidades son `UNIDAD`, `KG`, `LIBRA`, `LITRO` y `PORCION`. La cantidad admite hasta dos decimales; al crear debe ser mayor que cero. En inventario se permite cero: el producto queda `AGOTADO` y sigue visible con la etiqueta **Solo reserva**. Reponer una cantidad positiva lo devuelve a `DISPONIBLE`. Se rechazan nombres duplicados dentro del mismo emprendimiento, sin distinguir mayúsculas. Las escrituras `POST` requieren `Idempotency-Key`; las actualizaciones manuales bloquean la fila durante la transacción.
+
+La edición acepta uno o varios de los campos `nombre`, `precio` y `descripcion`; `descripcion: null` la borra. Rechaza campos de inventario, unidad y estado. No exige `Idempotency-Key`. La consulta devuelve `version` y `ETag`, y la app envía `If-Match` (por ejemplo, `"0"`) para detectar cambios desde otra pantalla. Un conflicto devuelve `409`, conserva lo escrito en el formulario y ofrece recargar los datos. Inventario y eliminación también incrementan la versión.
+
+Eliminar exige exactamente `{ "confirmar": true }` y responde `204`. Es un borrado lógico: oculta el producto de ambos listados, conserva su registro y libera su nombre. Repetir la misma clave devuelve el mismo `204`; una clave nueva sobre un producto ya eliminado devuelve `409 INVALID_STATE`.
+
+El módulo de pedidos todavía no existe. La comprobación de pendientes usa un puerto con respuesta cero únicamente mientras `NAPA_PEDIDOS_ENABLED=false` (predeterminado en esta fase). Al incorporar pedidos, se debe implementar su adaptador y activar `NAPA_PEDIDOS_ENABLED=true`: con esa opción y sin adaptador, el backend no arranca. El rechazo `HAS_PENDING_ORDERS` está probado con conteos simulados, pendiente de integrar con los estados reales y el bloqueo de creación de pedidos.
+
+Para probar desde la app:
+
+1. Como vendedor con emprendimiento creado, abre **Mis productos → Agregar producto**. Por ejemplo: Mango, 3500 COP por kilogramo y 12,5 de cantidad.
+2. Como cliente, abre **Explorar emprendimientos → Ver productos de…** y comprueba el precio, la unidad y la cantidad.
+3. Como vendedor, marca el producto como agotado. Actualiza el catálogo del cliente para ver **Solo reserva**; también se refresca al volver a la pantalla o al primer plano de la app.
+4. Repón la cantidad desde **Mis productos** y comprueba que vuelve a estar disponible.
+5. Abre **Editar**, cambia el precio o la descripción y guarda. Vuelve a consultar el catálogo como cliente.
+6. Usa un producto de prueba para **Eliminar**: primero cancela y comprueba que sigue visible; después confirma y comprueba que desaparece de ambos listados.
+
+Esta entrega requiere conexión para consultar, guardar, editar y eliminar productos. La cola de escrituras sin conexión, la caché de este catálogo y el descuento al aceptar pedidos quedan pendientes. La etiqueta **Solo reserva** informa la disponibilidad; la creación de reservas, pedidos, pagos y entregas todavía no está implementada.
 
 El entorno de Compose usa credenciales exclusivamente locales. No las reutilices en producción.
 

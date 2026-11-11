@@ -9,6 +9,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
+import java.util.Optional;
 
 @Repository
 public class EmprendimientoPersistenceAdapter implements EmprendimientoRepositoryPort {
@@ -36,5 +37,17 @@ public class EmprendimientoPersistenceAdapter implements EmprendimientoRepositor
             }
             throw exception;
         }
+    }
+
+    @Override
+    public Optional<Emprendimiento> findActiveByUsuarioId(UUID usuarioId) {
+        return repository.findByUsuarioIdAndEstado(usuarioId, EstadoEmprendimiento.ACTIVO)
+                .map(EmprendimientoJpaEntity::toDomain);
+    }
+
+    @Override
+    public Optional<Emprendimiento> findActiveById(UUID id) {
+        return repository.findByIdAndEstado(id, EstadoEmprendimiento.ACTIVO)
+                .map(EmprendimientoJpaEntity::toDomain);
     }
 }

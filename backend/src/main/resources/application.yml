@@ -30,6 +30,10 @@ management:
         enabled: true
 
 napa:
+  pedidos:
+    enabled: ${NAPA_PEDIDOS_ENABLED:false}
+  web:
+    allowed-origins: ${NAPA_WEB_ALLOWED_ORIGINS:}
   routing:
     ors:
       api-key: ${ORS_API_KEY:}
@@ -47,4 +51,4 @@ napa:
 
   verification:
     provider: ${NAPA_VERIFICATION_PROVIDER:unavailable}   # unavailable | console | twilio (pendiente)
-    console-code: ${NAPA_VERIFICATION_CONSOLE_CODE:123456}
+    console-code: ${NAPA_OTP_CONSOLE_CODE:}

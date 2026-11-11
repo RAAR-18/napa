@@ -24,10 +24,13 @@ public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort {
         try {
             return repository.saveAndFlush(new UsuarioJpaEntity(usuario)).toDomain();
         } catch (DataIntegrityViolationException exception) {
-            if (exception.getCause() instanceof ConstraintViolationException violation
-                    && ("PHONE_ALREADY_REGISTERED".equals(violation.getConstraintName())
-                    || "EMAIL_ALREADY_REGISTERED".equals(violation.getConstraintName()))) {
-                throw new DomainException("CONFLICT", "El celular o correo ya está registrado.");
+            if (exception.getCause() instanceof ConstraintViolationException violation) {
+                if ("uq_usuario_celular".equals(violation.getConstraintName())) {
+                    throw new DomainException("PHONE_ALREADY_REGISTERED", "Ese celular ya está registrado.");
+                }
+                if ("uq_usuario_correo_normalizado".equals(violation.getConstraintName())) {
+                    throw new DomainException("EMAIL_ALREADY_REGISTERED", "Ese correo ya está registrado.");
+                }
             }
             throw exception;
         }

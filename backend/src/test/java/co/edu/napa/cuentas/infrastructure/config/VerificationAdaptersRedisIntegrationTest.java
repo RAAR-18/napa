@@ -1,5 +1,6 @@
 package co.edu.napa.cuentas.infrastructure.config;
 
+import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.ConsolaVerificacionAdapter;
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.domain.model.EstadoVerificacion;
 import co.edu.napa.shared.domain.DomainException;
@@ -97,8 +98,8 @@ class VerificationAdaptersRedisIntegrationTest {
 
     @Test
     void consoleVerificationExpiresAfterFiveFailuresAndApprovesOnlyOnce() {
-        ConsoleVerificarCelularAdapter adapter =
-                new ConsoleVerificarCelularAdapter(redisTemplate, "123456");
+        ConsolaVerificacionAdapter adapter =
+                new ConsolaVerificacionAdapter(redisTemplate, "123456");
         String celular = "+57300" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
         adapter.solicitar(celular, EstadoVerificacion.REGISTRO, "ignored");
 
