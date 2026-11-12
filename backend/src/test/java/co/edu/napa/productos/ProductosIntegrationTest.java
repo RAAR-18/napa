@@ -1,5 +1,6 @@
 package co.edu.napa.productos;
 
+import co.edu.napa.productos.application.ports.in.ConsultarDisponibilidadPort;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "spring.config.location=file:src/main/resources/application.yml",
         "napa.auth.jwt-secret=products-integration-secret-at-least-32-bytes",
+        "napa.pagos.cifrado.clave-base64=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
         "napa.auth.admin-bootstrap.enabled=false", "napa.outbox.enabled=false", "NAPA_OTP_CONSOLE_CODE=654321"
 })
 class ProductosIntegrationTest {
@@ -53,6 +55,7 @@ class ProductosIntegrationTest {
     @LocalServerPort int port;
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
+    @Autowired ConsultarDisponibilidadPort disponibilidad;
 
     @DynamicPropertySource
     static void services(DynamicPropertyRegistry properties) {
@@ -92,6 +95,214 @@ class ProductosIntegrationTest {
         item = items(ok("GET", "/emprendimientos/" + business + "/productos", customer, null)).getFirst();
         assertEquals("DISPONIBLE", item.get("estado"));
         assertEquals(false, item.get("soloReserva"));
+    }
+
+    @Test
+    void availabilityLookupReturnsCurrentStockForPublishedProductsOfOnlyRequestedBusiness() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        String otherSeller = account("VENDEDOR_AMBULANTE");
+        String otherBusiness = business(otherSeller);
+        String activeId = body(request("POST", "/productos", seller, product("Mango", "12.5"), key()))
+                .get("id").toString();
+        String exhaustedId = body(request("POST", "/productos", seller, product("Papaya", "1"), key()))
+                .get("id").toString();
+        String deletedId = body(request("POST", "/productos", seller, product("Guayaba", "3"), key()))
+                .get("id").toString();
+        String foreignId = body(request("POST", "/productos", otherSeller, product("Banano", "4"), key()))
+                .get("id").toString();
+        assertEquals(200, request("POST", "/productos/" + exhaustedId + "/inventario", seller,
+                Map.of("cantidadDisponible", 0), key()).statusCode());
+        jdbc.update("UPDATE producto SET estado = 'ELIMINADO' WHERE id = ?", UUID.fromString(deletedId));
+
+        var result = disponibilidad.consultar(UUID.fromString(business), List.of(
+                UUID.fromString(activeId), UUID.fromString(exhaustedId), UUID.fromString(deletedId),
+                UUID.fromString(foreignId), UUID.randomUUID(), UUID.fromString(activeId)));
+
+        assertEquals(2, result.size());
+        var active = result.stream().filter(item -> item.productoId().equals(UUID.fromString(activeId)))
+                .findFirst().orElseThrow();
+        assertEquals(3500, active.precio());
+        assertEquals(0, new BigDecimal("12.5").compareTo(active.cantidadDisponible()));
+        assertEquals("DISPONIBLE", active.estadoProducto());
+        var exhausted = result.stream().filter(item -> item.productoId().equals(UUID.fromString(exhaustedId)))
+                .findFirst().orElseThrow();
+        assertEquals(3500, exhausted.precio());
+        assertEquals(0, BigDecimal.ZERO.compareTo(exhausted.cantidadDisponible()));
+        assertEquals("AGOTADO", exhausted.estadoProducto());
+        assertTrue(disponibilidad.consultar(UUID.fromString(otherBusiness), List.of()).isEmpty());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void clientCanQuoteImmediateDirectDeliveryUsingCurrentProductPriceAndStock() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango", "12.5"), key()))
+                .get("id").toString();
+        Map<String, Object> quoteRequest = Map.of(
+                "emprendimientoId", business,
+                "modalidad", "ENTREGA_DIRECTA",
+                "items", List.of(Map.of("productoId", productId, "cantidad", new BigDecimal("2.5"))),
+                "ubicacionEntrega", Map.of(
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"));
+        assertEquals(403, request("POST", "/pedidos/cotizacion", seller, quoteRequest, null).statusCode());
+        assertEquals(401, request("POST", "/pedidos/cotizacion", null, quoteRequest, null).statusCode());
+        var quote = request("POST", "/pedidos/cotizacion", customer, quoteRequest, null);
+
+        assertEquals(200, quote.statusCode(), quote.body());
+        var result = body(quote);
+        assertEquals(8750, ((Number) result.get("subtotal")).longValue());
+        assertEquals(8750, ((Number) result.get("total")).longValue());
+        assertNull(result.get("tarifaDomicilio"));
+        assertEquals(List.of("ENTREGA_DIRECTA"), result.get("modalidadesDisponibles"));
+        assertEquals(List.of(), result.get("mediosPagoDisponibles"));
+        assertNull(result.get("pagoDomicilio"));
+        var items = (List<Map<String, Object>>) result.get("items");
+        assertEquals(1, items.size());
+        assertEquals("Mango", items.getFirst().get("nombre"));
+        assertEquals("KG", items.getFirst().get("unidad"));
+        assertEquals("DISPONIBLE", items.getFirst().get("estadoProducto"));
+        assertEquals(8750, ((Number) items.getFirst().get("subtotal")).longValue());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void clientCreatesOrderOnceAndPendingStatesBlockProductDeletion() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, Map.of("aceptaEfectivo", true));
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango", "12.5"), key()))
+                .get("id").toString();
+        Map<String, Object> orderRequest = new HashMap<>(Map.of(
+                "emprendimientoId", business,
+                "modalidad", "ENTREGA_DIRECTA",
+                "items", List.of(Map.of("productoId", productId, "cantidad", new BigDecimal("2.5"))),
+                "ubicacionEntrega", Map.of(
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                "medioPago", "EFECTIVO",
+                "totalEsperado", 8750));
+        String idempotencyKey = key();
+
+        var response = request("POST", "/pedidos", customer, orderRequest, idempotencyKey);
+
+        assertEquals(201, response.statusCode(), response.body());
+        var result = body(response);
+        UUID orderId = UUID.fromString(result.get("id").toString());
+        assertEquals("PENDIENTE", result.get("estado"));
+        assertEquals("EFECTIVO", result.get("medioPago"));
+        assertEquals(8750, ((Number) result.get("total")).longValue());
+        assertTrue(response.headers().firstValue("Location").orElseThrow()
+                .endsWith("/api/v1/pedidos/" + orderId));
+        assertEquals(1L, jdbc.queryForObject("SELECT count(*) FROM pedido WHERE id = ?", Long.class, orderId));
+        assertEquals(1L, jdbc.queryForObject("SELECT count(*) FROM item_pedido WHERE pedido_id = ?", Long.class, orderId));
+        assertEquals(1L, jdbc.queryForObject("SELECT count(*) FROM outbox_event WHERE aggregate_id = ? "
+                + "AND event_type = 'pedidos.pedido-creado'", Long.class, orderId));
+        UUID sellerId = jdbc.queryForObject("SELECT usuario_id FROM emprendimiento WHERE id = ?",
+                UUID.class, UUID.fromString(business));
+        assertEquals(sellerId, jdbc.queryForObject(
+                "SELECT (payload->>'vendedorId')::uuid FROM outbox_event WHERE aggregate_id = ?",
+                UUID.class, orderId));
+        assertEquals(0, new BigDecimal("12.5").compareTo(jdbc.queryForObject(
+                "SELECT cantidad_disponible FROM producto WHERE id = ?", BigDecimal.class, UUID.fromString(productId))));
+
+        var deletion = request("POST", "/productos/" + productId + "/eliminar", seller,
+                Map.of("confirmar", true), key());
+        assertEquals(409, deletion.statusCode(), deletion.body());
+        assertEquals("HAS_PENDING_ORDERS", body(deletion).get("code"));
+        assertEquals(1, ((Number) ((Map<?, ?>) body(deletion).get("details"))
+                .get("pedidosPendientes")).intValue());
+        assertEquals("DISPONIBLE", jdbc.queryForObject(
+                "SELECT estado FROM producto WHERE id = ?", String.class, UUID.fromString(productId)));
+
+        var repeated = request("POST", "/pedidos", customer, orderRequest, idempotencyKey);
+        assertEquals(201, repeated.statusCode(), repeated.body());
+        assertEquals(orderId, UUID.fromString(body(repeated).get("id").toString()));
+        assertEquals(1L, jdbc.queryForObject("SELECT count(*) FROM pedido WHERE id = ?", Long.class, orderId));
+
+        List<String> openStates = List.of("PENDIENTE", "ACEPTADO", "LISTO_PARA_RECOGER", "EN_CAMINO");
+        List<String> terminalStates = List.of("RECHAZADO", "ENTREGADO", "CANCELADO");
+
+        for (String estado : openStates) {
+            String openProductId = body(request("POST", "/productos", seller,
+                    product("Producto " + estado, "2"), key())).get("id").toString();
+            Map<String, Object> openOrderRequest = new HashMap<>(Map.of(
+                    "emprendimientoId", business,
+                    "modalidad", "ENTREGA_DIRECTA",
+                    "items", List.of(Map.of("productoId", openProductId, "cantidad", BigDecimal.ONE)),
+                    "ubicacionEntrega", Map.of(
+                            "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                    "medioPago", "EFECTIVO",
+                    "totalEsperado", 3500));
+            if (estado.equals("PENDIENTE")) {
+                openOrderRequest.put("reserva", java.time.Instant.now().plusSeconds(3600).toString());
+            }
+            var created = request("POST", "/pedidos", customer, openOrderRequest, key());
+            assertEquals(201, created.statusCode(), created.body());
+            UUID openOrderId = UUID.fromString(body(created).get("id").toString());
+            jdbc.update("UPDATE pedido SET estado = ? WHERE id = ?", estado, openOrderId);
+
+            var openDeletion = request("POST", "/productos/" + openProductId + "/eliminar", seller,
+                    Map.of("confirmar", true), key());
+
+            assertEquals(409, openDeletion.statusCode(), openDeletion.body());
+            assertEquals("HAS_PENDING_ORDERS", body(openDeletion).get("code"));
+            assertEquals(1, ((Number) ((Map<?, ?>) body(openDeletion).get("details"))
+                    .get("pedidosPendientes")).intValue());
+        }
+
+        for (String estado : terminalStates) {
+            String terminalProductId = body(request("POST", "/productos", seller,
+                    product("Producto " + estado, "2"), key())).get("id").toString();
+            Map<String, Object> terminalOrderRequest = Map.of(
+                    "emprendimientoId", business,
+                    "modalidad", "ENTREGA_DIRECTA",
+                    "items", List.of(Map.of("productoId", terminalProductId, "cantidad", BigDecimal.ONE)),
+                    "ubicacionEntrega", Map.of(
+                            "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                    "medioPago", "EFECTIVO",
+                    "totalEsperado", 3500);
+            var created = request("POST", "/pedidos", customer, terminalOrderRequest, key());
+            assertEquals(201, created.statusCode(), created.body());
+            UUID terminalOrderId = UUID.fromString(body(created).get("id").toString());
+            jdbc.update("UPDATE pedido SET estado = ? WHERE id = ?", estado, terminalOrderId);
+
+            var terminalDeletion = request("POST", "/productos/" + terminalProductId + "/eliminar", seller,
+                    Map.of("confirmar", true), key());
+
+            assertEquals(204, terminalDeletion.statusCode(), terminalDeletion.body());
+        }
+    }
+
+    @Test
+    void changedExpectedTotalDoesNotPersistOrderOrEmitEvent() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, Map.of("aceptaEfectivo", true));
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango", "12.5"), key()))
+                .get("id").toString();
+        Map<String, Object> orderRequest = Map.of(
+                "emprendimientoId", business,
+                "modalidad", "ENTREGA_DIRECTA",
+                "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
+                "ubicacionEntrega", Map.of(
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                "medioPago", "EFECTIVO",
+                "totalEsperado", 1);
+        long ordersBefore = jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class);
+        long eventsBefore = jdbc.queryForObject(
+                "SELECT count(*) FROM outbox_event WHERE event_type = 'pedidos.pedido-creado'", Long.class);
+
+        var response = request("POST", "/pedidos", customer, orderRequest, key());
+
+        assertEquals(409, response.statusCode(), response.body());
+        assertEquals("CONFLICT", body(response).get("code"));
+        assertEquals(ordersBefore, jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class));
+        assertEquals(eventsBefore, jdbc.queryForObject(
+                "SELECT count(*) FROM outbox_event WHERE event_type = 'pedidos.pedido-creado'", Long.class));
     }
 
     @Test

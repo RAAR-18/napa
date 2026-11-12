@@ -76,11 +76,18 @@ Para iniciar la API localmente con el adaptador OTP de desarrollo, conserva la b
 ```powershell
 $env:DATABASE_PASSWORD = "napa_local_dev_only"
 $env:NAPA_JWT_SECRET = "replace-with-at-least-32-random-local-bytes"
+$env:NAPA_PAYMENT_ACCOUNT_ENCRYPTION_KEY = "base64-encoded-32-random-bytes-from-your-secret-manager"
 $env:NAPA_OTP_CONSOLE_CODE = "123456"
 .\gradlew.bat bootRun --args="--spring.profiles.active=otp-console"
 ```
 
 El secreto JWT es obligatorio y debe tener al menos 32 bytes. Para crear el administrador inicial, configura una sola vez `NAPA_ADMIN_BOOTSTRAP_ENABLED=true`, `NAPA_ADMIN_NAME`, `NAPA_ADMIN_PHONE` (formato E.164) y `NAPA_ADMIN_PASSWORD` (8–128 caracteres). El bootstrap se marca como completado en la base de datos; no vuelvas a habilitarlo para reemplazar la cuenta.
+
+La tarifa mínima de domicilio inicia en **3050 COP**. El valor se define con `NAPA_TARIFA_MINIMA_DEFECTO` (por defecto `3050`) y debe ser un entero positivo. Un administrador puede consultarla y actualizarla mediante `GET` y `POST /api/v1/tarifa-minima`; cada cambio efectivo se conserva en el historial y aplica solo a pedidos nuevos. RF-45 usa base `3050 COP`, `500 COP/km`, `200 COP/min` y factor de respaldo por línea recta `1.3`; se pueden ajustar con `NAPA_PEDIDOS_TARIFA_BASE`, `NAPA_PEDIDOS_TARIFA_VALOR_POR_KM`, `NAPA_PEDIDOS_TARIFA_VALOR_POR_MIN` y `NAPA_PEDIDOS_TARIFA_FACTOR_LINEA_RECTA`.
+
+El backend expone `POST /api/v1/pedidos/cotizacion` para clientes. Calcula precios actuales, valida inventario y modalidades, y devuelve el costo del domicilio cuando aplica; es de solo lectura y no requiere `Idempotency-Key`. `POST /api/v1/pedidos` revalida la solicitud, congela precios y ubicación, persiste el pedido como `PENDIENTE` y registra el evento E01 en el outbox dentro de la misma transacción; requiere `Idempotency-Key`. El backend todavía no ofrece pantallas para crear pedidos ni consultas o transiciones de estado.
+
+El backend también requiere `NAPA_PAYMENT_ACCOUNT_ENCRYPTION_KEY`: una clave aleatoria de 32 bytes codificada en Base64 para cifrar cuentas bancarias con AES-GCM. Guárdala en el gestor de secretos del entorno y nunca en Git. La clave cifra los datos en `configuracion_pago`; antes de rotarla habrá que descifrar y volver a cifrar todas las configuraciones y copias vigentes de domicilios con la clave nueva.
 
 El perfil `otp-console` selecciona el único adaptador de consola, `ConsolaVerificacionAdapter`. El código se configura con `NAPA_OTP_CONSOLE_CODE` y debe tener exactamente seis dígitos; no hay un código predeterminado y la API rechaza el arranque de ese perfil si falta o es inválido. El adaptador no envía mensajes ni guarda o imprime el código: mantiene en Redis el estado de verificación durante 10 minutos, con un máximo de 5 intentos y consumo único al acertar. Los límites de envío son 1 por minuto y 5 por hora por celular, y 20 por hora por IP.
 
@@ -168,7 +175,7 @@ La edición acepta uno o varios de los campos `nombre`, `precio` y `descripcion`
 
 Eliminar exige exactamente `{ "confirmar": true }` y responde `204`. Es un borrado lógico: oculta el producto de ambos listados, conserva su registro y libera su nombre. Repetir la misma clave devuelve el mismo `204`; una clave nueva sobre un producto ya eliminado devuelve `409 INVALID_STATE`.
 
-El módulo de pedidos todavía no existe. La comprobación de pendientes usa un puerto con respuesta cero únicamente mientras `NAPA_PEDIDOS_ENABLED=false` (predeterminado en esta fase). Al incorporar pedidos, se debe implementar su adaptador y activar `NAPA_PEDIDOS_ENABLED=true`: con esa opción y sin adaptador, el backend no arranca. El rechazo `HAS_PENDING_ORDERS` está probado con conteos simulados, pendiente de integrar con los estados reales y el bloqueo de creación de pedidos.
+El módulo de pedidos calcula tarifas y cotizaciones y ya persiste los pedidos creados, sus ítems y el evento de outbox en una sola transacción. `NAPA_PEDIDOS_ENABLED=true` es el valor predeterminado: RF-58 consulta los pedidos en estados abiertos mediante un adaptador JDBC real, y la creación bloquea los productos en orden de ID para coordinarse con su eliminación. Sin pedidos abiertos, la eliminación conserva su comportamiento normal; si hay pedidos pendientes, responde `HAS_PENDING_ORDERS`. Siguen pendientes el historial RF-51, las consultas y transiciones del pedido y la prueba de concurrencia extremo a extremo.
 
 Para probar desde la app:
 
@@ -179,7 +186,7 @@ Para probar desde la app:
 5. Abre **Editar**, cambia el precio o la descripción y guarda. Vuelve a consultar el catálogo como cliente.
 6. Usa un producto de prueba para **Eliminar**: primero cancela y comprueba que sigue visible; después confirma y comprueba que desaparece de ambos listados.
 
-Esta entrega requiere conexión para consultar, guardar, editar y eliminar productos. La cola de escrituras sin conexión, la caché de este catálogo y el descuento al aceptar pedidos quedan pendientes. La etiqueta **Solo reserva** informa la disponibilidad; la creación de reservas, pedidos, pagos y entregas todavía no está implementada.
+Esta entrega requiere conexión para consultar, guardar, editar y eliminar productos. La cola de escrituras sin conexión, la caché de este catálogo y el descuento al aceptar pedidos quedan pendientes. La etiqueta **Solo reserva** informa la disponibilidad; la cotización backend está disponible, pero la creación de reservas y pedidos, los pagos registrados y las entregas todavía no están implementados en la app.
 
 El entorno de Compose usa credenciales exclusivamente locales. No las reutilices en producción.
 

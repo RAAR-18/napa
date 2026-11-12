@@ -1,4 +1,4 @@
-package co.edu.napa.emprendimientos.application.usecase;
+package co.edu.napa.emprendimientos.application.ports.in;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package co.edu.napa.notificaciones.infrastructure.web;
 
+import co.edu.napa.notificaciones.application.ports.in.NotificationPort;
 import co.edu.napa.notificaciones.application.ports.out.NotificationPage;
-import co.edu.napa.notificaciones.application.usecase.NotificationUseCase;
 import co.edu.napa.notificaciones.domain.model.Notificacion;
 import co.edu.napa.notificaciones.domain.model.TipoNotificacion;
 import co.edu.napa.shared.domain.DomainException;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 class NotificationControllerTest {
     private static final UUID USER_ID = UUID.fromString("40000000-0000-0000-0000-000000000001");
 
-    @Mock private NotificationUseCase notifications;
+    @Mock private NotificationPort notifications;
 
     private NotificationController controller;
 
@@ -81,12 +81,12 @@ class NotificationControllerTest {
 
     @Test
     void preferencePatchPassesOnlyRequestedTypesAndReturnsNoStore() {
-        List<NotificationUseCase.PreferenceStatus> state = List.of(
-                new NotificationUseCase.PreferenceStatus(TipoNotificacion.PEDIDO_CREADO.eventType(), false)
+        List<NotificationPort.PreferenceStatus> state = List.of(
+                new NotificationPort.PreferenceStatus(TipoNotificacion.PEDIDO_CREADO.eventType(), false)
         );
         when(notifications.actualizarPreferencias(
                 USER_ID,
-                List.of(new NotificationUseCase.PreferenceUpdate(
+                List.of(new NotificationPort.PreferenceUpdate(
                         TipoNotificacion.PEDIDO_CREADO.eventType(),
                         false
                 ))
@@ -95,7 +95,7 @@ class NotificationControllerTest {
         var response = controller.updatePreferences(
                 jwt(),
                 new NotificationController.PreferencesRequest(List.of(
-                        new NotificationController.PreferenceRequest(
+                    new NotificationController.PreferenceRequest(
                                 TipoNotificacion.PEDIDO_CREADO.eventType(),
                                 false
                         )
@@ -107,7 +107,7 @@ class NotificationControllerTest {
         assertEquals(state, response.getBody().preferencias());
         verify(notifications).actualizarPreferencias(
                 USER_ID,
-                List.of(new NotificationUseCase.PreferenceUpdate(
+                List.of(new NotificationPort.PreferenceUpdate(
                         TipoNotificacion.PEDIDO_CREADO.eventType(),
                         false
                 ))

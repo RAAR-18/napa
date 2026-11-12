@@ -69,11 +69,62 @@ class ArchitectureTest {
     }
 
     @Test
+    void tarifasDomainMustNotDependOnOtherFeatureModules() {
+        noClasses().that().resideInAPackage("co.edu.napa.tarifas.domain..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "co.edu.napa.cuentas..", "co.edu.napa.emprendimientos..",
+                        "co.edu.napa.notificaciones..", "co.edu.napa.productos..")
+                .check(classes);
+    }
+
+    @Test
+    void pedidosDomainMustNotDependOnOtherFeatureModules() {
+        noClasses().that().resideInAPackage("co.edu.napa.pedidos.domain..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "co.edu.napa.cuentas..", "co.edu.napa.emprendimientos..",
+                        "co.edu.napa.notificaciones..", "co.edu.napa.productos..",
+                        "co.edu.napa.tarifas..")
+                .check(classes);
+    }
+
+    @Test
+    void pagosDomainMustNotDependOnOtherFeatureModules() {
+        noClasses().that().resideInAPackage("co.edu.napa.pagos.domain..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "co.edu.napa.cuentas..", "co.edu.napa.emprendimientos..",
+                        "co.edu.napa.notificaciones..", "co.edu.napa.productos..",
+                        "co.edu.napa.pedidos..", "co.edu.napa.tarifas..")
+                .check(classes);
+    }
+
+    @Test
     void productosApplicationUsesOnlyTheIncomingEmprendimientosPort() {
         noClasses().that().resideInAPackage("co.edu.napa.productos.application..")
                 .should().dependOnClassesThat().resideInAnyPackage(
                         "co.edu.napa.emprendimientos.domain..", "co.edu.napa.emprendimientos.infrastructure..",
                         "co.edu.napa.emprendimientos.application.ports.out..", "co.edu.napa.emprendimientos.application.usecase..")
                 .check(classes);
+    }
+
+    @Test
+    void webControllersMustNotDependOnUseCaseImplementations() {
+        ArchRule rule = noClasses()
+                .that().resideInAnyPackage(
+                        "co.edu.napa..infrastructure.adapters.in.web..",
+                        "co.edu.napa..infrastructure.web..")
+                .should().dependOnClassesThat()
+                .resideInAPackage("co.edu.napa..application.usecase..");
+
+        rule.allowEmptyShould(true).check(classes);
+    }
+
+    @Test
+    void incomingPortsMustNotDependOnUseCaseImplementations() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("co.edu.napa..application.ports.in..")
+                .should().dependOnClassesThat()
+                .resideInAPackage("co.edu.napa..application.usecase..");
+
+        rule.allowEmptyShould(true).check(classes);
     }
 }

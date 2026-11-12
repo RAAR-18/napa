@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public class PedidosProductoConfiguration {
-    // El proyecto todavía no tiene módulo ni tablas de pedidos. Al habilitarlo se exige un adaptador real.
+    // Solo se permite el contador simulado en entornos donde la persistencia de pedidos está desactivada.
     @Bean
     @ConditionalOnMissingBean(PedidosPendientesProductoPort.class)
     @ConditionalOnProperty(name = "napa.pedidos.enabled", havingValue = "false", matchIfMissing = true)

@@ -194,7 +194,7 @@ frontend/__tests__/domicilios/disponibles.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Índice `(estado, created_at)` sobre `domicilio` en una migración `V12__indices_domicilio.sql` en `backend/src/main/resources/db/migration/`
+- [ ] T002 Índice `(estado, created_at)` sobre `domicilio` en una migración `V14__indices_domicilio.sql` en `backend/src/main/resources/db/migration/`
 - [ ] T003 Ampliar `PedidoParaDomicilioPort` con una consulta en lote de tarifa y destino por lista de pedidos (puerto `in` de `pedidos`)
 
 **Checkpoint**: base lista.

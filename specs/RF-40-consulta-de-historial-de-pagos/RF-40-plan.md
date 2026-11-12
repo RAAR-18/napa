@@ -209,7 +209,7 @@ frontend/__tests__/pagos/historial.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Columnas `comprador_id`, `vendedor_id` y `domiciliario_id` (nulas según el tipo) e índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)` sobre `pago`: ya incluidas en `V10__pago.sql` (RF-53 T002); si V10 ya se aplicó, una migración nueva con relleno desde pedido y domicilio
+- [ ] T002 Columnas `comprador_id`, `vendedor_id` y `domiciliario_id` (nulas según el tipo) e índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)` sobre `pago`: ya incluidas en `V12__pago.sql` (RF-53 T002); si V12 ya se aplicó, una migración nueva con relleno desde pedido y domicilio
 - [ ] T003 `RegistrarPagoPedidoPendientePort` (RF-53) y `RegistrarPagoTarifaUseCase` (RF-43) fijan esas columnas al crear el pago
 - [ ] T004 `ConsultarModalidadPedidosPort` en `pedidos` (ids a modalidad, en lote) y `ModalidadPedidosPort` en `pagos`
 - [ ] T005 Método de consulta por usuario, rol y filtros en `PagoRepositoryPort`

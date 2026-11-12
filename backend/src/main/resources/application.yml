@@ -31,7 +31,17 @@ management:
 
 napa:
   pedidos:
-    enabled: ${NAPA_PEDIDOS_ENABLED:false}
+    enabled: ${NAPA_PEDIDOS_ENABLED:true}
+    tarifa:
+      base: ${NAPA_PEDIDOS_TARIFA_BASE:3050}
+      valor-por-km: ${NAPA_PEDIDOS_TARIFA_VALOR_POR_KM:500}
+      valor-por-min: ${NAPA_PEDIDOS_TARIFA_VALOR_POR_MIN:200}
+      factor-linea-recta: ${NAPA_PEDIDOS_TARIFA_FACTOR_LINEA_RECTA:1.3}
+  tarifa:
+    minima-defecto: ${NAPA_TARIFA_MINIMA_DEFECTO:3050}
+  pagos:
+    cifrado:
+      clave-base64: ${NAPA_PAYMENT_ACCOUNT_ENCRYPTION_KEY:}
   web:
     allowed-origins: ${NAPA_WEB_ALLOWED_ORIGINS:}
   routing:

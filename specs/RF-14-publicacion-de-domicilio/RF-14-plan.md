@@ -14,9 +14,9 @@
 
 ## Summary
 
-El vendedor de punto fijo publica un domicilio para un pedido propio de modalidad `DOMICILIO`, `ACEPTADO` y con el pago confirmado (RF-42), con `POST /pedidos/{id}/domicilio`. Se crea el `Domicilio` en `DISPONIBLE`: punto A = copia de la ubicación del punto fijo, punto B = ubicación de entrega del pedido (no se copia), tarifa = `Pedido.tarifa_domicilio`, receptor = el cliente del pedido. El primer evento de trazabilidad (`DISPONIBLE`) se inserta en la misma transacción y se emite E08 para avisar a los domiciliarios activos. Un pedido solo puede tener un domicilio activo (índice único parcial) y el domicilio no se edita nunca. En una reserva solo se publica desde 15 minutos antes de la fecha acordada.
+El vendedor de punto fijo publica un domicilio para un pedido propio de modalidad `DOMICILIO`, `ACEPTADO` y con el pago confirmado (RF-42), con `POST /pedidos/{id}/domicilio`. Se crea el `Domicilio` en `DISPONIBLE`: punto A = copia de la ubicación del punto fijo, punto B = ubicación de entrega del pedido (no se copia), tarifa = `Pedido.tarifa_domicilio`, receptor = el cliente del pedido. La cuenta bancaria del vendedor se copia cifrada al domicilio en ese momento y no cambia aunque luego se edite la configuración (RF-63). El primer evento de trazabilidad (`DISPONIBLE`) se inserta en la misma transacción y se emite E08 para avisar a los domiciliarios activos. Un pedido solo puede tener un domicilio activo (índice único parcial) y el domicilio no se edita nunca. En una reserva solo se publica desde 15 minutos antes de la fecha acordada.
 
-Este plan además crea la base de todo el ciclo: la migración V11 (`domicilio`, `evento_trazabilidad`, `domicilio_rechazo` y la clave foránea pendiente de `pago.domicilio_id`), el módulo `domicilios` y el agregado `Domicilio`.
+Este plan además crea la base de todo el ciclo: la migración V13 (`domicilio`, `evento_trazabilidad`, `domicilio_rechazo` y la clave foránea pendiente de `pago.domicilio_id`), el módulo `domicilios` y el agregado `Domicilio`.
 
 ## Estado actual del código
 
@@ -85,7 +85,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 | Entidad (spec-general) | Lee / escribe | Restricciones |
 |---|---|---|
-| Domicilio | Escribe | `DISPONIBLE`; un activo por pedido (`estado <> 'CANCELADO'`); un solo domicilio activo por domiciliario (índice parcial, lo usa RF-19); `vendedor_id` (el dueño que lo publica) y `pedido` y punto A inmutables |
+| Domicilio | Escribe | `DISPONIBLE`; un activo por pedido (`estado <> 'CANCELADO'`); un solo domicilio activo por domiciliario (índice parcial, lo usa RF-19); `vendedor_id`, pedido, punto A y copia cifrada de la cuenta bancaria inmutables desde la publicación |
 | Ubicacion | Escribe (copia del punto fijo) | Una fila propia por domicilio (punto A) |
 | EventoTrazabilidad | Escribe | Inmutable; sin `updated_at`; con el usuario autor |
 | DomicilioRechazo | Crea la tabla | La puebla RF-17 (P2); la filtra RF-16 |
@@ -209,7 +209,7 @@ backend/src/main/java/co/edu/napa/domicilios/
     ├── in/web/                   # DomicilioController (POST /pedidos/{id}/domicilio), DTO
     └── out/persistence/          # DomicilioJpaEntity, EventoTrazabilidadJpaEntity, adaptadores a puertos `in` de pedidos, pagos y emprendimientos
 backend/src/main/java/co/edu/napa/pedidos/application/ports/in/   # ConsultarPedidoParaDomicilioPort
-backend/src/main/resources/db/migration/                           # V11__domicilio.sql
+backend/src/main/resources/db/migration/                           # V13__domicilio.sql
 backend/src/test/java/co/edu/napa/domicilios/
 
 frontend/src/components/domicilios/AccionPublicarDomicilio.tsx   # botón en el detalle del vendedor (RF-51)
@@ -226,7 +226,7 @@ frontend/__tests__/domicilios/publicar.test.tsx
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V11__domicilio.sql` en `backend/src/main/resources/db/migration/`: `domicilio` (id, pedido_id, vendedor_id, estado, codigo_confirmacion nulo, motivo_cancelacion nulo, ubicacion_origen_id, domiciliario_id nulo, version, created_at, updated_at; índice único parcial `(pedido_id) WHERE estado <> 'CANCELADO'` e índice `(vendedor_id, created_at)` para el listado de RF-15 e índice único parcial `(domiciliario_id) WHERE estado IN ('ASIGNADO','RECOGIDO','EN_CAMINO')`, que impide que un domiciliario atienda más de un domicilio a la vez, ver RF-19), `evento_trazabilidad` (id, domicilio_id, estado, ocurrido_at, usuario_id; sin `updated_at`; índice `(domicilio_id, ocurrido_at)`), `domicilio_rechazo` (PK `(domiciliario_id, domicilio_id)`, created_at) y la FK `pago.domicilio_id → domicilio.id` pendiente de RF-53
+- [ ] T002 Migración `V13__domicilio.sql` en `backend/src/main/resources/db/migration/`: `domicilio` (id, pedido_id, vendedor_id, estado, codigo_confirmacion nulo, motivo_cancelacion nulo, ubicacion_origen_id, domiciliario_id nulo, banco_cuenta, numero_cuenta_cifrada, tipo_cuenta; copia inmutable de la cuenta al publicar; version, created_at, updated_at; índice único parcial `(pedido_id) WHERE estado <> 'CANCELADO'` e índice `(vendedor_id, created_at)` para el listado de RF-15 e índice único parcial `(domiciliario_id) WHERE estado IN ('ASIGNADO','RECOGIDO','EN_CAMINO')`, que impide que un domiciliario atienda más de un domicilio a la vez, ver RF-19), `evento_trazabilidad` (id, domicilio_id, estado, ocurrido_at, usuario_id; sin `updated_at`; índice `(domicilio_id, ocurrido_at)`), `domicilio_rechazo` (PK `(domiciliario_id, domicilio_id)`, created_at) y la FK `pago.domicilio_id → domicilio.id` pendiente de RF-53
 - [ ] T003 Dominio `Domicilio`, `EstadoDomicilio` y `EventoTrazabilidad` en `domicilios/domain/model/` (sin métodos de edición)
 - [ ] T004 Persistencia: entidades JPA y `DomicilioRepositoryPort` (guardar, buscar, `transicionarAtomico(id, desde, hacia)`) y `EventoTrazabilidadRepositoryPort`
 - [ ] T005 `ConsultarPedidoParaDomicilioPort` en `pedidos/application/ports/in/` (con `reservaDisponibleDesde` calculado por `VentanaReserva`) y su adaptador `PedidoParaDomicilioPort` en `domicilios`

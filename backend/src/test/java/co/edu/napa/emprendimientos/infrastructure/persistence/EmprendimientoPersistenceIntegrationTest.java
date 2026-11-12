@@ -5,7 +5,7 @@ import co.edu.napa.emprendimientos.application.ports.in.ListarEmprendimientosPor
 import co.edu.napa.emprendimientos.application.ports.out.CampoOrdenEmprendimientos;
 import co.edu.napa.emprendimientos.application.ports.out.DireccionOrdenEmprendimientos;
 import co.edu.napa.emprendimientos.application.ports.out.FiltroEmprendimientos;
-import co.edu.napa.emprendimientos.application.usecase.ListarEmprendimientosQuery;
+import co.edu.napa.emprendimientos.application.ports.in.ListarEmprendimientosQuery;
 import co.edu.napa.emprendimientos.domain.model.CategoriaEmprendimiento;
 import co.edu.napa.emprendimientos.domain.model.Emprendimiento;
 import co.edu.napa.emprendimientos.domain.model.EstadoEmprendimiento;

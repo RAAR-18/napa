@@ -1,8 +1,8 @@
 # Análisis del proyecto Ñapa
 
-Fecha: 11 de noviembre de 2026. Revisión del repositorio local, sus especificaciones, configuración, código y pruebas. Incluye la validación posterior con Docker, las correcciones de sesiones, OTP, registro y web, y la gestión en línea de productos e inventario, con edición y eliminación.
+Fecha: 12 de noviembre de 2026. Revisión del repositorio local, sus especificaciones, configuración, código y pruebas. Incluye la validación posterior con Docker, las correcciones de sesiones, OTP, registro y web, la gestión en línea de productos e inventario, con edición y eliminación, y el avance backend de pagos, tarifa mínima y pedidos.
 
-Ñapa tiene una base técnica bien organizada y una definición funcional extensa. Su estado actual es un prototipo con identidad, creación y exploración de emprendimientos, publicación de productos, inventario manual y consulta del catálogo, más infraestructura de notificaciones. Todavía no permite completar una compra: faltan pedidos, cobros registrados y entregas. Se corrigieron las sesiones, la configuración OTP y las colisiones de registro descritas en H1–H4 y se validaron las integraciones con Docker. El usuario confirmó el acceso desde el iPhone y las pruebas anteriores de emprendimientos. La primera entrega de productos e inventario ya está implementada y activada en `napa_dev`; el usuario confirmó que realizó la prueba manual y funcionó correctamente. Antes del piloto quedan la sincronización sin conexión, las comprobaciones de fallos de red y los riesgos restantes.
+Ñapa tiene una base técnica bien organizada y una definición funcional extensa. Su estado actual incluye identidad, creación y exploración de emprendimientos, productos e inventario, catálogo, configuración administrativa de la tarifa mínima de domicilio, configuración cifrada de medios de pago e infraestructura de notificaciones. RF-45 ya permite cotizar y crear pedidos persistidos desde el backend; no ofrece todavía pantallas de compra ni consultas o transiciones de estado, así que no se completa una compra desde la app. Se corrigieron las sesiones, la configuración OTP y las colisiones de registro descritas en H1–H4 y se validaron las integraciones con Docker. El usuario confirmó el acceso desde el iPhone y la prueba manual de productos e inventario. RF-44 tiene backend, migración V9 y pruebas de PostgreSQL/Redis; RF-63 tiene backend con cifrado AES-GCM.
 
 ## 1. Alcance y evidencia
 
@@ -11,12 +11,11 @@ Fecha: 11 de noviembre de 2026. Revisión del repositorio local, sus especificac
 | Requerimientos funcionales documentados | 67 |
 | Requerimientos del MVP | 66; RF-59 está diferido |
 | Requerimientos no funcionales | 31 |
-| Archivos Java de producción | 153 |
-| Líneas Java de producción | 7.990 |
-| Archivos Java de pruebas | 44 |
+| Archivos Java de producción | 225 |
+| Archivos Java de pruebas | 62 |
 | Archivos TypeScript/TSX dentro de `frontend/src`, incluidas pruebas | 23 |
 | Líneas TypeScript/TSX dentro de `frontend/src` | 3.401 |
-| Migraciones Flyway | 6 |
+| Migraciones Flyway (tras RF-63) | 10 |
 
 Se revisaron la estructura completa, los contratos expuestos, los flujos principales de aplicación, persistencia, autenticación, filtros, eventos, caché, CI y documentación. Se inventariaron los 67 directorios RF y se comprobaron los enlaces locales de la documentación. La revisión estática se concentró en los componentes implementados; la existencia de una spec o un plan no se consideró evidencia de implementación.
 
@@ -41,7 +40,7 @@ El alcance de 66 RF para un proyecto académico de cuatro meses es considerable.
 
 ## 3. Arquitectura y stack
 
-Es un monorepo con un backend que se despliega como una aplicación Spring Boot y un frontend móvil Expo. En Java existen cuatro módulos funcionales: `cuentas`, `emprendimientos`, `productos` y `notificaciones`, además de `shared`.
+Es un monorepo con un backend que se despliega como una aplicación Spring Boot y un frontend móvil Expo. En Java existen siete paquetes de módulo: `cuentas`, `emprendimientos`, `productos`, `notificaciones`, `tarifas`, `pedidos` (este último solo implementa por ahora el cálculo de tarifa) y `pagos`, además de `shared`.
 
 | Capa | Implementación observada |
 |---|---|
@@ -72,7 +71,8 @@ El outbox escribe los eventos dentro de la transacción y dispone de reclamació
 | Detalle, edición y eliminación de emprendimiento | Sin endpoints de estas acciones | Sin recorridos completos | RF-29/RF-30/RF-32 y oferta asociada |
 | Notificaciones, RF-38/RF-39 | Feed, lectura, preferencias, retención y adaptador FCM | Sin pantalla ni registro de token FCM | Completar recorrido desde el teléfono |
 | Productos e inventario | Publicación, edición parcial con versión, borrado lógico, listados e inventario manual; V7/V8 | Mis productos, creación/edición, confirmación de eliminación, catálogo e inventario | Caché y cola sin conexión; integrar pendientes y descuento con pedidos reales; prueba manual de edición/eliminación |
-| Pedidos, reservas y pagos | Sin módulos funcionales | Sin pantallas | Ciclo de compra y confirmación de cobros |
+| Tarifa mínima de domicilio, RF-44 | Configuración por defecto de 3050 COP, GET/POST solo para administrador, historial append-only y cambios serializados; V9 | Sin pantalla administrativa (no requerida por la spec) | Integrar el puerto de consulta en RF-45 y verificar que el piso no modifica pedidos existentes |
+| Pedidos, reservas y pagos | Cotización y creación/persistencia backend; V11, precios y ubicación congelados, idempotencia y evento E01 en outbox | Sin pantallas | Consultar pedidos, implementar transiciones y pagos registrados, completar pruebas por modalidad y concurrencia |
 | Domicilios y entregas | Solo infraestructura reutilizable de rutas | Sin recorridos | Asignación, transiciones, confirmación y seguimiento |
 | Reputación, reportes y administración | Sin módulos funcionales | Sin pantallas | Implementación posterior al ciclo comercial |
 
@@ -148,23 +148,21 @@ Acción: definir explícitamente la disponibilidad esperada. Si se conserva el r
 
 Además, los cambios de sesión escriben en PostgreSQL y Redis, que no comparten una transacción. Conviene probar fallos entre ambas escrituras y carreras entre renovación, cierre y cambio de contraseña.
 
-### H6. Media: la idempotencia conserva errores transitorios durante 24 horas
+### H6. Media: la idempotencia permite reintentar errores transitorios, pero no distingue si hubo efectos
 
-Evidencia: `backend/src/main/java/co/edu/napa/shared/infrastructure/idempotency/IdempotencyFilter.java:55` y `:282`.
+**Estado actual:** el filtro limita los cuerpos a 1 MiB. Conserva como `DONE` los 5xx y los 429 sin señal explícita de reintento; libera la clave solo para un 429 con `Retry-After`, que el manejador de API agrega a `RATE_LIMITED`. Si la cadena lanza una excepción sin poder registrar una respuesta, conserva el bloqueo `IN_PROGRESS` hasta que expire. Así, una respuesta de resultado incierto no se ejecuta inmediatamente otra vez con la misma clave.
 
-El filtro guarda la respuesta sin distinguir su estado HTTP. Un 503 o un 429 resuelto por el manejador de excepciones puede quedar registrado como `DONE`. Reintentar la misma operación con la misma clave devuelve ese error aunque el servicio ya se haya recuperado.
+Las pruebas unitarias distinguen el 503 y 429 sin señal (guardados para replay), el 429 con `Retry-After` (clave liberada) y la excepción (bloqueo conservado).
 
-Acción: definir qué respuestas son definitivas y cómo se trata un resultado incierto. Permitir reintentos de fallos transitorios cuya ausencia de efectos esté garantizada y mantener restricciones en base de datos para operaciones críticas.
+**Pendiente antes de operaciones de alto impacto:** la señal `Retry-After` expresa que el rechazo ocurrió antes de la acción; mantener esa garantía en los handlers que la emitan. Una excepción sin respuesta conserva el bloqueo solo durante su TTL de dos minutos, tras lo cual el cliente podría volver a ejecutar una operación cuyo resultado sigue siendo incierto. Para cubrir también esa ventana se requiere persistir la idempotencia junto con la operación. Mantener restricciones de base de datos para operaciones críticas.
 
-El filtro también lee el cuerpo completo en memoria. Antes de exponerlo a tráfico externo conviene establecer un límite explícito para los cuerpos JSON.
+### H7. Media: las reglas de arquitectura cubren capas y algunos límites, pero no todos los módulos
 
-### H7. Media: las reglas de arquitectura comprueban menos de lo que promete el diseño
+**Estado actual:** `NotificationController` depende de `NotificationPort`; los contratos de emprendimientos y los DTO de entrada viven en `application.ports.in`. ArchUnit ahora impide que controladores y puertos de entrada dependan directamente de implementaciones en `application.usecase`. Las ocho reglas de arquitectura pasaron en la suite ejecutada.
 
-Evidencia: `backend/src/test/java/co/edu/napa/ArchitectureTest.java` y `backend/src/main/java/co/edu/napa/notificaciones/infrastructure/web/NotificationController.java:35`.
+El límite entre módulos todavía no está impuesto de forma general para toda la aplicación; hoy existen reglas específicas para algunos módulos. El uso de `RolUsuario` por emprendimientos es una dependencia del dominio de cuentas, permitida por la decisión D11 de la arquitectura, pero conviene mantener explícita esa excepción y añadir reglas por módulo cuando se implementen nuevos flujos.
 
-ArchUnit comprueba las dependencias entre capas, pero no impone de forma general que los módulos se comuniquen únicamente por puertos de entrada. El controlador de notificaciones usa directamente `NotificationUseCase`, y la aplicación de emprendimientos importa `RolUsuario` del dominio de cuentas.
-
-Acción: decidir si estos acoplamientos forman parte de la arquitectura aceptada. Si se mantiene el diseño actual, agregar reglas generales de dependencia entre módulos y puertos para feed/preferencias. Evitar crear abstracciones sin una frontera útil.
+**Pendiente:** ampliar ArchUnit conforme se agreguen módulos, sin prohibir las dependencias de dominio/eventos y puertos de entrada autorizadas por D11. Evitar crear abstracciones sin una frontera útil.
 
 También coexisten `AuthUseCase`, los casos de uso individuales, dos tipos `AuthTokens` y dos familias de límites OTP. Los controladores actuales usan los casos de uso individuales. Esta duplicación aumenta el riesgo de probar componentes que no participan en el recorrido real. La duplicación de adaptadores de consola se eliminó al corregir H2.
 
@@ -213,11 +211,11 @@ Acción: elegir un nombre canónico para cada plan, actualizar el estado a parti
 
 | Comprobación | Resultado de esta revisión |
 |---|---|
-| Backend: `gradlew.bat test` | Con edición/eliminación: BUILD SUCCESSFUL; 209 pruebas en 50 suites, sin fallos ni omisiones; duración de 2 min 31 s |
+| Backend: `gradlew.bat test` | Tras la persistencia RF-45 y la integración con RF-58: BUILD SUCCESSFUL; 260 pruebas en 61 suites, incluidas 13 suites de integración; sin fallos ni omisiones |
 | Frontend: `npm.cmd ci --no-audit --no-fund` | Instalación reproducible completada desde el lockfile |
-| Frontend: `npm.cmd run lint` | Correcto |
-| Frontend: `npm.cmd run typecheck` | Correcto |
-| Frontend: `npm.cmd test` | Con edición/eliminación: 12 suites, 68 pruebas, todas correctas |
+| Frontend: `npm.cmd run lint` | En esta revisión: correcto |
+| Frontend: `npm.cmd run typecheck` | En esta revisión: correcto |
+| Frontend: `npm.cmd test` | En esta revisión: 12 suites, 68 pruebas, todas correctas |
 | Frontend: `npx.cmd expo export --platform ios --platform web --max-workers 2` | Correcto; genera el bytecode Hermes de iOS y los paquetes web, incluido WebAssembly de SQLite |
 | Dependencias: `npm.cmd audit --omit=dev --json` | 27 paquetes afectados según el informe de npm |
 | Enlaces Markdown locales | 135 rotos fuera de plantillas y bloques de código |
@@ -242,7 +240,7 @@ La entrega de productos añade 21 pruebas al backend, incluidas siete HTTP con P
 
 La ampliación de edición/eliminación añade 15 pruebas backend: diez HTTP de gestión, dos de dominio y tres de configuración de la consulta de pendientes. El total verificado es 209 en 50 suites, incluidas 48 de integración en diez suites. Se cubren cambios parciales y atómicos, precisión del precio, concurrencia con inventario/otra edición/eliminación, CORS con `If-Match`, confirmación explícita, permisos, borrado lógico y reenvío idempotente. Las doce nuevas pruebas frontend cubren formulario, conservación del borrador ante conflicto, recarga explícita, cancelación/confirmación, fallos al eliminar y corrección de la última página. Pasaron las 68 pruebas, lint, TypeScript y exportaciones iOS/web.
 
-RF-58 tiene una integración pendiente: no existen tablas ni módulo de pedidos. `PedidosPendientesProductoPort` se prueba con conteos simulados y el proveedor de cero pendientes solo se habilita mientras `napa.pedidos.enabled=false`. Al activar `NAPA_PEDIDOS_ENABLED=true` sin adaptador real el contexto no arranca. Quedan por comprobar los estados reales de pedidos, el historial RF-51 y la carrera con creación de un pedido. V8 añade una versión mediante migración nueva; JDBC compara esa versión y la app envía `If-Match`. Ante conflicto conserva el borrador y permite recargar. La prueba manual de edición/eliminación sigue pendiente.
+RF-58 consulta los pedidos abiertos mediante un adaptador JDBC real y `NAPA_PEDIDOS_ENABLED=true` por defecto. La creación bloquea productos en orden de ID antes de validar y persistir el pedido, en el mismo orden de bloqueo que la eliminación. La integración de RF-45 ya verifica que un pedido recién creado bloquea la eliminación y reporta `HAS_PENDING_ORDERS`. Quedan por comprobar todos los estados abiertos y terminales, la carrera extremo a extremo con creación de pedidos y el historial RF-51. V8 añade una versión mediante migración nueva; JDBC compara esa versión y la app envía `If-Match`. Ante conflicto conserva el borrador y permite recargar. La prueba manual de edición/eliminación sigue pendiente.
 
 Se verificó V8 aplicada con éxito en `napa_dev`, salud `UP`, consulta protegida sin sesión con `401` y CORS, y preflight de PATCH con `If-Match` autorizado desde `localhost:8081`. Durante la comprobación cambió la red local: la IP Wi-Fi actual es `172.20.10.3` y la anterior `192.168.1.41` no responde. Se actualizó únicamente la URL en `.env.local` (ignorado por Git); Expo debe reiniciarse para cargarla. La API respondió `UP` también desde la nueva dirección de red.
 
@@ -267,7 +265,7 @@ El relay reclama hasta 100 eventos con una concesión de 30 segundos y los proce
 1. Conservar el recorrido básico confirmado por el usuario y completar las comprobaciones de fallos de red y riesgos restantes antes del piloto. H1–H4 ya están corregidos con pruebas de regresión.
 2. Mantener las diez suites de integración ejecutándose con Docker en CI y registrar los resultados del recorrido de identidad, emprendimientos y productos por plataforma.
 3. Evaluar los avisos de dependencias y corregir los planes RF-27/RF-44 y los enlaces de trazabilidad.
-4. Probar manualmente edición y eliminación del catálogo y continuar una venta por recogida: configuración de pago → pedido → aceptación y descuento de stock → listo para recoger → entrega y cobro confirmado. Al implementar pedidos, conectar la consulta de pendientes antes de habilitarlos. Esto permite validar valor de negocio con menos dependencias que el domicilio completo.
+4. Probar manualmente edición y eliminación del catálogo y completar una venta por recogida: configuración de pago → pedido → aceptación y descuento de stock → listo para recoger → entrega y cobro confirmado. El backend de pedidos ya está iniciado; faltan la interfaz, las consultas y transiciones del pedido y las pruebas de integración pendientes. Esto permite validar valor de negocio con menos dependencias que el domicilio completo.
 5. Incorporar notificaciones móviles y la cola de operaciones pendientes antes de habilitar acciones críticas bajo conectividad irregular.
 6. Ampliar a entregas directas y domicilios, incluyendo concurrencia, privacidad de ubicación y trazabilidad.
 7. Completar administración, reputación y reportes según las prioridades del piloto.
@@ -287,3 +285,7 @@ Se corrigió la traducción de las restricciones únicas de celular y correo par
 Posteriormente se implementó la primera entrega en línea de productos e inventario (RF-54/RF-55, inventario manual de RF-57 y consulta de RF-33). Se añadió V7 sin reescribir V1–V6, se expuso la consulta del emprendimiento por su puerto de entrada y se añadieron cuatro endpoints, tres pantallas y navegación desde la cuenta del vendedor y las tarjetas de emprendimientos. El precio se expresa en pesos enteros y la cantidad admite dos decimales; el servidor deriva la propiedad del usuario autenticado, resuelve la unicidad en PostgreSQL y bloquea la fila para las actualizaciones manuales. Esta entrega no implementa pedidos, reservas, descuento de stock por pedidos ni escrituras o caché sin conexión para productos. Se actualizaron README y los cuatro planes implicados para distinguir el avance de los pendientes. No se cambiaron las dependencias ni sus versiones.
 
 Se incorporaron después RF-56 en línea y la parte de RF-58 independiente de pedidos: tres endpoints de consulta/edición/eliminación, formulario de edición, confirmación en Mis productos, versión mediante V8 y el puerto de consulta de pendientes con activación explícita del módulo futuro. No se reescribieron migraciones previas ni se eliminaron datos del usuario para probar; las eliminaciones automatizadas se ejecutaron en contenedores de prueba aislados. Se actualizaron los planes implicados y se reinició el backend con la misma base `napa_dev` y secreto JWT.
+
+Se implementó RF-44 con valor inicial de 3050 COP, propiedad configurable y validada, historial en V9, endpoints exclusivos para administradores y serialización transaccional de cambios concurrentes. RF-45 incluye cotización y creación backend: la cotización valida emprendimiento, modalidad, productos, disponibilidad, reserva y ubicación; la creación vuelve a validar, congela precios y ubicación, guarda `PENDIENTE` e inserta E01 en outbox en la misma transacción. V11 guarda pedidos e ítems e indexa el producto del pedido. La prueba PostgreSQL/Redis cubre idempotencia, ausencia de descuento de inventario al crear, evento transaccional y bloqueo de eliminación por pedido abierto. La creación bloquea filas de productos por ID antes de cotizar, coordinándose con RF-58; faltan pruebas de carrera extremo a extremo y de cada estado abierto/terminal. Los valores acordados son base 3050 COP, 500 COP/km, 200 COP/min y factor 1.3; máximo 20 ítems distintos y 20 unidades por ítem. RF-63 cuenta con configuración de medios, historial reemplazable y cifrado AES-GCM de cuenta con AAD por vendedor; la interfaz aún está pendiente. La suite backend completa terminó con 260 pruebas en 61 suites, incluidas 13 suites de integración, sin fallos ni omisiones. La consulta de disponibilidad por lote, acotada al emprendimiento y con exclusión de productos eliminados, se consume en cotización y creación. Siguen pendientes frontend, consulta y transiciones del pedido, historial RF-51, pagos registrados y ciclo de domicilios.
+
+El 12 de noviembre se corrigieron nombres duplicados que impedían compilar `ProductosIntegrationTest` y se agregó un test unitario que verifica el cambio del piso tarifario entre pedidos, conservando el total de pedidos existentes. `./backend/gradlew.bat -p backend test` terminó con 260 pruebas reportadas, 0 fallos y 0 errores; 60 quedaron omitidas porque Docker no está disponible en este entorno. Por tanto, las pruebas de integración con Testcontainers compilaron pero no se reejecutaron aquí. `git diff --check` no reportó errores. No se creó commit ni se hizo push.

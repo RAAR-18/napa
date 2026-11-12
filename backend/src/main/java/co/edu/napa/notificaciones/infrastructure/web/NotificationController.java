@@ -1,7 +1,7 @@
 package co.edu.napa.notificaciones.infrastructure.web;
 
+import co.edu.napa.notificaciones.application.ports.in.NotificationPort;
 import co.edu.napa.notificaciones.application.ports.out.NotificationPage;
-import co.edu.napa.notificaciones.application.usecase.NotificationUseCase;
 import co.edu.napa.notificaciones.domain.model.Notificacion;
 import co.edu.napa.shared.domain.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,9 +32,9 @@ import java.util.UUID;
 public class NotificationController {
     private static final Set<String> LIST_PARAMETERS = Set.of("page", "size", "sort", "leida");
 
-    private final NotificationUseCase notifications;
+    private final NotificationPort notifications;
 
-    public NotificationController(NotificationUseCase notifications) {
+    public NotificationController(NotificationPort notifications) {
         this.notifications = notifications;
     }
 
@@ -93,8 +93,8 @@ public class NotificationController {
             HttpServletRequest servletRequest
     ) {
         rejectNoQueryParameters(servletRequest);
-        List<NotificationUseCase.PreferenceUpdate> updates = request.preferencias().stream()
-                .map(preference -> new NotificationUseCase.PreferenceUpdate(
+        List<NotificationPort.PreferenceUpdate> updates = request.preferencias().stream()
+                .map(preference -> new NotificationPort.PreferenceUpdate(
                         preference.tipo(),
                         preference.habilitada()
                 ))
@@ -163,7 +163,7 @@ public class NotificationController {
     ) {
     }
 
-    public record PreferencesResponse(List<NotificationUseCase.PreferenceStatus> preferencias) {
+    public record PreferencesResponse(List<NotificationPort.PreferenceStatus> preferencias) {
         public PreferencesResponse {
             preferencias = List.copyOf(preferencias);
         }

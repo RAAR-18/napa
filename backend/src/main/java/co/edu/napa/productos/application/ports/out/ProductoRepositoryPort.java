@@ -15,6 +15,8 @@ public interface ProductoRepositoryPort {
     Producto actualizarDatos(Producto producto);
     void eliminar(Producto producto);
     Resultado listar(UUID emprendimientoId, Consulta consulta);
+    List<Producto> consultarDisponibilidad(UUID emprendimientoId, List<UUID> productoIds);
+    List<UUID> bloquearDisponibles(UUID emprendimientoId, List<UUID> productoIds);
 
     record Resultado(List<Producto> content, long totalElements) {}
 }

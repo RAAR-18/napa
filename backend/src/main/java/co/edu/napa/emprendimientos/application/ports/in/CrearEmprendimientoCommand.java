@@ -1,4 +1,4 @@
-package co.edu.napa.emprendimientos.application.usecase;
+package co.edu.napa.emprendimientos.application.ports.in;
 
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import co.edu.napa.emprendimientos.domain.model.CategoriaEmprendimiento;

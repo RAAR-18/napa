@@ -93,7 +93,7 @@ Diagrama: [`gestionar_pagos.puml`](../casos%20de%20uso/gestionar_pagos.puml)
 | RF-42 | Confirmación de pago del pedido (en domicilio, antes de publicar) | HU-66 | Vendedor | Confirmar pago del pedido | [RF-42-confirmacion-de-pago-del-pedido](../specs/RF-42-confirmacion-de-pago-del-pedido/spec.md) |
 | RF-43 | Confirmación del pago de la tarifa del domicilio | HU-104, HU-68 | Vendedor de punto fijo, Domiciliario | Registrar pago de la tarifa al domiciliario; Confirmar recepción de la tarifa del domicilio | [RF-43-confirmacion-del-pago-de-la-tarifa-del-domicilio](../specs/RF-43-confirmacion-del-pago-de-la-tarifa-del-domicilio/spec.md) |
 | RF-44 | Configuración de tarifa mínima de domicilio | HU-71 | Administrador | Configurar tarifa mínima del domicilio | [RF-44-configuracion-de-tarifa-minima-de-domicilio](../specs/RF-44-configuracion-de-tarifa-minima-de-domicilio/spec.md) |
-| RF-63 | Configuración de métodos de pago aceptados por el vendedor | HU-103 | Vendedor | Seleccionar método de pago aceptados | [RF-63-configuracion-de-metodos-de-pago-aceptados](../specs/RF-63-configuracion-de-metodos-de-pago-aceptados/spec.md) |
+| RF-63 | Configuración de métodos de pago aceptados por el vendedor | HU-103 | Vendedor | Seleccionar método de pago aceptados | [RF-63-configuracion-de-metodos-de-pago-aceptados](../specs/RF-63-configuracion-de-metodos-de-pago-aceptados/RF-63-configuracion-de-metodos-de-pago-aceptados.md) |
 
 ## 8. Gestionar pedidos
 

@@ -1,6 +1,9 @@
 package co.edu.napa.emprendimientos.application.usecase;
 
+import co.edu.napa.emprendimientos.application.ports.in.EmprendimientoListadoItem;
+import co.edu.napa.emprendimientos.application.ports.in.EmprendimientosPagina;
 import co.edu.napa.emprendimientos.application.ports.in.ListarEmprendimientosPort;
+import co.edu.napa.emprendimientos.application.ports.in.ListarEmprendimientosQuery;
 import co.edu.napa.emprendimientos.application.ports.out.EmprendimientoListadoProjection;
 import co.edu.napa.emprendimientos.application.ports.out.EmprendimientoListadoRepositoryPort;
 import co.edu.napa.emprendimientos.application.ports.out.FiltroEmprendimientos;

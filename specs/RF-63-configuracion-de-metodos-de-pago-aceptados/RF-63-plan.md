@@ -14,11 +14,11 @@
 
 ## Summary
 
-El vendedor indica si acepta efectivo y, opcionalmente, registra una cuenta bancaria (banco, tipo y número). Es una fila `ConfiguracionPago` por vendedor, que se crea o reemplaza con un `PUT`. El módulo `pagos` expone un puerto `in` de consulta que usan RF-32, RF-45 y RF-53: medios habilitados para entrega directa y recogida (efectivo y/o cuenta) y si el vendedor puede ofrecer domicilio (solo vendedor de punto fijo con cuenta registrada). La plataforma solo guarda el número de cuenta: ni tarjetas ni billeteras.
+El vendedor indica si acepta efectivo y, opcionalmente, registra una cuenta bancaria (banco, tipo y número). Es una fila `ConfiguracionPago` por vendedor, que se crea o reemplaza con un `PUT`. El módulo `pagos` expone un puerto `in` de consulta que usan RF-32, RF-45 y RF-53: medios habilitados para entrega directa y recogida (efectivo y/o cuenta) y si el vendedor puede ofrecer domicilio (solo vendedor de punto fijo con cuenta registrada). Ñapa no procesa transferencias ni pagos: solo registra los medios configurados y las confirmaciones de las partes.
 
 ## Estado actual del código
 
-El módulo `pagos` no existe todavía. Esta feature crea la tabla `configuracion_pago` y el módulo; RF-42, RF-43 y RF-40/41 lo extienden después.
+El backend de RF-63 implementa configuración GET/PUT, validación de cuenta, consulta interna de medios, migración V10 y cifrado AES-GCM con nonce aleatorio y AAD ligado al vendedor. La suite focalizada cubre HTTP, permisos, cifrado en reposo, reemplazo y escenarios de medios. El frontend y la copia de cuenta en Domicilio están pendientes; esta última se congela al publicar el domicilio en RF-14. RF-42, RF-43 y RF-40/41 extenderán después el módulo `pagos`.
 
 ## Actors
 
@@ -53,9 +53,9 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | US1-E2 | Solo efectivo | Sin cuenta, solo `EFECTIVO` | T012 |
 | US1-E3 | Punto fijo con domicilios | La respuesta incluye `avisoDomicilio` "El domicilio siempre exige cuenta bancaria" | T019 |
 | US1-E4 | Domicilio sin cuenta | `domicilioDisponible = false`; la aceptación se rechaza en RF-53 | T017 |
-| Edge 1 | Validación del número de cuenta | **Decisión pendiente** (formato y bancos soportados) | — |
+| Edge 1 | Validación del número de cuenta | Banco como texto libre (1–100 caracteres), tipo `AHORROS`/`CORRIENTE`, cuenta de 4–20 dígitos | T011 |
 | Edge 2 | Desactivar efectivo con pedidos pendientes | Los pedidos ya creados conservan su `medio_pago`; se permite (decisión provisional) | T020 |
-| Edge 3 | Cambiar la cuenta con domicilios en curso | Limitación conocida de spec-general: la cuenta es editable y no se conserva por domicilio (**Decisión pendiente**) | — |
+| Edge 3 | Cambiar la cuenta con domicilios en curso | Al publicar un domicilio, congelar una copia de la cuenta en el domicilio; los cambios posteriores no la alteran | RF-14 |
 
 ## Non-Functional Requirements Check
 
@@ -63,7 +63,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 |---|:---:|---|
 | RNF01 Seguridad | ☑ | Solo el dueño lee y modifica su configuración |
 | RNF03 Autorización | ☑ | Solo roles vendedor |
-| RNF04 Privacidad | ☑ | `numeroCuenta` fuera de los logs; respuesta `no-store`; cifrado en columna (Open Questions) |
+| RNF04 Privacidad | ☑ | `numeroCuenta` fuera de los logs; respuesta `no-store`; cifrado AES-GCM en la aplicación |
 | RNF16 Trazabilidad | ☑ | `created_at`, `updated_at` |
 | RNF23 Consistencia | ☑ | CHECK: los tres campos de cuenta van juntos o ninguno |
 | RNF24 Errores claros | ☑ | `400` con el campo inválido |
@@ -110,7 +110,7 @@ No cambia estados de pedido, domicilio, pago ni reporte.
 | 400 | `VALIDATION_ERROR` | Datos de cuenta incompletos, formato inválido, o propiedades desconocidas (p. ej. un campo de tarjeta) | Indica el campo |
 | 401 | `UNAUTHORIZED` | Sin sesión | — |
 | 403 | `FORBIDDEN` | Rol distinto de vendedor | — |
-| 422 | `BUSINESS_RULE` | Ningún medio habilitado (si el equipo lo exige; Open Questions) | Decisión pendiente |
+| 422 | `BUSINESS_RULE` | El vendedor no tiene medio habilitado para el pedido | `NO_PAYMENT_METHOD_CONFIGURED` |
 
 ### GET /api/v1/vendedores/me/configuracion-pago
 
@@ -179,7 +179,7 @@ backend/src/main/java/co/edu/napa/pagos/
 └── infrastructure/adapters/
     ├── in/web/                   # ConfiguracionPagoController, DTOs
     └── out/persistence/          # ConfiguracionPagoJpaEntity, repositorio, adaptador
-backend/src/main/resources/db/migration/   # V8__configuracion_pago.sql
+backend/src/main/resources/db/migration/   # V10__configuracion_pago.sql (V9 pertenece a RF-44)
 backend/src/test/java/co/edu/napa/pagos/
 
 frontend/src/app/(vendedor)/configuracion/pagos.tsx     # ruta Expo Router
@@ -193,12 +193,12 @@ frontend/__tests__/pagos/configuracion.test.tsx
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear el paquete `co.edu.napa.pagos` y su regla ArchUnit en `backend/src/test/java/co/edu/napa/ArchitectureTest.java`
+- [x] T001 Crear el paquete `co.edu.napa.pagos` y su regla ArchUnit en `backend/src/test/java/co/edu/napa/ArchitectureTest.java`
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V8__configuracion_pago.sql`: tabla `configuracion_pago` (id, usuario_id único, acepta_efectivo, banco, numero_cuenta, tipo_cuenta, created_at, updated_at) con CHECK de que banco, número y tipo van juntos o ninguno, en `backend/src/main/resources/db/migration/`
-- [ ] T003 Configurar Jackson para rechazar propiedades desconocidas en este DTO (`FAIL_ON_UNKNOWN_PROPERTIES`) en `pagos/infrastructure/adapters/in/web/`
+- [x] T002 Migración `V10__configuracion_pago.sql`: tabla `configuracion_pago` (id, usuario_id único, acepta_efectivo, banco, numero_cuenta_cifrada, tipo_cuenta, created_at, updated_at) con CHECK de que banco, número y tipo van juntos o ninguno, en `backend/src/main/resources/db/migration/`
+- [x] T003 Rechazar propiedades JSON desconocidas en `ConfiguracionPagoController` sin cambiar el comportamiento de Jackson para los demás endpoints
 
 **Checkpoint**: base lista.
 
@@ -210,21 +210,21 @@ frontend/__tests__/pagos/configuracion.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración de `PUT`/`GET` (efectivo + cuenta, solo efectivo, quitar la cuenta) en `backend/src/test/java/co/edu/napa/pagos/ConfiguracionPagoIT.java`
-- [ ] T011 [P] [US1] Test de validación (cuenta incompleta, formato, propiedades desconocidas tipo tarjeta) en `.../pagos/ConfiguracionPagoValidacionIT.java`
-- [ ] T012 [P] [US1] Test de contrato de `ConsultarMediosPagoPort` (ambulante, punto fijo con y sin cuenta, sin configuración) en `.../pagos/ConsultarMediosPagoIT.java`
+- [x] T010 [P] [US1] Test de integración de `PUT`/`GET` (efectivo + cuenta, solo efectivo, quitar la cuenta) en `backend/src/test/java/co/edu/napa/pagos/ConfiguracionPagoIntegrationTest.java`
+- [x] T011 [P] [US1] Test de validación (formato, propiedades desconocidas tipo tarjeta) en `backend/src/test/java/co/edu/napa/pagos/ConfiguracionPagoIntegrationTest.java`
+- [x] T012 [P] [US1] Test de contrato de `ConsultarMediosPagoPort` (ambulante, punto fijo con y sin cuenta, sin configuración) en `backend/src/test/java/co/edu/napa/pagos/application/usecase/ConsultarMediosPagoUseCaseTest.java`
 - [ ] T020 [P] [US1] Test de que desactivar efectivo no altera pedidos ya creados (cuando exista RF-45) en `.../pagos/DesactivarEfectivoIT.java`
 - [ ] T021 [P] [US1] Test del formulario y del aviso de domicilio en `frontend/__tests__/pagos/configuracion.test.tsx`
 
 ### Implementation
 
-- [ ] T013 [US1] Dominio `ConfiguracionPago` y `ConfigurarPagoVendedorUseCase` en `pagos/domain/model/` y `pagos/application/usecase/`
-- [ ] T014 [US1] `PUT /vendedores/me/configuracion-pago` en `ConfiguracionPagoController`
-- [ ] T015 [US1] Validación de `cuentaBancaria` (tres campos juntos)
-- [ ] T016 [US1] `ConsultarMediosPagoUseCase` y su puerto `in`
-- [ ] T017 [US1] Regla `domicilioDisponible` (punto fijo y cuenta registrada)
-- [ ] T018 [US1] Persistencia sin columnas de tarjeta ni billetera y sin registrar el número en logs
-- [ ] T019 [US1] `GET /vendedores/me/configuracion-pago` con `avisoDomicilio` para punto fijo
+- [x] T013 [US1] Dominio `ConfiguracionPago` y `ConfigurarPagoVendedorUseCase` en `pagos/domain/model/` y `pagos/application/usecase/`
+- [x] T014 [US1] `PUT /vendedores/me/configuracion-pago` en `ConfiguracionPagoController`
+- [x] T015 [US1] Validación de `cuentaBancaria` (tres campos juntos)
+- [x] T016 [US1] `ConsultarMediosPagoUseCase` y su puerto `in`
+- [x] T017 [US1] Regla `domicilioDisponible` (punto fijo y cuenta registrada)
+- [x] T018 [US1] Persistencia cifrada AES-GCM sin columnas de tarjeta ni billetera y sin registrar el número en logs
+- [x] T019 [US1] `GET /vendedores/me/configuracion-pago` con `avisoDomicilio` para punto fijo
 - [ ] T022 [US1] Servicio `guardarConfiguracionPago()` y `obtenerConfiguracionPago()` en `frontend/src/services/pagos.ts`
 - [ ] T023 [US1] `FormularioConfiguracionPago` en `frontend/src/components/pagos/`
 - [ ] T024 [US1] Pantalla `frontend/src/app/(vendedor)/configuracion/pagos.tsx`
@@ -233,9 +233,9 @@ frontend/__tests__/pagos/configuracion.test.tsx
 
 ## Phase N: Polish & Cross-Cutting
 
-- [ ] T030 Revisar privacidad del número de cuenta (RNF04)
+- [x] T030 Revisar privacidad del número de cuenta (RNF04)
 - [ ] T031 Medir la configuración en < 1 min (SC-001)
-- [ ] T032 Actualizar `requerimientos/trazabilidad.md` y spec-general §2.4 (ruta `GET`) si cambió algo
+- [x] T032 Actualizar `requerimientos/trazabilidad.md` y spec-general §2.4 (ruta `GET`) si cambió algo
 
 ## Dependencies & Execution Order
 
@@ -245,16 +245,17 @@ frontend/__tests__/pagos/configuracion.test.tsx
 
 ## Open Questions
 
-| Pregunta | Impacto | Decisión provisional | Responsable |
+| Pregunta | Impacto | Decisión acordada | Responsable |
 |---|---|---|---|
-| Validación del número de cuenta (Edge 1): formato, longitud y lista de bancos | FR-002 | Solo dígitos, 6 a 20; banco como texto libre de una lista que el equipo defina | Equipo |
+| Validación de banco y número de cuenta (Edge 1) | FR-002 | Banco como texto libre de 1–100 caracteres; cuenta solo dígitos, 4–20; sin lista de bancos | Equipo |
 | Valores de `tipoCuenta` | FR-002 | `AHORROS`, `CORRIENTE` | Equipo |
 | ¿Un vendedor nuevo tiene efectivo habilitado por defecto? Sin configuración, la API devuelve ningún medio y el cliente no podría pedir | FR-003 | Ningún medio hasta configurar | Equipo |
-| ¿Se exige al menos un medio habilitado (efectivo o cuenta)? | FR-003 | Sin exigirlo | Equipo |
+| ¿Se exige al menos un medio habilitado (efectivo o cuenta)? | FR-003 | Se permite guardar sin medios; los pedidos se rechazan con `NO_PAYMENT_METHOD_CONFIGURED` | Equipo |
 | El cliente necesita ver la cuenta del vendedor para transferir en domicilio y en pagos por transferencia; ninguna spec define quién la muestra ni cuándo | RF-45, RF-51, RF-53 | A definir en el plan de RF-45 o RF-51 | Equipo |
-| Cifrado en columna del número de cuenta (dato sensible) | RNF04 | Cifrar con una clave de entorno | Equipo |
-| `GET /vendedores/me/configuracion-pago` no está en el catálogo de rutas | spec-general §2.4 | Agregarlo | Equipo |
-| Cambiar la cuenta con domicilios en curso (Edge 3): spec-general lo deja como limitación conocida | RF-43 | Sin tratamiento en el MVP | Equipo |
+| Cifrado del número de cuenta (dato sensible) | RNF04 | AES-GCM en aplicación; clave Base64 de 32 bytes en `NAPA_PAYMENT_ACCOUNT_ENCRYPTION_KEY`; ciphertext versionado `v1` | Equipo |
+| Rotación de la clave de cifrado | RNF04 | Re-cifrar configuraciones y copias vigentes con la clave nueva antes de reemplazar la anterior | Equipo |
+| `GET /vendedores/me/configuracion-pago` no está en el catálogo de rutas | spec-general §2.4 | Agregado al catálogo | Equipo |
+| Cambiar la cuenta con domicilios en curso (Edge 3) | RF-14 | Congelar la cuenta al publicar el domicilio | Equipo |
 | ¿Configurar el pago puede hacerse sin conexión (outbox)? | RNF28 | No | Equipo |
 
 ## Plan Review Checklist

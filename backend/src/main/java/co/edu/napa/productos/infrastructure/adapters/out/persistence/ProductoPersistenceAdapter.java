@@ -14,6 +14,8 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -112,5 +114,26 @@ public class ProductoPersistenceAdapter implements ProductoRepositoryPort {
                 + " ORDER BY CASE WHEN estado = 'DISPONIBLE' THEN 0 ELSE 1 END, "
                 + field + " " + direction + ", id ASC LIMIT ? OFFSET ?", MAPPER, args.toArray());
         return new Resultado(content, total == null ? 0 : total);
+    }
+
+    public List<Producto> consultarDisponibilidad(UUID emprendimientoId, List<UUID> productoIds) {
+        if (productoIds.isEmpty()) return List.of();
+        String placeholders = String.join(", ", Collections.nCopies(productoIds.size(), "?"));
+        var args = new ArrayList<Object>();
+        args.add(emprendimientoId);
+        args.addAll(productoIds);
+        return jdbc.query("SELECT * FROM producto WHERE emprendimiento_id = ? AND id IN (" + placeholders
+                + ") AND estado <> 'ELIMINADO' ORDER BY id", MAPPER, args.toArray());
+    }
+
+    public List<UUID> bloquearDisponibles(UUID emprendimientoId, List<UUID> productoIds) {
+        if (productoIds.isEmpty()) return List.of();
+        String placeholders = String.join(", ", Collections.nCopies(productoIds.size(), "?"));
+        var args = new ArrayList<Object>();
+        args.add(emprendimientoId);
+        args.addAll(productoIds);
+        return jdbc.query("SELECT id FROM producto WHERE emprendimiento_id = ? AND id IN (" + placeholders
+                + ") AND estado <> 'ELIMINADO' ORDER BY id FOR UPDATE",
+                (row, index) -> row.getObject("id", UUID.class), args.toArray());
     }
 }

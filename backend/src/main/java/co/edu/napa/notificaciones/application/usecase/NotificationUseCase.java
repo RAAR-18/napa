@@ -1,5 +1,6 @@
 package co.edu.napa.notificaciones.application.usecase;
 
+import co.edu.napa.notificaciones.application.ports.in.NotificationPort;
 import co.edu.napa.notificaciones.application.ports.in.ProcessNotificationEventPort;
 import co.edu.napa.notificaciones.application.ports.in.NotificationEvent;
 import co.edu.napa.notificaciones.application.ports.out.NotificationAudiencePort;
@@ -23,7 +24,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Component
-public class NotificationUseCase implements ProcessNotificationEventPort {
+public class NotificationUseCase implements ProcessNotificationEventPort, NotificationPort {
     private static final String ACCOUNT_DELETED_EVENT = "cuentas.cuenta-eliminada";
     private static final String DEFAULT_ORDER = "createdAt,desc";
 
@@ -278,12 +279,6 @@ public class NotificationUseCase implements ProcessNotificationEventPort {
         if (userId == null || !audience.isActiveUser(userId)) {
             throw new DomainException("NOT_FOUND", "No se encontró la cuenta solicitada.");
         }
-    }
-
-    public record PreferenceUpdate(String tipo, Boolean habilitada) {
-    }
-
-    public record PreferenceStatus(String tipo, boolean habilitada) {
     }
 
     private record NotificationContent(String title, String body) {

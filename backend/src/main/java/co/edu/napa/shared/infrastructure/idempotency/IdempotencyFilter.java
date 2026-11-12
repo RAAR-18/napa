@@ -53,6 +53,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
     private static final String DONE = "DONE:";
     private static final Duration LOCK_TTL = Duration.ofMinutes(2);
     private static final Duration RESULT_TTL = Duration.ofHours(24);
+    private static final int MAX_BODY_SIZE = 1024 * 1024;
     private static final Set<String> EXCLUDED_HEADERS = Set.of(
             "content-length", "transfer-encoding", "connection", "keep-alive", "set-cookie", "x-request-id"
     );
@@ -97,7 +98,8 @@ public class IdempotencyFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/auth/refresh")
                 || path.equals("/api/v1/auth/logout")
                 || path.startsWith("/api/v1/auth/verify-phone")
-                || path.equals("/api/v1/auth/password/recover/request");
+                || path.equals("/api/v1/auth/password/recover/request")
+                || path.equals("/api/v1/pedidos/cotizacion");
         boolean productEdit = "PATCH".equalsIgnoreCase(request.getMethod())
                 && path.matches("/api/v1/productos/[^/]+");
         return exempt || productEdit || !(path.startsWith("/api/v1/")
@@ -154,7 +156,31 @@ public class IdempotencyFilter extends OncePerRequestFilter {
             return;
         }
 
-        byte[] body = request.getInputStream().readAllBytes();
+        int contentLength = request.getContentLength();
+        if (contentLength > MAX_BODY_SIZE) {
+            writeError(
+                    request,
+                    response,
+                    HttpStatus.CONTENT_TOO_LARGE,
+                    "PAYLOAD_TOO_LARGE",
+                    "El cuerpo de la solicitud supera el tamaño máximo permitido de 1 MB.",
+                    Map.of()
+            );
+            return;
+        }
+
+        byte[] body = request.getInputStream().readNBytes(MAX_BODY_SIZE + 1);
+        if (body.length > MAX_BODY_SIZE) {
+            writeError(
+                    request,
+                    response,
+                    HttpStatus.CONTENT_TOO_LARGE,
+                    "PAYLOAD_TOO_LARGE",
+                    "El cuerpo de la solicitud supera el tamaño máximo permitido de 1 MB.",
+                    Map.of()
+            );
+            return;
+        }
         String requestHash = requestHash(request, body);
         String redisKey = KEY_PREFIX + sha256(scope) + ":" + idempotencyKey;
         String lockValue = IN_PROGRESS + requestHash + ":" + UUID.randomUUID();
@@ -277,13 +303,21 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(wrappedRequest, wrappedResponse);
         } catch (IOException | ServletException | RuntimeException exception) {
-            releaseLock(redisKey, lockValue);
+            log.error("Idempotent request failed before its outcome could be recorded", exception);
             throw exception;
+        }
+
+        int status = wrappedResponse.getStatus();
+        if (status == HttpStatus.TOO_MANY_REQUESTS.value()
+                && wrappedResponse.containsHeader("Retry-After")) {
+            releaseLock(redisKey, lockValue);
+            wrappedResponse.copyBodyToResponse();
+            return;
         }
 
         CachedResponse cached = new CachedResponse(
                 requestHash,
-                wrappedResponse.getStatus(),
+                status,
                 captureHeaders(wrappedResponse),
                 Base64.getEncoder().encodeToString(wrappedResponse.getContentAsByteArray())
         );

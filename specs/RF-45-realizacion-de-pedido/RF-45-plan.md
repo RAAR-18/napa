@@ -16,9 +16,11 @@
 
 El cliente arma un pedido con productos y cantidades de un emprendimiento, elige la modalidad que ese vendedor ofrece (ambulante: entrega directa; punto fijo: recogida y, si tiene cuenta bancaria, domicilio), indica la ubicación de entrega cuando aplica, marca opcionalmente una reserva (fecha y hora futuras) y elige el medio de pago entre los habilitados. El servidor valida, congela precios y total, calcula la tarifa del domicilio por ruta con piso (§3.4) y registra el pedido en `PENDIENTE`, emitiendo E01 por el outbox. El inventario no se descuenta aquí: se descuenta al aceptar (RF-53). Un `POST /pedidos/cotizacion` sin efectos permite mostrar el resumen y el total antes de confirmar.
 
+**Estado de implementación (2026-11-12)**: la cotización, el cálculo de domicilio y la creación backend están implementados. V11 persiste pedidos e ítems, conserva la ubicación de entrega y escribe E01 en outbox dentro de la transacción de creación. La creación es idempotente y vuelve a validar catálogo, modalidad, disponibilidad, reserva y pago; bloquea productos en orden de ID para coordinarse con RF-58. El caso de uso de tarifa consulta el piso vigente en cada cálculo y el pedido conserva el valor calculado. Una prueba unitaria verifica que un cambio de piso afecta pedidos nuevos y no altera los ya creados. La prueba de integración HTTP cubre ENTREGA_DIRECTA, reintento sin duplicados, inventario sin descuento en creación y rechazo de eliminación por pedido abierto; no pudo ejecutarse en la última validación porque Docker no está disponible. La interfaz, consultas/transiciones del pedido y pruebas exhaustivas por modalidad siguen pendientes.
+
 ## Estado actual del código
 
-El módulo `pedidos` no existe. Ya existen `RoutingPort.computeRoute(GeoPoint, GeoPoint)` (adaptador Google Maps), `GeoPoint`, `EventPublisherPort`, el outbox y el filtro de idempotencia en `shared`. No hay parámetros `tarifa.*` en `application.yml`.
+El módulo `pedidos` usa `RoutingPort.computeRoute(GeoPoint, GeoPoint)` (adaptador OpenRouteService), `GeoPoint`, `EventPublisherPort`, el outbox y el filtro de idempotencia en `shared`. RF-44 aporta `ConsultarTarifaMinimaPort` y el parámetro por defecto de 3050 COP; `CalcularTarifaDomicilioUseCase` consulta ese puerto para cada cotización y RF-45 congela la tarifa resultante en cada pedido.
 
 ## Actors
 
@@ -128,7 +130,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 ### POST /api/v1/pedidos/cotizacion
 
-> **Ruta nueva fuera del catálogo de spec-general §2.4** (Open Questions). No cambia estado ni dinero, por eso no exige `Idempotency-Key`.
+> Ruta de solo lectura registrada en el catálogo general. No cambia estado ni dinero, por eso no exige `Idempotency-Key`.
 
 - **Rol**: cliente · **Query params**: ninguno
 - **Body**: `{ "emprendimientoId", "modalidad", "items": [{ "productoId", "cantidad" }], "ubicacionEntrega"?: { "latitud", "longitud", "direccion", "referencia"? }, "reserva"?: "2026-10-23T15:00:00Z" }`
@@ -228,7 +230,7 @@ backend/src/main/java/co/edu/napa/pedidos/
 └── infrastructure/adapters/
     ├── in/web/                   # PedidoController (POST /pedidos, POST /pedidos/cotizacion), DTOs
     └── out/persistence/          # PedidoJpaEntity, ItemPedidoJpaEntity, repositorios, adaptadores a los puertos `in` de otros módulos
-backend/src/main/resources/db/migration/   # V9__pedido.sql
+backend/src/main/resources/db/migration/   # V11__pedido.sql (V9 tarifa mínima, V10 configuración de pagos)
 backend/src/main/resources/application.yml # tarifa.base, tarifa.valor_por_km, tarifa.valor_por_min, tarifa.factor_linea_recta
 backend/src/test/java/co/edu/napa/pedidos/
 
@@ -249,13 +251,13 @@ frontend/__tests__/pedidos/realizar.test.tsx
 ## Phase 1: Setup
 
 - [ ] T001 Crear el paquete `co.edu.napa.pedidos` y su regla ArchUnit en `backend/src/test/java/co/edu/napa/ArchitectureTest.java`
-- [ ] T002 Parámetros `tarifa.base`, `tarifa.valor_por_km`, `tarifa.valor_por_min`, `tarifa.factor_linea_recta` y su clase `TarifaProperties` en `backend/src/main/resources/application.yml` y `pedidos/infrastructure/config/`
+- [x] T002 Configurar `napa.pedidos.tarifa.base=3050`, `valor-por-km=500`, `valor-por-min=200`, `factor-linea-recta=1.3` con binding validado y variables `NAPA_PEDIDOS_TARIFA_*` en `application.yml`; reutilizar `ConsultarTarifaMinimaPort` de RF-44
 
 ## Phase 2: Foundational
 
-- [ ] T003 Migración `V9__pedido.sql`: tablas `pedido` (id, usuario_id, emprendimiento_id, modalidad, estado, reserva_at `timestamptz` nulo, medio_pago, tarifa_domicilio `bigint` nulo, total `bigint`, ubicacion_entrega_id único nulo, created_at, updated_at) e `item_pedido` (id, pedido_id, producto_id, cantidad `numeric(10,2)` > 0, precio_unitario `bigint`, único `(pedido_id, producto_id)`), con CHECK de modalidad/tarifa/medio/ubicación e índices `(emprendimiento_id, created_at desc)`, `(usuario_id, created_at desc)`, `(emprendimiento_id, estado)`, en `backend/src/main/resources/db/migration/`
-- [ ] T004 Puertos `in` auxiliares: `ConsultarEmprendimientoParaPedidoPort` en `emprendimientos` (id, estado, dueño, rol del dueño, ubicación del punto A)
-- [ ] T005 `UbicacionRepositoryPort` compartido y `DistanciaLineaRectaPort` con PostGIS (`ST_Distance` sobre `geography`) en `shared/application/ports/out/` y su adaptador
+- [ ] T003 Migración `V11__pedido.sql` (V9 tarifa mínima, V10 configuración de pagos): tablas `pedido` (id, usuario_id, emprendimiento_id, modalidad, estado, reserva_at `timestamptz` nulo, medio_pago, tarifa_domicilio `bigint` nulo, total `bigint`, ubicacion_entrega_id único nulo, created_at, updated_at) e `item_pedido` (id, pedido_id, producto_id, cantidad `numeric(10,2)` > 0 y ≤ 20, precio_unitario `bigint`, único `(pedido_id, producto_id)`), con CHECK de modalidad/tarifa/medio/ubicación e índices `(emprendimiento_id, created_at desc)`, `(usuario_id, created_at desc)`, `(emprendimiento_id, estado)`, en `backend/src/main/resources/db/migration/`
+- [x] T004 Puerto `ConsultarEmprendimientoParaPedidoPort` en `emprendimientos` con emprendimiento activo, dueño, nombre y punto A; el tipo del vendedor se consulta por el puerto de medios de pago de RF-63
+- [x] T005 `UbicacionRepositoryPort` compartido y `DistanciaLineaRectaPort` con PostGIS (`ST_Distance` sobre `geography`) en `shared/application/ports/out/` y su adaptador
 
 **Checkpoint**: base lista.
 
@@ -268,16 +270,16 @@ frontend/__tests__/pedidos/realizar.test.tsx
 ### Tests (antes de implementar)
 
 - [ ] T010 [P] [US1] Test de integración de `POST /pedidos/cotizacion` (ambulante, punto fijo con y sin cuenta, varios ítems) en `backend/src/test/java/co/edu/napa/pedidos/CotizarPedidoIT.java`
-- [ ] T011 [P] [US1] Test de inventario: inmediato con agotado (`PRODUCT_UNAVAILABLE`), cantidad insuficiente (`OUT_OF_STOCK`), reserva con agotado aceptada, en `.../pedidos/PedidoInventarioIT.java`
-- [ ] T012 [P] [US1] Test unitario de `ModalidadesDisponibles` en `.../pedidos/ModalidadesDisponiblesTest.java`
+- [x] T011 [P] [US1] Test unitario de inventario: inmediato con agotado (`PRODUCT_UNAVAILABLE`), cantidad insuficiente (`OUT_OF_STOCK`) y reserva con agotado aceptada, en `backend/src/test/java/co/edu/napa/pedidos/application/usecase/CotizarPedidoUseCaseTest.java`
+- [x] T012 [P] [US1] Test de modalidades disponibles y reglas de entrega en `backend/src/test/java/co/edu/napa/pedidos/application/usecase/CotizarPedidoUseCaseTest.java`
 - [ ] T029 [P] [US1] Test de `totalEsperado` distinto del actual → `409 CONFLICT` en `.../pedidos/PedidoTotalEsperadoIT.java`
 
 ### Implementation
 
 - [ ] T013 [US1] Dominio `Pedido`, `ItemPedido` y cálculo de subtotales y total (redondeo a pesos) en `pedidos/domain/model/`
-- [ ] T015 [US1] Validación de disponibilidad con `DisponibilidadProductosPort` (adaptador sobre `ConsultarDisponibilidadPort` de RF-57)
-- [ ] T016 [US1] `ModalidadesDisponibles` y validación de la modalidad (adaptador sobre `ConsultarMediosPagoPort` de RF-63 y el rol del dueño)
-- [ ] T014 [US1] `CotizarPedidoUseCase` y `PedidoController` (`POST /pedidos/cotizacion`)
+- [x] T015 [US1] Validación de disponibilidad con `ConsultarDisponibilidadPort` de RF-57
+- [x] T016 [US1] Cálculo de modalidades y validación según el tipo de vendedor y medios de RF-63
+- [x] T014 [US1] `CotizarPedidoUseCase` y `PedidoController` (`POST /pedidos/cotizacion`)
 
 **Checkpoint**: US1 funcional.
 
@@ -294,7 +296,7 @@ frontend/__tests__/pedidos/realizar.test.tsx
 
 ### Implementation
 
-- [ ] T018 [US2] Guardar `Ubicacion` propia del pedido con la columna `geography`
+- [x] T018 [US2] Guardar `Ubicacion` propia del pedido con la columna `geography`
 
 ## Phase 5: User Story 3 - Marcar el pedido como reserva (Priority: P2)
 
@@ -309,7 +311,7 @@ frontend/__tests__/pedidos/realizar.test.tsx
 
 ### Implementation
 
-- [ ] T030 [US3] Campo `reserva` (UTC) y su validación contra la hora actual con `Clock` inyectable en `Pedido`
+- [x] T030 [US3] Campo `reserva` (UTC) y su validación contra la hora actual con `Clock` inyectable en `Pedido`
 
 ## Phase 6: User Story 4 - Confirmar el pedido y elegir cómo pagar (Priority: P1)
 
@@ -319,8 +321,9 @@ frontend/__tests__/pedidos/realizar.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T021 [P] [US4] Test unitario de `TarifaDomicilio` (fórmula §3.4, redondeo a 100, piso, respaldo sin tiempo) en `.../pedidos/TarifaDomicilioTest.java`
-- [ ] T022 [P] [US4] Test de la tarifa con `RoutingPort` y con el servicio caído (respaldo) en `.../pedidos/TarifaDomicilioRutaIT.java`
+- [x] T021 [P] [US4] Test unitario de `TarifaDomicilio` (fórmula §3.4, redondeo a 100, piso, respaldo sin tiempo) en `backend/src/test/java/co/edu/napa/pedidos/domain/model/TarifaDomicilioTest.java`
+- [x] T022 [P] [US4] Test del caso de uso con `RoutingPort` exitoso y servicio no disponible (respaldo) en `backend/src/test/java/co/edu/napa/pedidos/application/usecase/CalcularTarifaDomicilioUseCaseTest.java`
+- [x] T047 [P] [US4] Test unitario de cambio del piso vigente: el valor nuevo aplica a pedidos posteriores y no modifica las tarifas y totales ya congelados, en `backend/src/test/java/co/edu/napa/pedidos/application/usecase/CalcularTarifaDomicilioUseCaseTest.java`
 - [ ] T010a [P] [US4] Test de integración de `POST /pedidos` por modalidad (estado `PENDIENTE`, total, idempotencia) en `.../pedidos/RealizarPedidoIT.java`
 - [ ] T024 [P] [US4] Test de que E01 queda en el outbox en la misma transacción y no se emite si falla el guardado, en `.../pedidos/PedidoCreadoEventoIT.java`
 - [ ] T026 [P] [US4] Test de medios: habilitados, no habilitado, efectivo en domicilio en `.../pedidos/PedidoMedioPagoIT.java`
@@ -328,10 +331,17 @@ frontend/__tests__/pedidos/realizar.test.tsx
 
 ### Implementation
 
-- [ ] T023 [US4] `TarifaDomicilio` en `pedidos/domain/model/` y adaptadores a `RoutingPort`, `DistanciaLineaRectaPort` y `ConsultarTarifaMinimaPort` (RF-44, Fase 3)
-- [ ] T027 [US4] Validación del `medioPago` en el caso de uso
-- [ ] T031 [US4] `RealizarPedidoUseCase` y `POST /pedidos` en `PedidoController`
-- [ ] T032 [US4] Evento `PedidoCreadoEvent` y publicación por `EventPublisherPort`
+- [x] T023 [US4] `TarifaDomicilio` en `pedidos/domain/model/` y adaptadores a `RoutingPort`, `DistanciaLineaRectaPort` y `ConsultarTarifaMinimaPort` (RF-44, Fase 3)
+- [x] T027 [US4] Validación del `medioPago` en el caso de uso
+- [x] T031 [US4] `RealizarPedidoUseCase` y `POST /pedidos` en `PedidoController`
+- [x] T032 [US4] Evento `PedidoCreadoEvent` y publicación por `EventPublisherPort`
+
+### Persistencia e integración con RF-58
+
+- [x] T043 Migración V11 y persistencia transaccional de pedidos e ítems en `backend/src/main/java/co/edu/napa/pedidos/infrastructure/adapters/out/persistence/PedidoPersistenceAdapter.java`
+- [x] T044 Bloqueo de productos por ID antes de cotizar/guardar para serializar creación y eliminación
+- [x] T045 Adaptador JDBC de pedidos abiertos e índice por producto; `NAPA_PEDIDOS_ENABLED=true` por defecto
+- [ ] T046 Completar pruebas de creación por modalidad, estados de pedidos, rollback del outbox y carrera con eliminación
 
 ### Frontend (US1–US4)
 
@@ -360,18 +370,16 @@ frontend/__tests__/pedidos/realizar.test.tsx
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
 | RF-33 (listado de productos de un emprendimiento) es P2, pero el cliente lo necesita para armar el pedido | Alcance de la ola | Incluir RF-33 en este orden de construcción | Equipo |
-| `POST /pedidos/cotizacion` no está en el catálogo de spec-general §2.4; sin él la app no puede mostrar el total ni la tarifa antes de confirmar (FR-006, FR-010) | Convención de API | Agregarlo, sin `Idempotency-Key` | Equipo |
 | `totalEsperado` opcional para detectar cambios de precio entre cotizar y confirmar (Edge 2) | UX y consistencia | Incluirlo | Equipo |
 | Redondeo del subtotal con cantidades decimales (p. ej. 2,5 kg × precio) | Totales | Redondear a pesos por ítem, mitad hacia arriba | Equipo |
 | Ubicación enviada en una recogida: ¿se ignora o se rechaza? | US2-E2 | Rechazar (`400`) | Equipo |
 | Cliente demasiado lejos de un ambulante (Edge 3) | Regla de negocio | Sin validación; el vendedor puede rechazar en RF-53 | Equipo |
 | Antelación mínima de una reserva | US3-E2 | Solo que sea posterior a la hora actual | Equipo |
 | Domicilio sin conexión | Edge 4 | Exige conexión | Equipo |
-| Valores de `tarifa.base`, `tarifa.valor_por_km`, `tarifa.valor_por_min`, `tarifa.factor_linea_recta` | FR-006 | Los define el equipo | Equipo |
+| Valores de `tarifa.base`, `tarifa.valor_por_km`, `tarifa.valor_por_min`, `tarifa.factor_linea_recta` | FR-006 | Acordado: 3050 COP, 500 COP/km, 200 COP/min y factor 1.3 | Equipo |
 | El proveedor de rutas aparece como OpenRouteService en D9 y como Google Maps en foundations F013 y el código; este plan solo depende de `RoutingPort` | Costos y cuotas | Corregir `foundations/plan.md` | Equipo |
-| Límites: máximo de ítems por pedido y de cantidad por ítem | Validación | Definir | Equipo |
+| Límites: máximo de ítems por pedido y de cantidad por ítem | Validación | Acordado: 20 ítems distintos, 20 unidades por ítem y hasta dos decimales | Equipo |
 | Varios pedidos pendientes del mismo cliente al mismo vendedor | Regla de negocio | Permitidos | Equipo |
-| `OUT_OF_STOCK` en spec-general §2.2.1 dice "al aceptar"; aquí también se usa al crear un pedido inmediato (FR-002) | Catálogo de errores | Ajustar el texto | Equipo |
 
 ## Plan Review Checklist
 

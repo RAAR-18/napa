@@ -218,7 +218,7 @@ frontend/__tests__/productos/inventario.test.tsx
 
 - [ ] T010 [P] [US1] Test de integración de actualización manual (válida, pertenencia, idempotencia) en `backend/src/test/java/co/edu/napa/productos/ActualizarInventarioIT.java`
 - [ ] T011 [P] [US1] Test unitario del dominio (0 → `AGOTADO`, > 0 → `DISPONIBLE`, negativos y decimales) en `.../productos/ProductoInventarioTest.java`
-- [ ] T012 [P] [US1] Test del contrato de `ConsultarDisponibilidadPort` con producto agotado en `.../productos/ConsultarDisponibilidadIT.java`
+- [x] T012 [P] [US1] Test de integración del contrato de `ConsultarDisponibilidadPort` con productos disponibles, agotados, eliminados y de otro emprendimiento en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
 - [ ] T018 [P] [US1] Test de concurrencia: N descuentos simultáneos sobre la última unidad y descuento vs. actualización manual en `.../productos/InventarioConcurrenciaIT.java`
 - [ ] T020 [P] [US1] Test del contrato de `DescontarInventarioPort` (descuento total, `OUT_OF_STOCK` con reversión, orden por id) en `.../productos/DescontarInventarioIT.java`
 - [ ] T023 [P] [US1] Test del editor de inventario y del encolado sin red en `frontend/__tests__/productos/inventario.test.tsx`
@@ -228,7 +228,7 @@ frontend/__tests__/productos/inventario.test.tsx
 - [ ] T013 [US1] `ActualizarInventarioUseCase` en `productos/application/usecase/`
 - [ ] T014 [US1] `POST /productos/{id}/inventario` en `ProductoController`
 - [ ] T015 [US1] Regla `Producto.fijarCantidad()` que deriva el estado en `productos/domain/model/Producto.java`
-- [ ] T016 [US1] `ConsultarDisponibilidadUseCase` y su puerto `in`
+- [x] T016 [US1] `ConsultarDisponibilidadUseCase` y su puerto `in`, con consulta por lote limitada al emprendimiento y exclusión de productos eliminados
 - [ ] T017 [US1] Bloqueo de fila en la actualización manual
 - [ ] T019 [US1] `DescontarInventarioUseCase` y su puerto `in` (atómico, ordenado por id)
 - [ ] T021 [US1] Servicio `actualizarInventario()` con outbox en `frontend/src/services/productos.ts`

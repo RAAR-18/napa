@@ -20,11 +20,11 @@ El vendedor retira un producto que ya no vende con `POST /productos/{id}/elimina
 
 Entrega parcial en línea implementada el 2026-11-11. `ProductosPort`/`ProductosUseCase` y `ProductoController` exponen `POST /api/v1/productos/{id}/eliminar`: propietario autenticado, cuerpo exactamente `{ "confirmar": true }`, `Idempotency-Key` y respuesta `204`. La operación bloquea el producto, comprueba pendientes, cambia a `ELIMINADO` e incrementa `version` (V8). Ambos listados dejan de mostrarlo y el nombre queda libre, conservando la fila original. Misma clave devuelve el `204` anterior; otra clave devuelve `409 INVALID_STATE`.
 
-La consulta está aislada mediante `PedidosPendientesProductoPort`. No existe todavía un módulo de pedidos ni el detalle RF-51: su marca `productoEliminado` es un objetivo del diseño, no código entregado. `PedidosProductoConfiguration` proporciona cero pendientes solo con `napa.pedidos.enabled=false` (predeterminado mientras no existen pedidos). Al implementar RF-45 debe añadirse un adaptador real, activar `NAPA_PEDIDOS_ENABLED=true` y respetar el orden de bloqueo producto → pedido. Con la opción activa y sin adaptador, el arranque falla; no se instala el proveedor de cero pendientes.
+La consulta está aislada mediante `PedidosPendientesProductoPort`. RF-45 ya persiste los pedidos y sus ítems; el adaptador JDBC cuenta pedidos en `PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER` y `EN_CAMINO`, con índice por `item_pedido.producto_id`. `NAPA_PEDIDOS_ENABLED=true` es el valor predeterminado. La creación bloquea filas de productos por ID antes de validar y persistir; eliminación y creación siguen el orden producto → pedido. La prueba de integración de RF-45 comprueba que un pedido pendiente real impide eliminar su producto. Sin adaptador real y con la opción activa, el arranque falla; no se instala el proveedor de cero pendientes.
 
 `GestionProductoIntegrationTest` prueba borrado lógico, visibilidad en ambos listados, reutilización del nombre, confirmación estricta, permisos, idempotencia y carrera con edición usando PostgreSQL/Redis. El rechazo `HAS_PENDING_ORDERS` y el error de comprobación usan conteos simulados; no validan estados ni concurrencia de pedidos reales. `PedidosProductoConfigurationTest` prueba la selección del adaptador. `ProductosUI.tsx` incorpora confirmación/cancelación, conserva el producto cuando falla y actualiza la paginación tras eliminar el último elemento de una página. Las pruebas de UI/HTTP están en los archivos `productos.test.tsx` y `productos.test.ts` del frontend.
 
-Pendientes: adaptador y pruebas por estado de pedido/reserva, historial RF-51, carrera con creación de pedido, rendimiento y prueba manual. La eliminación requiere conexión; el diseño completo siguiente sigue siendo la referencia para esas integraciones.
+Pendientes: pruebas de cada estado abierto y terminal con pedidos reales, carrera extremo a extremo con creación de pedido, historial RF-51, rendimiento y prueba manual.
 
 ## Actors
 
@@ -194,7 +194,7 @@ Las tareas marcadas se cubren en los archivos reales citados arriba; los nombres
 
 ## Phase 2: Foundational
 
-- [ ] T002 `ConsultarPedidosPendientesDeProductoPort` en `pedidos` (cuenta pedidos en `PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER` o `EN_CAMINO` que contienen el producto) con índice sobre `item_pedido(producto_id)` en la siguiente migración libre de `backend/src/main/resources/db/migration/` (si RF-45 no lo creó)
+- [x] T002 `PedidosPendientesProductoPort` con adaptador JDBC (cuenta pedidos en `PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER` o `EN_CAMINO` que contienen el producto) e índice sobre `item_pedido(producto_id)` en V11
 - [x] T003 Consulta con bloqueo `FOR UPDATE` del producto en `ProductoRepositoryPort`
 
 **Checkpoint**: base lista.
@@ -208,7 +208,7 @@ Las tareas marcadas se cubren en los archivos reales citados arriba; los nombres
 ### Tests (antes de implementar)
 
 - [x] T010 [P] [US1] Test de integración de `POST /productos/{id}/eliminar` sin pedidos (`204`, estado `ELIMINADO`, repetición con la misma clave) en `backend/src/test/java/co/edu/napa/productos/EliminarProductoIT.java`
-- [ ] T011 [P] [US1] Test de rechazo con pedido en cada estado pendiente (incluida una reserva) y de que los pedidos terminados o rechazados no bloquean, en `.../productos/EliminarProductoPendientesIT.java`
+- [ ] T011 [P] [US1] Test de rechazo con pedido en cada estado pendiente (incluida una reserva) y de que los pedidos terminados o rechazados no bloquean, en `.../productos/EliminarProductoPendientesIT.java` (parcial: RF-45 verifica el estado PENDIENTE real)
 - [x] T012 [P] [US1] Test de que sin `confirmar: true` no se elimina (`400`) en `.../productos/EliminarProductoConfirmacionIT.java`
 - [x] T013 [P] [US1] Test de que RF-33 y RF-55 dejan de mostrarlo de inmediato (< 5 s) en `.../productos/EliminarProductoVisibilidadIT.java`
 - [ ] T014 [P] [US1] Test de que los pedidos terminados siguen mostrando el producto marcado y de que el nombre se puede reutilizar, en `.../productos/EliminarProductoHistorialIT.java`
@@ -220,7 +220,7 @@ Las tareas marcadas se cubren en los archivos reales citados arriba; los nombres
 
 - [x] T020 [US1] `EliminarProductoPort` y `EliminarProductoUseCase`: bloquea el producto, consulta pendientes y cambia el estado en una transacción
 - [x] T021 [US1] `POST /productos/{id}/eliminar` y su DTO en `ProductoController`
-- [ ] T022 [US1] Adaptador de `PedidosPendientesDeProductoPort` y error `HAS_PENDING_ORDERS` con `details.pedidosPendientes`
+- [x] T022 [US1] Adaptador de `PedidosPendientesProductoPort` y error `HAS_PENDING_ORDERS` con `details.pedidosPendientes`
 - [x] T031 [US1] `ConfirmarEliminarProducto` y `eliminarProducto()` en `frontend/src/`
 - [x] T032 [US1] Acción "Eliminar" en el listado de productos del vendedor (RF-55) con el aviso de pendientes
 
