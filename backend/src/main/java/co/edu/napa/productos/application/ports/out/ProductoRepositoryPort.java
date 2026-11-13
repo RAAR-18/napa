@@ -3,6 +3,8 @@ package co.edu.napa.productos.application.ports.out;
 import co.edu.napa.productos.application.ports.in.ProductosPort.Consulta;
 import co.edu.napa.productos.domain.model.Producto;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +14,7 @@ public interface ProductoRepositoryPort {
     Optional<Producto> bloquear(UUID id);
     Optional<Producto> buscar(UUID id);
     Producto actualizarInventario(Producto producto);
+    boolean descontar(UUID productoId, BigDecimal cantidad, Instant now);
     Producto actualizarDatos(Producto producto);
     void eliminar(Producto producto);
     Resultado listar(UUID emprendimientoId, Consulta consulta);

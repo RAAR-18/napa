@@ -16,7 +16,7 @@
 
 El cliente arma un pedido con productos y cantidades de un emprendimiento, elige la modalidad que ese vendedor ofrece (ambulante: entrega directa; punto fijo: recogida y, si tiene cuenta bancaria, domicilio), indica la ubicación de entrega cuando aplica, marca opcionalmente una reserva (fecha y hora futuras) y elige el medio de pago entre los habilitados. El servidor valida, congela precios y total, calcula la tarifa del domicilio por ruta con piso (§3.4) y registra el pedido en `PENDIENTE`, emitiendo E01 por el outbox. El inventario no se descuenta aquí: se descuenta al aceptar (RF-53). Un `POST /pedidos/cotizacion` sin efectos permite mostrar el resumen y el total antes de confirmar.
 
-**Estado de implementación (2026-11-12)**: la cotización, el cálculo de domicilio y la creación backend están implementados. V11 persiste pedidos e ítems, conserva la ubicación de entrega y escribe E01 en outbox dentro de la transacción de creación. La creación es idempotente y vuelve a validar catálogo, modalidad, disponibilidad, reserva y pago; bloquea productos en orden de ID para coordinarse con RF-58. El caso de uso de tarifa consulta el piso vigente en cada cálculo y el pedido conserva el valor calculado. Una prueba unitaria verifica que un cambio de piso afecta pedidos nuevos y no altera los ya creados. La prueba de integración HTTP cubre ENTREGA_DIRECTA, reintento sin duplicados, inventario sin descuento en creación y rechazo de eliminación por pedido abierto; no pudo ejecutarse en la última validación porque Docker no está disponible. La interfaz, consultas/transiciones del pedido y pruebas exhaustivas por modalidad siguen pendientes.
+**Estado de implementación (2026-11-12)**: la cotización y creación backend están implementadas. V11 persiste pedidos e ítems, conserva la ubicación de entrega y escribe E01 en outbox dentro de la transacción. La creación es idempotente, vuelve a validar catálogo, modalidad, disponibilidad, reserva y pago, y bloquea productos en orden de ID para coordinarse con RF-58. La compra P1 ya puede iniciarse desde el catálogo: selección de varios productos, modalidades, ubicación manual o del dispositivo, cotización, medios de pago, aviso de pago por domicilio y confirmación con `totalEsperado`; muestra el estado `PENDIENTE`. La integración HTTP cubre las tres modalidades, cotización multiproducto, reserva con producto agotado, idempotencia, inventario sin descuento al crear, estados abiertos/terminales, rollback del outbox y carrera con eliminación. La suite backend completa pasó con Docker, sin omisiones. Siguen pendientes el borrador/outbox sin conexión, consultas y transiciones del pedido y aceptación/descuento del inventario.
 
 ## Estado actual del código
 
@@ -269,10 +269,10 @@ frontend/__tests__/pedidos/realizar.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración de `POST /pedidos/cotizacion` (ambulante, punto fijo con y sin cuenta, varios ítems) en `backend/src/test/java/co/edu/napa/pedidos/CotizarPedidoIT.java`
+- [x] T010 [P] [US1] Test de integración de `POST /pedidos/cotizacion` (ambulante, punto fijo con y sin cuenta, varios ítems) en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
 - [x] T011 [P] [US1] Test unitario de inventario: inmediato con agotado (`PRODUCT_UNAVAILABLE`), cantidad insuficiente (`OUT_OF_STOCK`) y reserva con agotado aceptada, en `backend/src/test/java/co/edu/napa/pedidos/application/usecase/CotizarPedidoUseCaseTest.java`
 - [x] T012 [P] [US1] Test de modalidades disponibles y reglas de entrega en `backend/src/test/java/co/edu/napa/pedidos/application/usecase/CotizarPedidoUseCaseTest.java`
-- [ ] T029 [P] [US1] Test de `totalEsperado` distinto del actual → `409 CONFLICT` en `.../pedidos/PedidoTotalEsperadoIT.java`
+- [x] T029 [P] [US1] Test de `totalEsperado` distinto del actual → `409 CONFLICT` en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
 
 ### Implementation
 
@@ -324,10 +324,10 @@ frontend/__tests__/pedidos/realizar.test.tsx
 - [x] T021 [P] [US4] Test unitario de `TarifaDomicilio` (fórmula §3.4, redondeo a 100, piso, respaldo sin tiempo) en `backend/src/test/java/co/edu/napa/pedidos/domain/model/TarifaDomicilioTest.java`
 - [x] T022 [P] [US4] Test del caso de uso con `RoutingPort` exitoso y servicio no disponible (respaldo) en `backend/src/test/java/co/edu/napa/pedidos/application/usecase/CalcularTarifaDomicilioUseCaseTest.java`
 - [x] T047 [P] [US4] Test unitario de cambio del piso vigente: el valor nuevo aplica a pedidos posteriores y no modifica las tarifas y totales ya congelados, en `backend/src/test/java/co/edu/napa/pedidos/application/usecase/CalcularTarifaDomicilioUseCaseTest.java`
-- [ ] T010a [P] [US4] Test de integración de `POST /pedidos` por modalidad (estado `PENDIENTE`, total, idempotencia) en `.../pedidos/RealizarPedidoIT.java`
-- [ ] T024 [P] [US4] Test de que E01 queda en el outbox en la misma transacción y no se emite si falla el guardado, en `.../pedidos/PedidoCreadoEventoIT.java`
-- [ ] T026 [P] [US4] Test de medios: habilitados, no habilitado, efectivo en domicilio en `.../pedidos/PedidoMedioPagoIT.java`
-- [ ] T028 [P] [US4] Test de contrato del aviso `pagoDomicilio` en la cotización y la respuesta en `.../pedidos/PagoDomicilioAvisoIT.java`
+- [x] T010a [P] [US4] Test de integración de `POST /pedidos` por modalidad (estado `PENDIENTE`, total, idempotencia) en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
+- [x] T024 [P] [US4] Test de que E01 queda en el outbox en la misma transacción y se revierte ante un fallo al publicar, en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
+- [x] T026 [P] [US4] Test de medios habilitados y rechazo de efectivo en domicilio en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
+- [x] T028 [P] [US4] Test del aviso `pagoDomicilio` en cotización en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
 
 ### Implementation
 
@@ -341,15 +341,15 @@ frontend/__tests__/pedidos/realizar.test.tsx
 - [x] T043 Migración V11 y persistencia transaccional de pedidos e ítems en `backend/src/main/java/co/edu/napa/pedidos/infrastructure/adapters/out/persistence/PedidoPersistenceAdapter.java`
 - [x] T044 Bloqueo de productos por ID antes de cotizar/guardar para serializar creación y eliminación
 - [x] T045 Adaptador JDBC de pedidos abiertos e índice por producto; `NAPA_PEDIDOS_ENABLED=true` por defecto
-- [ ] T046 Completar pruebas de creación por modalidad, estados de pedidos, rollback del outbox y carrera con eliminación
+- [x] T046 Completar pruebas de creación por modalidad, estados de pedidos, rollback del outbox y carrera con eliminación en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
 
 ### Frontend (US1–US4)
 
-- [ ] T033 [P] Test del flujo de tres pantallas (carrito, modalidades, ubicación, reserva, resumen, errores 409) en `frontend/__tests__/pedidos/realizar.test.tsx`
-- [ ] T034 Servicio `cotizar()` y `crearPedido()` (outbox para directa y recogida) en `frontend/src/services/pedidos.ts`
-- [ ] T035 `useCarrito` y componentes de `frontend/src/components/pedidos/`
-- [ ] T036 Borrador persistente en `frontend/src/database/schema/borrador_pedido.ts`
-- [ ] T037 Pantallas `frontend/src/app/(cliente)/emprendimientos/[id]/pedido/armar.tsx`, `entrega.tsx` y `resumen.tsx`; al `201` navega a `(cliente)/pedidos/[id]` (RF-48)
+- [x] T033 [P] Test del flujo guiado de compra (carrito, modalidades, ubicación, reserva, resumen y conflicto `409`) en `frontend/src/app/__tests__/pedido-catalogo.test.tsx`
+- [x] T034 Servicios autenticados `cotizarPedido()` y `crearPedido()` en `frontend/src/lib/pedidos.ts`; conserva `Idempotency-Key` al reintentar el mismo cuerpo
+- [x] T035 Selector de productos, carrito en memoria y componentes de modalidad, ubicación, reserva, pago y resumen en `frontend/src/components/PedidoCatalogo.tsx`
+- [ ] T036 Borrador persistente y outbox de pedidos sin conexión en SQLite
+- [x] T037 Flujo guiado desde `frontend/src/app/catalogo.tsx`; tras `201` confirma `PENDIENTE` e identifica el pedido (la consulta y las transiciones corresponden a RF-48/RF-53)
 
 **Checkpoint**: pedido completo de extremo a extremo.
 

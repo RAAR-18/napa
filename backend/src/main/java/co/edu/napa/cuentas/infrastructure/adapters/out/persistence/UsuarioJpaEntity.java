@@ -83,6 +83,10 @@ public class UsuarioJpaEntity {
         return id;
     }
 
+    public String getNombre() {
+        return nombre;
+    }
+
     public String getPasswordHash() {
         return passwordHash;
     }

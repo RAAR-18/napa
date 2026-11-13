@@ -17,7 +17,7 @@ La tarifa mínima inicial se configura mediante `napa.tarifa.minima-defecto`, co
 
 ## Estado actual del código
 
-El backend de RF-44 ya implementa dominio, puertos, lectura por defecto, actualización administrativa, historial, endpoints, autorización, migración V9 y serialización de cambios concurrentes. Pasaron las pruebas unitarias, ArchUnit y la integración HTTP con PostgreSQL/Redis. RF-45 aún no consume el puerto de consulta; su plan y número de migración se actualizaron para depender de RF-44. El archivo anterior de este plan contenía por error el plan de RF-43; el plan correcto de RF-43 se conserva en su propia carpeta.
+El backend de RF-44 implementa dominio, puertos, lectura por defecto, actualización administrativa, historial, endpoints, autorización, migración V9 y serialización de cambios concurrentes. RF-45 consulta el puerto dentro del cálculo y congela la tarifa resultante en cada pedido; una prueba confirma que un cambio del piso afecta pedidos nuevos sin alterar los existentes. El adaptador de persistencia exige una transacción activa antes de tomar el advisory lock, evitando escrituras que aparenten estar serializadas si se invoca el puerto fuera del caso de uso transaccional. Las integraciones HTTP, PostgreSQL y Redis pasan con Testcontainers.
 
 ## Contrato y decisiones
 
@@ -27,7 +27,7 @@ El backend de RF-44 ya implementa dominio, puertos, lectura por defecto, actuali
 - Historial append-only con `id`, `valor`, `created_at` y `administrador_id`. La fila previa define el valor anterior; no se almacena una copia redundante.
 - Las escrituras se serializan dentro de la transacción con un advisory lock de PostgreSQL, para que actualizaciones administrativas concurrentes produzcan un orden inequívoco. La lectura usa la fila de mayor `id`.
 - Sin evento de dominio: la configuración no requiere notificación y la escritura del historial es la auditoría definida por la spec.
-- La migración RF-44 usa V9; por dependencia, la migración de pedidos prevista en RF-45 pasa a V10.
+- La migración RF-44 usa V9, RF-63 usa V10 y la persistencia de pedidos RF-45 usa V11.
 
 ## Spec Coverage
 
@@ -76,8 +76,9 @@ La tabla no se siembra con el valor por defecto: mientras está vacía, la confi
 ### Fase 3: integración de RF-45
 
 - [x] T020 Actualizar el plan RF-45 para depender de `ConsultarTarifaMinimaPort`, reservar V10 para RF-63 y asignar V11 a pedidos, y alinear la ruta externa con la decisión OpenRouteService de foundations.
-- [ ] T021 Implementar en RF-45 el adaptador al puerto de tarifa y calcular con el valor vigente dentro del flujo de cotización/creación; congelar el resultado en el pedido.
-- [ ] T022 Probar que una actualización modifica el piso de nuevos pedidos y no cambia pedidos ya creados.
+- [x] T021 Implementar en RF-45 el adaptador al puerto de tarifa y calcular con el valor vigente dentro del flujo de cotización/creación; congelar el resultado en el pedido.
+- [x] T022 Probar que una actualización modifica el piso de nuevos pedidos y no cambia pedidos ya creados.
+- [x] T023 Verificar que `TarifaMinimaPersistenceAdapter.registrarSiCambio()` rechaza invocaciones fuera de una transacción activa, preservando la garantía del advisory lock.
 
 ## Estrategia de pruebas
 

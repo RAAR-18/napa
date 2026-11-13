@@ -108,7 +108,7 @@ Diagrama: [`gestionar_pedidos.puml`](../casos%20de%20uso/gestionar_pedidos.puml)
 | RF-50 | Listado de pedidos del vendedor | HU-80 | Vendedor | Listar pedidos recibidos | [RF-50-listado-de-pedidos-del-vendedor](../specs/RF-50-listado-de-pedidos-del-vendedor/spec.md) |
 | RF-51 | Consulta de detalle de pedido | HU-81 | Vendedor | Consultar detalle del pedido | [RF-51-consulta-de-detalle-de-pedido](../specs/RF-51-consulta-de-detalle-de-pedido/spec.md) |
 | RF-52 | Consulta de información del cliente | HU-82 | Vendedor | Ver información del cliente | [RF-52-consulta-de-informacion-del-cliente](../specs/RF-52-consulta-de-informacion-del-cliente/spec.md) |
-| RF-53 | Respuesta del vendedor a un pedido (incluye reservas por criterio propio) | HU-83, HU-84 | Vendedor | Aceptar pedido; Rechazar pedido | [RF-53-respuesta-del-vendedor-a-un-pedido](../specs/RF-53-respuesta-del-vendedor-a-un-pedido/spec.md) |
+| RF-53 | Respuesta del vendedor a un pedido (incluye reservas por criterio propio) | HU-83, HU-84 | Vendedor | Aceptar pedido; Rechazar pedido | [RF-53-respuesta-del-vendedor-a-un-pedido](../specs/RF-53-respuesta-del-vendedor-a-un-pedido/RF-53-respuesta-del-vendedor-a-un-pedido.md) |
 
 ## 9. Gestionar productos
 

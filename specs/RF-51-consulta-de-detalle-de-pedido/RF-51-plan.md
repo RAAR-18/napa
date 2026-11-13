@@ -14,11 +14,11 @@
 
 ## Summary
 
-Detalle completo de un pedido para el vendedor dueño del emprendimiento: ítems con cantidad y precio de compra, subtotal y total, modalidad, reserva, ubicación de entrega (cuando aplica y el pedido sigue activo), medio de pago y estado del pago, estado del pedido y datos básicos del cliente. Se sirve por `GET /pedidos/{id}`, ruta compartida con RF-48 (cliente): el caso de uso responde según el rol. Un pedido de otro emprendimiento responde `404`. La pantalla del detalle aloja los botones de las acciones del vendedor (aceptar, rechazar y las de RF-35 a RF-65).
+Detalle completo de un pedido para el vendedor dueño del emprendimiento: ítems con cantidad y precio de compra, subtotal y total, modalidad, reserva, ubicación de entrega (cuando aplica y el pedido sigue activo), medio de pago y estado del pago, estado del pedido y datos básicos del cliente. RF-51 expone actualmente la rama del vendedor en `GET /pedidos/{id}`; RF-48 podrá añadir la rama del cliente según el rol. Un pedido de otro emprendimiento responde `404`. La pantalla del detalle aloja los botones de las acciones del vendedor (aceptar, rechazar y las de RF-35 a RF-65).
 
 ## Estado actual del código
 
-`pedido`, `item_pedido` y `pago` los crean los planes de RF-45 y RF-53. No hay consulta de detalle todavía.
+RF-51 ya expone el detalle autenticado del vendedor en `GET /api/v1/pedidos/{pedidoId}`. La consulta preserva precios congelados, muestra productos eliminados y pago cuando existe, limita los datos del cliente al nombre y oculta la ubicación en estados terminales. La app muestra el detalle y permite iniciar la aceptación o el rechazo de pedidos pendientes. La consulta y las acciones requieren conexión; caché SQLite y cola offline no están implementadas.
 
 ## Actors
 
@@ -64,7 +64,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | RNF16 Trazabilidad | ☑ | Fechas y datos congelados |
 | RNF23 Consistencia | ☑ | Estado del pago derivado del registro `Pago` |
 | RNF24 Errores claros | ☑ | `404` "no disponible" |
-| RNF28 Conectividad | ☑ | Caché de lectura SQLite |
+| RNF28 Conectividad | ☑ | Pendiente: hoy el detalle requiere conexión; caché de lectura SQLite por implementar |
 
 ## Entities Involved
 
@@ -172,24 +172,21 @@ backend/src/main/java/co/edu/napa/pedidos/
     └── out/persistence/          # consulta de detalle con items y adaptador de `pagos`
 backend/src/test/java/co/edu/napa/pedidos/
 
-frontend/src/app/(vendedor)/pedidos/[id].tsx                    # ruta Expo Router: detalle del pedido
-frontend/src/components/pedidos/DetallePedidoVendedor.tsx       # secciones: cliente, ítems, entrega, pago, estado
-frontend/src/components/pedidos/MapaUbicacionEntrega.tsx        # lo reutiliza RF-35
-frontend/src/services/pedidos.ts                                # obtenerPedidoVendedor()
-frontend/src/database/schema/pedido_detalle_cache.ts
-frontend/__tests__/pedidos/detalle-vendedor.test.tsx
+frontend/src/app/pedido-vendedor.tsx                             # detalle y confirmación de acciones
+frontend/src/lib/pedidos.ts                                      # obtenerPedidoVendedor()
+frontend/src/app/__tests__/pedidos-vendedor.test.tsx             # detalle y respuestas del vendedor
 ```
 
-**Structure Decision**: módulo `pedidos`. `GET /pedidos/{id}` es una sola ruta (RF-48 y RF-51): el controlador delega según el rol a `ConsultarPedidoVendedorPort` o al de RF-48, cada uno con su DTO, y devuelve `404` cuando el usuario no es parte del pedido. El estado del pago llega por un puerto `out` hacia `pagos`.
+**Structure Decision**: módulo `pedidos`. Actualmente `GET /pedidos/{id}` está protegido para los roles vendedor y valida la pertenencia al emprendimiento; RF-48 podrá incorporar la rama del cliente con autorización y DTO propios. El estado del pago llega por un puerto hacia `pagos`.
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar `pedido`, `item_pedido` y `pago` (RF-45 T003, RF-53 T002)
+- [x] T001 Confirmar `pedido`, `item_pedido` y `pago` (RF-45 T003, RF-53 T002)
 
 ## Phase 2: Foundational
 
-- [ ] T002 Consulta de detalle con items y producto (incluye eliminados) en `PedidoRepositoryPort` y su adaptador en `pedidos/application/ports/out/` y `.../out/persistence/`
-- [ ] T003 Puerto `in` de `pagos` para consultar el estado del pago de un pedido y adaptador `PagoDelPedidoPort`
+- [x] T002 Consulta de detalle con ítems y producto (incluye eliminados) en el repositorio y adaptador de persistencia
+- [x] T003 Puerto de pagos para consultar el estado del pago del pedido
 
 **Checkpoint**: base lista.
 
@@ -201,30 +198,31 @@ frontend/__tests__/pedidos/detalle-vendedor.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración del detalle por modalidad en `backend/src/test/java/co/edu/napa/pedidos/ConsultarPedidoVendedorIT.java`
-- [ ] T011 [P] [US1] Test de los datos del cliente expuestos (solo los definidos) en `.../pedidos/ConsultarPedidoClienteDatosIT.java`
-- [ ] T012 [P] [US1] Test de pedido ajeno e inexistente (`404`) y de aislamiento entre vendedores en `.../pedidos/ConsultarPedidoAjenoIT.java`
-- [ ] T017 [P] [US1] Test de consistencia: producto eliminado y cambio de precio posterior no alteran el detalle en `.../pedidos/ConsultarPedidoConsistenciaIT.java`
-- [ ] T018 [P] [US1] Test de pedido `CANCELADO` y de ocultamiento de la ubicación cuando no está activo en `.../pedidos/ConsultarPedidoUbicacionIT.java`
-- [ ] T021 [P] [US1] Test de la pantalla (secciones, producto eliminado, sin pago, caché sin red) en `frontend/__tests__/pedidos/detalle-vendedor.test.tsx`
+- [x] T010 [P] [US1] Test de integración de las tres modalidades y ubicación en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
+- [x] T011 [P] [US1] Test de los datos del cliente expuestos (solo el nombre) en `ProductosIntegrationTest`
+- [x] T012 [P] [US1] Test de pedido ajeno e inexistente (`404`) y de aislamiento entre vendedores en `ProductosIntegrationTest`
+- [x] T017 [P] [US1] Test de consistencia: producto eliminado y cambio de precio posterior no alteran el detalle en `ProductosIntegrationTest`
+- [x] T018 [P] [US1] Test de pedido `CANCELADO` y de ocultamiento de la ubicación terminal en `ProductosIntegrationTest`
+- [x] T021 [P] [US1] Test frontend de información del detalle, confirmaciones, errores y acceso expirado en `frontend/src/app/__tests__/pedidos-vendedor.test.tsx`
 
 ### Implementation
 
-- [ ] T013 [US1] `ConsultarPedidoVendedorUseCase` en `pedidos/application/usecase/`
-- [ ] T014 [US1] `GET /pedidos/{id}` con despacho por rol en `PedidoController`
-- [ ] T015 [US1] DTO de detalle del vendedor (items, subtotales, pago, ubicación)
-- [ ] T016 [US1] Datos básicos del cliente por `ClienteNombrePort`
-- [ ] T019 [US1] Servicio `obtenerPedidoVendedor()` con caché en `frontend/src/services/pedidos.ts` y `frontend/src/database/schema/pedido_detalle_cache.ts`
-- [ ] T020 [US1] `DetallePedidoVendedor` y `MapaUbicacionEntrega` en `frontend/src/components/pedidos/`
-- [ ] T022 [US1] Pantalla `frontend/src/app/(vendedor)/pedidos/[id].tsx` con espacio para las acciones del vendedor (RF-53 y siguientes)
+- [x] T013 [US1] `ConsultarPedidoVendedorUseCase` en `pedidos/application/usecase/`
+- [x] T014 [US1] `GET /pedidos/{id}` del vendedor en `PedidoController`
+- [x] T015 [US1] DTO de detalle del vendedor (ítems, subtotales, pago y ubicación)
+- [x] T016 [US1] Datos básicos del cliente por el puerto de consulta de nombres de `cuentas`
+- [x] T019 [US1] Servicio online `obtenerPedidoVendedor()` en `frontend/src/lib/pedidos.ts`
+- [x] T020 [US1] Presentación del detalle y ubicación integradas en la pantalla del vendedor
+- [x] T022 [US1] Pantalla `frontend/src/app/pedido-vendedor.tsx` con acciones confirmadas de aceptar y rechazar
 
 **Checkpoint**: US1 funcional.
 
 ## Phase N: Polish & Cross-Cutting
 
 - [ ] T030 Medir el detalle en < 3 s (SC-001)
-- [ ] T031 Revisar privacidad de la ubicación y de los datos del cliente (RNF04)
-- [ ] T032 Actualizar `requerimientos/trazabilidad.md` si cambió algo
+- [x] T031 Revisar privacidad de la ubicación y de los datos del cliente (RNF04) con pruebas de privacidad y estados terminales
+- [x] T032 Verificar trazabilidad; RF-51 ya enlaza su especificación en `requerimientos/trazabilidad.md`
+- [ ] T033 Implementar caché de lectura SQLite y mostrar el último detalle sin conexión
 
 ## Dependencies & Execution Order
 

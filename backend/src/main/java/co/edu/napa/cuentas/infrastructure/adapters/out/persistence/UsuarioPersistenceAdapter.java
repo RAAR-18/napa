@@ -8,8 +8,11 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Repository
 public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort {
@@ -64,5 +67,11 @@ public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort {
     @Override
     public boolean existsByRol(RolUsuario rol) {
         return repository.existsByRol(rol);
+    }
+
+    @Override
+    public Map<UUID, String> findNamesByIds(Set<UUID> ids) {
+        return repository.findAllById(ids).stream()
+                .collect(Collectors.toMap(UsuarioJpaEntity::getId, UsuarioJpaEntity::getNombre));
     }
 }

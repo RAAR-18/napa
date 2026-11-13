@@ -2,12 +2,15 @@ package co.edu.napa.pagos.infrastructure.config;
 
 import co.edu.napa.pagos.application.ports.out.ConfiguracionPagoRepositoryPort;
 import co.edu.napa.pagos.application.ports.out.ConsultarTipoVendedorPort;
+import co.edu.napa.pagos.application.ports.out.PagoRepositoryPort;
 import co.edu.napa.pagos.application.usecase.ConfigurarPagoVendedorUseCase;
 import co.edu.napa.pagos.application.usecase.ConsultarConfiguracionPagoUseCase;
 import co.edu.napa.pagos.application.usecase.ConsultarMediosPagoUseCase;
+import co.edu.napa.pagos.application.usecase.RegistrarPagoPedidoPendienteUseCase;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import java.time.Clock;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(CuentaBancariaCipherProperties.class)
@@ -32,5 +35,13 @@ public class PagosConfiguration {
             ConsultarTipoVendedorPort vendedores
     ) {
         return new ConsultarMediosPagoUseCase(configuraciones, vendedores);
+    }
+
+    @Bean
+    RegistrarPagoPedidoPendienteUseCase registrarPagoPedidoPendienteUseCase(
+            PagoRepositoryPort pagos,
+            Clock clock
+    ) {
+        return new RegistrarPagoPedidoPendienteUseCase(pagos, clock);
     }
 }

@@ -14,11 +14,11 @@
 
 ## Summary
 
-Listado paginado de los pedidos recibidos por el emprendimiento del vendedor autenticado, con cliente (nombre), fecha, estado, total, modalidad y reserva (fecha y hora acordadas), filtrable por estado, modalidad, reserva y rango de fechas. Se sirve por `GET /pedidos`, ruta compartida con RF-47 (cliente): el caso de uso elige la rama según el rol. Orden por defecto: más reciente primero. La app guarda una caché de lectura en SQLite y se refresca cuando llega la notificación de un pedido nuevo.
+Listado paginado de los pedidos recibidos por el emprendimiento del vendedor autenticado, con cliente (nombre), fecha, estado, total, modalidad y reserva (fecha y hora acordadas), filtrable por estado, modalidad, reserva y rango de fechas. RF-50 expone actualmente la rama del vendedor en `GET /pedidos`; RF-47 podrá añadir la rama de cliente según el rol. Orden por defecto: más reciente primero. La app guarda una caché de lectura en SQLite y se refresca cuando llega la notificación de un pedido nuevo.
 
 ## Estado actual del código
 
-`pedidos` y la tabla `pedido` los crea el plan de RF-45 (con índices `(emprendimiento_id, created_at desc)` y `(emprendimiento_id, estado)`). No hay consulta de listado todavía.
+`pedido` y sus índices vienen de RF-45. RF-50 ya expone el listado autenticado del vendedor en `GET /api/v1/pedidos`, filtra por el emprendimiento activo, aplica estado, modalidad, reserva, fechas y paginación, y ordena de forma estable. La app tiene filtros, paginación, estado vacío y actualización manual. La lista requiere conexión; no se ha implementado la caché SQLite ni el refresco por notificación.
 
 ## Actors
 
@@ -66,7 +66,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | RNF16 Trazabilidad | ☑ | `createdAt` del pedido |
 | RNF23 Consistencia | ☑ | Estados del enum |
 | RNF24 Errores claros | ☑ | Filtro desconocido → `400` |
-| RNF28 Conectividad | ☑ | Caché de lectura SQLite |
+| RNF28 Conectividad | ☑ | Pendiente: hoy la lista requiere conexión; caché de lectura SQLite por implementar |
 | RNF31 Gama baja | ☑ | Lista paginada sin imágenes |
 
 ## Entities Involved
@@ -163,31 +163,28 @@ specs/RF-50-listado-de-pedidos-del-vendedor/
 backend/src/main/java/co/edu/napa/pedidos/
 ├── application/
 │   ├── ports/in/                 # ListarPedidosVendedorPort
-│   ├── ports/out/                # PedidoRepositoryPort (consulta paginada con filtros), ClienteNombrePort
+│   ├── ports/out/                # Filtro y proyecciones de pedido; nombres por puerto de cuentas
 │   └── usecase/                  # ListarPedidosVendedorUseCase
 └── infrastructure/adapters/
     ├── in/web/                   # PedidoController (GET /pedidos), DTO de ítem
     └── out/persistence/          # consulta con filtros y orden
 backend/src/test/java/co/edu/napa/pedidos/
 
-frontend/src/app/(vendedor)/pedidos/index.tsx             # ruta Expo Router: listado de pedidos
-frontend/src/components/pedidos/ItemPedidoVendedor.tsx    # fila: cliente, fecha, estado, modalidad, reserva, total
-frontend/src/components/pedidos/FiltrosPedidos.tsx
-frontend/src/services/pedidos.ts                          # listarPedidosVendedor()
-frontend/src/database/schema/pedidos_cache.ts             # caché de lectura
-frontend/__tests__/pedidos/listado-vendedor.test.tsx
+frontend/src/app/pedidos-vendedor.tsx                     # listado online con filtros y paginación
+frontend/src/lib/pedidos.ts                                # listarPedidosVendedor()
+frontend/src/app/__tests__/pedidos-vendedor.test.tsx       # listado y acciones del vendedor
 ```
 
-**Structure Decision**: módulo `pedidos`. `GET /pedidos` es una sola ruta para cliente (RF-47) y vendedor (RF-50); el caso de uso por rol evita filtrar en el controlador. El nombre del cliente se obtiene por un puerto `out` hacia `cuentas`.
+**Structure Decision**: módulo `pedidos`. Actualmente `GET /pedidos` está protegido para los roles vendedor; RF-47 podrá incorporar la rama del cliente con su autorización y DTO. El nombre del cliente se obtiene por un puerto hacia `cuentas`.
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar la tabla `pedido` y sus índices (RF-45, T003)
+- [x] T001 Confirmar la tabla `pedido` y sus índices (RF-45, T003)
 
 ## Phase 2: Foundational
 
-- [ ] T002 Consulta paginada con filtros (estado, modalidad, reserva, fechas) en `PedidoRepositoryPort` y su adaptador en `pedidos/application/ports/out/` y `.../out/persistence/`
-- [ ] T003 Puerto `out` `ClienteNombrePort` con el puerto `in` correspondiente de `cuentas`
+- [x] T002 Consulta paginada con filtros (estado, modalidad, reserva, fechas) en `PedidoRepositoryPort` y su adaptador en `pedidos/application/ports/out/` y `.../out/persistence/`
+- [x] T003 Puerto de consulta de nombres del cliente en `cuentas` y su uso desde pedidos
 
 **Checkpoint**: base lista.
 
@@ -199,31 +196,32 @@ frontend/__tests__/pedidos/listado-vendedor.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración del listado (datos, paginación) en `backend/src/test/java/co/edu/napa/pedidos/ListarPedidosVendedorIT.java`
-- [ ] T011 [P] [US1] Test de filtros `estado`, `modalidad`, `reserva` y rango de fechas en `.../pedidos/ListarPedidosFiltrosIT.java`
-- [ ] T012 [P] [US1] Test de aislamiento entre dos vendedores en `.../pedidos/ListarPedidosAislamientoIT.java`
-- [ ] T017 [P] [US1] Test de listado vacío y de filtros inválidos (`400`) en `.../pedidos/ListarPedidosVacioIT.java`
-- [ ] T018 [P] [US1] Test de orden y desempate con el mismo estado en `.../pedidos/ListarPedidosOrdenIT.java`
-- [ ] T021 [P] [US1] Test de la pantalla (vacío, filtros, etiquetas, caché sin red) en `frontend/__tests__/pedidos/listado-vendedor.test.tsx`
+- [x] T010 [P] [US1] Test de integración del listado (datos, paginación) en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
+- [x] T011 [P] [US1] Test de filtros `estado`, `modalidad`, `reserva` y rango de fechas en `ProductosIntegrationTest`
+- [x] T012 [P] [US1] Test de aislamiento entre dos vendedores en `ProductosIntegrationTest`
+- [x] T017 [P] [US1] Test de listado vacío y de filtros inválidos (`400`) en `ProductosIntegrationTest`
+- [x] T018 [P] [US1] Test de orden y desempate con el mismo estado en `ProductosIntegrationTest`
+- [x] T021 [P] [US1] Test frontend de filtros, acceso desde el listado, permisos y estado vacío en `frontend/src/app/__tests__/pedidos-vendedor.test.tsx`
 
 ### Implementation
 
-- [ ] T013 [US1] `ListarPedidosVendedorUseCase` en `pedidos/application/usecase/`
-- [ ] T014 [US1] Rama de vendedor en `GET /pedidos` de `PedidoController`
-- [ ] T015 [US1] DTO de ítem con `cliente.nombre`, `modalidad` y `reserva`
-- [ ] T016 [US1] Validación de filtros (`400` ante desconocidos)
-- [ ] T019 [US1] Servicio `listarPedidosVendedor()` con caché en `frontend/src/services/pedidos.ts` y `frontend/src/database/schema/pedidos_cache.ts`
-- [ ] T020 [US1] `ItemPedidoVendedor` y `FiltrosPedidos` en `frontend/src/components/pedidos/`
-- [ ] T022 [US1] Pantalla `frontend/src/app/(vendedor)/pedidos/index.tsx` con paginación, estado vacío y etiquetas de estado, modalidad y reserva
-- [ ] T023 [US1] Refrescar el listado al deslizar y al recibir la notificación de pedido nuevo
+- [x] T013 [US1] `ListarPedidosVendedorUseCase` en `pedidos/application/usecase/`
+- [x] T014 [US1] Rama de vendedor en `GET /pedidos` de `PedidoController`
+- [x] T015 [US1] DTO de ítem con `cliente.nombre`, `modalidad` y `reserva`
+- [x] T016 [US1] Validación de filtros (`400` ante desconocidos)
+- [x] T019 [US1] Servicio online `listarPedidosVendedor()` en `frontend/src/lib/pedidos.ts`
+- [x] T020 [US1] Filas, etiquetas y controles de filtro integrados en la pantalla del vendedor
+- [x] T022 [US1] Pantalla `frontend/src/app/pedidos-vendedor.tsx` con paginación, estado vacío y etiquetas de estado, modalidad y reserva
+- [ ] T023 [US1] Refrescar el listado al deslizar y al recibir la notificación de pedido nuevo; hoy solo hay actualización manual
 
 **Checkpoint**: US1 funcional.
 
 ## Phase N: Polish & Cross-Cutting
 
 - [ ] T030 Medir el listado en < 3 s (SC-001)
-- [ ] T031 Revisar privacidad y permisos (RNF03, RNF04)
-- [ ] T032 Actualizar `requerimientos/trazabilidad.md` si cambió algo
+- [x] T031 Revisar privacidad y permisos (RNF03, RNF04) mediante aislamiento por vendedor y DTO limitado
+- [x] T032 Verificar trazabilidad; RF-50 ya enlaza su especificación en `requerimientos/trazabilidad.md`
+- [ ] T033 Implementar caché de lectura SQLite y mostrar los resultados guardados sin conexión
 
 ## Dependencies & Execution Order
 

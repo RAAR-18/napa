@@ -5,6 +5,7 @@ import co.edu.napa.tarifas.domain.model.TarifaMinima;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.sql.Timestamp;
 import java.util.Optional;
@@ -36,6 +37,10 @@ public class TarifaMinimaPersistenceAdapter implements TarifaMinimaRepositoryPor
 
     @Override
     public TarifaMinima registrarSiCambio(long valor, UUID administradorId, long valorDefecto) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException(
+                    "Minimum tariff changes must be recorded inside a database transaction");
+        }
         jdbc.execute(LOCK_SQL);
         Optional<TarifaMinima> current = vigente();
         long currentValue = current.map(TarifaMinima::valor).orElse(valorDefecto);

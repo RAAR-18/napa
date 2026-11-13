@@ -101,7 +101,10 @@ describe('EmprendimientosScreen', () => {
     const { getByRole } = await render(<EmprendimientosScreen />);
     await waitFor(() => expect(getByRole('button', { name: 'Ver productos de Frutas de Ana' })).toBeTruthy());
     fireEvent.press(getByRole('button', { name: 'Ver productos de Frutas de Ana' }));
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/catalogo', params: { emprendimientoId: 'business-id' } });
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/catalogo',
+      params: { emprendimientoId: 'business-id', tipoVendedor: 'AMBULANTE' },
+    });
   });
 
   it('applies the selected seller filter', async () => {

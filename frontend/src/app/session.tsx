@@ -141,7 +141,12 @@ export default function SessionScreen() {
           {session.rol === 'VENDEDOR_AMBULANTE' ||
           session.rol === 'VENDEDOR_PUNTO_FIJO' ? (
             <>
+              <PrimaryButton title="Pedidos recibidos" onPress={() => router.push('/pedidos-vendedor')} />
               <PrimaryButton title="Mis productos" onPress={() => router.push('/mis-productos')} />
+              <TextButton
+                title="Configurar métodos de pago"
+                onPress={() => router.push('/configuracion-pagos')}
+              />
               <TextButton
                 title="Crear mi emprendimiento"
                 onPress={() => router.push('/emprendimiento')}

@@ -1,11 +1,13 @@
 package co.edu.napa.tarifas;
 
+import co.edu.napa.tarifas.application.ports.out.TarifaMinimaRepositoryPort;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -32,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -75,6 +78,9 @@ class TarifaMinimaIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Autowired
+    private TarifaMinimaRepositoryPort tarifas;
 
     @DynamicPropertySource
     static void services(DynamicPropertyRegistry properties) {
@@ -137,6 +143,15 @@ class TarifaMinimaIntegrationTest {
         assertEquals(200, noOp.statusCode(), noOp.body());
         assertEquals(3050, number(body(noOp), "valor"));
         assertNull(body(noOp).get("createdAt"));
+        assertEquals(0, countHistory());
+    }
+
+    @Test
+    void repositoryRejectsChangesOutsideATransaction() {
+        InvalidDataAccessApiUsageException failure = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> tarifas.registrarSiCambio(4500, UUID.randomUUID(), 3050));
+        assertEquals(IllegalStateException.class, failure.getCause().getClass());
         assertEquals(0, countHistory());
     }
 

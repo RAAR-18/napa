@@ -2,6 +2,7 @@ package co.edu.napa.productos;
 
 import co.edu.napa.productos.application.ports.in.ConsultarDisponibilidadPort;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,6 +25,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +58,11 @@ class ProductosIntegrationTest {
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
     @Autowired ConsultarDisponibilidadPort disponibilidad;
+
+    @BeforeEach
+    void clearRedisState() throws Exception {
+        assertEquals(0, redis.execInContainer("redis-cli", "FLUSHDB").getExitCode());
+    }
 
     @DynamicPropertySource
     static void services(DynamicPropertyRegistry properties) {
@@ -277,6 +284,277 @@ class ProductosIntegrationTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void clientCanCreatePickupOrderWithoutDeliveryLocation() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, Map.of("aceptaEfectivo", true));
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango para recoger", "4"), key()))
+                .get("id").toString();
+        String secondProductId = body(request("POST", "/productos", seller,
+                product("Banano para recoger", "4"), key())).get("id").toString();
+        Map<String, Object> quoteRequest = Map.of(
+                "emprendimientoId", business,
+                "modalidad", "RECOGIDA",
+                "items", List.of(
+                        Map.of("productoId", productId, "cantidad", BigDecimal.ONE),
+                        Map.of("productoId", secondProductId, "cantidad", BigDecimal.ONE)));
+
+        var quote = request("POST", "/pedidos/cotizacion", customer, quoteRequest, null);
+
+        assertEquals(200, quote.statusCode(), quote.body());
+        assertEquals(List.of("RECOGIDA"), body(quote).get("modalidadesDisponibles"));
+        assertEquals(List.of("EFECTIVO"), body(quote).get("mediosPagoDisponibles"));
+        assertEquals(2, ((List<?>) body(quote).get("items")).size());
+        assertEquals(7000, ((Number) body(quote).get("total")).longValue());
+        assertNull(body(quote).get("tarifaDomicilio"));
+        assertEquals(400, request("POST", "/pedidos/cotizacion", customer, Map.of(
+                "emprendimientoId", business,
+                "modalidad", "RECOGIDA",
+                "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
+                "ubicacionEntrega", Map.of(
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba")
+        ), null).statusCode());
+
+        Map<String, Object> orderRequest = new HashMap<>(quoteRequest);
+        orderRequest.put("medioPago", "EFECTIVO");
+        orderRequest.put("totalEsperado", 7000);
+        var created = request("POST", "/pedidos", customer, orderRequest, key());
+
+        assertEquals(201, created.statusCode(), created.body());
+        UUID orderId = UUID.fromString(body(created).get("id").toString());
+        assertEquals("PENDIENTE", body(created).get("estado"));
+        assertNull(body(created).get("ubicacionEntrega"));
+        assertNull(body(created).get("tarifaDomicilio"));
+        assertEquals(7000, ((Number) body(created).get("total")).longValue());
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT count(*) FROM pedido WHERE id = ? AND modalidad = 'RECOGIDA' "
+                        + "AND ubicacion_entrega_id IS NULL AND tarifa_domicilio IS NULL",
+                Long.class, orderId));
+        assertEquals(2L, jdbc.queryForObject(
+                "SELECT count(*) FROM item_pedido WHERE pedido_id = ?", Long.class, orderId));
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT count(*) FROM outbox_event WHERE aggregate_id = ? "
+                        + "AND event_type = 'pedidos.pedido-creado'", Long.class, orderId));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void homeDeliveryRequiresBankTransferAndPersistsTheQuotedFeeAndLocation() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, Map.of(
+                "aceptaEfectivo", true,
+                "cuentaBancaria", Map.of(
+                        "banco", "Banco de prueba",
+                        "tipoCuenta", "AHORROS",
+                        "numeroCuenta", "0000123456")));
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango a domicilio", "4"), key()))
+                .get("id").toString();
+        Map<String, Object> location = Map.of(
+                "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba");
+        Map<String, Object> quoteRequest = Map.of(
+                "emprendimientoId", business,
+                "modalidad", "DOMICILIO",
+                "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
+                "ubicacionEntrega", location);
+
+        var quote = request("POST", "/pedidos/cotizacion", customer, quoteRequest, null);
+
+        assertEquals(200, quote.statusCode(), quote.body());
+        Map<String, Object> quoted = body(quote);
+        assertEquals(List.of("RECOGIDA", "DOMICILIO"), quoted.get("modalidadesDisponibles"));
+        assertEquals(List.of("CUENTA_BANCARIA"), quoted.get("mediosPagoDisponibles"));
+        long deliveryFee = ((Number) quoted.get("tarifaDomicilio")).longValue();
+        assertTrue(deliveryFee >= 3050);
+        assertEquals(3500 + deliveryFee, ((Number) quoted.get("total")).longValue());
+        Map<String, Object> deliveryPayment = (Map<String, Object>) quoted.get("pagoDomicilio");
+        assertEquals("CUENTA_BANCARIA", deliveryPayment.get("medio"));
+        assertEquals("AL_SER_ACEPTADO", deliveryPayment.get("momento"));
+        assertEquals(quoted.get("total"), deliveryPayment.get("total"));
+
+        Map<String, Object> orderRequest = new HashMap<>(quoteRequest);
+        orderRequest.put("medioPago", "EFECTIVO");
+        orderRequest.put("totalEsperado", quoted.get("total"));
+        long ordersBefore = jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class);
+        var cashAttempt = request("POST", "/pedidos", customer, orderRequest, key());
+        assertEquals(422, cashAttempt.statusCode(), cashAttempt.body());
+        assertEquals("BUSINESS_RULE", body(cashAttempt).get("code"));
+        assertEquals(ordersBefore, jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class));
+
+        orderRequest.put("medioPago", "CUENTA_BANCARIA");
+        var created = request("POST", "/pedidos", customer, orderRequest, key());
+
+        assertEquals(201, created.statusCode(), created.body());
+        UUID orderId = UUID.fromString(body(created).get("id").toString());
+        UUID locationId = jdbc.queryForObject(
+                "SELECT ubicacion_entrega_id FROM pedido WHERE id = ?", UUID.class, orderId);
+        assertEquals(deliveryFee, jdbc.queryForObject(
+                "SELECT tarifa_domicilio FROM pedido WHERE id = ?", Long.class, orderId));
+        assertEquals(3500 + deliveryFee, jdbc.queryForObject(
+                "SELECT total FROM pedido WHERE id = ?", Long.class, orderId));
+        assertEquals("CUENTA_BANCARIA", jdbc.queryForObject(
+                "SELECT medio_pago FROM pedido WHERE id = ?", String.class, orderId));
+        assertEquals(1L, jdbc.queryForObject("SELECT count(*) FROM ubicacion WHERE id = ?", Long.class, locationId));
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT count(*) FROM outbox_event WHERE aggregate_id = ? "
+                        + "AND event_type = 'pedidos.pedido-creado'", Long.class, orderId));
+    }
+
+    @Test
+    void reservationCanIncludeAnExhaustedProductWithoutChangingItsInventory() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, Map.of("aceptaEfectivo", true));
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango por reservar", "3"), key()))
+                .get("id").toString();
+        ok("POST", "/productos/" + productId + "/inventario", seller, Map.of("cantidadDisponible", 0));
+        String reservation = java.time.Instant.now().plusSeconds(3600)
+                .truncatedTo(ChronoUnit.MICROS).toString();
+        Map<String, Object> orderRequest = Map.of(
+                "emprendimientoId", business,
+                "modalidad", "RECOGIDA",
+                "items", List.of(Map.of("productoId", productId, "cantidad", new BigDecimal("2"))),
+                "reserva", reservation,
+                "medioPago", "EFECTIVO",
+                "totalEsperado", 7000);
+
+        var created = request("POST", "/pedidos", customer, orderRequest, key());
+
+        assertEquals(201, created.statusCode(), created.body());
+        UUID orderId = UUID.fromString(body(created).get("id").toString());
+        assertEquals("PENDIENTE", body(created).get("estado"));
+        assertNotNull(body(created).get("reserva"));
+        assertEquals(7000, ((Number) body(created).get("total")).longValue());
+        assertEquals(0, BigDecimal.ZERO.compareTo(jdbc.queryForObject(
+                "SELECT cantidad_disponible FROM producto WHERE id = ?",
+                BigDecimal.class, UUID.fromString(productId))));
+        assertEquals(reservation, jdbc.queryForObject(
+                "SELECT reserva_at FROM pedido WHERE id = ?", (row, index) ->
+                        row.getTimestamp(1).toInstant().toString(), orderId));
+    }
+
+    @Test
+    void outboxFailureRollsBackOrderItemsAndDeliveryLocation() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, Map.of("aceptaEfectivo", true));
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango rollback", "2"), key()))
+                .get("id").toString();
+        Map<String, Object> orderRequest = Map.of(
+                "emprendimientoId", business,
+                "modalidad", "ENTREGA_DIRECTA",
+                "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
+                "ubicacionEntrega", Map.of(
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                "medioPago", "EFECTIVO");
+        long ordersBefore = jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class);
+        long itemsBefore = jdbc.queryForObject("SELECT count(*) FROM item_pedido", Long.class);
+        long locationsBefore = jdbc.queryForObject("SELECT count(*) FROM ubicacion", Long.class);
+        long eventsBefore = jdbc.queryForObject(
+                "SELECT count(*) FROM outbox_event WHERE event_type = 'pedidos.pedido-creado'", Long.class);
+        jdbc.execute("""
+                CREATE OR REPLACE FUNCTION test_reject_order_event() RETURNS trigger
+                LANGUAGE plpgsql AS $$
+                BEGIN
+                    IF NEW.event_type = 'pedidos.pedido-creado' THEN
+                        RAISE EXCEPTION 'test rejects order event';
+                    END IF;
+                    RETURN NEW;
+                END
+                $$
+                """);
+        jdbc.execute("""
+                CREATE TRIGGER test_reject_order_event
+                BEFORE INSERT ON outbox_event
+                FOR EACH ROW EXECUTE FUNCTION test_reject_order_event()
+                """);
+
+        HttpResponse<String> response;
+        try {
+            response = request("POST", "/pedidos", customer, orderRequest, key());
+        } finally {
+            jdbc.execute("DROP TRIGGER test_reject_order_event ON outbox_event");
+            jdbc.execute("DROP FUNCTION test_reject_order_event()");
+        }
+
+        assertEquals(500, response.statusCode(), response.body());
+        assertEquals(ordersBefore, jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class));
+        assertEquals(itemsBefore, jdbc.queryForObject("SELECT count(*) FROM item_pedido", Long.class));
+        assertEquals(locationsBefore, jdbc.queryForObject("SELECT count(*) FROM ubicacion", Long.class));
+        assertEquals(eventsBefore, jdbc.queryForObject(
+                "SELECT count(*) FROM outbox_event WHERE event_type = 'pedidos.pedido-creado'", Long.class));
+    }
+
+    @Test
+    void concurrentOrderCreationAndProductDeletionCannotLeaveAnOpenOrderForDeletedProduct() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, Map.of("aceptaEfectivo", true));
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango concurrente", "2"), key()))
+                .get("id").toString();
+        Map<String, Object> orderRequest = Map.of(
+                "emprendimientoId", business,
+                "modalidad", "ENTREGA_DIRECTA",
+                "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
+                "ubicacionEntrega", Map.of(
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                "medioPago", "EFECTIVO");
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        HttpResponse<String> deletion;
+        HttpResponse<String> order;
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var deleteTask = workers.submit(() -> {
+                ready.countDown();
+                assertTrue(start.await(10, TimeUnit.SECONDS));
+                return request("POST", "/productos/" + productId + "/eliminar", seller,
+                        Map.of("confirmar", true), key());
+            });
+            var createTask = workers.submit(() -> {
+                ready.countDown();
+                assertTrue(start.await(10, TimeUnit.SECONDS));
+                return request("POST", "/pedidos", customer, orderRequest, key());
+            });
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            start.countDown();
+            deletion = deleteTask.get(30, TimeUnit.SECONDS);
+            order = createTask.get(30, TimeUnit.SECONDS);
+        } finally {
+            start.countDown();
+        }
+
+        boolean deletionWon = deletion.statusCode() == 204 && order.statusCode() == 404;
+        boolean orderWon = deletion.statusCode() == 409 && order.statusCode() == 201;
+        assertTrue(deletionWon || orderWon,
+                "Unexpected race result: delete=" + deletion.statusCode() + " " + deletion.body()
+                        + ", create=" + order.statusCode() + " " + order.body());
+        if (deletionWon) {
+            assertEquals("ELIMINADO", jdbc.queryForObject(
+                    "SELECT estado FROM producto WHERE id = ?", String.class, UUID.fromString(productId)));
+            assertEquals(0L, jdbc.queryForObject("""
+                    SELECT count(*) FROM item_pedido item
+                    JOIN pedido ON pedido.id = item.pedido_id
+                    WHERE item.producto_id = ? AND pedido.estado IN
+                        ('PENDIENTE', 'ACEPTADO', 'LISTO_PARA_RECOGER', 'EN_CAMINO')
+                    """, Long.class, UUID.fromString(productId)));
+        } else {
+            assertEquals("DISPONIBLE", jdbc.queryForObject(
+                    "SELECT estado FROM producto WHERE id = ?", String.class, UUID.fromString(productId)));
+            assertEquals(1L, jdbc.queryForObject("""
+                    SELECT count(*) FROM item_pedido item
+                    JOIN pedido ON pedido.id = item.pedido_id
+                    WHERE item.producto_id = ? AND pedido.estado = 'PENDIENTE'
+                    """, Long.class, UUID.fromString(productId)));
+        }
+    }
+
+    @Test
     void changedExpectedTotalDoesNotPersistOrderOrEmitEvent() throws Exception {
         String seller = account("VENDEDOR_AMBULANTE");
         String business = business(seller);
@@ -321,6 +599,472 @@ class ProductosIntegrationTest {
         assertEquals(403, request("GET", "/emprendimientos/" + business + "/productos", seller, null, null).statusCode());
         assertEquals(401, request("GET", "/productos", null, null, null).statusCode());
         assertEquals(1, items(ok("GET", "/productos", seller, null)).size());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sellerAcceptsDirectOrderDeductsStockCreatesPendingPaymentAndPublishesE02() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango aceptar", "5"), key()))
+                .get("id").toString();
+        String orderId = createOrder(customer, business, productId, "ENTREGA_DIRECTA",
+                BigDecimal.valueOf(2), "EFECTIVO", null, 7000L);
+
+        var response = request("POST", "/pedidos/" + orderId + "/aceptar", seller, null, key());
+
+        assertEquals(200, response.statusCode(), response.body());
+        Map<String, Object> accepted = body(response);
+        assertEquals("ACEPTADO", accepted.get("estado"));
+        assertEquals("ENTREGA_DIRECTA", accepted.get("modalidad"));
+        Map<String, Object> payment = (Map<String, Object>) accepted.get("pago");
+        assertEquals("PENDIENTE_CONFIRMACION", payment.get("estado"));
+        assertEquals("EFECTIVO", payment.get("medio"));
+        assertEquals(7000, ((Number) payment.get("monto")).longValue());
+        assertEquals(7000L, jdbc.queryForObject(
+                "SELECT monto FROM pago WHERE pedido_id = ?", Long.class, UUID.fromString(orderId)));
+        assertEquals("PEDIDO", jdbc.queryForObject(
+                "SELECT tipo FROM pago WHERE pedido_id = ?", String.class, UUID.fromString(orderId)));
+        assertEquals(0, new BigDecimal("3").compareTo(jdbc.queryForObject(
+                "SELECT cantidad_disponible FROM producto WHERE id = ?", BigDecimal.class, UUID.fromString(productId))));
+        assertEquals(1L, eventCount("pedidos.pedido-aceptado", orderId));
+        assertEquals("false", jdbc.queryForObject(
+                "SELECT payload ->> 'requierePagoDigital' FROM outbox_event "
+                        + "WHERE event_type = 'pedidos.pedido-aceptado' AND payload ->> 'pedidoId' = ?",
+                String.class, orderId));
+    }
+
+    @Test
+    void sellerAcceptsReservationWithoutValidatingOrDeductingExhaustedStock() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Papaya reserva", "1"), key()))
+                .get("id").toString();
+        ok("POST", "/productos/" + productId + "/inventario", seller, Map.of("cantidadDisponible", 0));
+        String reservation = java.time.Instant.now().plusSeconds(3600).toString();
+        String orderId = createOrder(customer, business, productId, "RECOGIDA",
+                BigDecimal.ONE, "EFECTIVO", reservation, 3500L);
+
+        var response = request("POST", "/pedidos/" + orderId + "/aceptar", seller, null, key());
+
+        assertEquals(200, response.statusCode(), response.body());
+        assertEquals("ACEPTADO", body(response).get("estado"));
+        assertEquals(0, BigDecimal.ZERO.compareTo(jdbc.queryForObject(
+                "SELECT cantidad_disponible FROM producto WHERE id = ?", BigDecimal.class, UUID.fromString(productId))));
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT count(*) FROM pago WHERE pedido_id = ?", Long.class, UUID.fromString(orderId)));
+    }
+
+    @Test
+    void sellerAcceptsHomeOrderCreatesDigitalPaymentAndPublishesDigitalPaymentRequirement() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        configurePayment(seller, true, true);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango domicilio aceptado", "2"), key()))
+                .get("id").toString();
+        String orderId = createOrder(customer, business, productId, "DOMICILIO",
+                BigDecimal.ONE, "CUENTA_BANCARIA", null, null);
+        long orderTotal = jdbc.queryForObject(
+                "SELECT total FROM pedido WHERE id = ?", Long.class, UUID.fromString(orderId));
+
+        var response = request("POST", "/pedidos/" + orderId + "/aceptar", seller, null, key());
+
+        assertEquals(200, response.statusCode(), response.body());
+        assertEquals("ACEPTADO", body(response).get("estado"));
+        assertEquals(orderTotal, jdbc.queryForObject(
+                "SELECT monto FROM pago WHERE pedido_id = ?", Long.class, UUID.fromString(orderId)));
+        assertEquals("CUENTA_BANCARIA", jdbc.queryForObject(
+                "SELECT medio FROM pago WHERE pedido_id = ?", String.class, UUID.fromString(orderId)));
+        assertEquals("true", jdbc.queryForObject(
+                "SELECT payload ->> 'requierePagoDigital' FROM outbox_event "
+                        + "WHERE event_type = 'pedidos.pedido-aceptado' AND aggregate_id = ?",
+                String.class, UUID.fromString(orderId)));
+    }
+
+    @Test
+    void sellerRejectionLeavesInventoryAndPaymentUntouchedAndPublishesE03() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Banano rechazar", "4"), key()))
+                .get("id").toString();
+        String orderId = createOrder(customer, business, productId, "RECOGIDA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+
+        var response = request("POST", "/pedidos/" + orderId + "/rechazar", seller, null, key());
+
+        assertEquals(200, response.statusCode(), response.body());
+        assertEquals("RECHAZADO", body(response).get("estado"));
+        assertEquals(0, BigDecimal.valueOf(4).compareTo(jdbc.queryForObject(
+                "SELECT cantidad_disponible FROM producto WHERE id = ?", BigDecimal.class, UUID.fromString(productId))));
+        assertEquals(0L, jdbc.queryForObject(
+                "SELECT count(*) FROM pago WHERE pedido_id = ?", Long.class, UUID.fromString(orderId)));
+        assertEquals(1L, eventCount("pedidos.pedido-rechazado", orderId));
+    }
+
+    @Test
+    void sellerCanRejectReservationButCannotAnswerAnotherSellersOrAlreadyAcceptedOrder() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String otherSeller = account("VENDEDOR_AMBULANTE");
+        business(otherSeller);
+        configurePayment(otherSeller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Banano de reserva", "3"), key()))
+                .get("id").toString();
+        String reservation = java.time.Instant.now().plusSeconds(3600)
+                .truncatedTo(ChronoUnit.MICROS).toString();
+        String reservationOrder = createOrder(customer, business, productId, "RECOGIDA",
+                BigDecimal.ONE, "EFECTIVO", reservation, 3500L);
+
+        var rejectedReservation = request(
+                "POST", "/pedidos/" + reservationOrder + "/rechazar", seller, null, key());
+
+        assertEquals(200, rejectedReservation.statusCode(), rejectedReservation.body());
+        assertEquals("RECHAZADO", body(rejectedReservation).get("estado"));
+        assertEquals(1L, eventCount("pedidos.pedido-rechazado", reservationOrder));
+
+        String immediateOrder = createOrder(customer, business, productId, "RECOGIDA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        assertEquals(403, request(
+                "POST", "/pedidos/" + immediateOrder + "/aceptar", customer, null, key()).statusCode());
+        var foreignResponse = request(
+                "POST", "/pedidos/" + immediateOrder + "/rechazar", otherSeller, null, key());
+        assertEquals(404, foreignResponse.statusCode(), foreignResponse.body());
+        assertEquals("NOT_FOUND", body(foreignResponse).get("code"));
+
+        var accepted = request("POST", "/pedidos/" + immediateOrder + "/aceptar", seller, null, key());
+        assertEquals(200, accepted.statusCode(), accepted.body());
+        var rejectAccepted = request(
+                "POST", "/pedidos/" + immediateOrder + "/rechazar", seller, null, key());
+        assertEquals(409, rejectAccepted.statusCode(), rejectAccepted.body());
+        assertEquals("INVALID_STATE", body(rejectAccepted).get("code"));
+        assertEquals(0L, eventCount("pedidos.pedido-rechazado", immediateOrder));
+    }
+
+    @Test
+    void insufficientStockAtAcceptanceKeepsOrderPendingAndDoesNotCreatePaymentOrEvent() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango escaso", "3"), key()))
+                .get("id").toString();
+        String orderId = createOrder(customer, business, productId, "ENTREGA_DIRECTA",
+                BigDecimal.valueOf(2), "EFECTIVO", null, 7000L);
+        jdbc.update("UPDATE producto SET cantidad_disponible = 1 WHERE id = ?", UUID.fromString(productId));
+
+        var response = request("POST", "/pedidos/" + orderId + "/aceptar", seller, null, key());
+
+        assertEquals(409, response.statusCode(), response.body());
+        assertEquals("OUT_OF_STOCK", body(response).get("code"));
+        assertEquals("PENDIENTE", jdbc.queryForObject(
+                "SELECT estado FROM pedido WHERE id = ?", String.class, UUID.fromString(orderId)));
+        assertEquals(0L, jdbc.queryForObject(
+                "SELECT count(*) FROM pago WHERE pedido_id = ?", Long.class, UUID.fromString(orderId)));
+        assertEquals(0L, eventCount("pedidos.pedido-aceptado", orderId));
+        assertEquals(0, BigDecimal.ONE.compareTo(jdbc.queryForObject(
+                "SELECT cantidad_disponible FROM producto WHERE id = ?", BigDecimal.class, UUID.fromString(productId))));
+    }
+
+    @Test
+    void homeOrderCannotBeAcceptedAfterSellerRemovesBankAccount() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        configurePayment(seller, true, true);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango domicilio", "3"), key()))
+                .get("id").toString();
+        String orderId = createOrder(customer, business, productId, "DOMICILIO",
+                BigDecimal.ONE, "CUENTA_BANCARIA", null, null);
+        configurePayment(seller, true, false);
+
+        var response = request("POST", "/pedidos/" + orderId + "/aceptar", seller, null, key());
+
+        assertEquals(409, response.statusCode(), response.body());
+        assertEquals("BANK_ACCOUNT_REQUIRED", body(response).get("code"));
+        assertEquals("PENDIENTE", jdbc.queryForObject(
+                "SELECT estado FROM pedido WHERE id = ?", String.class, UUID.fromString(orderId)));
+        assertEquals(0L, jdbc.queryForObject(
+                "SELECT count(*) FROM pago WHERE pedido_id = ?", Long.class, UUID.fromString(orderId)));
+    }
+
+    @Test
+    void concurrentAcceptancesForTheLastUnitAcceptOnlyOneOrder() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Última unidad", "1"), key()))
+                .get("id").toString();
+        String firstOrder = createOrder(customer, business, productId, "ENTREGA_DIRECTA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        String secondOrder = createOrder(customer, business, productId, "ENTREGA_DIRECTA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        var pool = Executors.newFixedThreadPool(2);
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+        var first = pool.submit(() -> {
+            ready.countDown();
+            assertTrue(start.await(5, TimeUnit.SECONDS));
+            return request("POST", "/pedidos/" + firstOrder + "/aceptar", seller, null, key());
+        });
+        var second = pool.submit(() -> {
+            ready.countDown();
+            assertTrue(start.await(5, TimeUnit.SECONDS));
+            return request("POST", "/pedidos/" + secondOrder + "/aceptar", seller, null, key());
+        });
+        assertTrue(ready.await(5, TimeUnit.SECONDS));
+        start.countDown();
+        var firstResponse = first.get(15, TimeUnit.SECONDS);
+        var secondResponse = second.get(15, TimeUnit.SECONDS);
+        pool.shutdownNow();
+
+        assertEquals(1, List.of(firstResponse.statusCode(), secondResponse.statusCode()).stream()
+                .filter(status -> status == 200).count());
+        assertEquals(1, List.of(firstResponse.statusCode(), secondResponse.statusCode()).stream()
+                .filter(status -> status == 409).count());
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT count(*) FROM pago WHERE pedido_id IN (?, ?)", Long.class,
+                UUID.fromString(firstOrder), UUID.fromString(secondOrder)));
+        assertEquals(0, BigDecimal.ZERO.compareTo(jdbc.queryForObject(
+                "SELECT cantidad_disponible FROM producto WHERE id = ?", BigDecimal.class, UUID.fromString(productId))));
+    }
+
+    @Test
+    void concurrentResponsesToTheSameOrderAcceptAndChargeOnlyOnce() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango misma orden", "2"), key()))
+                .get("id").toString();
+        String orderId = createOrder(customer, business, productId, "ENTREGA_DIRECTA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        var pool = Executors.newFixedThreadPool(2);
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+        try {
+            var first = pool.submit(() -> {
+                ready.countDown();
+                assertTrue(start.await(5, TimeUnit.SECONDS));
+                return request("POST", "/pedidos/" + orderId + "/aceptar", seller, null, key());
+            });
+            var second = pool.submit(() -> {
+                ready.countDown();
+                assertTrue(start.await(5, TimeUnit.SECONDS));
+                return request("POST", "/pedidos/" + orderId + "/aceptar", seller, null, key());
+            });
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+            var responses = List.of(first.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS));
+
+            assertEquals(1, responses.stream().filter(response -> response.statusCode() == 200).count());
+            assertEquals(1, responses.stream().filter(response -> response.statusCode() == 409).count());
+        } finally {
+            start.countDown();
+            pool.shutdownNow();
+        }
+
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT count(*) FROM pago WHERE pedido_id = ?", Long.class, UUID.fromString(orderId)));
+        assertEquals(0, BigDecimal.ONE.compareTo(jdbc.queryForObject(
+                "SELECT cantidad_disponible FROM producto WHERE id = ?", BigDecimal.class, UUID.fromString(productId))));
+    }
+
+    @Test
+    void paymentFailureRollsBackOrderAcceptanceInventoryAndEvent() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango pago", "3"), key()))
+                .get("id").toString();
+        String orderId = createOrder(customer, business, productId, "ENTREGA_DIRECTA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        jdbc.execute("""
+                CREATE FUNCTION test_reject_pedido_payment() RETURNS trigger AS $$
+                BEGIN RAISE EXCEPTION 'payment persistence unavailable'; END;
+                $$ LANGUAGE plpgsql
+                """);
+        jdbc.execute("""
+                CREATE TRIGGER test_reject_pedido_payment
+                BEFORE INSERT ON pago FOR EACH ROW EXECUTE FUNCTION test_reject_pedido_payment()
+                """);
+        try {
+            var response = request("POST", "/pedidos/" + orderId + "/aceptar", seller, null, key());
+
+            assertEquals(500, response.statusCode(), response.body());
+            assertEquals("PENDIENTE", jdbc.queryForObject(
+                    "SELECT estado FROM pedido WHERE id = ?", String.class, UUID.fromString(orderId)));
+            assertEquals(0L, eventCount("pedidos.pedido-aceptado", orderId));
+            assertEquals(0, BigDecimal.valueOf(3).compareTo(jdbc.queryForObject(
+                    "SELECT cantidad_disponible FROM producto WHERE id = ?", BigDecimal.class,
+                    UUID.fromString(productId))));
+        } finally {
+            jdbc.execute("DROP TRIGGER test_reject_pedido_payment ON pago");
+            jdbc.execute("DROP FUNCTION test_reject_pedido_payment()");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sellerListsOnlyOwnOrdersWithReservationAndDateFiltersAndPagination() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String otherSeller = account("VENDEDOR_AMBULANTE");
+        String otherBusiness = business(otherSeller);
+        configurePayment(otherSeller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango listado", "4"), key()))
+                .get("id").toString();
+        String firstOrder = createOrder(customer, business, productId, "RECOGIDA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        String reservation = java.time.Instant.now().plusSeconds(3600)
+                .truncatedTo(ChronoUnit.MICROS).toString();
+        String secondOrder = createOrder(customer, business, productId, "RECOGIDA",
+                BigDecimal.ONE, "EFECTIVO", reservation, 3500L);
+        String foreignProductId = body(request("POST", "/productos", otherSeller,
+                product("Mango ajeno", "1"), key())).get("id").toString();
+        createOrder(customer, otherBusiness, foreignProductId, "ENTREGA_DIRECTA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+
+        var response = ok("GET", "/pedidos", seller, null);
+        assertEquals("no-store", response.headers().firstValue("Cache-Control").orElse(null));
+        List<Map<String, Object>> content = (List<Map<String, Object>>) body(response).get("content");
+
+        assertEquals(2, content.size());
+        assertEquals(2L, ((Number) body(response).get("totalElements")).longValue());
+        assertTrue(content.stream().allMatch(item -> item.containsKey("cliente")
+                && item.containsKey("createdAt") && item.containsKey("estado")
+                && item.containsKey("modalidad") && item.containsKey("reserva")
+                && item.containsKey("total")));
+        assertTrue(content.stream().allMatch(item ->
+                "Producto Test".equals(((Map<String, Object>) item.get("cliente")).get("nombre"))));
+        List<Map<String, Object>> reservationItems = (List<Map<String, Object>>) body(ok(
+                "GET", "/pedidos?modalidad=RECOGIDA&reserva=true&estado=PENDIENTE", seller, null)).get("content");
+        assertEquals(1, reservationItems.size());
+        assertEquals(secondOrder, reservationItems.getFirst().get("id"));
+        assertEquals(java.time.Instant.parse(reservation),
+                java.time.Instant.parse(reservationItems.getFirst().get("reserva").toString()));
+        List<Map<String, Object>> immediateItems = (List<Map<String, Object>>) body(ok(
+                "GET", "/pedidos?reserva=false", seller, null)).get("content");
+        assertEquals(1, immediateItems.size());
+        assertEquals(firstOrder, immediateItems.getFirst().get("id"));
+
+        String today = java.time.LocalDate.now(java.time.ZoneId.of("America/Bogota")).toString();
+        assertEquals(2L, ((Number) body(ok(
+                "GET", "/pedidos?desde=" + today + "&hasta=" + today, seller, null)).get("totalElements")).longValue());
+        jdbc.update("UPDATE pedido SET created_at = ? WHERE id IN (?, ?)",
+                java.sql.Timestamp.from(java.time.Instant.now().truncatedTo(ChronoUnit.SECONDS)),
+                UUID.fromString(firstOrder), UUID.fromString(secondOrder));
+        List<String> tiedIds = ((List<Map<String, Object>>) body(ok("GET", "/pedidos", seller, null))
+                .get("content")).stream().map(item -> item.get("id").toString()).toList();
+        assertEquals(List.of(firstOrder, secondOrder).stream().sorted().toList(), tiedIds);
+        Map<String, Object> page = body(ok("GET", "/pedidos?page=0&size=1", seller, null));
+        assertEquals(1, ((List<?>) page.get("content")).size());
+        assertEquals(2, ((Number) page.get("totalElements")).longValue());
+        assertEquals(403, request("GET", "/pedidos", customer, null, null).statusCode());
+        for (String invalidQuery : List.of(
+                "?unknown=value", "?estado=NO_EXISTE", "?modalidad=OTRA", "?reserva=yes",
+                "?page=bad", "?size=101", "?desde=2026-02-02&hasta=2026-02-01",
+                "?sort=total,desc", "?estado=PENDIENTE&estado=ACEPTADO")) {
+            assertEquals(400, request("GET", "/pedidos" + invalidQuery, seller, null, null).statusCode(),
+                    invalidQuery);
+        }
+
+        String emptySeller = account("VENDEDOR_AMBULANTE");
+        business(emptySeller);
+        assertTrue(((List<?>) body(ok("GET", "/pedidos", emptySeller, null)).get("content")).isEmpty());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sellerReadsConsistentOrderDetailsWithPaymentPrivacyAndOwnership() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        configurePayment(seller, true, false);
+        String customer = account("CLIENTE");
+        String productId = body(request("POST", "/productos", seller, product("Mango detalle", "4"), key()))
+                .get("id").toString();
+        String acceptedOrder = createOrder(customer, business, productId, "ENTREGA_DIRECTA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        assertEquals(200, request("POST", "/pedidos/" + acceptedOrder + "/aceptar", seller, null, key()).statusCode());
+        jdbc.update("UPDATE producto SET precio = 9999, estado = 'ELIMINADO' WHERE id = ?",
+                UUID.fromString(productId));
+
+        var acceptedResponse = ok("GET", "/pedidos/" + acceptedOrder, seller, null);
+        assertEquals("no-store", acceptedResponse.headers().firstValue("Cache-Control").orElse(null));
+        Map<String, Object> accepted = body(acceptedResponse);
+        assertEquals("ACEPTADO", accepted.get("estado"));
+        assertEquals("ENTREGA_DIRECTA", accepted.get("modalidad"));
+        assertEquals("PENDIENTE_CONFIRMACION", ((Map<String, Object>) accepted.get("pago")).get("estado"));
+        assertEquals("EFECTIVO", accepted.get("medioPago"));
+        assertEquals(1, ((Map<String, Object>) accepted.get("cliente")).size());
+        assertEquals("Producto Test", ((Map<String, Object>) accepted.get("cliente")).get("nombre"));
+        assertEquals(3500L, ((Number) accepted.get("subtotal")).longValue());
+        assertEquals(3500L, ((Number) accepted.get("total")).longValue());
+        assertNotNull(accepted.get("ubicacionEntrega"));
+        Map<String, Object> item = ((List<Map<String, Object>>) accepted.get("items")).getFirst();
+        assertEquals("Mango detalle", item.get("nombre"));
+        assertEquals(3500L, ((Number) item.get("precioUnitario")).longValue());
+        assertEquals(true, item.get("productoEliminado"));
+
+        String pickupSeller = account("VENDEDOR_PUNTO_FIJO");
+        String pickupBusiness = business(pickupSeller);
+        configurePayment(pickupSeller, true, false);
+        String pickupProduct = body(request(
+                "POST", "/productos", pickupSeller, product("Papaya detalle", "2"), key()))
+                .get("id").toString();
+        String pendingPickup = createOrder(customer, pickupBusiness, pickupProduct, "RECOGIDA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        Map<String, Object> pickup = body(ok("GET", "/pedidos/" + pendingPickup, pickupSeller, null));
+        assertNull(pickup.get("pago"));
+        assertNull(pickup.get("ubicacionEntrega"));
+        assertEquals("RECOGIDA", pickup.get("modalidad"));
+
+        String homeSeller = account("VENDEDOR_PUNTO_FIJO");
+        String homeBusiness = business(homeSeller);
+        configurePayment(homeSeller, true, true);
+        String homeProduct = body(request(
+                "POST", "/productos", homeSeller, product("Pera domicilio", "2"), key()))
+                .get("id").toString();
+        String homeOrder = createOrder(customer, homeBusiness, homeProduct, "DOMICILIO",
+                BigDecimal.ONE, "CUENTA_BANCARIA", null, null);
+        Map<String, Object> home = body(ok("GET", "/pedidos/" + homeOrder, homeSeller, null));
+        assertEquals("DOMICILIO", home.get("modalidad"));
+        assertEquals("CUENTA_BANCARIA", home.get("medioPago"));
+        assertNotNull(home.get("ubicacionEntrega"));
+        assertNull(home.get("pago"));
+
+        String rejectedProduct = body(request("POST", "/productos", seller, product("Guayaba detalle", "1"), key()))
+                .get("id").toString();
+        String rejectedOrder = createOrder(customer, business, rejectedProduct, "ENTREGA_DIRECTA",
+                BigDecimal.ONE, "EFECTIVO", null, 3500L);
+        assertEquals(200, request("POST", "/pedidos/" + rejectedOrder + "/rechazar", seller, null, key()).statusCode());
+        Map<String, Object> rejected = body(ok("GET", "/pedidos/" + rejectedOrder, seller, null));
+        assertEquals("RECHAZADO", rejected.get("estado"));
+        assertNull(rejected.get("ubicacionEntrega"));
+
+        jdbc.update("UPDATE pedido SET estado = 'CANCELADO' WHERE id = ?", UUID.fromString(acceptedOrder));
+        Map<String, Object> cancelled = body(ok("GET", "/pedidos/" + acceptedOrder, seller, null));
+        assertEquals("CANCELADO", cancelled.get("estado"));
+        assertNull(cancelled.get("ubicacionEntrega"));
+
+        String otherSeller = account("VENDEDOR_PUNTO_FIJO");
+        business(otherSeller);
+        assertEquals(404, request("GET", "/pedidos/" + acceptedOrder, otherSeller, null, null).statusCode());
+        assertEquals(404, request("GET", "/pedidos/" + UUID.randomUUID(), seller, null, null).statusCode());
+        assertEquals(403, request("GET", "/pedidos/" + acceptedOrder, customer, null, null).statusCode());
+        assertEquals(400, request("GET", "/pedidos/" + acceptedOrder + "?extra=x", seller, null, null).statusCode());
     }
 
     @Test
@@ -435,6 +1179,52 @@ class ProductosIntegrationTest {
         var verified = request("POST", "/auth/verify-phone/confirm", null, Map.of("celular", phone, "codigo", "654321"), null);
         assertEquals(200, verified.statusCode(), verified.body());
         return body(verified).get("accessToken").toString();
+    }
+
+    private void configurePayment(String seller, boolean acceptsCash, boolean hasBankAccount) throws Exception {
+        Map<String, Object> configuration = new HashMap<>();
+        configuration.put("aceptaEfectivo", acceptsCash);
+        configuration.put("cuentaBancaria", hasBankAccount ? Map.of(
+                "banco", "Banco de prueba",
+                "tipoCuenta", "AHORROS",
+                "numeroCuenta", "0000123456") : null);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, configuration);
+    }
+
+    private String createOrder(
+            String customer,
+            String business,
+            String productId,
+            String modality,
+            BigDecimal quantity,
+            String paymentMethod,
+            String reservation,
+            Long expectedTotal
+    ) throws Exception {
+        Map<String, Object> orderRequest = new HashMap<>(Map.of(
+                "emprendimientoId", business,
+                "modalidad", modality,
+                "items", List.of(Map.of("productoId", productId, "cantidad", quantity)),
+                "medioPago", paymentMethod));
+        if (modality.equals("ENTREGA_DIRECTA") || modality.equals("DOMICILIO")) {
+            orderRequest.put("ubicacionEntrega", Map.of(
+                    "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"));
+        }
+        if (reservation != null) {
+            orderRequest.put("reserva", reservation);
+        }
+        if (expectedTotal != null) {
+            orderRequest.put("totalEsperado", expectedTotal);
+        }
+        var response = request("POST", "/pedidos", customer, orderRequest, key());
+        assertEquals(201, response.statusCode(), response.body());
+        return body(response).get("id").toString();
+    }
+
+    private long eventCount(String eventType, String orderId) {
+        return jdbc.queryForObject(
+                "SELECT count(*) FROM outbox_event WHERE event_type = ? AND aggregate_id = ?",
+                Long.class, eventType, UUID.fromString(orderId));
     }
 
     private String business(String seller) throws Exception {

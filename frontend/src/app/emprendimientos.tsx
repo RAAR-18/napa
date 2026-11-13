@@ -365,7 +365,11 @@ export default function EmprendimientosScreen() {
                 </Text>
               ) : null}
               <TextButton title={`Ver productos de ${item.nombre}`} onPress={() => router.push({
-                pathname: '/catalogo', params: { emprendimientoId: item.id },
+                pathname: '/catalogo',
+                params: {
+                  emprendimientoId: item.id,
+                  tipoVendedor: item.tipoVendedor,
+                },
               })} />
             </View>
           ))

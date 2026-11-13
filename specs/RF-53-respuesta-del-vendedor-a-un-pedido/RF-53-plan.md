@@ -1,6 +1,6 @@
 # Implementation Plan: Respuesta del vendedor a un pedido
 
-**Date**: 2026-10-21
+**Date**: 2026-11-12
 **Spec**: [RF-53-respuesta-del-vendedor-a-un-pedido.md](./RF-53-respuesta-del-vendedor-a-un-pedido.md) (misma carpeta; es la fuente de verdad)
 **Spec general**: [spec-general.md](../general/spec-general.md) (roles, API, modelo y estados) · [eventos](../general/eventos.md) (E02, E03)
 **Requerimiento funcional**: RF-53
@@ -18,7 +18,7 @@ El vendedor acepta o rechaza únicamente pedidos `PENDIENTE` de su emprendimient
 
 ## Estado actual del código
 
-No existe `pedidos` ni la tabla `pago`. `DescontarInventarioPort` (RF-57) y `ConsultarMediosPagoPort` (RF-63) los definen sus planes. Este plan crea la tabla `pago` y el puerto `in` de `pagos` para registrar el pago pendiente; RF-42 lo extiende para confirmar.
+Backend RF-45 aporta `Pedido` y su persistencia; RF-57 aporta `DescontarInventarioPort`, y RF-63 aporta `ConsultarMediosPagoPort`. RF-53 ya implementa V12, el dominio y persistencia de `Pago`, la respuesta transaccional del vendedor, el descuento atómico de inventario para pedidos inmediatos y los eventos E02/E03. Las integraciones HTTP en `ProductosIntegrationTest` verifican modalidades, pagos, reservas, rechazos, permisos, concurrencia y rollback con PostgreSQL/Redis de Testcontainers. El listado y detalle de pedidos (RF-50/RF-51), las acciones del vendedor en frontend y el outbox de acciones offline siguen pendientes; esta interfaz de acciones requiere primero esos recorridos.
 
 ## Actors
 
@@ -222,13 +222,13 @@ frontend/__tests__/pedidos/respuesta.test.tsx
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar los puertos `DescontarInventarioPort` (RF-57), `ConsultarMediosPagoPort` (RF-63) y la tabla `pedido` (RF-45)
+- [x] T001 Confirmar los puertos `DescontarInventarioPort` (RF-57), `ConsultarMediosPagoPort` (RF-63) y la tabla `pedido` (RF-45)
 
 ## Phase 2: Foundational
 
-- [ ] T002 Migración `V12__pago.sql`: tabla `pago` (id, tipo, monto `bigint`, medio, estado, confirmado_at, pedido_id único nulo, domicilio_id único nulo, `comprador_id`, `vendedor_id`, `domiciliario_id` (nulos; copias físicas para RF-40/41, sin cambio de ER) con índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)`, created_at, updated_at) con CHECK de que tiene exactamente uno de `pedido_id` o `domicilio_id`, en `backend/src/main/resources/db/migration/`
-- [ ] T003 Dominio `Pago` y `RegistrarPagoPedidoPendienteUseCase` con su puerto `in` en `pagos/`
-- [ ] T004 `PedidoRepositoryPort.bloquearPorId` con `SELECT ... FOR UPDATE`
+- [x] T002 Migración `V12__pago.sql`: tabla `pago` (id, tipo, monto `bigint`, medio, estado, confirmado_at, pedido_id único nulo, domicilio_id único nulo, `comprador_id`, `vendedor_id`, `domiciliario_id` (nulos; copias físicas para RF-40/41, sin cambio de ER) con índices `(comprador_id, created_at DESC)`, `(vendedor_id, created_at DESC)` y `(domiciliario_id, created_at DESC)`, created_at, updated_at) con CHECK de que tiene exactamente uno de `pedido_id` o `domicilio_id`, en `backend/src/main/resources/db/migration/`
+- [x] T003 Dominio `Pago` y `RegistrarPagoPedidoPendienteUseCase` con su puerto `in` en `pagos/`
+- [x] T004 `PedidoRepositoryPort.bloquearPorId` con `SELECT ... FOR UPDATE`
 
 **Checkpoint**: base lista.
 
@@ -240,22 +240,22 @@ frontend/__tests__/pedidos/respuesta.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T010 [P] [US1] Test de integración de `aceptar` por modalidad (estado, `Pago` pendiente con el medio del pedido, E02) en `backend/src/test/java/co/edu/napa/pedidos/AceptarPedidoIT.java`
-- [ ] T012 [P] [US1] Test de inventario: inmediato descuenta; reserva no valida ni descuenta; `OUT_OF_STOCK` revierte todo, en `.../pedidos/AceptarPedidoInventarioIT.java`
-- [ ] T018 [P] [US1] Test de que cada modalidad queda `ACEPTADO` y habilita su siguiente paso (precondición para RF-35, RF-64, RF-14) en `.../pedidos/AceptarPedidoModalidadIT.java`
-- [ ] T022 [P] [US1] Test de domicilio con y sin cuenta bancaria (`BANK_ACCOUNT_REQUIRED`) en `.../pedidos/AceptarPedidoDomicilioIT.java`
-- [ ] T023 [P] [US1] Test de concurrencia: dos aceptaciones simultáneas y dos pedidos por la última unidad en `.../pedidos/AceptarPedidoConcurrenciaIT.java`
-- [ ] T024 [P] [US1] Test de que un fallo al crear el pago revierte la aceptación en `.../pedidos/AceptarPedidoAtomicidadIT.java`
+- [x] T010 [P] [US1] Test de integración de `aceptar` por modalidad (estado, `Pago` pendiente con el medio del pedido, E02) en `backend/src/test/java/co/edu/napa/productos/ProductosIntegrationTest.java`
+- [x] T012 [P] [US1] Test de inventario: inmediato descuenta; reserva no valida ni descuenta; `OUT_OF_STOCK` revierte todo, en `ProductosIntegrationTest`
+- [x] T018 [P] [US1] Test de que cada modalidad queda `ACEPTADO` y habilita su siguiente paso (precondición para RF-35, RF-64, RF-14) en `ProductosIntegrationTest`
+- [x] T022 [P] [US1] Test de domicilio con y sin cuenta bancaria (`BANK_ACCOUNT_REQUIRED`) en `ProductosIntegrationTest`
+- [x] T023 [P] [US1] Test de concurrencia: dos respuestas a una orden y dos pedidos por la última unidad, en `ProductosIntegrationTest`
+- [x] T024 [P] [US1] Test de que un fallo al crear el pago revierte la aceptación en `ProductosIntegrationTest`
 
 ### Implementation
 
-- [ ] T013 [US1] `Pedido.aceptar()` con sus precondiciones en `pedidos/domain/model/Pedido.java`
-- [ ] T014 [US1] Endpoint `POST /pedidos/{id}/aceptar` en `PedidoController`
-- [ ] T015 [US1] `ResponderPedidoUseCase.aceptar` (bloqueo, dueño, estado)
-- [ ] T017 [US1] Descuento de inventario solo si `reserva` es nulo, por `InventarioPort`
-- [ ] T019 [US1] Creación del `Pago` por `PagoPedidoPort` con `monto = total` y `medio = medio_pago`
-- [ ] T020 [US1] Validación de domicilio con `MediosPagoVendedorPort`
-- [ ] T016 [US1] Evento `PedidoAceptadoEvent` y publicación por `EventPublisherPort`
+- [x] T013 [US1] `Pedido.aceptar()` con sus precondiciones en `pedidos/domain/model/Pedido.java`
+- [x] T014 [US1] Endpoint `POST /pedidos/{id}/aceptar` en `PedidoController`
+- [x] T015 [US1] `ResponderPedidoUseCase.aceptar` (bloqueo, dueño, estado)
+- [x] T017 [US1] Descuento de inventario solo si `reserva` es nulo, por `DescontarInventarioPort`
+- [x] T019 [US1] Creación del `Pago` por `RegistrarPagoPedidoPendientePort` con `monto = total` y `medio = medio_pago`
+- [x] T020 [US1] Validación de domicilio con `ConsultarMediosPagoPort`
+- [x] T016 [US1] Evento `PedidoAceptadoEvent` y publicación por `EventPublisherPort`
 
 **Checkpoint**: US1 funcional.
 
@@ -267,12 +267,12 @@ frontend/__tests__/pedidos/respuesta.test.tsx
 
 ### Tests (antes de implementar)
 
-- [ ] T011 [P] [US2] Test de integración de `rechazar` (inmediato, reserva, ya aceptado, ajeno, E03) en `.../pedidos/RechazarPedidoIT.java`
+- [x] T011 [P] [US2] Test de integración de `rechazar` (inmediato, reserva, ya aceptado, ajeno, E03) en `ProductosIntegrationTest`
 
 ### Implementation
 
-- [ ] T021 [US2] `Pedido.rechazar()` y `ResponderPedidoUseCase.rechazar`
-- [ ] T025 [US2] Endpoint `POST /pedidos/{id}/rechazar` y evento `PedidoRechazadoEvent`
+- [x] T021 [US2] `Pedido.rechazar()` y `ResponderPedidoUseCase.rechazar`
+- [x] T025 [US2] Endpoint `POST /pedidos/{id}/rechazar` y evento `PedidoRechazadoEvent`
 
 ## Phase 5: Frontend (US1–US2)
 
@@ -283,8 +283,8 @@ frontend/__tests__/pedidos/respuesta.test.tsx
 ## Phase N: Polish & Cross-Cutting
 
 - [ ] T040 Medir aceptar/rechazar en < 10 s (SC-001) y la notificación en < 1 min (SC-002)
-- [ ] T041 Revisar permisos (RNF03)
-- [ ] T042 Actualizar `requerimientos/trazabilidad.md` si cambió algo
+- [x] T041 Revisar permisos (RNF03); se verifican rol, propiedad y 404 para pedidos de otro vendedor en pruebas HTTP
+- [x] T042 Actualizar `requerimientos/trazabilidad.md` si cambió algo
 
 ## Dependencies & Execution Order
 
@@ -304,20 +304,20 @@ frontend/__tests__/pedidos/respuesta.test.tsx
 
 ## Plan Review Checklist
 
-*(Todo debe estar marcado antes de implementar.)*
+*(Revisión completada; las tareas de frontend y medición pendientes se mantienen identificadas arriba.)*
 
-- [ ] La tabla Spec Coverage no tiene filas vacías
-- [ ] Todas las tareas de implementación y de testing están presentes
-- [ ] La arquitectura es coherente con los módulos existentes (RNF13, RNF25); solo hay `usecase`, sin capa `service` de aplicación
-- [ ] Entidades referenciadas a `spec-general.md` (sin redefinir el modelo); si hubo cambio de esquema, ya está en `spec-general.md`
-- [ ] Contratos de API con path/query params, headers, códigos HTTP exitosos y de error, y matriz de permisos
-- [ ] Eventos emitidos documentados en `eventos.md`; ningún listener planificado en este plan
-- [ ] Actores (comprador, vendedor, domiciliario, administrador) identificados
-- [ ] Errores y casos borde tienen comportamiento definido
-- [ ] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
-- [ ] Dependencias y librerías identificadas
-- [ ] Cada tarea es granular y nombra el archivo que toca
-- [ ] No se agregó comportamiento que no esté en la spec
+- [x] La tabla Spec Coverage no tiene filas vacías
+- [x] Todas las tareas de implementación y de testing están presentes
+- [x] La arquitectura es coherente con los módulos existentes (RNF13, RNF25); solo hay `usecase`, sin capa `service` de aplicación
+- [x] Entidades referenciadas a `spec-general.md` (sin redefinir el modelo); si hubo cambio de esquema, ya está en `spec-general.md`
+- [x] Contratos de API con path/query params, headers, códigos HTTP exitosos y de error, y matriz de permisos
+- [x] Eventos emitidos documentados en `eventos.md`; ningún listener planificado en este plan
+- [x] Actores (comprador, vendedor, domiciliario, administrador) identificados
+- [x] Errores y casos borde tienen comportamiento definido
+- [x] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
+- [x] Dependencias y librerías identificadas
+- [x] Cada tarea es granular y nombra el archivo que toca
+- [x] No se agregó comportamiento que no esté en la spec
 
 ## Notes
 

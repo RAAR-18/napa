@@ -18,7 +18,7 @@ El vendedor indica si acepta efectivo y, opcionalmente, registra una cuenta banc
 
 ## Estado actual del código
 
-El backend de RF-63 implementa configuración GET/PUT, validación de cuenta, consulta interna de medios, migración V10 y cifrado AES-GCM con nonce aleatorio y AAD ligado al vendedor. La suite focalizada cubre HTTP, permisos, cifrado en reposo, reemplazo y escenarios de medios. El frontend y la copia de cuenta en Domicilio están pendientes; esta última se congela al publicar el domicilio en RF-14. RF-42, RF-43 y RF-40/41 extenderán después el módulo `pagos`.
+El backend de RF-63 implementa configuración GET/PUT, validación de cuenta, consulta interna de medios, migración V10 y cifrado AES-GCM con nonce aleatorio y AAD ligado al vendedor. El frontend ya permite consultar, editar y quitar la cuenta bancaria y configurar efectivo desde la sesión del vendedor; valida los datos antes del envío, conserva el borrador ante errores y muestra si el punto fijo puede ofrecer domicilios. Los detalles de cuenta se cargan con la sesión autenticada y nunca se registran en logs. La copia de cuenta en Domicilio sigue pendiente; se congela al publicar el domicilio en RF-14. RF-42, RF-43 y RF-40/41 extenderán después el módulo `pagos`.
 
 ## Actors
 
@@ -182,12 +182,13 @@ backend/src/main/java/co/edu/napa/pagos/
 backend/src/main/resources/db/migration/   # V10__configuracion_pago.sql (V9 pertenece a RF-44)
 backend/src/test/java/co/edu/napa/pagos/
 
-frontend/src/app/(vendedor)/configuracion/pagos.tsx     # ruta Expo Router
-frontend/src/components/pagos/FormularioConfiguracionPago.tsx
-frontend/src/services/pagos.ts
-frontend/src/domain/pago.ts
-frontend/__tests__/pagos/configuracion.test.tsx
+frontend/src/app/configuracion-pagos.tsx
+frontend/src/lib/pagos.ts
+frontend/src/app/__tests__/configuracion-pagos.test.tsx
+frontend/src/lib/pagos.test.ts
 ```
+
+La estructura sigue las rutas Expo Router planas y el patrón actual de clientes HTTP en `lib/`. El formulario permanece en la pantalla porque no tiene otro consumidor ni requiere un componente adicional.
 
 **Structure Decision**: módulo `pagos`, donde viven los medios y los registros de pago (RF-40 a RF-43). El rol del usuario se obtiene por un puerto `out` que llama a `cuentas` por su puerto `in`.
 
@@ -214,7 +215,7 @@ frontend/__tests__/pagos/configuracion.test.tsx
 - [x] T011 [P] [US1] Test de validación (formato, propiedades desconocidas tipo tarjeta) en `backend/src/test/java/co/edu/napa/pagos/ConfiguracionPagoIntegrationTest.java`
 - [x] T012 [P] [US1] Test de contrato de `ConsultarMediosPagoPort` (ambulante, punto fijo con y sin cuenta, sin configuración) en `backend/src/test/java/co/edu/napa/pagos/application/usecase/ConsultarMediosPagoUseCaseTest.java`
 - [ ] T020 [P] [US1] Test de que desactivar efectivo no altera pedidos ya creados (cuando exista RF-45) en `.../pagos/DesactivarEfectivoIT.java`
-- [ ] T021 [P] [US1] Test del formulario y del aviso de domicilio en `frontend/__tests__/pagos/configuracion.test.tsx`
+- [x] T021 [P] [US1] Pruebas del formulario, validación de cuenta, permisos y aviso de domicilio en `frontend/src/app/__tests__/configuracion-pagos.test.tsx`; contrato de API en `frontend/src/lib/pagos.test.ts`
 
 ### Implementation
 
@@ -225,9 +226,9 @@ frontend/__tests__/pagos/configuracion.test.tsx
 - [x] T017 [US1] Regla `domicilioDisponible` (punto fijo y cuenta registrada)
 - [x] T018 [US1] Persistencia cifrada AES-GCM sin columnas de tarjeta ni billetera y sin registrar el número en logs
 - [x] T019 [US1] `GET /vendedores/me/configuracion-pago` con `avisoDomicilio` para punto fijo
-- [ ] T022 [US1] Servicio `guardarConfiguracionPago()` y `obtenerConfiguracionPago()` en `frontend/src/services/pagos.ts`
-- [ ] T023 [US1] `FormularioConfiguracionPago` en `frontend/src/components/pagos/`
-- [ ] T024 [US1] Pantalla `frontend/src/app/(vendedor)/configuracion/pagos.tsx`
+- [x] T022 [US1] Cliente autenticado `guardarConfiguracionPago()` y `obtenerConfiguracionPago()` en `frontend/src/lib/pagos.ts`
+- [x] T023 [US1] Formulario de configuración con validación local y gestión de cuenta en `frontend/src/app/configuracion-pagos.tsx`; se mantiene dentro de la pantalla siguiendo el patrón existente
+- [x] T024 [US1] Pantalla `/configuracion-pagos` enlazada desde la sesión del vendedor
 
 **Checkpoint**: US1 funcional.
 

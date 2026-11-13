@@ -153,7 +153,7 @@ $env:NAPA_WEB_ALLOWED_ORIGINS = "http://localhost:8081,http://192.168.1.25:8081"
 
 Cada origen incluye esquema, host y puerto, sin ruta ni barra final. Esta variable reemplaza la lista predeterminada. Fuera de `otp-console` no se permiten orígenes web adicionales salvo configuración explícita. Las solicitudes nativas de Expo Go no necesitan CORS; las rutas protegidas siguen exigiendo un token válido.
 
-La app incluye registro (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), verificación del celular, inicio/cierre de sesión, recuperación y cambio de contraseña. En el perfil `otp-console`, ingresa en la pantalla de verificación el código configurado en `NAPA_OTP_CONSOLE_CODE`. Después de iniciar sesión, el cliente puede explorar emprendimientos y sus productos; el vendedor puede crear su emprendimiento, publicar productos y actualizar sus cantidades.
+La app incluye registro (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), verificación del celular, inicio/cierre de sesión, recuperación y cambio de contraseña. En el perfil `otp-console`, ingresa en la pantalla de verificación el código configurado en `NAPA_OTP_CONSOLE_CODE`. Después de iniciar sesión, el cliente puede explorar emprendimientos y sus productos; el vendedor puede crear su emprendimiento, publicar productos, actualizar sus cantidades y configurar los medios de pago aceptados desde **Configurar métodos de pago**. Allí puede habilitar efectivo y registrar o quitar una cuenta bancaria; una cuenta es necesaria para ofrecer domicilios desde un punto fijo.
 
 ### Productos e inventario: gestión en línea
 
@@ -175,7 +175,7 @@ La edición acepta uno o varios de los campos `nombre`, `precio` y `descripcion`
 
 Eliminar exige exactamente `{ "confirmar": true }` y responde `204`. Es un borrado lógico: oculta el producto de ambos listados, conserva su registro y libera su nombre. Repetir la misma clave devuelve el mismo `204`; una clave nueva sobre un producto ya eliminado devuelve `409 INVALID_STATE`.
 
-El módulo de pedidos calcula tarifas y cotizaciones y ya persiste los pedidos creados, sus ítems y el evento de outbox en una sola transacción. `NAPA_PEDIDOS_ENABLED=true` es el valor predeterminado: RF-58 consulta los pedidos en estados abiertos mediante un adaptador JDBC real, y la creación bloquea los productos en orden de ID para coordinarse con su eliminación. Sin pedidos abiertos, la eliminación conserva su comportamiento normal; si hay pedidos pendientes, responde `HAS_PENDING_ORDERS`. Siguen pendientes el historial RF-51, las consultas y transiciones del pedido y la prueba de concurrencia extremo a extremo.
+El módulo de pedidos calcula tarifas y cotizaciones, persiste los pedidos creados, sus ítems y el evento de outbox en una sola transacción, y permite al vendedor listar y consultar sus pedidos. `NAPA_PEDIDOS_ENABLED=true` es el valor predeterminado: RF-58 consulta los pedidos en estados abiertos mediante un adaptador JDBC real, y la creación bloquea los productos en orden de ID para coordinarse con su eliminación. Sin pedidos abiertos, la eliminación conserva su comportamiento normal; si hay pedidos pendientes, responde `HAS_PENDING_ORDERS`. Las respuestas de aceptación y rechazo también se procesan transaccionalmente; una aceptación inmediata descuenta inventario y crea el pago pendiente, mientras que una reserva no descuenta stock.
 
 Para probar desde la app:
 
@@ -185,8 +185,10 @@ Para probar desde la app:
 4. Repón la cantidad desde **Mis productos** y comprueba que vuelve a estar disponible.
 5. Abre **Editar**, cambia el precio o la descripción y guarda. Vuelve a consultar el catálogo como cliente.
 6. Usa un producto de prueba para **Eliminar**: primero cancela y comprueba que sigue visible; después confirma y comprueba que desaparece de ambos listados.
+7. Como cliente, desde un catálogo agrega uno o más productos al pedido, elige entrega directa, recogida o domicilio según el vendedor, indica la ubicación si aplica, revisa la cotización, elige un medio habilitado y confirma. La pantalla muestra el pedido en estado `PENDIENTE`.
+8. Como vendedor del emprendimiento receptor, abre **Pedidos recibidos**, prueba los filtros y la paginación, consulta el detalle y acepta o rechaza un pedido pendiente. Para domicilios, configura antes la cuenta bancaria requerida.
 
-Esta entrega requiere conexión para consultar, guardar, editar y eliminar productos. La cola de escrituras sin conexión, la caché de este catálogo y el descuento al aceptar pedidos quedan pendientes. La etiqueta **Solo reserva** informa la disponibilidad; la cotización backend está disponible, pero la creación de reservas y pedidos, los pagos registrados y las entregas todavía no están implementados en la app.
+La compra, consulta y respuesta de pedidos requieren conexión. La app ya ofrece listado paginado y filtrable, detalle y acciones de aceptación/rechazo con confirmación y clave de idempotencia; tras responder, vuelve a consultar el estado. No hay todavía caché SQLite ni cola offline para estos recorridos, actualización automática por notificaciones, transiciones posteriores del pedido, confirmación completa del pago ni flujo de entregas. La etiqueta **Solo reserva** permite incluir productos agotados únicamente en una reserva futura.
 
 El entorno de Compose usa credenciales exclusivamente locales. No las reutilices en producción.
 

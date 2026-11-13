@@ -12,7 +12,11 @@ import { createProducto, deleteProducto, editProducto, getMiProducto, listCatalo
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn() },
-  useLocalSearchParams: () => ({ emprendimientoId: 'business-id', productoId: 'product-id' }),
+  useLocalSearchParams: () => ({
+    emprendimientoId: 'business-id',
+    tipoVendedor: 'AMBULANTE',
+    productoId: 'product-id',
+  }),
   useFocusEffect: (effect: () => void | (() => void)) => {
     const React = jest.requireActual<typeof import('react')>('react');
     React.useEffect(effect, [effect]);

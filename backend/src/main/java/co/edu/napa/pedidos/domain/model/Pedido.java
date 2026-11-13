@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.Map;
 
 public record Pedido(
         UUID id,
@@ -67,6 +68,27 @@ public record Pedido(
     ) {
         return new Pedido(UUID.randomUUID(), compradorId, emprendimientoId, modalidad, EstadoPedido.PENDIENTE,
                 reserva, medioPago, tarifaDomicilio, total, ubicacionEntregaId, items, now, now);
+    }
+
+    public Pedido aceptar(Instant now) {
+        requirePending();
+        return new Pedido(id, compradorId, emprendimientoId, modalidad, EstadoPedido.ACEPTADO, reserva,
+                medioPago, tarifaDomicilio, total, ubicacionEntregaId, items, createdAt,
+                Objects.requireNonNull(now, "now"));
+    }
+
+    public Pedido rechazar(Instant now) {
+        requirePending();
+        return new Pedido(id, compradorId, emprendimientoId, modalidad, EstadoPedido.RECHAZADO, reserva,
+                medioPago, tarifaDomicilio, total, ubicacionEntregaId, items, createdAt,
+                Objects.requireNonNull(now, "now"));
+    }
+
+    private void requirePending() {
+        if (estado != EstadoPedido.PENDIENTE) {
+            throw new DomainException("INVALID_STATE", "El pedido ya no está pendiente.",
+                    Map.of("estadoActual", estado.name()));
+        }
     }
 
     private static long calcularTotal(List<ItemPedido> items, Long tarifaDomicilio) {
