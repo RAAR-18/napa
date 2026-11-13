@@ -2,6 +2,7 @@ import { jsonHeaders, requestJson } from './api';
 import { withValidSession, type StoredSession } from './auth';
 import {
   aceptarPedido,
+  confirmarPagoPedido,
   crearPedido,
   cotizarPedido,
   listarPedidosVendedor,
@@ -104,6 +105,7 @@ it('loads seller details and can accept or reject with stable idempotency keys',
   await obtenerPedidoVendedor('order-id');
   await aceptarPedido('order-id', 'accept-key');
   await rechazarPedido('order-id', 'reject-key');
+  await confirmarPagoPedido('order-id', 'payment-key');
 
   expect(requestJson).toHaveBeenNthCalledWith(1, '/api/v1/pedidos/order-id', {
     method: 'GET',
@@ -116,5 +118,9 @@ it('loads seller details and can accept or reject with stable idempotency keys',
   expect(requestJson).toHaveBeenNthCalledWith(3, '/api/v1/pedidos/order-id/rechazar', {
     method: 'POST',
     headers: jsonHeaders({ accessToken: 'access', idempotencyKey: 'reject-key' }),
+  });
+  expect(requestJson).toHaveBeenNthCalledWith(4, '/api/v1/pedidos/order-id/pago/confirmar', {
+    method: 'POST',
+    headers: jsonHeaders({ accessToken: 'access', idempotencyKey: 'payment-key' }),
   });
 });

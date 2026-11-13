@@ -11,6 +11,8 @@ import co.edu.napa.pedidos.application.ports.in.ResponderPedidoPort;
 import co.edu.napa.pedidos.application.ports.in.ResponderPedidoPort.PedidoAceptado;
 import co.edu.napa.pedidos.application.ports.in.ResponderPedidoPort.PedidoRechazado;
 import co.edu.napa.pedidos.application.ports.in.ConsultarPedidoVendedorPort;
+import co.edu.napa.pedidos.application.ports.in.ConfirmarPagoDomicilioPort;
+import co.edu.napa.pedidos.application.ports.in.ConfirmarPagoDomicilioPort.PagoDomicilioConfirmado;
 import co.edu.napa.pedidos.application.ports.in.ListarPedidosVendedorPort;
 import co.edu.napa.pedidos.application.ports.in.PedidoVendedorDetalle;
 import co.edu.napa.pedidos.application.ports.in.PedidosVendedorPagina;
@@ -64,19 +66,22 @@ public class PedidoController {
     private final ResponderPedidoPort responderPedido;
     private final ListarPedidosVendedorPort listarPedidosVendedor;
     private final ConsultarPedidoVendedorPort consultarPedidoVendedor;
+    private final ConfirmarPagoDomicilioPort confirmarPagoDomicilio;
 
     public PedidoController(
             CotizarPedidoPort cotizaciones,
             RealizarPedidoPort realizarPedido,
             ResponderPedidoPort responderPedido,
             ListarPedidosVendedorPort listarPedidosVendedor,
-            ConsultarPedidoVendedorPort consultarPedidoVendedor
+            ConsultarPedidoVendedorPort consultarPedidoVendedor,
+            ConfirmarPagoDomicilioPort confirmarPagoDomicilio
     ) {
         this.cotizaciones = cotizaciones;
         this.realizarPedido = realizarPedido;
         this.responderPedido = responderPedido;
         this.listarPedidosVendedor = listarPedidosVendedor;
         this.consultarPedidoVendedor = consultarPedidoVendedor;
+        this.confirmarPagoDomicilio = confirmarPagoDomicilio;
     }
 
     @GetMapping("/api/v1/pedidos")
@@ -159,6 +164,18 @@ public class PedidoController {
         validarSinQuery(request);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .body(responderPedido.rechazar(pedidoId, UUID.fromString(jwt.getSubject())));
+    }
+
+    @PostMapping("/api/v1/pedidos/{pedidoId}/pago/confirmar")
+    @PreAuthorize("hasAuthority('ROLE_VENDEDOR_PUNTO_FIJO')")
+    public ResponseEntity<PagoDomicilioConfirmado> confirmarPago(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID pedidoId,
+            HttpServletRequest request
+    ) {
+        validarSinQuery(request);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(confirmarPagoDomicilio.confirmar(pedidoId, UUID.fromString(jwt.getSubject())));
     }
 
     private void validarSinQuery(HttpServletRequest request) {

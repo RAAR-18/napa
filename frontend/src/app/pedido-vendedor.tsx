@@ -16,13 +16,14 @@ import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
 import {
   aceptarPedido,
+  confirmarPagoPedido,
   obtenerPedidoVendedor,
   rechazarPedido,
   type PedidoVendedorDetalle,
 } from '../lib/pedidos';
 
 const sellerRoles = ['VENDEDOR_AMBULANTE', 'VENDEDOR_PUNTO_FIJO'];
-type ResponseAction = 'accept' | 'reject';
+type ResponseAction = 'accept' | 'reject' | 'confirmPayment';
 
 const statusNames: Record<string, string> = {
   PENDIENTE: 'Pendiente',
@@ -70,6 +71,7 @@ export default function PedidoVendedorScreen() {
   const [pendingAction, setPendingAction] = useState<ResponseAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const actionKey = useRef<{ action: ResponseAction; key: string } | null>(null);
   const acceptanceConfirmation = detail?.reserva
     ? '¿Confirmas la aceptación? Las reservas no validan ni descuentan inventario.'
@@ -88,6 +90,7 @@ export default function PedidoVendedorScreen() {
       try {
         const session = await getValidSession();
         if (!active) return;
+        setUserRole(session.rol);
         if (!sellerRoles.includes(session.rol)) {
           setError('Solo las cuentas de vendedor pueden consultar el detalle del pedido.');
           return;
@@ -133,9 +136,12 @@ export default function PedidoVendedorScreen() {
       if (action === 'accept') {
         await aceptarPedido(pedidoId, idempotencyKey);
         setNotice('Pedido aceptado. El pago quedó pendiente de confirmación.');
-      } else {
+      } else if (action === 'reject') {
         await rechazarPedido(pedidoId, idempotencyKey);
         setNotice('Pedido rechazado.');
+      } else {
+        await confirmarPagoPedido(pedidoId, idempotencyKey);
+        setNotice('Pago confirmado. Ya puedes publicar el domicilio.');
       }
       actionKey.current = null;
       setPendingAction(null);
@@ -216,12 +222,30 @@ export default function PedidoVendedorScreen() {
               <TextButton title="Rechazar pedido" onPress={() => setPendingAction('reject')} />
             </>
           ) : null}
+          {userRole === 'VENDEDOR_PUNTO_FIJO' &&
+          detail.estado === 'ACEPTADO' &&
+          detail.modalidad === 'DOMICILIO' &&
+          detail.pago?.estado === 'PENDIENTE_CONFIRMACION' &&
+          !pendingAction &&
+          !loading ? (
+            <>
+              <HelperText>
+                Confirma el pago solo después de verificar en tu banco que recibiste la transferencia por el total del pedido.
+              </HelperText>
+              <PrimaryButton
+                title="Confirmar pago recibido"
+                onPress={() => setPendingAction('confirmPayment')}
+              />
+            </>
+          ) : null}
           {pendingAction ? (
             <View style={styles.confirmation}>
               <Text style={styles.confirmationText}>
                 {pendingAction === 'accept'
                   ? acceptanceConfirmation
-                  : '¿Confirmas que no atenderás este pedido?'}
+                  : pendingAction === 'reject'
+                    ? '¿Confirmas que no atenderás este pedido?'
+                    : `¿Confirmas que verificaste la transferencia por ${formatPrice(detail.total)}?`}
               </Text>
               {error === 'Registra una cuenta bancaria antes de aceptar un pedido a domicilio.' ? (
                 <TextButton
@@ -233,7 +257,13 @@ export default function PedidoVendedorScreen() {
                 <TextButton title="Revisar mis productos" onPress={() => router.push('/mis-productos')} />
               ) : null}
               <PrimaryButton
-                title={pendingAction === 'accept' ? 'Confirmar aceptación' : 'Confirmar rechazo'}
+                title={
+                  pendingAction === 'accept'
+                    ? 'Confirmar aceptación'
+                    : pendingAction === 'reject'
+                      ? 'Confirmar rechazo'
+                      : 'Confirmar pago recibido'
+                }
                 busy={busy}
                 onPress={() => void respond()}
               />

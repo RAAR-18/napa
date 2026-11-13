@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface PagoRepositoryPort {
     Pago guardar(Pago pago);
     Optional<EstadoPago> consultarEstadoPorPedido(UUID pedidoId);
+    Optional<Pago> bloquearPorPedido(UUID pedidoId);
+    void actualizar(Pago pago);
 }

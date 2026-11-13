@@ -8,6 +8,7 @@ import { ApiError } from '../../lib/api';
 import { clearSession, getValidSession } from '../../lib/auth';
 import {
   aceptarPedido,
+  confirmarPagoPedido,
   listarPedidosVendedor,
   obtenerPedidoVendedor,
   rechazarPedido,
@@ -24,6 +25,7 @@ jest.mock('../../lib/auth', () => ({
 }));
 jest.mock('../../lib/pedidos', () => ({
   aceptarPedido: jest.fn(),
+  confirmarPagoPedido: jest.fn(),
   listarPedidosVendedor: jest.fn(),
   obtenerPedidoVendedor: jest.fn(),
   rechazarPedido: jest.fn(),
@@ -93,6 +95,16 @@ beforeEach(() => {
     reserva: null,
     total: 3500,
     pago: { id: 'payment-id', estado: 'PENDIENTE_CONFIRMACION', medio: 'EFECTIVO', monto: 3500 },
+  });
+  jest.mocked(confirmarPagoPedido).mockResolvedValue({
+    pedidoId: 'order-id',
+    pago: {
+      id: 'payment-id',
+      estado: 'CONFIRMADO',
+      medio: 'CUENTA_BANCARIA',
+      monto: 9_450,
+      confirmadoAt: '2026-11-12T12:00:00Z',
+    },
   });
   jest.mocked(rechazarPedido).mockResolvedValue({ id: 'order-id', estado: 'RECHAZADO' });
 });
@@ -189,6 +201,29 @@ it('rejects only after explicit confirmation', async () => {
   fireEvent.press(view.getByRole('button', { name: 'Confirmar rechazo' }));
 
   await waitFor(() => expect(rechazarPedido).toHaveBeenCalledWith('order-id', 'response-key'));
+});
+
+it('confirms a home-delivery payment only after an explicit seller confirmation', async () => {
+  const acceptedOrder = {
+    ...pendingOrder,
+    estado: 'ACEPTADO' as const,
+    modalidad: 'DOMICILIO' as const,
+    tarifaDomicilio: 5_950,
+    total: 9_450,
+    medioPago: 'CUENTA_BANCARIA' as const,
+    pago: { estado: 'PENDIENTE_CONFIRMACION' },
+  };
+  jest.mocked(obtenerPedidoVendedor).mockResolvedValue(acceptedOrder);
+  const view = await render(<PedidoVendedorScreen />);
+
+  await waitFor(() => expect(view.getByText('Estado del pago: PENDIENTE_CONFIRMACION')).toBeTruthy());
+  fireEvent.press(view.getByRole('button', { name: 'Confirmar pago recibido' }));
+  expect(confirmarPagoPedido).not.toHaveBeenCalled();
+  await waitFor(() => expect(view.getByText(/verificaste la transferencia por \$9\.450 COP/)).toBeTruthy());
+  fireEvent.press(view.getByRole('button', { name: 'Confirmar pago recibido' }));
+
+  await waitFor(() => expect(confirmarPagoPedido).toHaveBeenCalledWith('order-id', 'response-key'));
+  expect(Crypto.randomUUID).toHaveBeenCalledTimes(1);
 });
 
 it('clears and redirects when authentication has expired', async () => {

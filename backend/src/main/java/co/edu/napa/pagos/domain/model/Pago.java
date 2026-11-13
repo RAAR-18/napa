@@ -5,6 +5,7 @@ import co.edu.napa.shared.domain.DomainException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.Map;
 
 public record Pago(
         UUID id,
@@ -50,5 +51,21 @@ public record Pago(
     ) {
         return new Pago(UUID.randomUUID(), TipoPago.PEDIDO, monto, medio,
                 EstadoPago.PENDIENTE_CONFIRMACION, null, pedidoId, null, compradorId, vendedorId, null, now, now);
+    }
+
+    public Pago confirmar(Instant now) {
+        Objects.requireNonNull(now, "now");
+        if (tipo != TipoPago.PEDIDO) {
+            throw new DomainException("BUSINESS_RULE", "Este pago no corresponde a un pedido.");
+        }
+        if (estado == EstadoPago.CONFIRMADO) {
+            throw new DomainException("ALREADY_CONFIRMED", "El pago ya está confirmado.");
+        }
+        if (estado != EstadoPago.PENDIENTE_CONFIRMACION) {
+            throw new DomainException("INVALID_STATE", "El pago no está pendiente de confirmación.",
+                    Map.of("estadoActual", estado.name()));
+        }
+        return new Pago(id, tipo, monto, medio, EstadoPago.CONFIRMADO, now, pedidoId, domicilioId,
+                compradorId, vendedorId, domiciliarioId, createdAt, now);
     }
 }

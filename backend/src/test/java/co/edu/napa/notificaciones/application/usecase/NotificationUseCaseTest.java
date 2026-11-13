@@ -176,7 +176,10 @@ class NotificationUseCaseTest {
                 event("pedidos.pedido-creado", Map.of("vendedorId", vendorId)),
                 event("pedidos.pedido-aceptado", Map.of("compradorId", buyerId, "requierePagoDigital", true)),
                 event("pedidos.pedido-rechazado", Map.of("compradorId", buyerId)),
-                event("pagos.pago-pedido-confirmado", Map.of("compradorId", buyerId)),
+                event("pagos.pago-pedido-confirmado", Map.of(
+                        "compradorId", buyerId,
+                        "modalidad", "DOMICILIO"
+                )),
                 event("entregas.entrega-directa-iniciada", Map.of("compradorId", buyerId)),
                 event("pedidos.pedido-listo-para-recoger", Map.of("compradorId", buyerId)),
                 event("pedidos.pedido-entregado", Map.of("compradorId", buyerId)),
@@ -231,6 +234,26 @@ class NotificationUseCaseTest {
         assertEquals(2, reportNotifications.size());
         assertTrue(reportNotifications.stream().anyMatch(notification -> notification.usuarioId().equals(adminId)));
         assertTrue(reportNotifications.stream().anyMatch(notification -> notification.usuarioId().equals(secondAdminId)));
+    }
+
+    @Test
+    void paymentConfirmationNotifiesTheBuyerOnlyForHomeDelivery() {
+        UUID buyerId = UUID.randomUUID();
+        when(audience.isActiveUser(buyerId)).thenReturn(true);
+        when(preferences.findByUsuario(buyerId)).thenReturn(Map.of());
+        when(notifications.saveIfAbsent(any(), any())).thenReturn(true);
+
+        assertTrue(useCase.process(event("pagos.pago-pedido-confirmado", Map.of(
+                "compradorId", buyerId,
+                "modalidad", "ENTREGA_DIRECTA"
+        ))).isEmpty());
+        verify(notifications, never()).saveIfAbsent(any(), any());
+
+        assertTrue(useCase.process(event("pagos.pago-pedido-confirmado", Map.of(
+                "compradorId", buyerId,
+                "modalidad", "DOMICILIO"
+        ))).isEmpty());
+        verify(notifications, times(1)).saveIfAbsent(any(), any());
     }
 
     @Test

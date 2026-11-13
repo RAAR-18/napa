@@ -164,8 +164,12 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
             }
             case PEDIDO_RECHAZADO ->
                     add(recipients, payloadUuid(event, "compradorId"), "Pedido rechazado", "El vendedor rechazó tu pedido.");
-            case PAGO_PEDIDO_CONFIRMADO ->
-                    add(recipients, payloadUuid(event, "compradorId"), "Pago confirmado", "El vendedor confirmó el pago de tu pedido.");
+            case PAGO_PEDIDO_CONFIRMADO -> {
+                if ("DOMICILIO".equals(event.payload().get("modalidad"))) {
+                    add(recipients, payloadUuid(event, "compradorId"),
+                            "Pago confirmado", "El vendedor confirmó el pago de tu pedido.");
+                }
+            }
             case ENTREGA_DIRECTA_INICIADA ->
                     add(recipients, payloadUuid(event, "compradorId"), "Entrega en camino", "El vendedor inició la entrega directa.");
             case PEDIDO_LISTO_PARA_RECOGER ->

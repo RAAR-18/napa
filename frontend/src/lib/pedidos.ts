@@ -146,6 +146,17 @@ export type PedidoRechazado = {
   estado: 'RECHAZADO';
 };
 
+export type PagoPedidoConfirmado = {
+  pedidoId: string;
+  pago: {
+    id: string;
+    estado: 'CONFIRMADO';
+    medio: MedioPagoPedido;
+    monto: number;
+    confirmadoAt: string;
+  };
+};
+
 export function cotizarPedido(input: CotizarPedidoInput) {
   return withValidSession((session) =>
     requestJson<CotizacionPedido>('/api/v1/pedidos/cotizacion', {
@@ -195,6 +206,18 @@ export function rechazarPedido(pedidoId: string, idempotencyKey: string) {
       method: 'POST',
       headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
     }),
+  );
+}
+
+export function confirmarPagoPedido(pedidoId: string, idempotencyKey: string) {
+  return withValidSession((session) =>
+    requestJson<PagoPedidoConfirmado>(
+      `/api/v1/pedidos/${encodeURIComponent(pedidoId)}/pago/confirmar`,
+      {
+        method: 'POST',
+        headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
+      },
+    ),
   );
 }
 

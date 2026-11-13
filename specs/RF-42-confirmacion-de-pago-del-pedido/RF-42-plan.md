@@ -23,7 +23,9 @@ El `Pago` ya existe en `PENDIENTE_CONFIRMACION` desde que el vendedor aceptó (R
 
 ## Estado actual del código
 
-No existe `pagos` ni la tabla `pago`: la crean RF-53 (migración V10 y `RegistrarPagoPedidoPendientePort`). Este plan agrega la confirmación sobre ese módulo. El estado del pago se consulta por el puerto de RF-51.
+El núcleo en línea de RF-42 está implementado: `Pago.confirmar`, el bloqueo y actualización del pago, E04 en el outbox, el endpoint para domicilios aceptados y la acción explícita del vendedor en el detalle del pedido. La confirmación rechaza medios distintos de `DOMICILIO` en este endpoint, pagos no pendientes y segundas confirmaciones.
+
+Pendiente: confirmación interna desde RF-37/RF-65, pruebas de integración/concurrencia, la hoja con cuenta bancaria y casilla de verificación, y el envío offline por outbox del cliente. El flujo actual requiere conexión.
 
 ## Actors
 
@@ -237,7 +239,7 @@ frontend/__tests__/pagos/confirmar-pago.test.tsx
 - [ ] T012 [P] [US1] Test de doble confirmación (`ALREADY_CONFIRMED`, una sola fila, un solo E04) y de dos peticiones simultáneas en `.../pedidos/ConfirmarPagoDomicilioConcurrenciaIT.java`
 - [ ] T013 [P] [US1] Test de pedido ajeno (`404`), de rol cliente o ambulante (`403`) y de aislamiento entre vendedores en `.../pedidos/ConfirmarPagoDomicilioAjenoIT.java`
 - [ ] T014 [P] [US1] Test de pedido `RECHAZADO`, `CANCELADO` y `ENTREGADO` (`INVALID_STATE` con `estadoActual`) y de modalidad distinta de domicilio (`422 BUSINESS_RULE`) en `.../pedidos/ConfirmarPagoDomicilioEstadosIT.java`
-- [ ] T015 [P] [US1] Test unitario de `Pago.confirmar` en `backend/src/test/java/co/edu/napa/pagos/PagoTest.java`
+- [x] T015 [P] [US1] Test unitario de `Pago.confirmar` en `backend/src/test/java/co/edu/napa/pagos/domain/model/PagoConfirmacionTest.java`
 - [ ] T016 [P] [US1] Test de integración de `ConfirmarPagoPedidoPort` con medio `EFECTIVO` y `CUENTA_BANCARIA` (conserva el medio del pedido, atómico con la transacción del llamador, E04) en `.../pagos/ConfirmarPagoPedidoPortIT.java`
 - [ ] T017 [P] [US1] Test de que `ConsultarPagoPedidoPort` devuelve `CONFIRMADO` tras confirmar y `PENDIENTE_CONFIRMACION` antes (insumo de RF-14) en `.../pagos/ConsultarPagoPedidoConfirmadoIT.java`
 - [ ] T018 [P] [US1] Regla ArchUnit: `pagos` no importa `pedidos`; `pedidos` solo usa `pagos.application.ports.in` y `pagos.domain.event` en `backend/src/test/java/co/edu/napa/ArchitectureTest.java`
@@ -245,10 +247,10 @@ frontend/__tests__/pagos/confirmar-pago.test.tsx
 
 ### Implementation
 
-- [ ] T020 [US1] `Pago.confirmar(clock)` y `PagoYaConfirmadoException` en `pagos/domain/`
-- [ ] T021 [US1] `ConfirmarPagoPedidoPort` y `ConfirmarPagoPedidoUseCase` (bloqueo del pago, confirmar, publicar E04) en `pagos/application/`
-- [ ] T022 [US1] `PagoPedidoConfirmadoEvent` (E04) en `pagos/domain/event/` y publicación por `EventPublisherPort`
-- [ ] T023 [US1] `ConfirmarPagoDomicilioUseCase` (bloqueo del pedido, dueño, modalidad, estado `ACEPTADO`, llamada a `PagoPedidoPort.confirmar`) y `POST /pedidos/{id}/pago/confirmar` en `PedidoController`
+- [x] T020 [US1] `Pago.confirmar(clock)` y rechazo de pago ya confirmado en `pagos/domain/`
+- [x] T021 [US1] `ConfirmarPagoPedidoPort` y `ConfirmarPagoPedidoUseCase` (bloqueo del pago, confirmar, publicar E04) en `pagos/application/`
+- [x] T022 [US1] `PagoPedidoConfirmadoEvent` (E04) en `pagos/domain/event/` y publicación por `EventPublisherPort`
+- [x] T023 [US1] `ConfirmarPagoDomicilioUseCase` (bloqueo del pedido, dueño, modalidad, estado `ACEPTADO`, llamada al puerto de pagos) y `POST /pedidos/{id}/pago/confirmar` en `PedidoController`
 - [ ] T024 [US1] Extender `PagoPedidoPort` (de `pedidos`) con `confirmar` y su adaptador sobre `ConfirmarPagoPedidoPort`
 - [ ] T031 [US1] Servicio `confirmarPagoDomicilio()` por el outbox en `frontend/src/services/pagos.ts`
 - [ ] T032 [US1] `ConfirmarCobroSheet` (monto, medio, cuenta registrada si es transferencia, casilla "Verifiqué que recibí el pago") en `frontend/src/components/pagos/`
