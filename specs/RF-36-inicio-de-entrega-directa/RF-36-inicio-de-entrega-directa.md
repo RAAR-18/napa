@@ -33,8 +33,8 @@ Como vendedor ambulante, quiero iniciar la entrega de un pedido, para avisar al 
 
 ### Edge Cases
 
-- ¿Qué ocurre si el vendedor ambulante tiene varios pedidos aceptados y los inicia todos a la vez?
-- ¿Puede el vendedor ambulante revertir el inicio de una entrega si cambia de idea?
+- **¿Qué ocurre si el vendedor ambulante tiene varios pedidos aceptados y los inicia todos a la vez?** Está permitido: cada pedido cambia de estado por separado y cada cliente recibe su notificación.
+- **¿Puede el vendedor ambulante revertir el inicio de una entrega si cambia de idea?** No; si no puede completar la entrega, lo informa mediante un reporte (RF-60).
 
 ## Requirements *(mandatory)*
 
@@ -47,6 +47,14 @@ Como vendedor ambulante, quiero iniciar la entrega de un pedido, para avisar al 
 ### Key Entities
 
 - **Pedido**: Transición de esta funcionalidad: aceptado → en camino. Puede o no estar marcado como reserva, con su fecha y hora acordadas.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El vendedor ambulante inicia la entrega de un pedido aceptado (las reservas, solo en su fecha programada).
+
+**Datos que asigna el sistema**
+
+- Estado "en camino", fecha y hora de inicio.
 
 ## Success Criteria *(mandatory)*
 

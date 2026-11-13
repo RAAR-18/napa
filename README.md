@@ -155,6 +155,23 @@ Cada origen incluye esquema, host y puerto, sin ruta ni barra final. Esta variab
 
 La app incluye registro (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), verificación del celular, inicio/cierre de sesión, recuperación y cambio de contraseña. En el perfil `otp-console`, ingresa en la pantalla de verificación el código configurado en `NAPA_OTP_CONSOLE_CODE`. Después de iniciar sesión, el cliente puede explorar emprendimientos y sus productos; el vendedor puede crear su emprendimiento, publicar productos, actualizar sus cantidades y configurar los medios de pago aceptados desde **Configurar métodos de pago**. Allí puede habilitar efectivo y registrar o quitar una cuenta bancaria; una cuenta es necesaria para ofrecer domicilios desde un punto fijo.
 
+### Mapas y notificaciones push: build de desarrollo
+
+Los mapas (`react-native-maps`) y el push (`expo-notifications`) no funcionan en Expo Go: requieren un build de desarrollo (`npx expo run:android` o EAS). `app.config.js` toma dos variables del entorno al generar el build; ninguna se versiona:
+
+| Variable | Para qué | Si falta |
+|---|---|---|
+| `GOOGLE_MAPS_ANDROID_API_KEY` | Clave de Google Maps SDK para Android (rutas, punto fijo y ubicación del cliente) | En Android se muestran solo las direcciones en texto; iOS usa Apple Maps y no la necesita |
+| `GOOGLE_SERVICES_JSON` | Ruta al `google-services.json` del proyecto de Firebase | La app funciona y la bandeja de notificaciones también, pero el teléfono no recibe avisos push |
+
+```powershell
+$env:GOOGLE_MAPS_ANDROID_API_KEY = "tu-clave"
+$env:GOOGLE_SERVICES_JSON = "C:\ruta\google-services.json"
+npx expo run:android
+```
+
+El backend necesita además las credenciales de Firebase para enviar el push; sin ellas, el envío queda desactivado y las notificaciones solo aparecen en la bandeja de la app.
+
 ### Productos e inventario: gestión en línea
 
 La migración `V7__productos.sql` añade el catálogo y `V8__producto_version.sql` incorpora la versión para evitar sobrescrituras simultáneas, sin cambiar las migraciones anteriores. Usa `napa_dev` si conservas la base local incompatible descrita arriba. Cada producto pertenece al emprendimiento activo del vendedor autenticado; no se acepta elegir otro propietario en el formulario.

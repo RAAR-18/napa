@@ -35,8 +35,8 @@ Como cliente, quiero consultar un emprendimiento, para conocer su información y
 ### Edge Cases
 
 - ¿Qué sucede si el emprendimiento está fuera de su horario de atención al momento de la consulta? se calcula con hora_apertura y hora_cierre
-- ¿Cómo se muestra un emprendimiento sin descripción registrada?
-- ¿Qué ocurre si la ubicación del emprendimiento no puede resolverse en el mapa?
+- **¿Cómo se muestra un emprendimiento sin descripción registrada?** Se muestra el texto "Sin descripción" sin generar error.
+- **¿Qué ocurre si la ubicación del emprendimiento no puede resolverse en el mapa?** Se muestra la dirección en texto, sin mapa.
 - ¿Qué ocurre si el vendedor cambia su ubicación u horario mientras el cliente tiene un pedido de recogida aceptado? (se recomienda: el detalle del emprendimiento siempre refleja la ubicación vigente)
 
 ## Requirements *(mandatory)*
@@ -52,6 +52,15 @@ Como cliente, quiero consultar un emprendimiento, para conocer su información y
 ### Key Entities
 
 - **Emprendimiento**: Entidad consultada; expone su información completa en la vista de detalle, incluyendo ubicación, dirección y horario cuando es de punto fijo.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno.
+
+**Datos que se muestran o filtran**
+
+- Nombre, categoría, tipo de vendedor, abierto o cerrado según el horario, ubicación, horario y descripción.
+- Modalidades de entrega disponibles (ambulante: entrega directa; punto fijo: recogida y, si tiene cuenta bancaria, domicilio); cualquier pedido puede marcarse como reserva.
 
 ## Success Criteria *(mandatory)*
 

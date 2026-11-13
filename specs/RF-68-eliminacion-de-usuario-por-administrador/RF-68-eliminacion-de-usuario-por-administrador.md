@@ -30,8 +30,8 @@ Como administrador, quiero eliminar un usuario, para gestionar las cuentas que y
 
 ### Edge Cases
 
-- ¿Qué ocurre con los emprendimientos, productos o historial del usuario eliminado?
-- ¿La eliminación es reversible dentro de algún periodo de gracia?
+- **¿Qué ocurre con los emprendimientos, productos o historial del usuario eliminado?** Se ocultan el emprendimiento y sus productos; el historial se conserva anonimizado para las otras partes y para auditoría.
+- **¿La eliminación es reversible dentro de algún periodo de gracia?** Sí, durante 30 días el administrador puede restaurar la cuenta; después se anonimiza definitivamente.
 
 ## Requirements *(mandatory)*
 
@@ -45,6 +45,19 @@ Como administrador, quiero eliminar un usuario, para gestionar las cuentas que y
 ### Key Entities *(include if feature involves data)*
 
 - **Usuario**: Ver definición en RF-66.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Motivo | Sí | Texto de 10 a 300 caracteres. |
+| Confirmación de eliminación | Sí | Aceptación expresa; el sistema advierte si hay pedidos o domicilios en curso. |
+
+**Datos que asigna el sistema**
+
+- Cuenta desactivada y restaurable por un administrador durante 30 días; anonimización posterior.
 
 ## Success Criteria *(mandatory)*
 

@@ -73,9 +73,9 @@ Como vendedor de punto fijo, quiero calificar y comentar al domiciliario que ges
 
 ### Edge Cases
 
-- ¿Qué ocurre si un usuario intenta calificar un pedido o domicilio que aún no ha finalizado/entregado?
-- ¿Cómo maneja el sistema un intento de calificar dos veces la misma entidad para el mismo pedido/domicilio?
-- ¿Qué sucede si el usuario intenta calificar una entidad con la que nunca tuvo interacción registrada (sin pedido/domicilio de por medio)?
+- **¿Qué ocurre si un usuario intenta calificar un pedido o domicilio que aún no ha finalizado/entregado?** El sistema no habilita la calificación hasta que el pedido o el domicilio estén entregados; el botón para calificar solo aparece desde ese momento.
+- **¿Cómo maneja el sistema un intento de calificar dos veces la misma entidad para el mismo pedido/domicilio?** Lo rechaza e informa que ya calificó esa entidad en esa interacción; el usuario puede editar su comentario (RF-04) pero no crear otro.
+- **¿Qué sucede si el usuario intenta calificar una entidad con la que nunca tuvo interacción registrada (sin pedido/domicilio de por medio)?** No lo permite: toda calificación exige un pedido o domicilio real entre las partes.
 - ¿Cómo se limita el rango de la calificación (por ejemplo, fuera de escala) y qué pasa si se envía un valor inválido? resuelto en FR-008
 
 ## Requirements *(mandatory)*
@@ -95,6 +95,22 @@ Como vendedor de punto fijo, quiero calificar y comentar al domiciliario que ges
 
 - **Calificación**: Valor numérico (ej. estrellas) y comentario textual, asociado a un autor, una entidad calificada (emprendimiento, producto, domiciliario o cliente) y un pedido de origen.
 - **Interacción**: Pedido entregado que habilita la posibilidad de calificar a las partes involucradas (en domicilio, el domicilio se deduce del pedido).
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Entidad a calificar | Sí | Emprendimiento, producto, domiciliario o cliente, según el rol; debe existir una interacción finalizada (pedido o domicilio entregado) con el autor. |
+| Calificación | Sí | Número entero de 1 a 5 estrellas. |
+| Comentario | Sí | Texto de 1 a 500 caracteres. |
+
+**Datos que asigna el sistema**
+
+- Autor: el usuario en sesión.
+- Interacción de origen (pedido o domicilio).
+- Fecha y hora de publicación.
 
 ## Success Criteria *(mandatory)*
 

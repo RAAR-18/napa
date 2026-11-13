@@ -29,10 +29,11 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Ñapa usa tu ubicación solo para ordenar los emprendimientos cercanos."
+          "locationWhenInUsePermission": "Ñapa usa tu ubicación para mostrarte emprendimientos y domicilios cercanos y para guiarte en la ruta de entrega."
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-notifications"
     ]
   }
 }

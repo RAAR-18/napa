@@ -39,9 +39,9 @@ Como domiciliario, quiero ver los domicilios disponibles junto con lo que ganar�
 
 ### Edge Cases
 
-- ¿Qué sucede si el domiciliario intenta abrir la información de un domicilio que fue tomado por otro segundos antes?
-- ¿Qué ocurre si un domicilio disponible es cancelado por el administrador mientras aparece en la lista?
-- ¿Puede el domiciliario ver domicilios lejanos a su ubicación actual o solo los cercanos?
+- **¿Qué sucede si el domiciliario intenta abrir la información de un domicilio que fue tomado por otro segundos antes?** El sistema informa que ya no está disponible y lo retira de la lista.
+- **¿Qué ocurre si un domicilio disponible es cancelado por el administrador mientras aparece en la lista?** Desaparece de la lista al actualizarse (máximo 30 segundos); si el domiciliario lo abre, ve que ya no está disponible.
+- **¿Puede el domiciliario ver domicilios lejanos a su ubicación actual o solo los cercanos?** Ve los de toda la ciudad ordenados por cercanía y puede filtrar por distancia máxima.
 
 ## Requirements *(mandatory)*
 
@@ -58,6 +58,14 @@ Como domiciliario, quiero ver los domicilios disponibles junto con lo que ganar�
 
 - **Domicilio**: Servicio de entrega en estado "disponible", visible para los domiciliarios salvo para quienes lo rechazaron.
 - **Ganancia**: Valor que recibiría el domiciliario por el domicilio; coincide con la tarifa publicada del domicilio.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Opciones: ordenar por cercanía o ganancia y filtrar por distancia máxima.
+
+**Datos que se muestran o filtran**
+
+- Origen, destino (zona y barrio), distancia y ganancia de cada domicilio.
 
 ## Success Criteria *(mandatory)*
 

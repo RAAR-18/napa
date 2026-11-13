@@ -126,6 +126,7 @@ it('quotes and confirms delivery as a bank transfer with the payment notice', as
   await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
   await fireEvent.press(view.getByRole('radio', { name: 'Domicilio' }));
   await fireEvent.changeText(view.getByLabelText('Dirección de entrega'), 'Carrera 7 # 10-20');
+  await fireEvent.changeText(view.getByLabelText('Barrio'), 'Centro');
   await fireEvent.changeText(view.getByLabelText('Latitud'), '4.711');
   await fireEvent.changeText(view.getByLabelText('Longitud'), '-74.0721');
   await fireEvent.press(view.getByRole('button', { name: 'Cotizar pedido' }));
@@ -140,6 +141,7 @@ it('quotes and confirms delivery as a bank transfer with the payment notice', as
         longitud: -74.0721,
         direccion: 'Carrera 7 # 10-20',
         referencia: null,
+        barrio: 'Centro',
       },
     });
     expect(view.getByText(/cuando el vendedor acepte el pedido/)).toBeTruthy();
@@ -157,6 +159,7 @@ it('quotes and confirms delivery as a bank transfer with the payment notice', as
           longitud: -74.0721,
           direccion: 'Carrera 7 # 10-20',
           referencia: null,
+          barrio: 'Centro',
         },
         medioPago: 'CUENTA_BANCARIA',
         totalEsperado: 6550,
@@ -209,6 +212,7 @@ it('removes domicile from the choices when the server reports no bank account', 
   await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
   await fireEvent.press(view.getByRole('radio', { name: 'Domicilio' }));
   await fireEvent.changeText(view.getByLabelText('Dirección de entrega'), 'Carrera 7 # 10-20');
+  await fireEvent.changeText(view.getByLabelText('Barrio'), 'Centro');
   await fireEvent.changeText(view.getByLabelText('Latitud'), '4.711');
   await fireEvent.changeText(view.getByLabelText('Longitud'), '-74.0721');
   await fireEvent.press(view.getByRole('button', { name: 'Cotizar pedido' }));

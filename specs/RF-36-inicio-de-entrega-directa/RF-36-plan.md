@@ -271,3 +271,9 @@ frontend/__tests__/entregas/iniciar-entrega.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+
+## Notas de implementación (F8, 2026-11-13)
+
+- Las cuatro transiciones viven en el módulo `pedidos` (`EntregaPedidoPort`, `EntregaPedidoUseCase`, `EntregaPedidoController`), no en módulos nuevos `entregas` y `recogida`: así no se necesita `TransicionarPedidoPort` entre módulos. E05 conserva su tipo `entregas.entrega-directa-iniciada`, aunque lo publique `pedidos`.
+- La ventana de reserva es `Pedido.MARGEN_RESERVA` (15 min) en el dominio, no la propiedad `reserva.margen_minutos`.
+- Sin outbox offline en la app: la acción exige conexión y reutiliza la `Idempotency-Key` tras un fallo de red.

@@ -47,6 +47,15 @@ Como vendedor, quiero ver una estimación de cuánto producto podría vender seg
 
 - **Predicción de demanda**: Estimación calculada para un producto, basada en histórico de ventas y pedidos anticipados; atributos clave: producto asociado, periodo estimado, cantidad estimada, nivel de confianza.
 
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El vendedor selecciona el producto.
+
+**Datos que se muestran o filtran**
+
+- Cantidad estimada para el día siguiente y nivel de confianza (alta, media o baja) con los días de historial usados.
+- Cantidad ya comprometida en reservas aceptadas y pendientes.
+
 ## Success Criteria
 
 No aplica en esta entrega. Al retomarse en una iteración futura, se recomienda definir de nuevo los criterios de éxito según los datos de uso reales del MVP.

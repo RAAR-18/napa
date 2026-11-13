@@ -50,7 +50,7 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
 ### Edge Cases
 
 - Si un pedido permanece pendiente durante un tiempo prolongado, se informa que espera respuesta del vendedor y no vence ni cambia automáticamente en el MVP.
-- ¿Qué ocurre si el cliente intenta consultar el estado de un pedido que no le pertenece?
+- **¿Qué ocurre si el cliente intenta consultar el estado de un pedido que no le pertenece?** Se deniega el acceso.
 - Si una reserva supera su fecha acordada sin respuesta, el pedido permanece en su estado actual: no vence ni cambia automáticamente en el MVP; se muestra la fecha acordada y que sigue pendiente de respuesta.
 - Si un pedido de domicilio aceptado lleva mucho tiempo sin pago, se muestra el pago pendiente y el total; el pedido no vence ni cambia automáticamente en el MVP.
 
@@ -67,6 +67,14 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
 ### Key Entities
 
 - **Pedido**: Estados posibles según la modalidad: pendiente, aceptado, rechazado, listo para recoger, en camino, entregado y cancelado; en un domicilio se apoya en los estados del domicilio y en el estado de su pago; pasa a entregado cuando el domiciliario valida el código del cliente y a cancelado si el administrador cancela su domicilio. Atributo adicional: reserva (fecha y hora acordadas; vacía si es inmediato).
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno.
+
+**Datos que se muestran o filtran**
+
+- Estado actual según la modalidad, fecha y hora de la última actualización, y acceso a la trazabilidad si es un domicilio.
 
 ## Success Criteria *(mandatory)*
 

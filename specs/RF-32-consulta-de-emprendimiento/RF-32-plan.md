@@ -268,3 +268,9 @@ frontend/__tests__/emprendimientos/detalle.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+
+## Notas de implementación (F9, 2026-11-13)
+
+- `GET /emprendimientos/{id}` en `DetalleEmprendimientoController` (`ConsultarDetalleEmprendimientoPort`). El tipo de vendedor sale del rol del dueño (`ConsultarPerfilPublicoUsuarioPort`, ampliado con `rol` y `miembroDesde`).
+- El caso de uso no abre transacción propia, para que un fallo de `pagos` (que deja `ofreceDomicilio = false`) no marque la lectura para revertir.
+- App: pantalla `emprendimiento-detalle` (enlace «Ver detalle de…» en el listado); mapa (`MapaPunto`) solo en punto fijo; el ambulante muestra su zona en texto.

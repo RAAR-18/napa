@@ -46,7 +46,7 @@ Como domiciliario, quiero confirmar la entrega del pedido ingresando el código 
 ### Edge Cases
 
 - ¿Qué ocurre si el cliente no tiene o no encuentra su código (por ejemplo, sin conexión)? ¿Existe una vía de respaldo con intervención del administrador o un reporte (RF-60)?
-- ¿Se valida que la ubicación del domiciliario esté cerca del punto B al confirmar la entrega, además del código?
+- **¿Se valida que la ubicación del domiciliario esté cerca del punto B al confirmar la entrega, además del código?** Sí, como advertencia: si está a más de 300 m del punto B el sistema avisa, no bloquea (el GPS puede ser impreciso) y deja registro.
 - ¿Qué ocurre si el cliente dice no haber recibido el pedido pero el domiciliario tiene el código? (el cliente puede crear un reporte, RF-60)
 
 ## Requirements *(mandatory)*
@@ -66,6 +66,19 @@ Como domiciliario, quiero confirmar la entrega del pedido ingresando el código 
 - **Pedido**: En un domicilio, pasa a entregado en la misma operación.
 - **Código de confirmación**: Valor de 6 dígitos que solo ve el cliente (RF-25) y que el domiciliario ingresa; es la única confirmación de la entrega.
 - **Evento de trazabilidad**: Registro del estado entregado, con el domiciliario como usuario que lo originó.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Código de confirmación | Sí | El código que muestra el cliente (RF-25); 5 intentos fallidos bloquean la confirmación 15 minutos. |
+
+**Datos que asigna el sistema**
+
+- Estado "entregado" del domicilio y del pedido, fecha, hora y domiciliario que confirma (trazabilidad).
+- Ubicación del dispositivo al confirmar (advertencia si está a más de 300 m del punto B).
 
 ## Success Criteria *(mandatory)*
 

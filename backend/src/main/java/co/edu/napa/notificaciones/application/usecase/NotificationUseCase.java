@@ -66,6 +66,11 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
                 ));
     }
 
+    public long contarNoLeidas(UUID usuarioId) {
+        requireActiveUser(usuarioId);
+        return notifications.countUnread(usuarioId);
+    }
+
     public List<PreferenceStatus> listarPreferencias(UUID usuarioId) {
         requireActiveUser(usuarioId);
         Map<TipoNotificacion, Boolean> configured = preferences.findByUsuario(usuarioId);
@@ -134,7 +139,8 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
                     content.title(),
                     content.body(),
                     null,
-                    now
+                    now,
+                    content.referencia()
             );
             if (notifications.saveIfAbsent(event.eventId(), notification)) {
                 List<String> tokens = audience.findPushTokens(userId);
@@ -150,7 +156,7 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
         Map<UUID, NotificationContent> recipients = new LinkedHashMap<>();
         switch (tipo) {
             case PEDIDO_CREADO ->
-                    add(recipients, payloadUuid(event, "vendedorId"), "Nuevo pedido", "Tienes un nuevo pedido.");
+                    add(recipients, payloadUuid(event, "vendedorId"), "Nuevo pedido", "Tienes un nuevo pedido.", pedido(event));
             case PEDIDO_ACEPTADO -> {
                 boolean needsDigitalPayment = Boolean.TRUE.equals(event.payload().get("requierePagoDigital"));
                 add(
@@ -159,59 +165,75 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
                         "Pedido aceptado",
                         needsDigitalPayment
                                 ? "El vendedor aceptó tu pedido. Transfiere el total para continuar."
-                                : "El vendedor aceptó tu pedido."
+                                : "El vendedor aceptó tu pedido.",
+                        pedido(event)
                 );
             }
             case PEDIDO_RECHAZADO ->
-                    add(recipients, payloadUuid(event, "compradorId"), "Pedido rechazado", "El vendedor rechazó tu pedido.");
+                    add(recipients, payloadUuid(event, "compradorId"), "Pedido rechazado", "El vendedor rechazó tu pedido.", pedido(event));
             case PAGO_PEDIDO_CONFIRMADO -> {
                 if ("DOMICILIO".equals(event.payload().get("modalidad"))) {
                     add(recipients, payloadUuid(event, "compradorId"),
-                            "Pago confirmado", "El vendedor confirmó el pago de tu pedido.");
+                            "Pago confirmado", "El vendedor confirmó el pago de tu pedido.", pedido(event));
                 }
             }
             case ENTREGA_DIRECTA_INICIADA ->
-                    add(recipients, payloadUuid(event, "compradorId"), "Entrega en camino", "El vendedor inició la entrega directa.");
+                    add(recipients, payloadUuid(event, "compradorId"), "Entrega en camino", "El vendedor inició la entrega directa.", pedido(event));
             case PEDIDO_LISTO_PARA_RECOGER ->
-                    add(recipients, payloadUuid(event, "compradorId"), "Pedido listo", "Tu pedido está listo para recoger.");
+                    add(recipients, payloadUuid(event, "compradorId"), "Pedido listo", "Tu pedido está listo para recoger.", pedido(event));
             case PEDIDO_ENTREGADO -> {
                 if (optionalPayloadUuid(event, "domicilioId") == null) {
                     add(
                             recipients,
                             payloadUuid(event, "compradorId"),
                             "Pedido entregado",
-                            "Tu pedido fue entregado. ¡Califica tu experiencia!"
+                            "Tu pedido fue entregado. ¡Califica tu experiencia!",
+                            pedido(event)
                     );
                 }
             }
             case DOMICILIO_PUBLICADO -> audience.findActiveCouriers().forEach(userId ->
-                    add(recipients, userId, "Nuevo domicilio disponible", "Hay un nuevo domicilio disponible para aceptar."));
+                    add(recipients, userId, "Nuevo domicilio disponible", "Hay un nuevo domicilio disponible para aceptar.", domicilio(event)));
             case DOMICILIO_ASIGNADO -> {
-                add(recipients, payloadUuid(event, "compradorId"), "Domicilio asignado", "Un domiciliario aceptó tu domicilio.");
-                add(recipients, payloadUuid(event, "vendedorId"), "Domicilio asignado", "Un domiciliario aceptó el domicilio de tu pedido.");
+                add(recipients, payloadUuid(event, "compradorId"), "Domicilio asignado", "Un domiciliario aceptó tu domicilio.", pedido(event));
+                add(recipients, payloadUuid(event, "vendedorId"), "Domicilio asignado", "Un domiciliario aceptó el domicilio de tu pedido.", pedido(event));
             }
             case DOMICILIO_RECOGIDO ->
-                    add(recipients, payloadUuid(event, "vendedorId"), "Pedido recogido", "El domiciliario recogió el pedido.");
+                    add(recipients, payloadUuid(event, "vendedorId"), "Pedido recogido", "El domiciliario recogió el pedido.", pedido(event));
             case DOMICILIO_EN_CAMINO ->
-                    add(recipients, payloadUuid(event, "compradorId"), "Domicilio en camino", "Tu pedido va en camino.");
+                    add(recipients, payloadUuid(event, "compradorId"), "Domicilio en camino", "Tu pedido va en camino.", pedido(event));
             case DOMICILIO_ENTREGADO -> {
                 add(
                         recipients,
                         payloadUuid(event, "compradorId"),
                         "Pedido entregado",
-                        "Tu pedido fue entregado. ¡Califica tu experiencia!"
+                        "Tu pedido fue entregado. ¡Califica tu experiencia!",
+                        pedido(event)
                 );
-                add(recipients, payloadUuid(event, "vendedorId"), "Pedido entregado", "El pedido fue entregado. Registra el pago de la tarifa al domiciliario.");
+                add(recipients, payloadUuid(event, "vendedorId"), "Pedido entregado", "El pedido fue entregado. Registra el pago de la tarifa al domiciliario.", pedido(event));
             }
             case PAGO_TARIFA_REGISTRADO ->
-                    add(recipients, payloadUuid(event, "domiciliarioId"), "Tarifa pagada", "El vendedor registró el pago de la tarifa.");
+                    add(recipients, payloadUuid(event, "domiciliarioId"), "Tarifa pagada", "El vendedor registró el pago de la tarifa.", domicilio(event));
             case DOMICILIO_CANCELADO -> {
-                add(recipients, payloadUuid(event, "compradorId"), "Domicilio cancelado", "El administrador canceló el domicilio.");
-                add(recipients, payloadUuid(event, "vendedorId"), "Domicilio cancelado", "El administrador canceló el domicilio de tu pedido.");
-                UUID courierId = optionalPayloadUuid(event, "domiciliarioId");
-                if (courierId != null) {
-                    add(recipients, courierId, "Domicilio cancelado", "El administrador canceló el domicilio asignado.");
+                if ("SIN_ASIGNAR".equals(event.payload().get("motivo"))) {
+                    add(recipients, payloadUuid(event, "compradorId"), "Pedido cancelado",
+                            "Ningún domiciliario tomó tu domicilio a tiempo y el pedido fue cancelado.", pedido(event));
+                    add(recipients, payloadUuid(event, "vendedorId"), "Pedido cancelado",
+                            "Ningún domiciliario tomó el domicilio en 2 horas y el pedido fue cancelado.", pedido(event));
+                } else {
+                    add(recipients, payloadUuid(event, "compradorId"), "Domicilio cancelado", "El administrador canceló el domicilio.", pedido(event));
+                    add(recipients, payloadUuid(event, "vendedorId"), "Domicilio cancelado", "El administrador canceló el domicilio de tu pedido.", pedido(event));
+                    UUID courierId = optionalPayloadUuid(event, "domiciliarioId");
+                    if (courierId != null) {
+                        add(recipients, courierId, "Domicilio cancelado", "El administrador canceló el domicilio asignado.", domicilio(event));
+                    }
                 }
+            }
+            case DOMICILIO_SIN_ASIGNAR -> {
+                add(recipients, payloadUuid(event, "compradorId"), "Buscando domiciliario",
+                        "Tu domicilio aún no tiene domiciliario. Seguimos buscando.", pedido(event));
+                add(recipients, payloadUuid(event, "vendedorId"), "Domicilio sin domiciliario",
+                        "Tu domicilio lleva 30 minutos sin que un domiciliario lo tome.", pedido(event));
             }
             case REPORTE_RESUELTO ->
                     add(recipients, payloadUuid(event, "autorId"), "Reporte resuelto", "El administrador resolvió tu reporte.");
@@ -229,7 +251,30 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
             String title,
             String body
     ) {
-        recipients.putIfAbsent(userId, new NotificationContent(title, body));
+        add(recipients, userId, title, body, null);
+    }
+
+    private void add(
+            Map<UUID, NotificationContent> recipients,
+            UUID userId,
+            String title,
+            String body,
+            Notificacion.Referencia referencia
+    ) {
+        recipients.putIfAbsent(userId, new NotificationContent(title, body, referencia));
+    }
+
+    /** Cliente y vendedor abren el pedido. */
+    private Notificacion.Referencia pedido(NotificationEvent event) {
+        UUID pedidoId = optionalPayloadUuid(event, "pedidoId");
+        return pedidoId == null ? null : new Notificacion.Referencia(Notificacion.Referencia.PEDIDO, pedidoId);
+    }
+
+    /** El domiciliario abre el domicilio. */
+    private Notificacion.Referencia domicilio(NotificationEvent event) {
+        UUID domicilioId = optionalPayloadUuid(event, "domicilioId");
+        return domicilioId == null ? null
+                : new Notificacion.Referencia(Notificacion.Referencia.DOMICILIO, domicilioId);
     }
 
     private UUID payloadUuid(NotificationEvent event, String key) {
@@ -285,6 +330,6 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
         }
     }
 
-    private record NotificationContent(String title, String body) {
+    private record NotificationContent(String title, String body, Notificacion.Referencia referencia) {
     }
 }

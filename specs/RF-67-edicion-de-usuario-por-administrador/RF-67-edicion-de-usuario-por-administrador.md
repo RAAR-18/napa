@@ -25,8 +25,8 @@ Como administrador, quiero editar un usuario, para actualizar o corregir su info
 
 ### Edge Cases
 
-- ¿Puede el administrador cambiar el rol de un usuario (ej. de cliente a vendedor)? ¿Qué validaciones aplican en ese caso?
-- ¿Qué ocurre si el administrador intenta asignar un correo o teléfono ya utilizado por otra cuenta?
+- **¿Puede el administrador cambiar el rol de un usuario (ej. de cliente a vendedor)? ¿Qué validaciones aplican en ese caso?** No: el rol se define al registrarse y no puede editarse; un cambio requiere una cuenta nueva.
+- **¿Qué ocurre si el administrador intenta asignar un correo o teléfono ya utilizado por otra cuenta?** Se rechaza e indica que el dato ya está en uso.
 
 ## Requirements *(mandatory)*
 
@@ -39,6 +39,20 @@ Como administrador, quiero editar un usuario, para actualizar o corregir su info
 ### Key Entities *(include if feature involves data)*
 
 - **Usuario**: Ver definición en RF-66.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Nombre | No | Texto de 2 a 80 caracteres. |
+| Correo electrónico | No | Formato válido y no registrado en otra cuenta. |
+| Teléfono | No | 10 dígitos y no registrado en otra cuenta. |
+
+**Datos que asigna el sistema**
+
+- Fecha y administrador que edita; el rol no puede modificarse.
 
 ## Success Criteria *(mandatory)*
 

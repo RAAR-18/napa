@@ -35,7 +35,9 @@ public class NotificationPersistenceAdapter implements
                     result.getString("titulo"),
                     result.getString("cuerpo"),
                     instantOrNull(result.getTimestamp("leida_at")),
-                    result.getTimestamp("created_at").toInstant()
+                    result.getTimestamp("created_at").toInstant(),
+                    result.getString("referencia_tipo") == null ? null : new Notificacion.Referencia(
+                            result.getString("referencia_tipo"), result.getObject("referencia_id", UUID.class))
             );
 
     private final JdbcTemplate jdbcTemplate;
@@ -51,8 +53,9 @@ public class NotificationPersistenceAdapter implements
         return jdbcTemplate.update(
                 """
                 INSERT INTO notificacion
-                    (id, usuario_id, tipo, titulo, cuerpo, leida_at, created_at, event_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, usuario_id, tipo, titulo, cuerpo, leida_at, created_at, event_id, referencia_tipo,
+                     referencia_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (event_id, usuario_id) DO NOTHING
                 """,
                 notification.id(),
@@ -62,7 +65,9 @@ public class NotificationPersistenceAdapter implements
                 notification.cuerpo(),
                 timestampOrNull(notification.leidaAt()),
                 Timestamp.from(notification.createdAt()),
-                eventId
+                eventId,
+                notification.referencia() == null ? null : notification.referencia().tipo(),
+                notification.referencia() == null ? null : notification.referencia().id()
         ) == 1;
     }
 
@@ -95,7 +100,7 @@ public class NotificationPersistenceAdapter implements
         pageParameters.add(size);
         pageParameters.add((long) page * size);
         List<Notificacion> content = jdbcTemplate.query(
-                "SELECT id, usuario_id, tipo, titulo, cuerpo, leida_at, created_at"
+                "SELECT id, usuario_id, tipo, titulo, cuerpo, leida_at, created_at, referencia_tipo, referencia_id"
                         + baseQuery + " ORDER BY created_at " + direction
                         + ", id " + direction + " LIMIT ? OFFSET ?",
                 NOTIFICATION_ROW_MAPPER,
@@ -118,7 +123,7 @@ public class NotificationPersistenceAdapter implements
         );
         return jdbcTemplate.query(
                 """
-                SELECT id, usuario_id, tipo, titulo, cuerpo, leida_at, created_at
+                SELECT id, usuario_id, tipo, titulo, cuerpo, leida_at, created_at, referencia_tipo, referencia_id
                 FROM notificacion
                 WHERE id = ? AND usuario_id = ?
                 """,
@@ -126,6 +131,16 @@ public class NotificationPersistenceAdapter implements
                 notificationId,
                 usuarioId
         ).stream().findFirst();
+    }
+
+    @Override
+    public long countUnread(UUID usuarioId) {
+        Long total = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM notificacion WHERE usuario_id = ? AND leida_at IS NULL",
+                Long.class,
+                usuarioId
+        );
+        return total == null ? 0 : total;
     }
 
     @Override

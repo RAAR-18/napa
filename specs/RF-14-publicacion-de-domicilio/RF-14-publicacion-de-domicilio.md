@@ -49,10 +49,10 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 
 ### Edge Cases
 
-- ¿Qué sucede si el pedido es cancelado o el domicilio es cancelado por el administrador después de publicado y antes de ser tomado?
-- ¿Cómo se comporta el sistema si la ubicación de entrega indicada por el cliente es incompleta o queda fuera de la zona atendida?
-- ¿Qué ocurre si ningún domiciliario toma el domicilio en un tiempo razonable? ¿Se notifica al vendedor y al cliente?
-- ¿Qué pasa si el vendedor publica el domicilio antes de tener el pedido preparado para entregar?
+- **¿Qué sucede si el pedido es cancelado o el domicilio es cancelado por el administrador después de publicado y antes de ser tomado?** El domicilio pasa a cancelado y deja de aparecer en la lista de disponibles; si ya estaba asignado, se notifica al domiciliario.
+- **¿Cómo se comporta el sistema si la ubicación de entrega indicada por el cliente es incompleta o queda fuera de la zona atendida?** No debería ocurrir: la ubicación se valida al crear el pedido (RF-45). Si el vendedor la considera inviable debe rechazar el pedido, porque el domicilio no puede editarse.
+- **¿Qué ocurre si ningún domiciliario toma el domicilio en un tiempo razonable? ¿Se notifica al vendedor y al cliente?** A los 30 minutos se notifica al vendedor y al cliente; a las 2 horas sin asignación el domicilio y el pedido se cancelan automáticamente y se notifica a ambos.
+- **¿Qué pasa si el vendedor publica el domicilio antes de tener el pedido preparado para entregar?** Está permitido publicar; el vendedor es responsable de tener el pedido listo cuando llegue el domiciliario y, si no lo está, el domiciliario puede reportarlo (RF-60).
 - ¿Qué ocurre si el pedido de domicilio fue aceptado y el cliente nunca paga? (no hay plazo ni cancelación automática definidos: el domicilio simplemente no puede publicarse; punto pendiente de validar)
 
 ## Requirements *(mandatory)*
@@ -67,12 +67,24 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 - **FR-006**: El sistema DEBE impedir la edición de un domicilio una vez publicado (pedido y punto A; el punto B, el receptor y la tarifa provienen del pedido).
 - **FR-007**: El sistema DEBE impedir la publicación de un pedido de domicilio cuyo pago no esté confirmado, indicando el motivo.
 - **FR-008**: En un pedido marcado como reserva, el sistema DEBE permitir publicar el domicilio solo desde 15 minutos antes de la fecha y hora acordadas (RESERVATION_NOT_DUE).
+- **FR-009**: El sistema DEBE notificar al vendedor y al cliente cuando un domicilio lleve 30 minutos disponible sin asignarse, y cancelar automáticamente el domicilio y su pedido a las 2 horas sin asignación, notificando a ambos.
 
 ### Key Entities
 
 - **Domicilio**: Servicio de llevar un pedido del punto A al punto B; nace en estado "disponible" con su tarifa publicada. Estados: disponible, asignado, recogido, en camino, entregado y cancelado. No es editable.
 - **Pedido**: Debe tener modalidad de domicilio, estar en estado "aceptado" y tener el pago confirmado; puede contener varios ítems.
 - **Vendedor de punto fijo**: Actor que publica el domicilio desde su punto de venta.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno adicional. El vendedor de punto fijo selecciona un pedido de domicilio aceptado y pulsa "Publicar domicilio"; todos los datos provienen del pedido.
+
+**Datos que asigna el sistema**
+
+- Punto A: ubicación del punto fijo del vendedor.
+- Punto B, receptor y sus datos: los indicados por el cliente en el pedido.
+- Tarifa publicada: la calculada al realizar el pedido, no inferior a la tarifa mínima.
+- Estado "disponible" y fecha de publicación.
 
 ## Success Criteria *(mandatory)*
 
@@ -82,3 +94,4 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 - **SC-002**: El sistema rechaza el 100% de los intentos de publicar un domicilio para un pedido que no sea de domicilio o no esté aceptado.
 - **SC-003**: El 0% de los domicilios publicados permite modificar su origen, destino o tarifa.
 - **SC-004**: El 0% de los domicilios se publica sin el pago del pedido confirmado.
+- **SC-005**: El 100% de los domicilios sin asignar durante 2 horas quedan cancelados junto con su pedido.

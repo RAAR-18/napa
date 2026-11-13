@@ -92,7 +92,7 @@ Cuerpo de error: { "code": "...", "message": "mensaje para el usuario", "details
 | 429 | CODE_ATTEMPTS_LOCKED | 5 fallos del código de entrega: bloqueo de 15 min |
 | 503 | EXTERNAL_SERVICE_UNAVAILABLE | (existente) mapas, push, WhatsApp |
 | 400 | CODE_INVALID | Código de confirmación de entrega incorrecto; details.intentosRestantes (RF-24) |
-| 409 | ACTIVE_DELIVERY_EXISTS | El domiciliario ya tiene un domicilio activo (ASIGNADO, RECOGIDO o EN_CAMINO); details.domicilioActivoId (RF-19) |
+| 409 | MAX_ACTIVE_DELIVERIES | El domiciliario ya tiene 3 domicilios en curso (ASIGNADO, RECOGIDO o EN_CAMINO); details.enCurso y details.maximo (RF-19 FR-006) |
 | 409 | FEE_NOT_REGISTERED | El domiciliario intenta confirmar la tarifa antes de que el vendedor la registre (RF-43) |
 
 ### 2.3 Paginación, orden y filtros (query parameters)
@@ -296,7 +296,7 @@ sin codigo_validado_at ni llegada_confirmada_at (la fecha de la entrega queda en
 | 16 | La modalidad DOMICILIO solo se ofrece al cliente si el vendedor de punto fijo tiene cuenta bancaria registrada. |
 | 17 | Las acciones de una reserva (iniciar entrega, marcar listo, publicar domicilio) solo se permiten desde reserva − margen (15 min). |
 | 18 | El administrador no verifica celular; su cuenta se siembra y no se registra por la API. |
-| 19 | Un domiciliario solo puede tener un domicilio activo (ASIGNADO, RECOGIDO o EN_CAMINO) a la vez: índice único parcial sobre domiciliario_id; aceptar otro responde 409 ACTIVE_DELIVERY_EXISTS (RF-19). |
+| 19 | Un domiciliario puede tener hasta 3 domicilios en curso (ASIGNADO, RECOGIDO o EN_CAMINO): se valida al aceptar con un bloqueo por domiciliario; aceptar un cuarto responde 409 MAX_ACTIVE_DELIVERIES (RF-19 FR-006). |
 | 20 | Un reporte sobre un usuario solo es válido si el autor y el reportado compartieron al menos un pedido (RF-60). |
 | 21 | Cada rol solo puede calificar ciertos destinos de un pedido ENTREGADO: cliente → emprendimiento, productos y domiciliario; vendedor → cliente y (punto fijo) domiciliario; domiciliario → emprendimiento y cliente (RF-01). |
 | 22 | La eliminación de una calificación, por el autor o por moderación, es lógica: la fila se conserva con su estado y su texto para auditoría y la calificación sale del promedio. Una calificación eliminada no se puede volver a hacer sobre el mismo pedido y destino (RF-05). |

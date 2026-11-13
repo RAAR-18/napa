@@ -1,10 +1,13 @@
 package co.edu.napa.pagos.infrastructure.config;
 
+import co.edu.napa.cuentas.application.ports.in.ConsultarNombresUsuarioPort;
 import co.edu.napa.pagos.application.ports.out.ConfiguracionPagoRepositoryPort;
 import co.edu.napa.pagos.application.ports.out.ConsultarTipoVendedorPort;
 import co.edu.napa.pagos.application.ports.out.PagoRepositoryPort;
 import co.edu.napa.pagos.application.usecase.ConfigurarPagoVendedorUseCase;
 import co.edu.napa.pagos.application.usecase.ConsultarConfiguracionPagoUseCase;
+import co.edu.napa.pagos.application.usecase.ConsultarHistorialPagosUseCase;
+import co.edu.napa.pagos.application.usecase.PagoTarifaDomicilioUseCase;
 import co.edu.napa.pagos.application.usecase.ConsultarMediosPagoUseCase;
 import co.edu.napa.pagos.application.usecase.ConfirmarPagoPedidoUseCase;
 import co.edu.napa.pagos.application.usecase.RegistrarPagoPedidoPendienteUseCase;
@@ -54,5 +57,23 @@ public class PagosConfiguration {
             Clock clock
     ) {
         return new ConfirmarPagoPedidoUseCase(pagos, eventos, clock);
+    }
+
+    @Bean
+    PagoTarifaDomicilioUseCase pagoTarifaDomicilioUseCase(
+            PagoRepositoryPort pagos,
+            ConfiguracionPagoRepositoryPort configuraciones,
+            EventPublisherPort eventos,
+            Clock clock
+    ) {
+        return new PagoTarifaDomicilioUseCase(pagos, configuraciones, eventos, clock);
+    }
+
+    @Bean
+    ConsultarHistorialPagosUseCase consultarHistorialPagosUseCase(
+            PagoRepositoryPort pagos,
+            ConsultarNombresUsuarioPort usuarios
+    ) {
+        return new ConsultarHistorialPagosUseCase(pagos, usuarios);
     }
 }

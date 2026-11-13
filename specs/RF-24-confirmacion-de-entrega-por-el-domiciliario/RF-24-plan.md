@@ -20,6 +20,16 @@ El domiciliario cierra el domicilio con `POST /domicilios/{id}/confirmar-entrega
 
 El domicilio `EN_CAMINO` y su código los producen RF-19 y RF-23; `TransicionarPedidoPort` y `PedidoEntregadoEvent` los crean RF-36 y RF-37. Los contadores de intentos viven en Redis, que ya está en el proyecto (idempotencia y versión de sesión). No existe la confirmación de entrega del domicilio.
 
+## Implementación (Fase 3, 2026-11-13)
+
+Implementado: `POST /api/v1/domicilios/{id}/confirmar-entrega` con `{ "codigo": "123456" }`. En una transacción: el pedido pasa a `ENTREGADO` y publica E07 (`PedidoEntregadoEvent` con `domicilioId`, por `PedidoParaDomicilioPort.entregarPorDomicilio`), el domicilio pasa a `ENTREGADO`, se inserta la traza y se emite E12 (con la tarifa). Cambios respecto al plan:
+
+- El puerto del pedido es `PedidoParaDomicilioPort` (no `TransicionarPedidoPort`).
+- Intentos en Redis (`code-att:{id}`, `code-lock:{id}`) con un script atómico. Los fallos 1 a 4 responden `400 CODE_INVALID` con `intentosRestantes` 4…1; el quinto responde `429 CODE_ATTEMPTS_LOCKED` con `Retry-After` (900 s). Durante el bloqueo ni el código correcto entra.
+- La comparación es en tiempo constante (`MessageDigest.isEqual`). Un código mal formado responde `400 VALIDATION_ERROR` sin contar intento.
+- La idempotencia guarda también el `400`: repetir la clave no cuenta otro intento. La app manda una clave nueva en cada intento.
+- **No implementado (pendiente de confirmar)**: el aviso al entregar a más de 300 m del punto B.
+
 ## Actors
 
 | Actor | Participación en esta feature |

@@ -43,6 +43,29 @@ public record Emprendimiento(
         Objects.requireNonNull(updatedAt, "updatedAt");
     }
 
+    /** RF-29: descripción y horario; el nombre y la categoría no se editan. Nulo conserva el valor actual. */
+    public Emprendimiento editar(String nuevaDescripcion, LocalTime nuevaApertura, LocalTime nuevoCierre, Instant now) {
+        requireActivo();
+        return new Emprendimiento(id, usuarioId, ubicacionId, nombre, categoria,
+                nuevaDescripcion == null ? descripcion : nuevaDescripcion.strip(),
+                nuevaApertura == null ? horaApertura : nuevaApertura,
+                nuevoCierre == null ? horaCierre : nuevoCierre,
+                estado, createdAt, Objects.requireNonNull(now, "now"));
+    }
+
+    /** RF-30: borrado lógico; el historial de pedidos y los productos se conservan. */
+    public Emprendimiento eliminar(Instant now) {
+        requireActivo();
+        return new Emprendimiento(id, usuarioId, ubicacionId, nombre, categoria, descripcion, horaApertura,
+                horaCierre, EstadoEmprendimiento.ELIMINADO, createdAt, Objects.requireNonNull(now, "now"));
+    }
+
+    private void requireActivo() {
+        if (estado != EstadoEmprendimiento.ACTIVO) {
+            throw new DomainException("NOT_FOUND", "Aún no tienes un emprendimiento activo.");
+        }
+    }
+
     private static void validateText(String value, String field, int maxLength) {
         if (value == null || value.isBlank() || value.length() > maxLength) {
             throw validationError(field, "El campo " + field + " es obligatorio y no debe exceder " + maxLength + " caracteres.");

@@ -12,4 +12,9 @@ public interface DispositivoTokenRepositoryPort {
     Optional<DispositivoToken> findByUsuarioIdAndToken(UUID usuarioId, String token);
 
     List<DispositivoToken> findByUsuarioId(UUID usuarioId);
+
+    /** Borra el token de las demás cuentas: un token identifica una instalación, que solo tiene una sesión. */
+    void deleteByTokenForOtherUsers(String token, UUID usuarioId);
+
+    void deleteByUsuarioIdAndToken(UUID usuarioId, String token);
 }

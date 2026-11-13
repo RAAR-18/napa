@@ -28,9 +28,9 @@ Como cliente, quiero ver la información del vendedor, para conocer quién está
 
 ### Edge Cases
 
-- ¿Qué información del vendedor se considera pública y cuál se mantiene privada frente al cliente?
-- ¿Qué sucede si el vendedor tiene más de un emprendimiento?
-- ¿Cómo se maneja la consulta si la cuenta del vendedor fue eliminada pero el emprendimiento aún es visible?
+- **¿Qué información del vendedor se considera pública y cuál se mantiene privada frente al cliente?** Nombre, foto, tipo de vendedor y calificación; el teléfono solo se comparte, por el canal de contacto, cuando hay un pedido aceptado; el correo y el documento son privados.
+- **¿Qué sucede si el vendedor tiene más de un emprendimiento?** No aplica: un vendedor tiene un solo emprendimiento activo (RF-28).
+- **¿Cómo se maneja la consulta si la cuenta del vendedor fue eliminada pero el emprendimiento aún es visible?** Al eliminar la cuenta, el emprendimiento se oculta, por lo que no puede consultarse.
 
 ## Requirements *(mandatory)*
 
@@ -42,6 +42,15 @@ Como cliente, quiero ver la información del vendedor, para conocer quién está
 ### Key Entities
 
 - **Vendedor**: Usuario propietario del emprendimiento; expone un subconjunto de su información como pública para los clientes.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno.
+
+**Datos que se muestran o filtran**
+
+- Nombre, foto, tipo de vendedor y calificación.
+- Se ocultan correo, documento y teléfono.
 
 ## Success Criteria *(mandatory)*
 

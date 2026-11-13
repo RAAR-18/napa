@@ -8,5 +8,9 @@ import java.util.UUID;
 public interface ConsultarEmprendimientoParaPedidoPort {
     Optional<Referencia> consultar(UUID emprendimientoId);
 
-    record Referencia(UUID id, UUID vendedorId, String nombre, GeoPoint puntoA) {}
+    record Referencia(UUID id, UUID vendedorId, String nombre, GeoPoint puntoA, UUID ubicacionId) {
+        public Referencia(UUID id, UUID vendedorId, String nombre, GeoPoint puntoA) {
+            this(id, vendedorId, nombre, puntoA, null);
+        }
+    }
 }

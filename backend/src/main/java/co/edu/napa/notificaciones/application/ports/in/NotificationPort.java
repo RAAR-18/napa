@@ -11,6 +11,9 @@ public interface NotificationPort {
 
     Notificacion abrir(UUID usuarioId, UUID notificacionId);
 
+    /** Cuántas notificaciones no ha leído el usuario (insignia de la app). */
+    long contarNoLeidas(UUID usuarioId);
+
     List<PreferenceStatus> listarPreferencias(UUID usuarioId);
 
     List<PreferenceStatus> actualizarPreferencias(UUID usuarioId, List<PreferenceUpdate> updates);

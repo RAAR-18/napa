@@ -12,6 +12,8 @@ import co.edu.napa.pedidos.application.ports.in.ResponderPedidoPort.PedidoAcepta
 import co.edu.napa.pedidos.application.ports.in.ResponderPedidoPort.PedidoRechazado;
 import co.edu.napa.pedidos.application.ports.in.ConsultarPedidoVendedorPort;
 import co.edu.napa.pedidos.application.ports.in.ConfirmarPagoDomicilioPort;
+import co.edu.napa.pedidos.application.ports.in.ConsultarPedidoClientePort;
+import co.edu.napa.pedidos.application.ports.in.ListarPedidosClientePort;
 import co.edu.napa.pedidos.application.ports.in.ConfirmarPagoDomicilioPort.PagoDomicilioConfirmado;
 import co.edu.napa.pedidos.application.ports.in.ListarPedidosVendedorPort;
 import co.edu.napa.pedidos.application.ports.in.PedidoVendedorDetalle;
@@ -33,6 +35,7 @@ import jakarta.validation.constraints.Size;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,6 +70,8 @@ public class PedidoController {
     private final ListarPedidosVendedorPort listarPedidosVendedor;
     private final ConsultarPedidoVendedorPort consultarPedidoVendedor;
     private final ConfirmarPagoDomicilioPort confirmarPagoDomicilio;
+    private final ListarPedidosClientePort listarPedidosCliente;
+    private final ConsultarPedidoClientePort consultarPedidoCliente;
 
     public PedidoController(
             CotizarPedidoPort cotizaciones,
@@ -74,7 +79,9 @@ public class PedidoController {
             ResponderPedidoPort responderPedido,
             ListarPedidosVendedorPort listarPedidosVendedor,
             ConsultarPedidoVendedorPort consultarPedidoVendedor,
-            ConfirmarPagoDomicilioPort confirmarPagoDomicilio
+            ConfirmarPagoDomicilioPort confirmarPagoDomicilio,
+            ListarPedidosClientePort listarPedidosCliente,
+            ConsultarPedidoClientePort consultarPedidoCliente
     ) {
         this.cotizaciones = cotizaciones;
         this.realizarPedido = realizarPedido;
@@ -82,33 +89,49 @@ public class PedidoController {
         this.listarPedidosVendedor = listarPedidosVendedor;
         this.consultarPedidoVendedor = consultarPedidoVendedor;
         this.confirmarPagoDomicilio = confirmarPagoDomicilio;
+        this.listarPedidosCliente = listarPedidosCliente;
+        this.consultarPedidoCliente = consultarPedidoCliente;
     }
 
+    /** Una sola ruta con una rama por rol: el vendedor (RF-50) y el cliente (RF-47). */
     @GetMapping("/api/v1/pedidos")
-    @PreAuthorize("hasAnyAuthority('ROLE_VENDEDOR_AMBULANTE', 'ROLE_VENDEDOR_PUNTO_FIJO')")
-    public ResponseEntity<PedidosVendedorPagina> listarPedidos(
+    @PreAuthorize("hasAnyAuthority('ROLE_VENDEDOR_AMBULANTE', 'ROLE_VENDEDOR_PUNTO_FIJO', 'ROLE_CLIENTE')")
+    public ResponseEntity<?> listarPedidos(
             @AuthenticationPrincipal Jwt jwt,
+            Authentication authentication,
             HttpServletRequest request
     ) {
         Map<String, String[]> parameters = request.getParameterMap();
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(
-                listarPedidosVendedor.listar(
-                        UUID.fromString(jwt.getSubject()),
-                        parseListFilter(parameters),
-                        integerValue(parameters, "page", 0),
-                        integerValue(parameters, "size", 20)));
+        UUID userId = UUID.fromString(jwt.getSubject());
+        FiltroPedidosVendedor filtro = parseListFilter(parameters);
+        int page = integerValue(parameters, "page", 0);
+        int size = integerValue(parameters, "size", 20);
+        Object body = esCliente(authentication)
+                ? listarPedidosCliente.listar(userId, filtro, page, size)
+                : listarPedidosVendedor.listar(userId, filtro, page, size);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
     }
 
+    /** Una sola ruta con una rama por rol: el vendedor (RF-51) y el cliente (RF-48). */
     @GetMapping("/api/v1/pedidos/{pedidoId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_VENDEDOR_AMBULANTE', 'ROLE_VENDEDOR_PUNTO_FIJO')")
-    public ResponseEntity<PedidoVendedorDetalle> consultarPedido(
+    @PreAuthorize("hasAnyAuthority('ROLE_VENDEDOR_AMBULANTE', 'ROLE_VENDEDOR_PUNTO_FIJO', 'ROLE_CLIENTE')")
+    public ResponseEntity<?> consultarPedido(
             @AuthenticationPrincipal Jwt jwt,
+            Authentication authentication,
             @PathVariable UUID pedidoId,
             HttpServletRequest request
     ) {
         validarSinQuery(request);
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(consultarPedidoVendedor.consultar(UUID.fromString(jwt.getSubject()), pedidoId));
+        UUID userId = UUID.fromString(jwt.getSubject());
+        Object body = esCliente(authentication)
+                ? consultarPedidoCliente.consultar(userId, pedidoId)
+                : consultarPedidoVendedor.consultar(userId, pedidoId);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
+    }
+
+    private static boolean esCliente(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_CLIENTE".equals(authority.getAuthority()));
     }
 
     @PostMapping("/api/v1/pedidos/cotizacion")
@@ -298,7 +321,7 @@ public class PedidoController {
     ) {
         UbicacionEntrega ubicacion = ubicacionRequest == null ? null : new UbicacionEntrega(
                 ubicacionRequest.latitud(), ubicacionRequest.longitud(),
-                ubicacionRequest.direccion(), ubicacionRequest.referencia());
+                ubicacionRequest.direccion(), ubicacionRequest.referencia(), ubicacionRequest.barrio());
         return new Solicitud(emprendimientoId, modalidad,
                 items.stream().map(item -> new ItemSolicitud(item.productoId(), item.cantidad())).toList(),
                 ubicacion, reserva);
@@ -332,6 +355,7 @@ public class PedidoController {
             @NotNull @DecimalMin("-90") @DecimalMax("90") Double latitud,
             @NotNull @DecimalMin("-180") @DecimalMax("180") Double longitud,
             @NotBlank @Size(max = 300) String direccion,
-            @Size(max = 300) String referencia
+            @Size(max = 300) String referencia,
+            @Size(max = 100) String barrio
     ) {}
 }

@@ -30,8 +30,8 @@ Como administrador, quiero consultar los reportes, para identificar y revisar lo
 
 ### Edge Cases
 
-- ¿Cómo se priorizan visualmente los reportes más antiguos o urgentes?
-- ¿Qué ocurre si el administrador filtra por un estado que no tiene reportes asociados?
+- **¿Cómo se priorizan visualmente los reportes más antiguos o urgentes?** Los pendientes aparecen primero, los más antiguos arriba, y se resaltan los que llevan más de 48 horas sin resolverse.
+- **¿Qué ocurre si el administrador filtra por un estado que no tiene reportes asociados?** Muestra "Sin resultados" y la opción de limpiar el filtro.
 
 ## Requirements *(mandatory)*
 
@@ -44,6 +44,14 @@ Como administrador, quiero consultar los reportes, para identificar y revisar lo
 ### Key Entities *(include if feature involves data)*
 
 - **Reporte**: Ver definición en RF-60.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Filtro opcional: estado (pendiente o resuelto).
+
+**Datos que se muestran o filtran**
+
+- Autor, motivo, descripción, entidad relacionada, fecha y estado; los pendientes primero y los de más de 48 horas resaltados.
 
 ## Success Criteria *(mandatory)*
 

@@ -65,7 +65,7 @@ class NotificationOutboxEventHandlerTest {
         assertEquals(new NotificationEvent(eventId, event.type(), payload), applicationEvent.getValue());
         verify(pushNotifications).send(dispatch.tokens(), dispatch.title(), dispatch.body());
         assertEquals("pedidos.pedido-creado", handler.eventType());
-        assertEquals(18, handler.eventTypes().size());
+        assertEquals(19, handler.eventTypes().size());
         assertTrue(handler.eventTypes().contains("cuentas.cuenta-eliminada"));
         assertTrue(handler.eventTypes().contains("reportes.reporte-creado"));
     }

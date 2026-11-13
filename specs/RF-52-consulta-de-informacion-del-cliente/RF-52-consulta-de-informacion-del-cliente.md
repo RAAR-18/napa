@@ -28,9 +28,9 @@ Como vendedor, quiero consultar la información del cliente, para conocer los da
 
 ### Edge Cases
 
-- ¿Qué sucede si el cliente ha actualizado su información personal después de haber realizado el pedido?
-- ¿Cómo se maneja la consulta si el cliente eliminó su cuenta después de completar el pedido?
-- ¿Qué datos del cliente se ocultan por privacidad si no son necesarios para gestionar el pedido?
+- **¿Qué sucede si el cliente ha actualizado su información personal después de haber realizado el pedido?** El vendedor ve los datos de contacto vigentes; la ubicación de entrega es la registrada en el pedido y no cambia.
+- **¿Cómo se maneja la consulta si el cliente eliminó su cuenta después de completar el pedido?** Se muestra "Cliente eliminado" con los datos mínimos del pedido y sin datos de contacto.
+- **¿Qué datos del cliente se ocultan por privacidad si no son necesarios para gestionar el pedido?** No se muestran el correo, el documento ni otros pedidos del cliente; solo nombre, teléfono y ubicación de entrega.
 
 ## Requirements *(mandatory)*
 
@@ -44,6 +44,15 @@ Como vendedor, quiero consultar la información del cliente, para conocer los da
 
 - **Cliente**: Usuario cuya información básica de contacto y entrega es consultada por el vendedor en el contexto de un pedido.
 - **Pedido**: Relación que habilita la consulta de la información del cliente por parte del vendedor.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno.
+
+**Datos que se muestran o filtran**
+
+- Nombre, teléfono y ubicación de entrega del cliente del pedido.
+- Se ocultan correo, documento y otros pedidos.
 
 ## Success Criteria *(mandatory)*
 

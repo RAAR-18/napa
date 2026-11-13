@@ -80,9 +80,9 @@ Como domiciliario, quiero consultar las calificaciones y comentarios de emprendi
 
 ### Edge Cases
 
-- ¿Qué muestra el sistema cuando una entidad aún no tiene calificaciones registradas?
-- ¿Cómo se manejan comentarios reportados o eliminados dentro del promedio mostrado?
-- ¿Qué ocurre si el usuario consulta calificaciones de una entidad inactiva o eliminada?
+- **¿Qué muestra el sistema cuando una entidad aún no tiene calificaciones registradas?** Muestra el mensaje "Aún sin calificaciones" y no calcula promedio.
+- **¿Cómo se manejan comentarios reportados o eliminados dentro del promedio mostrado?** Los comentarios eliminados no se muestran ni cuentan en el promedio; los reportados siguen visibles y en el promedio hasta que el administrador los modere, y entonces el promedio se recalcula.
+- **¿Qué ocurre si el usuario consulta calificaciones de una entidad inactiva o eliminada?** Se muestran como histórico con la etiqueta "no disponible" cuando el usuario llega desde un pedido anterior; su calificación deja de actualizarse.
 
 ## Requirements *(mandatory)*
 
@@ -98,6 +98,15 @@ Como domiciliario, quiero consultar las calificaciones y comentarios de emprendi
 
 - **Calificación**: Registro numérico y textual asociado a una entidad calificada (emprendimiento, producto, domiciliario, cliente).
 - **Perfil de reputación**: Vista agregada del promedio de calificación y los comentarios de una entidad.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El usuario selecciona la entidad cuyas calificaciones quiere ver.
+
+**Datos que se muestran o filtran**
+
+- Promedio y cantidad de calificaciones de la entidad.
+- Comentarios: autor, calificación, texto y fecha, paginados de a 20 y del más reciente al más antiguo.
 
 ## Success Criteria *(mandatory)*
 

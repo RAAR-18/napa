@@ -23,6 +23,10 @@ import java.util.UUID;
 
 @Repository
 public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
+    /** Pedidos del vendedor: los de su emprendimiento activo (RF-50, RF-51). */
+    private static final String VENDEDOR = "e.usuario_id = ? AND e.estado = 'ACTIVO'";
+    /** Pedidos del cliente: los que hizo, aunque el emprendimiento ya no esté activo (RF-47, RF-48). */
+    private static final String CLIENTE = "p.usuario_id = ?";
     private final JdbcTemplate jdbc;
 
     public PedidoPersistenceAdapter(JdbcTemplate jdbc) {
@@ -46,6 +50,23 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
                     VALUES (?, ?, ?, ?, ?)
                     """, item.id(), pedido.id(), item.productoId(), item.cantidad(), item.precioUnitario());
         }
+    }
+
+    @Override
+    public long contarSinCerrarDeEmprendimiento(UUID emprendimientoId) {
+        Long total = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM pedido
+                WHERE emprendimiento_id = ?
+                  AND estado IN ('PENDIENTE', 'ACEPTADO', 'LISTO_PARA_RECOGER', 'EN_CAMINO')
+                """, Long.class, emprendimientoId);
+        return total == null ? 0 : total;
+    }
+
+    @Override
+    public int contarItems(UUID pedidoId) {
+        Integer total = jdbc.queryForObject("SELECT COUNT(*)::int FROM item_pedido WHERE pedido_id = ?",
+                Integer.class, pedidoId);
+        return total == null ? 0 : total;
     }
 
     @Override
@@ -103,14 +124,49 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
             long offset,
             int limit
     ) {
+        return listar(VENDEDOR, vendedorId, filtro, offset, limit);
+    }
+
+    @Override
+    public long contarPedidosVendedor(UUID vendedorId, FiltroPedidosVendedor filtro) {
+        return contar(VENDEDOR, vendedorId, filtro);
+    }
+
+    @Override
+    public List<PedidoListadoProjection> listarPedidosCliente(
+            UUID clienteId,
+            FiltroPedidosVendedor filtro,
+            long offset,
+            int limit
+    ) {
+        return listar(CLIENTE, clienteId, filtro, offset, limit);
+    }
+
+    @Override
+    public long contarPedidosCliente(UUID clienteId, FiltroPedidosVendedor filtro) {
+        return contar(CLIENTE, clienteId, filtro);
+    }
+
+    @Override
+    public Optional<PedidoDetalleProjection> consultarDetalleCliente(UUID clienteId, UUID pedidoId) {
+        return consultarDetalle(CLIENTE, clienteId, pedidoId);
+    }
+
+    private List<PedidoListadoProjection> listar(
+            String owner,
+            UUID ownerId,
+            FiltroPedidosVendedor filtro,
+            long offset,
+            int limit
+    ) {
         List<Object> parameters = new ArrayList<>();
-        String where = vendedorAndFilters(vendedorId, filtro, parameters);
+        String where = ownerAndFilters(owner, ownerId, filtro, parameters);
         parameters.add(limit);
         parameters.add(offset);
         String direction = filtro.ascendente() ? "ASC" : "DESC";
         return jdbc.query("""
                 SELECT p.id, p.usuario_id AS cliente_id, p.created_at, p.estado, p.modalidad,
-                    p.reserva_at, p.total
+                    p.reserva_at, p.total, e.id AS emprendimiento_id, e.nombre AS emprendimiento_nombre
                 """ + where + " ORDER BY p.created_at " + direction
                 + ", p.id ASC LIMIT ? OFFSET ?", (row, index) -> new PedidoListadoProjection(
                 row.getObject("id", UUID.class),
@@ -119,33 +175,39 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
                 EstadoPedido.valueOf(row.getString("estado")),
                 ModalidadEntrega.valueOf(row.getString("modalidad")),
                 instant(row.getTimestamp("reserva_at")),
-                row.getLong("total")
+                row.getLong("total"),
+                row.getObject("emprendimiento_id", UUID.class),
+                row.getString("emprendimiento_nombre")
         ), parameters.toArray());
     }
 
-    @Override
-    public long contarPedidosVendedor(UUID vendedorId, FiltroPedidosVendedor filtro) {
+    private long contar(String owner, UUID ownerId, FiltroPedidosVendedor filtro) {
         List<Object> parameters = new ArrayList<>();
-        String where = vendedorAndFilters(vendedorId, filtro, parameters);
+        String where = ownerAndFilters(owner, ownerId, filtro, parameters);
         return jdbc.queryForObject("SELECT count(*) " + where, Long.class, parameters.toArray());
     }
 
     @Override
     public Optional<PedidoDetalleProjection> consultarDetalleVendedor(UUID vendedorId, UUID pedidoId) {
+        return consultarDetalle("e.usuario_id = ?", vendedorId, pedidoId);
+    }
+
+    private Optional<PedidoDetalleProjection> consultarDetalle(String owner, UUID ownerId, UUID pedidoId) {
         List<PedidoDetalleRow> rows = jdbc.query("""
                 SELECT p.id, p.usuario_id AS cliente_id, p.estado, p.modalidad, p.reserva_at,
                     p.created_at, p.updated_at, p.medio_pago, p.tarifa_domicilio, p.total,
-                    ubicacion.latitud, ubicacion.longitud, ubicacion.direccion, ubicacion.referencia,
+                    ubicacion.latitud, ubicacion.longitud, ubicacion.direccion, ubicacion.referencia, ubicacion.barrio,
                     producto.id AS producto_id, producto.nombre AS producto_nombre,
                     producto.unidad AS producto_unidad, producto.estado AS producto_estado,
-                    item.cantidad, item.precio_unitario
+                    item.cantidad, item.precio_unitario,
+                    e.id AS emprendimiento_id, e.nombre AS emprendimiento_nombre
                 FROM pedido p
                 JOIN emprendimiento e ON e.id = p.emprendimiento_id
                 JOIN item_pedido item ON item.pedido_id = p.id
                 JOIN producto ON producto.id = item.producto_id
                 LEFT JOIN ubicacion ON ubicacion.id = p.ubicacion_entrega_id
                     AND p.estado NOT IN ('RECHAZADO', 'ENTREGADO', 'CANCELADO')
-                WHERE p.id = ? AND e.usuario_id = ?
+                WHERE p.id = ? AND\s""" + owner + "\n" + """
                 ORDER BY item.producto_id
                 """, (row, index) -> new PedidoDetalleRow(
                 row.getObject("id", UUID.class),
@@ -162,13 +224,16 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
                 row.getObject("longitud", Double.class),
                 row.getString("direccion"),
                 row.getString("referencia"),
+                row.getString("barrio"),
                 row.getObject("producto_id", UUID.class),
                 row.getString("producto_nombre"),
                 row.getString("producto_unidad"),
                 "ELIMINADO".equals(row.getString("producto_estado")),
                 row.getBigDecimal("cantidad"),
-                row.getLong("precio_unitario")
-        ), pedidoId, vendedorId);
+                row.getLong("precio_unitario"),
+                row.getObject("emprendimiento_id", UUID.class),
+                row.getString("emprendimiento_nombre")
+        ), pedidoId, ownerId);
         if (rows.isEmpty()) {
             return Optional.empty();
         }
@@ -184,7 +249,7 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
                 .toList();
         PedidoDetalleProjection.Ubicacion location = first.latitud() == null ? null
                 : new PedidoDetalleProjection.Ubicacion(
-                        first.latitud(), first.longitud(), first.direccion(), first.referencia());
+                        first.latitud(), first.longitud(), first.direccion(), first.referencia(), first.barrio());
         return Optional.of(new PedidoDetalleProjection(
                 first.id(),
                 first.clienteId(),
@@ -197,21 +262,23 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
                 first.tarifaDomicilio(),
                 first.total(),
                 location,
-                items
+                items,
+                first.emprendimientoId(),
+                first.emprendimientoNombre()
         ));
     }
 
-    private String vendedorAndFilters(
-            UUID vendedorId,
+    private String ownerAndFilters(
+            String owner,
+            UUID ownerId,
             FiltroPedidosVendedor filtro,
             List<Object> parameters
     ) {
         StringBuilder where = new StringBuilder("""
                 FROM pedido p
                 JOIN emprendimiento e ON e.id = p.emprendimiento_id
-                WHERE e.usuario_id = ? AND e.estado = 'ACTIVO'
-                """);
-        parameters.add(vendedorId);
+                WHERE """).append(" ").append(owner).append('\n');
+        parameters.add(ownerId);
         if (filtro.estado() != null) {
             where.append(" AND p.estado = ?");
             parameters.add(filtro.estado().name());
@@ -253,12 +320,15 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
             Double longitud,
             String direccion,
             String referencia,
+            String barrio,
             UUID productoId,
             String productoNombre,
             String productoUnidad,
             boolean productoEliminado,
             java.math.BigDecimal cantidad,
-            long precioUnitario
+            long precioUnitario,
+            UUID emprendimientoId,
+            String emprendimientoNombre
     ) {}
 
     private record PedidoRow(

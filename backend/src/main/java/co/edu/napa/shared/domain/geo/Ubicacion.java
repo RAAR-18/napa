@@ -10,9 +10,23 @@ public record Ubicacion(
         double longitud,
         String direccion,
         String referencia,
+        String barrio,
         Instant createdAt,
         Instant updatedAt
 ) {
+    /** Ubicación sin barrio (puntos fijos y datos anteriores al barrio). */
+    public Ubicacion(
+            UUID id,
+            double latitud,
+            double longitud,
+            String direccion,
+            String referencia,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(id, latitud, longitud, direccion, referencia, null, createdAt, updatedAt);
+    }
+
     public Ubicacion {
         Objects.requireNonNull(id, "id");
         if (!Double.isFinite(latitud) || latitud < -90 || latitud > 90) {
@@ -26,6 +40,9 @@ public record Ubicacion(
         }
         if (referencia != null && referencia.length() > 300) {
             throw new IllegalArgumentException("referencia cannot exceed 300 characters");
+        }
+        if (barrio != null && (barrio.isBlank() || barrio.length() > 100)) {
+            throw new IllegalArgumentException("barrio must be null or contain between 1 and 100 characters");
         }
         Objects.requireNonNull(createdAt, "createdAt");
         Objects.requireNonNull(updatedAt, "updatedAt");

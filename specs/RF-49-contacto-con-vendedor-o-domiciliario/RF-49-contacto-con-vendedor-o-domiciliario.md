@@ -28,9 +28,9 @@ Como cliente, quiero contactar al vendedor o domiciliario, para comunicarme con 
 
 ### Edge Cases
 
-- ¿Qué sucede si el cliente intenta contactar a un domiciliario cuando el pedido aún no tiene uno asignado?
-- ¿Cómo maneja el sistema la falta de respuesta del vendedor o del domiciliario tras ser contactado?
-- ¿Qué ocurre si el cliente intenta contactar al vendedor o domiciliario de un pedido ya finalizado o cancelado?
+- **¿Qué sucede si el cliente intenta contactar a un domiciliario cuando el pedido aún no tiene uno asignado?** La opción de contactar al domiciliario aparece deshabilitada hasta que haya uno asignado.
+- **¿Cómo maneja el sistema la falta de respuesta del vendedor o del domiciliario tras ser contactado?** El sistema no obliga a responder; si el cliente lo necesita, puede crear un reporte (RF-60).
+- **¿Qué ocurre si el cliente intenta contactar al vendedor o domiciliario de un pedido ya finalizado o cancelado?** El contacto se cierra 24 horas después de que el pedido finaliza, se cancela o se rechaza; después solo se puede reportar.
 
 ## Requirements *(mandatory)*
 
@@ -45,6 +45,18 @@ Como cliente, quiero contactar al vendedor o domiciliario, para comunicarme con 
 
 - **Pedido**: Contiene la referencia al vendedor y, cuando aplica, al domiciliario asignado.
 - **Canal de contacto**: Medio de comunicación habilitado entre el cliente y el vendedor o domiciliario (mensaje o llamada).
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Canal de contacto | Sí | Mensaje o llamada, con el vendedor o con el domiciliario asignado. |
+
+**Datos que asigna el sistema**
+
+- Registro del canal habilitado asociado al pedido.
 
 ## Success Criteria *(mandatory)*
 

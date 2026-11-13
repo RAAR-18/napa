@@ -28,8 +28,8 @@ Como cliente, quiero listar mis pedidos, para consultar el historial de mis comp
 
 ### Edge Cases
 
-- ¿Cómo se muestran las reservas programadas para una fecha futura?
-- ¿Qué ocurre si el volumen de pedidos es alto? ¿Se pagina o se filtra por estado o fecha?
+- **¿Cómo se muestran las reservas programadas para una fecha futura?** Con su estado, la etiqueta "reserva" y la fecha y hora acordadas.
+- **¿Qué ocurre si el volumen de pedidos es alto? ¿Se pagina o se filtra por estado o fecha?** El listado se pagina de a 20 y se puede filtrar por estado y fecha.
 
 ## Requirements *(mandatory)*
 
@@ -43,6 +43,14 @@ Como cliente, quiero listar mis pedidos, para consultar el historial de mis comp
 ### Key Entities
 
 - **Pedido**: Entidad listada, con emprendimiento, modalidad, fecha, estado y total.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Filtros opcionales: estado y fecha.
+
+**Datos que se muestran o filtran**
+
+- Emprendimiento, modalidad, fecha, estado y total; paginado de a 20.
 
 ## Success Criteria *(mandatory)*
 

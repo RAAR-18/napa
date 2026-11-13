@@ -20,6 +20,15 @@ El traspaso del pedido tiene dos pasos con dos actores. El domiciliario asignado
 
 El domicilio `ASIGNADO` lo produce RF-19 y la tabla `evento_trazabilidad` la crea RF-14. No existen las transiciones ni las acciones en las pantallas del domiciliario y del vendedor.
 
+## Implementación (Fase 3, 2026-11-13)
+
+Implementado: `POST /api/v1/domicilios/{id}/confirmar-recogida` (domiciliario asignado, `ASIGNADO → RECOGIDO`, E10) y `POST /api/v1/domicilios/{id}/confirmar-salida` (vendedor dueño, `RECOGIDO → EN_CAMINO`, el pedido también pasa a `EN_CAMINO`, E11). Ambos en `EjecucionDomicilioUseCase`, con el domicilio bloqueado (`FOR UPDATE`) y su evento de trazabilidad. Cambios respecto al plan:
+
+- Un domicilio ajeno responde `404 NOT_FOUND` (no `403`), igual que en RF-18, para no revelar que existe.
+- La salida desde `ASIGNADO` responde `409 INVALID_STATE` con "Primero el domiciliario debe confirmar la recogida".
+- **No implementado (pendiente de confirmar)**: la salida automática a los 15 minutos con recordatorio a los 10.
+- App: botón "Confirmar recogida" en `domicilio-domiciliario.tsx`; "Confirmar salida" (con confirmación) y "Ver trazabilidad" en `pedido-vendedor.tsx`.
+
 ## Actors
 
 | Actor | Participación en esta feature |

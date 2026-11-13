@@ -364,6 +364,12 @@ export default function EmprendimientosScreen() {
                   A {Math.round(item.distanciaMetros)} m
                 </Text>
               ) : null}
+              <TextButton
+                title={`Ver detalle de ${item.nombre}`}
+                onPress={() =>
+                  router.push({ pathname: '/emprendimiento-detalle', params: { emprendimientoId: item.id } })
+                }
+              />
               <TextButton title={`Ver productos de ${item.nombre}`} onPress={() => router.push({
                 pathname: '/catalogo',
                 params: {

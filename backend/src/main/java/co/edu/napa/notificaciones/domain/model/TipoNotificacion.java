@@ -17,6 +17,7 @@ public enum TipoNotificacion {
     DOMICILIO_ENTREGADO("domicilios.domicilio-entregado"),
     PAGO_TARIFA_REGISTRADO("pagos.pago-tarifa-registrado"),
     DOMICILIO_CANCELADO("domicilios.domicilio-cancelado"),
+    DOMICILIO_SIN_ASIGNAR("domicilios.domicilio-sin-asignar"),
     REPORTE_RESUELTO("reportes.reporte-resuelto"),
     COMENTARIO_MODERADO("calificaciones.comentario-moderado"),
     REPORTE_CREADO("reportes.reporte-creado");

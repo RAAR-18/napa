@@ -34,7 +34,7 @@ public class ConsultarEmprendimientoParaPedidoUseCase implements ConsultarEmpren
                     .orElseThrow(() -> new DomainException("INVALID_STATE",
                             "El emprendimiento no tiene una ubicación válida."));
             return new Referencia(value.id(), value.usuarioId(), value.nombre(),
-                    new GeoPoint(ubicacion.latitud(), ubicacion.longitud()));
+                    new GeoPoint(ubicacion.latitud(), ubicacion.longitud()), ubicacion.id());
         });
     }
 }

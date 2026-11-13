@@ -271,3 +271,7 @@ frontend/__tests__/notificaciones/preferencias.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo. 
+## Notas de implementación (2026-11-13)
+
+- El backend ya existía con `PATCH /notificaciones/preferencias` (lista parcial `{ preferencias: [{ tipo, habilitada }] }`) en lugar de `PUT /notificaciones/preferencias/{tipo}`; devuelve todos los tipos.
+- App: `preferencias-notificaciones.tsx`. Filtra en la app los tipos que recibe el rol (tabla `tiposNotificacion` en `lib/notificaciones.ts`); cada interruptor guarda solo su tipo y vuelve atrás si falla.

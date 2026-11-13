@@ -30,8 +30,8 @@ Como administrador, quiero listar todos los usuarios, para tener una visión gen
 
 ### Edge Cases
 
-- ¿Cómo se pagina el listado cuando existen miles de usuarios registrados?
-- ¿Se incluyen en el listado las cuentas ya eliminadas o solo las activas?
+- **¿Cómo se pagina el listado cuando existen miles de usuarios registrados?** Se pagina de a 20 usuarios, con búsqueda por nombre, correo o teléfono.
+- **¿Se incluyen en el listado las cuentas ya eliminadas o solo las activas?** No por defecto; un filtro permite incluir las que están dentro del periodo de restauración de 30 días.
 
 ## Requirements *(mandatory)*
 
@@ -44,6 +44,14 @@ Como administrador, quiero listar todos los usuarios, para tener una visión gen
 ### Key Entities *(include if feature involves data)*
 
 - **Usuario**: Ver definición en RF-66.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Búsqueda por nombre, correo o teléfono y filtro por rol.
+
+**Datos que se muestran o filtran**
+
+- Nombre, rol y estado de cada usuario; paginado de a 20; las cuentas eliminadas solo con el filtro correspondiente.
 
 ## Success Criteria *(mandatory)*
 
