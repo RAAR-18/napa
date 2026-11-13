@@ -24,7 +24,7 @@
 - **RNF20 – Recuperación**: El sistema deberá contar con mecanismos que permitan recuperar la información ante fallos del sistema o pérdida de datos.
 - **RNF21 – Auditoría**: El sistema deberá permitir identificar las operaciones relevantes realizadas sobre pedidos, reservas, domicilios, pagos y reportes.
 - **RNF22 – Localización**: El sistema deberá utilizar la información de ubicación de manera consistente para calcular distancias, tarifas y rutas, mostrar emprendimientos cercanos y mostrar la ubicación del cliente y del domiciliario cuando corresponda.
-- **RNF23 – Consistencia de estados**: El sistema deberá garantizar que los estados de productos, pedidos, reservas, domicilios, pagos y reportes solo puedan cambiar mediante transiciones válidas (por ejemplo, un domicilio avanza en la secuencia disponible → asignado → recogido → en camino → entregado → finalizado, o pasa a cancelado).
+- **RNF23 – Consistencia de estados**: El sistema deberá garantizar que los estados de productos, pedidos, reservas, domicilios, pagos y reportes solo puedan cambiar mediante transiciones válidas (por ejemplo, un domicilio avanza en la secuencia disponible → asignado → recogido → en camino → entregado, o pasa a cancelado).
 - **RNF24 – Protección ante errores**: El sistema deberá mostrar mensajes claros al usuario cuando una operación no pueda completarse.
 - **RNF25 – Arquitectura**: El sistema deberá mantener una separación clara de responsabilidades entre sus diferentes componentes y capas para facilitar su evolución.
 - **RNF26 – Moderación de contenido**: El sistema deberá proveer mecanismos que permitan controlar y moderar el contenido generado por los usuarios (comentarios y calificaciones) para prevenir contenido ofensivo, fraudulento o abusivo.

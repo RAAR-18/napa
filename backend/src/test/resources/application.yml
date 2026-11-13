@@ -1,0 +1,14 @@
+napa:
+  pedidos:
+    tarifa:
+      base: 3050
+      valor-por-km: 500
+      valor-por-min: 200
+      factor-linea-recta: 1.3
+  tarifa:
+    minima-defecto: 3050
+  pagos:
+    cifrado:
+      clave-base64: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  auth:
+    jwt-secret: test-only-secret-that-is-at-least-32-bytes-long

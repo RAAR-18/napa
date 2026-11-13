@@ -16,19 +16,24 @@ Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dom
 ## Decisiones (ADR resumido)
 
 | # | Decisión | Motivo |
-|---|---|---|
-| D1 | **Autenticación**: contraseña como credencial; código de un solo uso (Twilio Verify) solo para verificar el celular y recuperar la contraseña (RF-70). El administrador entra solo con contraseña (cuenta sembrada). | Limita el costo de mensajes (un código por alta, cambio de celular o recuperación, no por inicio de sesión), conserva el límite de intentos de RF-10 FR-004 y no depende de WhatsApp para entrar a vender. |
-| D2 | Spring Boot **4.1.x**, Java 21 LTS | 3.2 está sin soporte. Verificar parche y compatibilidad de Hibernate Spatial al iniciar. |
+| ------ | ------ | ------ |
+| D1 | **Autenticación** : contraseña como credencial; código de un solo uso (Twilio Verify) solo para verificar el celular y recuperar la contraseña (RF-70). El administrador entra solo con contraseña (cuenta sembrada). | Limita el costo de mensajes (un código por alta, cambio de celular o recuperación, no por inicio de sesión), conserva el límite de intentos de RF-10 FR-004 y no depende de WhatsApp para entrar a vender. |
+| D2 | Spring Boot  **4.1.x** , Java 21 LTS | 3.2 está sin soporte. Verificar parche y compatibilidad de Hibernate Spatial al iniciar. |
 | D3 | Se elimina "Cash-Only". Medios: efectivo o transferencia; domicilio solo digital | RNF29, RF-42, RF-63. |
-| D4 | Push con **token FCM nativo** (`getDevicePushTokenAsync`) + Firebase Admin, y **development build** de Expo | Expo Go no sirve para push remoto ni react-native-maps con claves propias. |
-| D5 | Offline: **expo-sqlite + outbox + `Idempotency-Key`**, sin WatermelonDB | La app no necesita sincronización bidireccional de grafos; el servidor es la autoridad. Menos dependencias nativas en gama baja (RNF31). |
-| D6 | Idempotencia en dos capas: Redis (respuesta cacheada por clave, 24 h) y **restricciones únicas en BD** como garantía final | Si Redis cae, la BD sigue evitando duplicados (RNF27). |
-| D7 | **Outbox transaccional**: el evento se escribe en la misma transacción; un relay lo despacha. `@TransactionalEventListener(AFTER_COMMIT)` solo para efectos locales no críticos (invalidar caché) | Evita perder notificaciones si el proceso cae tras el commit. |
-| D8 | JWT de acceso corto + refresh rotativo + claim `sv` (versión de sesión) validado contra Redis | Permite cerrar sesiones (RF-09 FR-003), eliminar cuentas (RF-11, RF-68) y cambiar rol sin esperar expiración. |
-| D9 | Rutas y distancias por servicio externo tras `RoutingPort`; resultados cacheados en Redis | RNF19. Tarifa = distancia A–B (RF-45 FR-006) con piso RF-44. |
-| D10 | PostGIS con `geography(Point,4326)`; cercanía con `ST_DWithin`/`ST_Distance`; índice GiST | RNF22. |
-| D11 | Límites entre módulos verificados con **ArchUnit** (dominio sin Spring/JPA; módulos solo se hablan por puertos) | RNF13, RNF25. |
-| D12 | Verificación del celular con **Twilio Verify** (WhatsApp con respaldo SMS) detrás de `VerificarCelularPort` | El equipo ya lo conoce y delega a Twilio la generación del código, su vigencia, los intentos y las plantillas aprobadas. Costo: 0,05 USD por verificación exitosa más la tarifa del canal (a confirmar para Colombia). Adaptador de consola para desarrollo y pruebas, sin gastar unidades. Cambiar de proveedor es cambiar un adaptador. |
+| D4 | Push con  **token FCM nativo**  (getDevicePushTokenAsync) + Firebase Admin, y  **development build**  de Expo | Expo Go no sirve para push remoto ni react-native-maps con claves propias. |
+| D5 | Offline:  **expo-sqlite + outbox + Idempotency-Key** , sin WatermelonDB | La app no necesita sincronización bidireccional de grafos; el servidor es la autoridad. Menos dependencias nativas en gama baja (RNF31). |
+| D6 | Idempotencia en dos capas: Redis (respuesta cacheada por clave, 24 h) y  **restricciones únicas en BD**  como garantía final | Si Redis cae, la BD sigue evitando duplicados (RNF27). |
+| D7 | **Outbox transaccional** : el evento se escribe en la misma transacción; un relay lo despacha. @TransactionalEventListener(AFTER_COMMIT) solo para efectos locales no críticos (invalidar caché) | Evita perder notificaciones si el proceso cae tras el commit. |
+| D8 | JWT de acceso corto + refresh rotativo + claim sv (versión de sesión) validado contra Redis | Permite cerrar sesiones (RF-09 FR-003), eliminar cuentas (RF-11, RF-68) y cambiar rol sin esperar expiración. |
+| D9 | Proveedor de rutas: OpenRouteService (perfil driving-car) tras RoutingPort, con caché en Redis de 24 h (coordenadas a 4 decimales) y respaldo de línea recta al calcular la tarifa (RF-45). Plan Standard gratuito: 2.000 solicitudes/día y 40/min. Si no alcanza, se autoaloja ORS cambiando napa.routing.ors.base-url. RNF19. | RNF19. Tarifa = distancia A–B (RF-45 FR-006) con piso RF-44. |
+| D10 | PostGIS con geography(Point,4326); cercanía con ST_DWithin/ST_Distance; índice GiST | RNF22. |
+| D11 | Límites entre módulos verificados con  **ArchUnit**  (dominio sin Spring/JPA; módulos solo se hablan por puertos) | RNF13, RNF25. |
+| D12 | Verificación del celular con  **Twilio Verify**  (WhatsApp con respaldo SMS) detrás de VerificarCelularPort | El equipo ya lo conoce y delega a Twilio la generación del código, su vigencia, los intentos y las plantillas aprobadas. Costo: 0,05 USD por verificación exitosa más la tarifa del canal (a confirmar para Colombia). Adaptador de consola para desarrollo y pruebas, sin gastar unidades. Cambiar de proveedor es cambiar un adaptador. |
+| D13 | El código de confirmación del domicilio se genera al asignarlo (6 dígitos aleatorios) y se guarda tal cual; solo lo ve el cliente. El domiciliario lo ingresa y, si coincide, el domicilio y el pedido pasan a ENTREGADO (única confirmación). Máximo 5 intentos y bloqueo de 15 min. | Es una decisión de simplicidad: el riesgo de guardarlo es bajo frente al resto de datos de la base y el límite de intentos lo mitiga. |
+| D14 | Contraseñas con Argon2id, longitud de 8–128 caracteres y sin reglas de composición; contraseñas nuevas con recuperación o cambio revocan las demás sesiones. | Decisión aprobada por el usuario; balancea compatibilidad con frases de contraseña y un mínimo explícito. |
+| D15 | Tras 5 fallos en 15 minutos por identificador normalizado y por IP, login responde `429` con `Retry-After`. | Decisión aprobada por el usuario para mitigar fuerza bruta sin revelar si existe la cuenta. |
+| D16 | Bootstrap administrativo habilitado explícitamente mediante secretos de entorno y ejecutado una sola vez; el marcador persistente impide volver a sembrar la cuenta. | Decisión aprobada por el usuario; no se persiste la contraseña en claro ni se permiten registros públicos de administrador. |
+| D17 | Se aceptan móviles colombianos de 10 dígitos y números internacionales E.164; se normalizan y persisten como E.164. | Decisión aprobada por el usuario; asegura unicidad y compatibilidad con proveedores de verificación. |
 
 ## Technical Context
 
@@ -61,32 +66,33 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - Tabla `outbox_event` (definida en `spec-general`). Catálogo de eventos en `specs/general/eventos.md`.
 - El caso de uso publica el evento dentro de su transacción; el relay lo lee por lotes, lo entrega a los manejadores registrados y marca `processed_at`.
 - Manejadores **idempotentes** (entrega al menos una vez): clave natural `event_id` en `notificacion`.
-- `domicilio_historial` (trazabilidad, RF-26) NO se alimenta por eventos: el caso de uso inserta la fila en la misma transacción que cambia el estado del domicilio.
+- `EventoTrazabilidad` (trazabilidad, RF-26) NO se alimenta por eventos: el caso de uso inserta la fila en la misma transacción que cambia el estado del domicilio.
 - Reintentos con retroceso exponencial y límite; tras el límite, estado `DEAD` y alerta.
 
 ### Notificaciones (RF-38, RF-39)
 
-- Entidades `notificacion`, `preferencia_notificacion` y `device_token` (en `spec-general`). La notificación siempre se guarda.
-- Un listener por evento en `notificaciones/infrastructure/adapters/in/event`, que llama al puerto `EnviarNotificacionPort`. Este consulta las preferencias (RF-39), guarda la notificación y envía FCM con `sendEachForMulticast` en lotes de 500; tokens inválidos se borran.
-- Si FCM falla, la notificación sigue visible en RF-38 (degradación controlada, RNF19/RNF15).
-- Pendiente de decidir: notificaciones críticas que no se puedan silenciar (ver Open Questions).
+- Entidades `Notificacion`, `PreferenciaNotificacion` y `DispositivoToken` (en `spec-general`).
+- El manejador de outbox de `notificaciones/infrastructure/event` enruta E01–E12 y E14–E19 al puerto de aplicación; E18 limpia notificaciones de cuentas eliminadas, y E19 avisa a los administradores de reportes nuevos.
+- El adaptador FCM usa `sendEachForMulticast` en lotes de 500; tokens `UNREGISTERED` se eliminan. Si FCM falla, la notificación sigue visible en RF-38 (degradación controlada, RNF19/RNF15).
+- El feed y las preferencias se consultan mediante endpoints autenticados; el detalle marca como leída al abrir. La retención se aplica diariamente a los 30 días.
+- Las preferencias de RF-39 se respetan para todos los tipos de notificación; no existen excepciones no silenciables.
 
 ### Seguridad y autenticación
 
 | Flujo | Diseño |
 |---|---|
 | Registro (RF-07) | `POST /auth/register` crea cuenta `PENDIENTE_VERIFICACION` con celular único, contraseña (Argon2id/BCrypt) y rol; pide la verificación del celular (RF-70). `POST /auth/verify-phone` activa la cuenta y entrega tokens (cumple FR-004 "iniciar sesión de inmediato"). |
-| Verificación del celular (RF-70) | **Twilio Verify** detrás del puerto `VerificarCelularPort` (`iniciar(celular, canal)` y `confirmar(celular, codigo)`). Twilio genera y entrega el código por WhatsApp con respaldo SMS, controla su vigencia y el número de intentos; Ñapa nunca ve el código, así que no lo guarda ni lo hashea. Ñapa mantiene sus **propios límites** en Redis (`verif-rl:{celular}` y por IP: 1/min, 5/hora) para controlar el costo y el abuso. Cada solicitud se registra en la entidad `mensaje` (sin código). Adaptadores: `TwilioVerifyAdapter` (producción) y `ConsolaVerificacionAdapter` (desarrollo y pruebas; acepta un código fijo y no llama a Twilio). La verificación no usa el outbox: es una llamada directa al puerto y, si se pierde, el usuario pulsa "reenviar". |
+| Verificación del celular (RF-70) | **Twilio Verify** detrás del puerto `VerificarCelularPort` (`iniciar(celular, canal)` y `confirmar(celular, codigo)`). Twilio genera y entrega el código por WhatsApp con respaldo SMS, controla su vigencia y el número de intentos; Ñapa nunca ve el código, así que no lo guarda ni lo hashea. Para limitar costo y abuso, Ñapa aplica en Redis 1 envío/minuto y 5/hora por celular, y 20/hora por IP. Estos límites internos no garantizan mantenerse dentro de una cuota gratuita del proveedor; F022 debe verificar las condiciones vigentes para Colombia y definir un tope mensual global con alerta antes de habilitar envíos reales. Cada solicitud se registra en la entidad `mensaje` (sin código). Adaptadores: `TwilioVerifyAdapter` (producción) y `ConsolaVerificacionAdapter` (desarrollo y pruebas; acepta un código fijo y no llama a Twilio). La verificación no usa el outbox: es una llamada directa al puerto y, si se pierde, el usuario pulsa "reenviar". |
 | Login (RF-10) | `POST /auth/login` con celular o correo + contraseña; bloqueo temporal tras N fallos (contador en Redis); mensaje genérico sin indicar qué dato falló. Cuenta sin verificar → `ACCOUNT_NOT_VERIFIED` e invita a reenviar OTP. |
 | Cambio de contraseña (RF-09) | Con contraseña actual, o recuperación con OTP. Incrementa `sv`, revoca refresh tokens salvo el actual y devuelve tokens nuevos. |
 | Admin | Contraseña únicamente, cuenta sembrada por migración o variable de entorno; rate-limit estricto; evaluar TOTP después del MVP. |
-| JWT | Acceso 15 min con `sub`, `role`, `sv`; refresh opaco rotativo guardado hasheado por dispositivo. El filtro compara `sv` con `sv:{userId}` en Redis (fallback a BD si Redis no responde). |
+| JWT | Acceso 15 min con `sub`, `role`, `sv`; refresh opaco rotativo guardado hasheado por dispositivo. El filtro compara `sv` con `sv:{sessionId}` en Redis (fallback a BD si Redis no responde). |
 | Autorización (RNF03) | `@PreAuthorize` por rol + comprobación de pertenencia en el caso de uso (nunca solo en el controlador). |
 | Eliminación (RF-11, RF-68) | Estado `ELIMINADA`, incrementa `sv`, revoca refresh. |
 
 ### Idempotencia (RNF27)
 
-- Todas las operaciones `POST/PATCH` que cambian estado o dinero exigen `Idempotency-Key` (UUID generado en el dispositivo al tocar el botón).
+- Las operaciones `POST/PATCH` que cambian estado o dinero exigen `Idempotency-Key` (UUID generado en el dispositivo al tocar el botón), salvo las excepciones de cada contrato. RF-56 usa PATCH parcial sin esta clave y detecta conflictos con versión; la app envía `If-Match`.
 - Redis `idem:{userId}:{key}` guarda hash de la petición + estado (`IN_PROGRESS`/`DONE`) + respuesta; `SET NX` para el bloqueo. Misma clave y mismo cuerpo → misma respuesta; mismo clave y distinto cuerpo → 422.
 - Garantía final en BD: único por pago de pedido, único por pago de tarifa, único por calificación (autor + entidad + interacción), un domicilio activo por pedido, etc.
 
@@ -99,7 +105,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 ### Geografía (RNF22, RNF04)
 
 - `geography(Point,4326)` en punto fijo, zona del ambulante, ubicación de entrega, puntos A y B.
-- La **ubicación en vivo del domiciliario** no se guarda en PostGIS: la app la envía cada 15 s y se mantiene en Redis (`loc:{domicilioId}`, TTL 2 min). El cliente la consulta cada 15–30 s (RNF30). Se elimina al finalizar (RNF04).
+- La **ubicación en vivo del domiciliario** no se guarda en PostGIS: la app la envía cada 15 s y se mantiene en Redis (`loc:{domicilioId}`, TTL 2 min). El cliente la consulta cada 15–30 s (RNF30). Se elimina al entregarse o cancelarse el domicilio (RNF04).
 - La ubicación del cliente solo se devuelve al vendedor o domiciliario del pedido activo (RF-35 FR-003).
 
 ### Frontend (RNF28, RNF31)
@@ -112,40 +118,53 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 ## Fases de construcción de la base
 
 **Phase F0 – Repositorio y CI**
-- [ ] F001 Monorepo `backend/` y `frontend/`; Gradle/Maven con Java 21 y Boot 4.1.x en `backend/build.gradle`
-- [ ] F002 Docker Compose (PostGIS 16, Redis 7) en `docker-compose.yml`
-- [ ] F003 Pipeline CI: pruebas backend, Jest, ArchUnit
-- [ ] F004 Flyway y migración base con extensión PostGIS en `backend/src/main/resources/db/migration/V1__base.sql`
+- [x] F001 Monorepo `backend/` y `frontend/`; Gradle Wrapper con Java 21 y Boot 4.1.x en `backend/build.gradle`
+- [x] F002 Docker Compose (PostGIS 16, Redis 7) en `docker-compose.yml`
+- [x] F003 Pipeline CI: pruebas backend, Jest, ArchUnit
+- [x] F004 Flyway y migración base con extensión PostGIS en `backend/src/main/resources/db/migration/V1__base.sql`
+
+**Validación local F0**: Gradle, Jest, TypeScript y Expo Doctor pasan. Docker no está instalado en este entorno; CI valida el Compose y los tests de integración usan Testcontainers con `disabledWithoutDocker`.
+**Riesgo de dependencias**: `npm audit --omit=dev` reporta 15 vulnerabilidades altas y 7 moderadas en el árbol de Expo/React Native. La corrección forzada sugerida baja Expo a 44 y React Native a 0.72, incompatibles con el SDK acordado; no se aplicó. Revaluar los avisos al actualizar a una versión compatible antes de publicar.
 
 **Phase F1 – Núcleo compartido**
-- [ ] F010 `ApiError` y manejador global en `backend/.../shared/infrastructure/web/`
-- [ ] F011 `DomainEvent` + outbox + relay + manejadores idempotentes en `shared/infrastructure/outbox/`
-- [ ] F012 `IdempotencyFilter` con Redis y pruebas de concurrencia en `shared/infrastructure/idempotency/`
-- [ ] F013 Utilidades geo y `RoutingPort` con adaptador del proveedor elegido en `shared/infrastructure/geo/`
-- [ ] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
-- [ ] F015 Pruebas de integración con Testcontainers (PostGIS, Redis) como base de test
+- [x] F010 `ApiError` y manejador global en `backend/.../shared/infrastructure/web/`
+- [x] F011 `DomainEvent` + outbox + relay en `shared/infrastructure/outbox/`
+- [x] F012 `IdempotencyFilter` con Redis, integrado después de autenticación; pruebas de concurrencia en `shared/infrastructure/idempotency/`
+- [x] F013 Utilidades geo y `RoutingPort` con adaptador OpenRouteService en `shared/infrastructure/geo/`
+- [x] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
+- [x] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis); validado localmente con Docker el 2026-11-12: suite completa de 279 pruebas en 62 suites, 0 fallos, errores u omisiones (13 suites de integración).
 
 **Phase F2 – Identidad (RF-07, RF-09, RF-10, RF-11)**
-- [ ] F020 Entidades `usuario`, `refresh_token`, `device_token` y migración
-- [ ] F021 `SolicitarVerificacionUseCase` y `ConfirmarVerificacionUseCase` sobre `VerificarCelularPort`, con límites propios en Redis
-- [ ] F022 Crear el servicio de Twilio Verify, habilitar WhatsApp con respaldo SMS, confirmar vigencia, intentos y tarifa para Colombia, y fijar un tope mensual de gasto con alerta. Activar la cuenta de prueba solo al llegar a esta tarea (dura 30 días y solo envía a números verificados)
-- [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover
-- [ ] F024 Filtro JWT con `sv` y cuenta admin sembrada
-- [ ] F025 Pruebas de seguridad: fuerza bruta, OTP agotado, token revocado
+- [ ] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración (implementación presente; falta validar migración/JPA con PostgreSQL/PostGIS en Docker CI)
+- [x] F021 Completar el flujo de solicitud/confirmación sobre `VerificarCelularPort`, límites de envíos e intentos en Redis y adaptador `otp-console` (un único adaptador Redis, perfil y código configurados desde el README; pruebas de contexto y recorrido HTTP con Docker validadas localmente)
+- [ ] F022 Integrar Twilio Verify solo después de confirmar elegibilidad, tarifas y presupuesto para Colombia; no habilitar envíos reales antes de aprobar el tope mensual de gasto.
+- [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover (rutas creadas; OTP queda cerrado con 503 hasta configurar un proveedor)
+- [x] F024 Filtro JWT con `sv` y bootstrap admin de un solo uso
+- [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado (pruebas unitarias y suites Redis/PostgreSQL validadas localmente; el recorrido HTTP verifica OTP agotado, consumo único, rotación y revocación. Pendiente proveedor real y confirmar la ejecución en CI)
+
+**Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` selecciona un único `ConsolaVerificacionAdapter` basado en Redis; `NAPA_OTP_CONSOLE_CODE` exige seis dígitos y no tiene valor predeterminado. No puede activarse junto con `prod`. Sin proveedor configurado, solicitar o confirmar la verificación responde `503`; el registro conserva la cuenta pendiente con envío `FALLIDO`. Nunca se persiste ni registra el OTP. La ejecución local con Docker pasó 194 pruebas, sin omisiones, incluyendo el recorrido HTTP de identidad, los registros simultáneos con celular o correo duplicado, CORS para orígenes web explícitos y las integraciones Redis/PostgreSQL/PostGIS; falta confirmar la ejecución en CI. RF-11 se difiere hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes.
+
+**Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. El proveedor real de OTP y sus costos quedan diferidos hasta aprobar presupuesto. RF-11 se implementará después de los módulos de pedidos, emprendimientos y domicilios, porque aún no existen sus tablas para comprobar operaciones pendientes.
 
 **Phase F3 – Notificaciones (RF-38, RF-39)**
-- [ ] F030 Tablas `notificacion`, `preferencia_notificacion`, `device_token`
-- [ ] F031 Adaptador FCM (Firebase Admin) con limpieza de tokens inválidos
-- [ ] F032 `EnviarNotificacionPort` + listeners por evento del catálogo (E01–E17) en `notificaciones/infrastructure/adapters/in/event`
-- [ ] F033 Entidad `mensaje`, `TwilioVerifyAdapter` y `ConsolaVerificacionAdapter` (RF-70); actualizar el estado del mensaje si Twilio ofrece notificaciones de estado
+- [ ] F030 Tablas `Notificacion` y `PreferenciaNotificacion` en V4; `DispositivoToken` ya existe en V3. La migración está implementada, pero falta validar en PostgreSQL/PostGIS con Docker CI.
+- [x] F031 Adaptador FCM opt-in (Firebase Admin), lotes máximos de 500, limpieza de tokens `UNREGISTERED` y resultado explícito de entrega. Pruebas unitarias pasan; pendiente validar con credenciales/entorno FCM real.
+- [x] F032 Caso de uso, endpoints feed/detalle/preferencias, job de retención y manejador multi-evento para E01–E12, E14–E19 con deduplicación por destinatario. Pruebas unitarias pasan; la validación del esquema sigue pendiente en F030.
+- [ ] F033 Entidad `mensaje` y adaptador Twilio Verify de producción (RF-70); fuera del alcance aprobado para desarrollo, que mantiene OTP real deshabilitado.
 
 **Phase F4 – Frontend base**
 - [ ] F040 Proyecto Expo con development build, navegación y cliente Axios en `frontend/src/services/http/`
 - [ ] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`
-- [ ] F042 Registro del token FCM nativo y pantalla de notificaciones
+- [ ] F042 Registro del token FCM nativo y pantalla de notificaciones; el frontend actual no tiene autenticación, navegación ni cliente HTTP.
 - [ ] F043 Pruebas Jest de outbox (sin red, reintento, duplicado)
 
 **Checkpoint**: se puede registrar un usuario, verificar su celular, iniciar sesión, recibir una notificación push y reenviar una acción creada sin conexión sin duplicarla.
+
+**Avance de oferta (2026-11-11)**: primera entrega en línea de RF-54/RF-55, inventario manual de RF-57 y catálogo de RF-33. V7 crea productos; los endpoints derivan la propiedad del vendedor autenticado, rechazan nombres duplicados por emprendimiento, conservan decimales de cantidad y usan idempotencia y bloqueo de fila al fijar inventario. La app publica, lista, marca agotado y repone, y el cliente consulta el catálogo con la etiqueta Solo reserva. Pasaron 194 pruebas backend y 56 frontend, lint, TypeScript y exportaciones iOS/web; V7 aplicada en napa_dev. El usuario confirmó que la prueba manual de esta entrega funcionó correctamente. Pendientes caché y outbox de productos, RF-56/RF-58 y los puertos de descuento/consulta para RF-45/RF-53. Las reservas y los pedidos no están implementados.
+
+**Ampliación de catálogo (2026-11-11)**: RF-56 permite editar nombre, precio y descripción; RF-58 permite retirar con confirmación explícita y borrado lógico. V8 añade versión y las escrituras JDBC comparan/incrementan esa versión, incluido inventario. La app conserva el borrador ante `409` y ofrece recargar; no reintenta automáticamente con una versión nueva. La eliminación conserva el producto visible si falla y corrige la paginación tras retirar el último elemento. Pasaron 209 pruebas backend en 50 suites (48 de integración en diez suites), 68 frontend, lint, TypeScript y exportaciones iOS/web. Queda pendiente la prueba manual de estas acciones. RF-45 ya crea pedidos persistidos en backend y RF-58 consulta pedidos abiertos con un adaptador JDBC real; la creación y la eliminación bloquean productos en el mismo orden. Quedan pendientes las pruebas de todos los estados y de concurrencia extremo a extremo, el historial y consultas de RF-51 y las demás transiciones del ciclo del pedido.
+
+**Avance de tarifa, pagos y pedidos**: RF-44 tiene configuración administrativa del piso de domicilio en V9. RF-45 calcula cotizaciones con tarifas por ruta o respaldo en línea recta y crea pedidos persistidos con precio y ubicación congelados, idempotencia y E01 en el outbox transaccional (V11); la compra guiada online desde el catálogo ya está integrada. RF-53 agrega V12, aceptación/rechazo del vendedor, descuento atómico del inventario inmediato, reservas sin validación de stock, pagos en `PENDIENTE_CONFIRMACION` y eventos E02/E03. Testcontainers verifica modalidades, rollback, falta de cuenta, inventario concurrente y concurrencia sobre una misma orden. RF-63 cuenta con configuración de medios en V10, cifrado AES-GCM de cuenta con AAD por vendedor y pantalla autenticada. El límite acordado para pedidos es 20 ítems distintos y 20 unidades por ítem. V13 pertenece a RF-14; RF-16 usará V14. Permanecen pendientes listado/detalle del vendedor (RF-50/RF-51), UI de respuesta, outbox offline, transiciones posteriores, ciclo completo de pagos e historial/operación de domicilios.
 
 ## Orden de planes por RF (P1 primero, respetando dependencias)
 
@@ -164,16 +183,14 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
-| Proveedor de rutas (Google, Mapbox, OSRM propio) | Costo y cuotas | Puerto + adaptador; decidir en F013 | Equipo |
-| Habilitar el canal de WhatsApp en Twilio Verify para Colombia (remitente y plantilla) | Plazo de F022 | SMS como respaldo | Equipo |
-| Costo mensual de Twilio Verify (0,05 USD por verificación exitosa + canal) y tope de gasto | Presupuesto del piloto | Con unos cientos de verificaciones al mes, decenas de dólares; fijar tope y alerta | Equipo |
-| ¿Verify cancela la verificación anterior al pedir otra para el mismo celular (RF-70 FR-005)? | Seguridad | Si no, cancelarla explícitamente antes de crear la nueva | Equipo |
-| ¿Notificaciones críticas no silenciables (estado de domicilio)? | RF-39 | Sí para domicilios en curso | Equipo |
-| Vencimientos (pedido sin respuesta, pago sin hacer, llegada sin confirmar) | Varias specs | Sin vencimiento automático en MVP | Equipo y usuarios |
+| Proveedor de rutas | Costo, cuotas y contratos de integración | Resuelto: OpenRouteService detrás de RoutingPort; la clave va en ORS_API_KEY | Equipo |
+| Activación de Twilio Verify y presupuesto mensual (WhatsApp + SMS de respaldo) | Costo y riesgo de habilitar envíos reales | **Diferido**: solo adaptador de consola en desarrollo/pruebas; no activar envíos reales ni desplegar credenciales hasta acordar presupuesto y canal para Colombia | Equipo |
+| ¿Verify cancela la verificación anterior al pedir otra para el mismo celular (RF-70 FR-005)? | Seguridad | Verificar el comportamiento del proveedor en F022 y garantizar en la aplicación que la solicitud nueva invalida la anterior; no almacenar el OTP | Equipo |
+| ¿Notificaciones críticas no silenciables (estado de domicilio)? | RF-39 | **Resuelto: no hay excepciones**; se respetan las preferencias para todo tipo de notificación | Equipo |
+| Vencimientos (pedido sin respuesta, pago sin hacer, llegada sin confirmar) | Varias specs | **Resuelto para MVP: no hay vencimiento automático**; permanecen en su estado actual hasta una acción permitida por las specs. Reabrir la decisión requiere actualizar las specs | Equipo y usuarios |
 
-## Plan Review Checklist
-
-- [ ] Spec Change Requests aplicados a las specs
-- [ ] Proveedor de rutas elegido
-- [ ] ArchUnit y Testcontainers corren en CI
-- [ ] Checkpoint de la base verificado en un móvil de gama baja
+#### Plan Review Checklist
+*  [x] Spec Change Requests aplicados a las specs 
+*  [x] Proveedor de rutas elegido (OpenRouteService)
+*  [ ] ArchUnit y Testcontainers corren en CI
+*  [ ] Checkpoint de la base verificado en un móvil de gama baja

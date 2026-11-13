@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: napa-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/napa}
+    username: ${DATABASE_USERNAME:napa}
+    password: ${DATABASE_PASSWORD:${POSTGRES_PASSWORD:napa_local_dev_only}}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+napa:
+  pedidos:
+    enabled: ${NAPA_PEDIDOS_ENABLED:true}
+    tarifa:
+      base: ${NAPA_PEDIDOS_TARIFA_BASE:3050}
+      valor-por-km: ${NAPA_PEDIDOS_TARIFA_VALOR_POR_KM:500}
+      valor-por-min: ${NAPA_PEDIDOS_TARIFA_VALOR_POR_MIN:200}
+      factor-linea-recta: ${NAPA_PEDIDOS_TARIFA_FACTOR_LINEA_RECTA:1.3}
+  tarifa:
+    minima-defecto: ${NAPA_TARIFA_MINIMA_DEFECTO:3050}
+  pagos:
+    cifrado:
+      clave-base64: ${NAPA_PAYMENT_ACCOUNT_ENCRYPTION_KEY:}
+  web:
+    allowed-origins: ${NAPA_WEB_ALLOWED_ORIGINS:}
+  routing:
+    ors:
+      api-key: ${ORS_API_KEY:}
+      base-url: ${ORS_BASE_URL:https://api.heigit.org}
+  auth:
+    jwt-secret: ${NAPA_JWT_SECRET:}
+    access-token-ttl: ${NAPA_ACCESS_TOKEN_TTL:PT15M}
+    refresh-token-ttl: ${NAPA_REFRESH_TOKEN_TTL:P30D}
+    admin-bootstrap:
+      enabled: ${NAPA_ADMIN_BOOTSTRAP_ENABLED:false}
+      name: ${NAPA_ADMIN_NAME:}
+      phone: ${NAPA_ADMIN_PHONE:}
+      email: ${NAPA_ADMIN_EMAIL:}
+      password: ${NAPA_ADMIN_PASSWORD:}
+
+  verification:
+    provider: ${NAPA_VERIFICATION_PROVIDER:unavailable}   # unavailable | console | twilio (pendiente)
+    console-code: ${NAPA_OTP_CONSOLE_CODE:}

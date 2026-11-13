@@ -1,9 +1,15 @@
 # Feature Specification: Creación de reportes
 
 **Created**: 2026-09-11
+<<<<<<<< HEAD:specs/RF-61-creacion-de-reportes.md
 **Actualizado**: 2026-09-18
 **Requerimiento funcional**: RF-61
 **Historias de usuario relacionadas**: HU-93, HU-94, HU-95
+========
+**Actualizado**: 2026-10-14
+**Requerimiento funcional**: RF-60
+**Historias de usuario relacionadas**: HU-91, HU-92, HU-93
+>>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-60-creacion-de-reportes/RF-60-creacion-de-reportes.md
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -76,7 +82,7 @@ Como domiciliario, quiero reportar un problema, para informar inconvenientes ocu
 
 ### Key Entities *(include if feature involves data)*
 
-- **Reporte**: Representa un problema informado por un usuario; atributos clave: autor, rol del autor, motivo, descripción, entidad relacionada (pedido, domicilio, usuario), estado (pendiente, en revisión, resuelto), fecha de creación.
+- **Reporte**: Representa un problema informado por un usuario; atributos clave: autor (su rol se deduce de su cuenta), motivo, descripción, entidad relacionada (como máximo una: pedido, domicilio o usuario), estado (pendiente, en revisión, resuelto), fecha de creación.
 
 ### Data Rules
 

@@ -54,7 +54,7 @@ Diagrama: [`gestionar_domicilios.puml`](../casos%20de%20uso/gestionar_domicilios
 | RF-22 | Ruta en mapa interactivo | HU-45 | Domiciliario | Consultar ruta en el mapa | [RF-22-ruta-en-mapa-interactivo](../specs/RF-22-ruta-en-mapa-interactivo/spec.md) |
 | RF-23 | Recogida del pedido y salida del domiciliario | HU-46, HU-35 | Domiciliario, Vendedor de punto fijo | Confirmar recogida del pedido; Confirmar salida del domiciliario | [RF-23-recogida-del-pedido-y-salida-del-domiciliario](../specs/RF-23-recogida-del-pedido-y-salida-del-domiciliario/spec.md) |
 | RF-24 | Confirmación de entrega por el domiciliario | HU-47 | Domiciliario | Confirmar entrega del pedido; Ingresar código de confirmación | [RF-24-confirmacion-de-entrega-por-el-domiciliario](../specs/RF-24-confirmacion-de-entrega-por-el-domiciliario/spec.md) |
-| RF-25 | Confirmación de llegada por el cliente | HU-50 | Cliente | Confirmar llegada del pedido; Ver código de confirmación | [RF-25-confirmacion-de-llegada-por-el-cliente](../specs/RF-25-confirmacion-de-llegada-por-el-cliente/spec.md) |
+| RF-25 | Código de confirmación del cliente | HU-50 | Cliente | Ver código de confirmación | [RF-25-codigo-de-confirmacion-del-cliente](../specs/RF-25-codigo-de-confirmacion-del-cliente/spec.md) |
 | RF-26 | Estado y trazabilidad del domicilio | HU-48, HU-33 | Cliente, Vendedor de punto fijo | Consultar trazabilidad del domicilio; Consultar estado del domicilio | [RF-26-estado-y-trazabilidad-del-domicilio](../specs/RF-26-estado-y-trazabilidad-del-domicilio/spec.md) |
 | RF-27 | Consulta de información del domiciliario | HU-34, HU-49 | Vendedor de punto fijo, Cliente | Consultar información del domiciliario | [RF-27-consulta-de-informacion-del-domiciliario](../specs/RF-27-consulta-de-informacion-del-domiciliario/spec.md) |
 
@@ -64,6 +64,7 @@ Diagrama: [`gestionar_emprendimientos.puml`](../casos%20de%20uso/gestionar_empre
 
 | RF | Requerimiento | Historias de usuario | Actores | Casos de uso | Especificación |
 |---|---|---|---|---|---|
+<<<<<<< HEAD
 <<<<<<< HEAD
 | RF-28 | Creación de emprendimiento | HU-53 | Vendedor | Crear emprendimiento | [RF-28-creacion-de-emprendimiento.md](../specs/RF-28-creacion-de-emprendimiento.md) |
 | RF-29 | Edición de emprendimiento | HU-54 | Vendedor | Editar emprendimiento | [RF-29-edicion-de-emprendimiento.md](../specs/RF-29-edicion-de-emprendimiento.md) |
@@ -75,6 +76,9 @@ Diagrama: [`gestionar_emprendimientos.puml`](../casos%20de%20uso/gestionar_empre
 | RF-35 | Consulta de información del vendedor | HU-60 | Cliente | Ver información del vendedor | [RF-35-consulta-de-informacion-del-vendedor.md](../specs/RF-35-consulta-de-informacion-del-vendedor.md) |
 =======
 | RF-28 | Creación de emprendimiento | HU-53 | Vendedor | Crear emprendimiento | [RF-28-creacion-de-emprendimiento](../specs/RF-28-creacion-de-emprendimiento/spec.md) |
+=======
+| RF-28 | Creación de emprendimiento | HU-53 | Vendedor | Crear emprendimiento | [RF-28-creacion-de-emprendimiento](../specs/RF-28-creacion-de-emprendimiento/RF-28-creacion-de-emprendimiento.md) |
+>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba
 | RF-29 | Edición de emprendimiento | HU-54 | Vendedor | Editar emprendimiento | [RF-29-edicion-de-emprendimiento](../specs/RF-29-edicion-de-emprendimiento/spec.md) |
 | RF-30 | Eliminación de emprendimiento | HU-55 | Vendedor | Eliminar emprendimiento | [RF-30-eliminacion-de-emprendimiento](../specs/RF-30-eliminacion-de-emprendimiento/spec.md) |
 | RF-31 | Listado de emprendimientos | HU-56 | Cliente | Listar emprendimientos | [RF-31-listado-de-emprendimientos](../specs/RF-31-listado-de-emprendimientos/spec.md) |
@@ -131,8 +135,12 @@ Diagrama: [`gestionar_pagos.puml`](../casos%20de%20uso/gestionar_pagos.puml)
 | RF-42 | Confirmación de pago del pedido (en domicilio, antes de publicar) | HU-66 | Vendedor | Confirmar pago del pedido | [RF-42-confirmacion-de-pago-del-pedido](../specs/RF-42-confirmacion-de-pago-del-pedido/spec.md) |
 | RF-43 | Confirmación del pago de la tarifa del domicilio | HU-104, HU-68 | Vendedor de punto fijo, Domiciliario | Registrar pago de la tarifa al domiciliario; Confirmar recepción de la tarifa del domicilio | [RF-43-confirmacion-del-pago-de-la-tarifa-del-domicilio](../specs/RF-43-confirmacion-del-pago-de-la-tarifa-del-domicilio/spec.md) |
 | RF-44 | Configuración de tarifa mínima de domicilio | HU-71 | Administrador | Configurar tarifa mínima del domicilio | [RF-44-configuracion-de-tarifa-minima-de-domicilio](../specs/RF-44-configuracion-de-tarifa-minima-de-domicilio/spec.md) |
+<<<<<<< HEAD
 | RF-63 | Configuración de métodos de pago aceptados por el vendedor | HU-103 | Vendedor | Seleccionar método de pago aceptados | [RF-63-configuracion-de-metodos-de-pago-aceptados](../specs/RF-63-configuracion-de-metodos-de-pago-aceptados/spec.md) |
 >>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
+=======
+| RF-63 | Configuración de métodos de pago aceptados por el vendedor | HU-103 | Vendedor | Seleccionar método de pago aceptados | [RF-63-configuracion-de-metodos-de-pago-aceptados](../specs/RF-63-configuracion-de-metodos-de-pago-aceptados/RF-63-configuracion-de-metodos-de-pago-aceptados.md) |
+>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba
 
 ## 8. Gestionar pedidos
 
@@ -158,8 +166,12 @@ Diagrama: [`gestionar_pedidos.puml`](../casos%20de%20uso/gestionar_pedidos.puml)
 | RF-50 | Listado de pedidos del vendedor | HU-80 | Vendedor | Listar pedidos recibidos | [RF-50-listado-de-pedidos-del-vendedor](../specs/RF-50-listado-de-pedidos-del-vendedor/spec.md) |
 | RF-51 | Consulta de detalle de pedido | HU-81 | Vendedor | Consultar detalle del pedido | [RF-51-consulta-de-detalle-de-pedido](../specs/RF-51-consulta-de-detalle-de-pedido/spec.md) |
 | RF-52 | Consulta de información del cliente | HU-82 | Vendedor | Ver información del cliente | [RF-52-consulta-de-informacion-del-cliente](../specs/RF-52-consulta-de-informacion-del-cliente/spec.md) |
+<<<<<<< HEAD
 | RF-53 | Respuesta del vendedor a un pedido (incluye reservas por criterio propio) | HU-83, HU-84 | Vendedor | Aceptar pedido; Rechazar pedido | [RF-53-respuesta-del-vendedor-a-un-pedido](../specs/RF-53-respuesta-del-vendedor-a-un-pedido/spec.md) |
 >>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
+=======
+| RF-53 | Respuesta del vendedor a un pedido (incluye reservas por criterio propio) | HU-83, HU-84 | Vendedor | Aceptar pedido; Rechazar pedido | [RF-53-respuesta-del-vendedor-a-un-pedido](../specs/RF-53-respuesta-del-vendedor-a-un-pedido/RF-53-respuesta-del-vendedor-a-un-pedido.md) |
+>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba
 
 ## 9. Gestionar productos
 

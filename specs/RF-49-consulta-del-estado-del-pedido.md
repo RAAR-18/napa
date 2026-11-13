@@ -1,11 +1,15 @@
 # Feature Specification: Consulta del estado del pedido
 
 **Created**: 2026-09-18
+<<<<<<<< HEAD:specs/RF-49-consulta-del-estado-del-pedido.md
 <<<<<<< HEAD:specs/RF-49-consulta-del-estado-del-pedido.md
 **Requerimiento funcional**: RF-49
 **Historias de usuario relacionadas**: HU-80
 =======
 **Actualizado**: 2026-10-01
+========
+**Actualizado**: 2026-10-14
+>>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-48-consulta-del-estado-del-pedido/RF-48-consulta-del-estado-del-pedido.md
 **Requerimiento funcional**: RF-48
 **Historias de usuario relacionadas**: HU-78
 >>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-48-consulta-del-estado-del-pedido.md
@@ -54,6 +58,7 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
 
 ### Edge Cases
 
+<<<<<<<< HEAD:specs/RF-49-consulta-del-estado-del-pedido.md
 <<<<<<< HEAD:specs/RF-49-consulta-del-estado-del-pedido.md
 - **¿Cómo se informa al cliente si un pedido queda en estado pendiente durante un tiempo prolongado?** El pedido vence sin respuesta (10 minutos en entrega directa, 30 minutos en domicilio, 12 horas en reserva), pasa a "vencido" y se notifica al cliente.
 - **¿Qué ocurre si el cliente intenta consultar el estado de un pedido que no le pertenece?** Se deniega el acceso.
@@ -63,6 +68,12 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
 - ¿Cómo se distingue en pantalla un pedido inmediato de uno marcado como reserva próxima a vencer si el vendedor no responde a tiempo?
 - ¿Cómo se muestra un pedido de domicilio aceptado que lleva mucho tiempo sin pago? (no hay plazo definido)
 >>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-48-consulta-del-estado-del-pedido.md
+========
+- Si un pedido permanece pendiente durante un tiempo prolongado, se informa que espera respuesta del vendedor y no vence ni cambia automáticamente en el MVP.
+- ¿Qué ocurre si el cliente intenta consultar el estado de un pedido que no le pertenece?
+- Si una reserva supera su fecha acordada sin respuesta, el pedido permanece en su estado actual: no vence ni cambia automáticamente en el MVP; se muestra la fecha acordada y que sigue pendiente de respuesta.
+- Si un pedido de domicilio aceptado lleva mucho tiempo sin pago, se muestra el pago pendiente y el total; el pedido no vence ni cambia automáticamente en el MVP.
+>>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-48-consulta-del-estado-del-pedido/RF-48-consulta-del-estado-del-pedido.md
 
 ## Requirements *(mandatory)*
 
@@ -76,7 +87,7 @@ Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de
 
 ### Key Entities
 
-- **Pedido**: Estados posibles según la modalidad: pendiente, aceptado, rechazado, listo para recoger, en camino, entregado y cancelado; en un domicilio se apoya en los estados del domicilio y en el estado de su pago. Atributo adicional: reserva (sí/no, fecha y hora acordadas).
+- **Pedido**: Estados posibles según la modalidad: pendiente, aceptado, rechazado, listo para recoger, en camino, entregado y cancelado; en un domicilio se apoya en los estados del domicilio y en el estado de su pago; pasa a entregado cuando el domiciliario valida el código del cliente y a cancelado si el administrador cancela su domicilio. Atributo adicional: reserva (fecha y hora acordadas; vacía si es inmediato).
 
 ### Data Rules
 

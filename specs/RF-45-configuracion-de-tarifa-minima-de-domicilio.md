@@ -1,11 +1,15 @@
 # Feature Specification: Configuración de tarifa mínima de domicilio
 
 **Created**: 2026-09-18
+<<<<<<<< HEAD:specs/RF-45-configuracion-de-tarifa-minima-de-domicilio.md
 <<<<<<< HEAD:specs/RF-45-configuracion-de-tarifa-minima-de-domicilio.md
 **Requerimiento funcional**: RF-45
 **Historias de usuario relacionadas**: HU-72
 =======
 **Actualizado**: 2026-10-08
+========
+**Actualizado**: 2026-10-14
+>>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-44-configuracion-de-la-tarifa-minima-de-domicilio/RF-44-configuracion-de-tarifa-minima-de-domicilio.md
 **Requerimiento funcional**: RF-44
 **Historias de usuario relacionadas**: HU-71
 >>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-44-configuracion-de-tarifa-minima-de-domicilio.md
@@ -57,8 +61,8 @@ Como administrador, quiero configurar la tarifa mínima del domicilio, para esta
 - **FR-002**: El sistema DEBE validar que la tarifa mínima sea un valor positivo mayor a cero.
 - **FR-003**: El sistema DEBE aplicar la tarifa mínima como piso de la tarifa publicada que calcula para todo domicilio nuevo.
 - **FR-004**: El sistema DEBE conservar la tarifa de los domicilios ya asignados cuando la tarifa mínima cambie.
-- **FR-005**: El sistema DEBE mantener un registro de los cambios de la tarifa mínima, con fecha y valor anterior.
-- **FR-006**: El sistema DEBE contar con una tarifa mínima por defecto, definida como parámetro de configuración, desde el primer despliegue, de modo que la tarifa de RF-45 pueda calcularse antes de que exista la pantalla del administrador. Esa pantalla (FR-001) puede entregarse después sin cambiar el cálculo.
+- **FR-005**: El sistema DEBE mantener un registro de los cambios de la tarifa mínima, con fecha; el valor anterior es el de la fila previa.
+- **FR-006**: El sistema DEBE contar con una tarifa mínima por defecto, definida como parámetro de configuración, desde el primer despliegue, de modo que la tarifa de RF-45 pueda calcularse antes de que exista la pantalla del administrador. Esa pantalla (FR-001) puede entregarse después sin cambiar el cálculo. Mientras no exista ningún cambio registrado, rige ese parámetro.
 
 ### Key Entities
 

@@ -26,12 +26,16 @@ Como cliente, quiero consultar un emprendimiento, para conocer su información y
 1. **Scenario**: Consulta exitosa del detalle de un emprendimiento
    - **Given** selecciono un emprendimiento del listado
    - **When** ingreso a su detalle
+<<<<<<<< HEAD:specs/RF-33-consulta-de-emprendimiento.md
    - **Then** el sistema muestra su información completa (nombre, categoría, tipo de vendedor, estado (abierto o cerrado), ubicación, horario, descripción y modalidades de entrega disponibles)
+========
+   - **Then** el sistema muestra su información completa (nombre, categoría, tipo de vendedor, ubicación, hora de apertura y hora de cierre, descripción y modalidades de entrega disponibles)
+>>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-32-consulta-de-emprendimiento/RF-32-consulta-de-emprendimiento.md
 
 2. **Scenario**: Ubicación de un punto fijo, para retirar una recogida
    - **Given** consulto el emprendimiento de un vendedor de punto fijo
    - **When** reviso su ubicación
-   - **Then** el sistema muestra la dirección, el horario de atención y un mapa del punto fijo, la misma información que usaré para retirar cualquier pedido de recogida que le haga
+   - **Then** el sistema muestra la dirección, la hora de apertura y de cierre y un mapa del punto fijo, la misma información que usaré para retirar cualquier pedido de recogida que le haga
 
 3. **Scenario**: Consulta de un emprendimiento ya eliminado
    - **Given** un emprendimiento fue eliminado por el vendedor
@@ -40,12 +44,16 @@ Como cliente, quiero consultar un emprendimiento, para conocer su información y
 
 ### Edge Cases
 
+<<<<<<<< HEAD:specs/RF-33-consulta-de-emprendimiento.md
 <<<<<<< HEAD:specs/RF-33-consulta-de-emprendimiento.md
 - **¿Qué sucede si el emprendimiento está fuera de su horario de atención al momento de la consulta?** Se muestra como cerrado, con su horario, y los pedidos de entrega directa y de domicilio quedan deshabilitados.
 - **¿Cómo se muestra un emprendimiento sin descripción registrada?** Se muestra el texto "Sin descripción" sin generar error.
 - **¿Qué ocurre si la ubicación del emprendimiento no puede resolverse en el mapa?** Se muestra la dirección en texto, sin mapa.
 =======
 - ¿Qué sucede si el emprendimiento está fuera de su horario de atención al momento de la consulta?
+========
+- ¿Qué sucede si el emprendimiento está fuera de su horario de atención al momento de la consulta? se calcula con hora_apertura y hora_cierre
+>>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-32-consulta-de-emprendimiento/RF-32-consulta-de-emprendimiento.md
 - ¿Cómo se muestra un emprendimiento sin descripción registrada?
 - ¿Qué ocurre si la ubicación del emprendimiento no puede resolverse en el mapa?
 - ¿Qué ocurre si el vendedor cambia su ubicación u horario mientras el cliente tiene un pedido de recogida aceptado? (se recomienda: el detalle del emprendimiento siempre refleja la ubicación vigente)
@@ -59,6 +67,7 @@ Como cliente, quiero consultar un emprendimiento, para conocer su información y
 - **FR-002**: El sistema DEBE mostrar en el detalle el nombre, categoría, tipo de vendedor, estado (abierto o cerrado), ubicación, horario, descripción y modalidades de entrega disponibles del emprendimiento.
 - **FR-003**: El sistema DEBE informar al cliente cuando el emprendimiento consultado ya no esté disponible.
 - **FR-004**: El sistema DEBE mostrar, cuando el emprendimiento es de punto fijo, la dirección, el horario de atención y un mapa de su ubicación, como referencia tanto para decidir la compra como para retirar un pedido de recogida.
+- **FR-005**: El sistema DEBE exponer ofreceDomicilio, verdadero solo si el vendedor de punto fijo tiene cuenta bancaria registrada.
 
 ### Key Entities
 

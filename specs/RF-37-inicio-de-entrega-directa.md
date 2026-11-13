@@ -22,14 +22,14 @@ Como vendedor ambulante, quiero iniciar la entrega de un pedido, para avisar al 
    - **Then** el sistema cambia el estado del pedido a en camino y notifica al cliente
 
 2. **Scenario**: Inicio de la entrega de un pedido marcado como reserva
-   - **Given** tengo un pedido de entrega directa aceptado y marcado como reserva, y ya llegó la fecha y hora acordadas
+   - **Given** tengo un pedido de entrega directa aceptado y marcado como reserva, y faltan 15 minutos o menos para la fecha y hora acordadas
    - **When** inicio la entrega
    - **Then** el sistema cambia el estado del pedido a en camino y notifica al cliente
 
-3. **Scenario**: Inicio anticipado de una reserva
-   - **Given** la fecha y hora acordadas de la reserva aún no llegan
+3. **Scenario**: Inicio anticipado
+   - **Given** la fecha y hora acordadas de la reserva aún no llegan faltan más de 15 minutos
    - **When** intento iniciar la entrega
-   - **Then** el sistema rechaza la operación e indica la fecha y hora acordadas
+   - **Then** el sistema rechaza la operación (RESERVATION_NOT_DUE) e indica desde cuándo puede iniciarse
 
 ### Edge Cases
 
@@ -39,15 +39,18 @@ Como vendedor ambulante, quiero iniciar la entrega de un pedido, para avisar al 
 =======
 - ¿Qué ocurre si el vendedor ambulante tiene varios pedidos aceptados y los inicia todos a la vez?
 - ¿Puede el vendedor ambulante revertir el inicio de una entrega si cambia de idea?
+<<<<<<<< HEAD:specs/RF-37-inicio-de-entrega-directa.md
 - ¿Cuánto margen de tolerancia existe para iniciar una reserva ligeramente antes de la hora acordada?
 >>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-36-inicio-de-entrega-directa.md
+========
+>>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-36-inicio-de-entrega-directa/RF-36-inicio-de-entrega-directa.md
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al vendedor ambulante iniciar la entrega de un pedido en estado "aceptado".
-- **FR-002**: El sistema DEBE permitir iniciar la entrega de un pedido marcado como reserva únicamente a partir de la fecha y hora acordadas.
+- **FR-002**: El sistema DEBE permitir iniciar la entrega de un pedido marcado como reserva únicamente desde 15 minutos antes de la fecha y hora acordadas.
 - **FR-003**: El sistema DEBE cambiar el estado del pedido a "en camino" y notificar al cliente.
 
 ### Key Entities
@@ -68,4 +71,4 @@ Como vendedor ambulante, quiero iniciar la entrega de un pedido, para avisar al 
 
 - **SC-001**: El cliente recibe la notificación de inicio de entrega en menos de 1 minuto.
 - **SC-002**: El 100% de los pedidos en camino estuvieron previamente aceptados.
-- **SC-003**: El 0% de las reservas inicia su entrega antes de la fecha y hora acordadas.
+- **SC-003**: El 0% de las reservas inicia su entrega antes de 15 minutos previos a la fecha y hora acordadas.

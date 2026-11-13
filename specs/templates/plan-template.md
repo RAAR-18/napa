@@ -35,7 +35,7 @@
   Los demás se completan una vez y se heredan; si algo es ambiguo, escribir NEEDS CLARIFICATION.
 -->
 
-**Language/Version**: Java 21 LTS (backend, Spring Boot 4.1.x; verificar parche vigente) · TypeScript 5 (frontend, React Native + Expo SDK vigente ≥ 54)
+**Language/Version**: Java 21 LTS (backend, Spring Boot 4.1.x; verificar parche vigente) · TypeScript 6 (frontend, React Native + Expo SDK vigente ≥ 54)
 **Primary Dependencies**:
 - Backend: Spring Web, Spring Security 7 + JWT, Spring Data JPA + Hibernate Spatial (PostGIS), Flyway, Spring Data Redis, Jackson, Firebase Admin SDK (FCM), Twilio Verify (verificación del celular y recuperación de contraseña: WhatsApp con respaldo SMS), ArchUnit
 - Frontend: Expo (development build, no Expo Go), expo-sqlite (cola de salida / caché), expo-notifications (token FCM nativo), react-native-maps, Axios
