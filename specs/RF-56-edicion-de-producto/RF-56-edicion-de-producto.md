@@ -1,8 +1,8 @@
 # Feature Specification: Edición de producto
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-57
-**Historias de usuario relacionadas**: HU-89
+**Requerimiento funcional**: RF-56
+**Historias de usuario relacionadas**: HU-87
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -30,8 +30,8 @@ Como vendedor, quiero editar los datos de un producto ya publicado (precio, nomb
 
 ### Edge Cases
 
-- **¿Qué ocurre si se edita un producto que tiene pedidos pendientes con el precio anterior?** Los pedidos ya creados conservan el precio con el que se hicieron; el cambio aplica a los pedidos nuevos.
-- **¿Cómo maneja el sistema la edición simultánea del mismo producto desde dos sesiones del vendedor?** Prevalece la última guardada y el sistema avisa del conflicto para recargar.
+- ¿Qué ocurre si se edita un producto que tiene pedidos pendientes con el precio anterior?
+- ¿Cómo maneja el sistema la edición simultánea del mismo producto desde dos sesiones del vendedor?
 
 ## Requirements *(mandatory)*
 
@@ -43,25 +43,7 @@ Como vendedor, quiero editar los datos de un producto ya publicado (precio, nomb
 
 ### Key Entities *(include if feature involves data)*
 
-- **Producto**: Ver definición en RF-55.
-
-### Data Rules
-
-**Datos que ingresa el usuario**
-
-| Campo | Obligatorio | Regla de validación |
-|---|:---:|---|
-| Nombre | No | Texto de 2 a 60 caracteres; único dentro del emprendimiento. |
-| Precio | No | Entero en pesos colombianos (COP) mayor a 0. |
-| Descripción | No | Texto de hasta 200 caracteres. |
-
-**Datos que asigna el sistema**
-
-- Fecha de última actualización.
-
-**Datos que se muestran o filtran**
-
-- Debe modificarse al menos un campo para poder guardar.
+- **Producto**: Ver definición en RF-54.
 
 ## Success Criteria *(mandatory)*
 

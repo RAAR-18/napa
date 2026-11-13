@@ -1,14 +1,8 @@
 # Feature Specification: Listado de pedidos del vendedor
 
 **Created**: 2026-09-11
-<<<<<<< HEAD:specs/RF-51-listado-de-pedidos-del-vendedor.md
-**Actualizado**: 2026-09-18
-**Requerimiento funcional**: RF-51
-**Historias de usuario relacionadas**: HU-82
-=======
 **Requerimiento funcional**: RF-50
 **Historias de usuario relacionadas**: HU-80
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-50-listado-de-pedidos-del-vendedor.md
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -39,9 +33,9 @@ Como vendedor, quiero listar mis pedidos, para consultar los pedidos recibidos.
 
 ### Edge Cases
 
-- **¿Qué sucede si el vendedor no tiene ningún pedido registrado?** Muestra el mensaje "Aún no tienes pedidos".
-- **¿Cómo se ordena el listado cuando existen múltiples pedidos con el mismo estado?** Los pedidos con el mismo estado se ordenan por fecha de entrega (o de creación si no tienen), primero los más antiguos en el caso de los pendientes.
-- **¿Qué ocurre si un pedido cambia de estado mientras el vendedor está consultando el listado?** El listado se actualiza automáticamente en un máximo de 30 segundos sin perder los filtros aplicados (RNF17).
+- ¿Qué sucede si el vendedor no tiene ningún pedido registrado?
+- ¿Cómo se ordena el listado cuando existen múltiples pedidos con el mismo estado?
+- ¿Qué ocurre si un pedido cambia de estado mientras el vendedor está consultando el listado?
 
 ## Requirements *(mandatory)*
 
@@ -56,14 +50,6 @@ Como vendedor, quiero listar mis pedidos, para consultar los pedidos recibidos.
 ### Key Entities
 
 - **Pedido**: Entidad listada, con referencia al emprendimiento del vendedor, cliente, fecha, estado, total, modalidad y atributo de reserva.
-
-### Data Rules
-
-**Datos que ingresa el usuario**: Ninguno. Filtros opcionales: estado, modalidad y fecha de entrega.
-
-**Datos que se muestran o filtran**
-
-- Cliente, modalidad, fecha (de entrega en reservas), estado y total; paginado de a 20.
 
 ## Success Criteria *(mandatory)*
 

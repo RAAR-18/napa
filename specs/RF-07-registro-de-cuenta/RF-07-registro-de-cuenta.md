@@ -35,16 +35,10 @@ Como persona interesada en usar la plataforma, quiero registrarme indicando mis 
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-07-registro-de-cuenta.md
-- **¿Qué ocurre si la contraseña y su confirmación no coinciden?** El registro se bloquea con un mensaje en el campo de confirmación y no se crea la cuenta.
-- **¿Qué sucede si el usuario no selecciona ningún rol durante el registro?** El registro se bloquea: el rol es obligatorio y no hay ningún rol seleccionado por defecto.
-- **¿Cómo maneja el sistema un registro interrumpido a medio completar (datos parciales)?** No se crea la cuenta ni se guardan datos parciales en el servidor; el formulario conserva lo digitado en el dispositivo mientras siga abierto.
-=======
 - ¿Qué ocurre si la contraseña y su confirmación no coinciden?
 - ¿Qué sucede si el usuario no selecciona ningún rol durante el registro?
 - ¿Cómo maneja el sistema un registro interrumpido a medio completar (datos parciales)?
 - ¿Qué ocurre con una cuenta que nunca verifica su celular?
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-07-registro-de-cuenta/RF-07-registro-de-cuenta.md
 
 ## Requirements *(mandatory)*
 
@@ -61,25 +55,6 @@ Como persona interesada en usar la plataforma, quiero registrarme indicando mis 
 ### Key Entities
 
 - **Usuario**: Representa a una persona registrada, con datos básicos, celular verificado, credenciales y un rol asignado (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), según `spec-general` §3.2.
-
-### Data Rules
-
-**Datos que ingresa el usuario**
-
-| Campo | Obligatorio | Regla de validación |
-|---|:---:|---|
-| Nombre completo | Sí | Texto de 2 a 80 caracteres. |
-| Correo electrónico | Condicional | Obligatorio si no se ingresa teléfono; formato de correo válido y no registrado. |
-| Teléfono | Condicional | Obligatorio si no se ingresa correo; 10 dígitos y no registrado. |
-| Contraseña | Sí | Mínimo 8 caracteres, con letras y números. |
-| Confirmación de contraseña | Sí | Idéntica a la contraseña. |
-| Rol | Sí | Uno de: cliente, vendedor ambulante, vendedor de punto fijo o domiciliario. |
-| Autorización de tratamiento de datos | Sí | Aceptación expresa (Ley 1581 de 2012). |
-
-**Datos que asigna el sistema**
-
-- Identificador de la cuenta, fecha de creación y estado "activa".
-- Contraseña almacenada con hash (RNF01).
 
 ## Success Criteria *(mandatory)*
 

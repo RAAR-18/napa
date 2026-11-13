@@ -1,8 +1,8 @@
 # Feature Specification: Registro de producto
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-55
-**Historias de usuario relacionadas**: HU-87
+**Requerimiento funcional**: RF-54
+**Historias de usuario relacionadas**: HU-85
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -30,15 +30,9 @@ Como vendedor, quiero añadir un producto con nombre, precio, descripción y can
 
 ### Edge Cases
 
-<<<<<<<< HEAD:specs/RF-55-registro-de-producto.md
-- **¿Qué ocurre si el vendedor intenta registrar un producto sin tener un emprendimiento creado?** Se bloquea y se pide crear primero el emprendimiento (RF-28).
-- **¿Cómo maneja el sistema el registro de un producto con nombre duplicado dentro del mismo emprendimiento?** Se rechaza: el nombre debe ser único dentro del emprendimiento.
-- **¿Qué sucede si se registra un producto con cantidad disponible igual a cero?** Está permitido; queda registrado como agotado y no aparece disponible.
-========
 - ¿Qué ocurre si el vendedor intenta registrar un producto sin tener un emprendimiento creado?
 - ¿Cómo maneja el sistema el registro de un producto con nombre duplicado dentro del mismo emprendimiento? (resuelto en FR-005)
 - ¿Qué sucede si se registra un producto con cantidad disponible igual a cero? (resuelto en FR-003)
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-54-registro-de-producto/RF-54-registro-de-producto.md
 
 ## Requirements *(mandatory)*
 
@@ -53,23 +47,6 @@ Como vendedor, quiero añadir un producto con nombre, precio, descripción y can
 ### Key Entities *(include if feature involves data)*
 
 - **Producto**: Representa un artículo ofrecido por un emprendimiento; atributos clave: nombre, precio, unidad, descripción, cantidad disponible, estado (disponible/agotado).
-
-### Data Rules
-
-**Datos que ingresa el usuario**
-
-| Campo | Obligatorio | Regla de validación |
-|---|:---:|---|
-| Nombre | Sí | Texto de 2 a 60 caracteres; único dentro del emprendimiento. |
-| Precio | Sí | Entero en pesos colombianos (COP) mayor a 0, por unidad de medida. |
-| Unidad de medida | Sí | Unidad, kilogramo, libra, litro o porción. |
-| Descripción | No | Texto de hasta 200 caracteres. |
-| Cantidad disponible | Sí | Número mayor o igual a 0; con decimales solo para kilogramo, libra y litro. |
-
-**Datos que asigna el sistema**
-
-- Emprendimiento del vendedor en sesión.
-- Estado "disponible" (o "agotado" si la cantidad es 0) y fecha de creación.
 
 ## Success Criteria *(mandatory)*
 

@@ -81,17 +81,6 @@ Por su parte, los consumidores cercanos no disponen de un medio para conocer qu�
 **Descripción detallada de la incorporación de restricciones:**
 
 - **Técnicas:** los vendedores operan en la calle durante toda su jornada, sin garantía de conexión estable a internet ni de datos móviles constantes, y muchos usan equipos de gama baja con almacenamiento
-<<<<<<< HEAD
-y capacidad de procesamiento limitados. Esto condiciona el diseño para que funcionalidades críticas como publicar disponibilidad o consultar pedidos toleren conectividad intermitente y sincronicen cuando la 
-señal se recupere, en vez de requerir una conexión permanente (RNF28 y RNF31).
-- **Económicas:** los vendedores informales no tienen presupuesto para tecnología costosa ni comisiones altas por transacción. Esto llevó a decidir que el sistema no procese pagos mediante una pasarela: solo registra el método elegido por el cliente (efectivo o transferencia, según el vendedor y la modalidad de entrega) y la confirmación del pago, y deja que el dinero se mueva fuera de la aplicación (RNF29).
-- **Sociales y culturales:** las entrevistas mostraron vendedores mayores con temor a herramientas complicadas ("Yo no tengo tiempo para estar aprendiendo cosas difíciles" - Sergio, entrevista #3). 
-El diseño de casos de uso privilegia flujos cortos (publicar → recibir pedido → confirmar → vender) y evita catálogos o formularios extensos.
-- **Normativas y legales:** el manejo de ubicación (para calcular cercanía) y de datos personales (nombre, teléfono, foto) debe cumplir la Ley 1581 de Protección de Datos Personales. 
-Esto se refleja en RNF04 (Privacidad) y en que el sistema restringe el acceso a datos personales únicamente a usuarios autorizados según su rol (RNF03).
-- **Éticas:** el sistema de calificación bidireccional (Cliente ↔ Vendedor ↔ Domiciliario) introduce un riesgo real de sesgo  por ejemplo, calificaciones usadas como represalia,
-o domiciliarios calificados injustamente por demoras fuera de su control (tráfico, clima). Por eso se incluyeron casos de uso de moderación (Eliminar comentario, Editar comentario) con intervención del Administrador.
-=======
   y capacidad de procesamiento limitados. Esto condiciona el diseño para que funcionalidades críticas como publicar disponibilidad o consultar pedidos toleren conectividad intermitente y sincronicen cuando la
   señal se recupere, en vez de requerir una conexión permanente (RNF28 y RNF31).
 - **Económicas:** los vendedores informales no tienen presupuesto para tecnología costosa ni comisiones altas por transacción. Además, según la EMICRON, el 99,8 % de sus transacciones se realiza en efectivo y solo el 19,4 % acepta transferencias o pagos por internet. Esto llevó a decidir que la plataforma no procese pagos: no integra pasarelas ni maneja
@@ -104,7 +93,6 @@ o domiciliarios calificados injustamente por demoras fuera de su control (tráfi
   Esto se refleja en RNF04 (Privacidad) y en que el sistema restringe el acceso a datos personales únicamente a usuarios autorizados según su rol (RNF03).
 - **Éticas:** el sistema de calificación bidireccional (Cliente ↔ Vendedor ↔ Domiciliario) introduce un riesgo real de sesgo, por ejemplo calificaciones usadas como represalia,
   o domiciliarios calificados injustamente por demoras fuera de su control (tráfico, clima). Por eso se incluyeron casos de uso de moderación (Eliminar comentario, Editar comentario) con intervención del Administrador.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ## 4. ANÁLISIS Y ESPECIFICACIÓN DE REQUERIMIENTOS
 
@@ -135,26 +123,6 @@ El vendedor no es un único rol: los vendedores ambulantes y los de punto fijo t
 | Recogida en punto fijo | — | ✅ | El cliente lo retira personalmente en el punto fijo. |
 | Domicilio | — | ✅ | Un domiciliario lo lleva del punto fijo (A) a la ubicación del cliente (B). |
 
-<<<<<<< HEAD
-Un pedido tiene varios ítems (producto y cantidad). El cliente elige el **método de pago** al hacer el pedido, según el vendedor y la modalidad; la plataforma no procesa el dinero: registra el método elegido y la confirmación del pago.
-
-| Vendedor | Modalidad | Efectivo | Transferencia |
-|---|---|:---:|:---:|
-| Ambulante | Entrega directa | ✅ | ✅ |
-| Ambulante | Reserva (entrega al cliente) | ✅ | ✅ |
-| Punto fijo | Reserva (el cliente retira en el punto) | ✅ | ✅ |
-| Punto fijo | Domicilio | — | ✅ |
-
-Un emprendimiento puede estar **abierto o cerrado** (RF-30): cerrado no recibe pedidos de entrega directa ni de domicilio, pero sí reservas para el día siguiente.
-
-**Entrega directa (vendedor ambulante).** El cliente realiza el pedido, eligiendo el método de pago (RF-46) → el vendedor ambulante recibe la notificación (RF-39) y lo acepta o rechaza (RF-54) → consulta la ubicación del cliente en el mapa (RF-36) → inicia la entrega (RF-37) → confirma la entrega y el pago recibido (RF-38, RF-43).
-
-**Reserva (vendedor ambulante o de punto fijo).** Las reservas se hacen para el día siguiente; hay un diagrama común para ambos vendedores (`gestionar_reservas.puml`). **Con vendedor ambulante:** el cliente consulta la disponibilidad prevista para el día siguiente (RF-47) y reserva (RF-46) → el vendedor decide si la cumple apoyándose en la predicción de demanda (RF-60) y la acepta o rechaza (RF-54) → el día programado sigue el mismo flujo de la entrega directa (RF-36, RF-37, RF-38).
-
-**Con vendedor de punto fijo:** el cliente consulta la disponibilidad prevista (RF-47) y reserva (RF-46) → el vendedor la acepta (RF-54) → el cliente consulta la ubicación del punto (RF-64) → el vendedor la marca como lista (RF-65) → el cliente la retira y el vendedor confirma el retiro y el pago (RF-66, RF-43).
-
-**Domicilio (vendedor de punto fijo).** El cliente pide el domicilio indicando su ubicación (RF-46) → el vendedor acepta el pedido (RF-54) y publica el domicilio (RF-14), que **no puede editarse** → los domiciliarios ven los disponibles con su ganancia (RF-16), consultan la información (RF-18) y pueden archivarlos (RF-17), aceptarlos con la tarifa publicada (RF-19) u ofertar otro precio (RF-20) → el cliente acepta o rechaza las ofertas (RF-21) → el domiciliario ve la ruta en el mapa (RF-22), confirma que recogió el pedido y el vendedor confirma que va en camino (RF-23) → el domiciliario confirma la entrega (RF-24) y el cliente confirma la llegada (RF-25) → el domiciliario confirma el pago del domicilio, que se hace por transferencia (RF-44). El cliente puede seguir la trazabilidad en todo momento (RF-26).
-=======
 **Reserva** no es una cuarta modalidad: es un atributo del pedido (fecha y hora libremente acordadas con el vendedor) que puede aplicarse sobre cualquiera de las tres modalidades. El vendedor no publica disponibilidad futura: acepta o rechaza cada reserva con su propio criterio (RF-53) y, llegada la fecha, el pedido sigue el flujo de su modalidad.
 
 **Entrega directa (vendedor ambulante).** El cliente realiza el pedido (RF-45) → el vendedor ambulante recibe la notificación (RF-38) y lo acepta o rechaza (RF-53) → consulta la ubicación del cliente en el mapa (RF-35) → inicia la entrega (RF-36) → confirma la entrega y el cobro, en efectivo o por transferencia a su cuenta, según lo que acepte (RF-37, RF-42, RF-63). Si el pedido es una reserva, el flujo es el mismo en la fecha acordada.
@@ -171,7 +139,6 @@ Un emprendimiento puede estar **abierto o cerrado** (RF-30): cerrado no recibe p
 7. Una vez entregado, el vendedor transfiere la tarifa al domiciliario y registra el pago, y el domiciliario confirma que la recibió (RF-43).
 
 El cliente puede seguir la trazabilidad en todo momento (RF-26).
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 **Ciclo de vida de un domicilio:**
 
@@ -193,28 +160,11 @@ stateDiagram-v2
 
 ### 4.3 Casos de uso
 
-<<<<<<< HEAD
-Se elaboró un diagrama de nivel 0 y un diagrama por módulo (PlantUML). Los módulos con flujos propios por tipo de vendedor son *Gestionar entregas del vendedor ambulante* y *Gestionar reservas* (común a ambos vendedores, mostrando cómo cada uno cumple la reserva); *Gestionar domicilios* concentra los flujos de punto fijo, domiciliario y cliente.
-=======
 Se elaboró un diagrama de nivel 0 y un diagrama por módulo (PlantUML). Los módulos específicos por tipo de vendedor son *Gestionar entregas del vendedor ambulante* y *Gestionar recogida en punto fijo*; *Gestionar domicilios* concentra los flujos de punto fijo, domiciliario y cliente.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 | Módulo | Diagrama | Actores | Casos de uso |
 |---|---|---|---|
 | Nivel 0 | [`nivel0.puml`](../casos%20de%20uso/nivel0.puml) | Todos | 12 módulos |
-<<<<<<< HEAD
-| Gestionar comentarios y calificaciones | [`gestionar_comentarios_calificaciones.puml`](../casos%20de%20uso/gestionar_comentarios_calificaciones.puml) | Cliente, Vendedor de punto fijo, Domiciliario, Vendedor, Administrador, Usuario | Calificar y comentar emprendimiento; Calificar y comentar producto; Calificar y comentar domiciliario; Calificar y comentar cliente; Consultar calificaciones y comentarios de un emprendimiento; Consultar calificaciones y comentarios de un producto; Consultar calificaciones y comentarios de un domiciliario; Consultar calificaciones y comentarios de un cliente; Consultar calificaciones y comentarios (emprendimiento, producto, domiciliario o cliente); Eliminar comentario propio; Editar comentario propio; Moderar comentario: eliminar; Moderar comentario: editar |
-| Gestionar cuenta | [`gestionar_cuenta.puml`](../casos%20de%20uso/gestionar_cuenta.puml) | Usuario, Administrador | Crear una cuenta; Editar mi cuenta; Cambiar contraseña; Iniciar sesión en mi cuenta; Eliminar mi cuenta |
-| Gestionar domicilios | [`gestionar_domicilios.puml`](../casos%20de%20uso/gestionar_domicilios.puml) | Vendedor de punto fijo, Domiciliario, Cliente, Administrador | Publicar domicilio; Listar domicilios; Consultar estado del domicilio; Consultar información del domiciliario; Confirmar salida del domiciliario; Listar domicilios disponibles; Archivar domicilio; Consultar domicilios archivados; Consultar información del domicilio; Aceptar domicilio; Ofertar precio del domicilio; Consultar ofertas de precio; Aceptar oferta de precio; Rechazar oferta de precio; Consultar ruta en el mapa; Confirmar recogida del pedido; Confirmar entrega del pedido; Consultar trazabilidad del domicilio; Confirmar llegada del pedido; Consultar domicilios; Cancelar domicilio |
-| Gestionar emprendimientos | [`gestionar_emprendimientos.puml`](../casos%20de%20uso/gestionar_emprendimientos.puml) | Vendedor, Cliente | Crear emprendimiento; Editar emprendimiento; Cambiar estado del emprendimiento; Eliminar emprendimiento; Listar emprendimientos; Consultar emprendimiento; Listar productos de un emprendimiento; Ver información del vendedor |
-| Gestionar entregas del vendedor ambulante | [`gestionar_entrega_ambulante.puml`](../casos%20de%20uso/gestionar_entrega_ambulante.puml) | Vendedor ambulante | Consultar ubicación de entrega; Iniciar entrega; Confirmar entrega directa |
-| Gestionar notificaciones | [`gestionar_notificaciones.puml`](../casos%20de%20uso/gestionar_notificaciones.puml) | Usuario | Consultar notificaciones; Configurar preferencias de notificación |
-| Gestionar pagos | [`gestionar_pagos.puml`](../casos%20de%20uso/gestionar_pagos.puml) | Cliente, Vendedor, Domiciliario, Administrador | Consultar historial de pagos; Confirmar pago del pedido; Confirmar pago del domicilio; Configurar tarifa mínima del domicilio |
-| Gestionar pedidos | [`gestionar_pedidos.puml`](../casos%20de%20uso/gestionar_pedidos.puml) | Cliente, Vendedor | Seleccionar productos; Seleccionar modalidad de entrega; Indicar ubicación de entrega; Consultar disponibilidad prevista; Seleccionar método de pago; Realizar pedido; Listar mis pedidos; Consultar estado del pedido; Contactar vendedor o domiciliario; Listar pedidos recibidos; Consultar detalle del pedido; Ver información del cliente; Aceptar pedido; Rechazar pedido |
-| Gestionar productos | [`gestionar_productos.puml`](../casos%20de%20uso/gestionar_productos.puml) | Vendedor | Añadir producto; Listar productos; Editar producto; Actualizar cantidad producto; Eliminar producto; Consultar predicción de demanda |
-| Gestionar reportes | [`gestionar_reporte.puml`](../casos%20de%20uso/gestionar_reporte.puml) | Cliente, Vendedor, Domiciliario, Administrador | Reportar problema; Consultar reportes; Resolver reporte |
-| Gestionar reservas | [`gestionar_reservas.puml`](../casos%20de%20uso/gestionar_reservas.puml) | Cliente, Vendedor de punto fijo | Consultar ubicación del punto de recogida; Marcar reserva como lista para recoger; Confirmar retiro de la reserva |
-=======
 | Gestionar comentarios y calificaciones | [`gestionar_comentarios_calificaciones.puml`](../casos%20de%20uso/gestionar_comentarios_calificaciones.puml) | Cliente, Vendedor (ambulante y de punto fijo), Domiciliario, Administrador | Calificar y comentar emprendimiento; Calificar y comentar producto; Calificar y comentar domiciliario; Calificar y comentar cliente; Consultar calificaciones y comentarios de un emprendimiento; de un producto; de un domiciliario; de un cliente; Eliminar comentario; Editar comentario |
 | Gestionar cuenta | [`gestionar_cuenta.puml`](../casos%20de%20uso/gestionar_cuenta.puml) | Usuario, Administrador | Crear una cuenta; Editar mi cuenta; Cambiar contraseña; Iniciar sesión en mi cuenta; Eliminar mi cuenta; Verificar celular con código |
 | Gestionar domicilios | [`gestionar_domicilios.puml`](../casos%20de%20uso/gestionar_domicilios.puml) | Vendedor de punto fijo, Domiciliario, Cliente, Administrador | Publicar domicilio; Listar domicilios; Consultar estado del domicilio; Consultar información del domiciliario; Confirmar salida del domiciliario; Listar domicilios disponibles; Rechazar domicilio; Consultar información del domicilio; Aceptar domicilio; Consultar ruta en el mapa; Confirmar recogida del pedido; Confirmar entrega del pedido; Ingresar código de confirmación; Consultar trazabilidad del domicilio; Ver código de confirmación; Consultar domicilios; Cancelar domicilio |
@@ -226,16 +176,11 @@ Se elaboró un diagrama de nivel 0 y un diagrama por módulo (PlantUML). Los mó
 | Gestionar productos | [`gestionar_productos.puml`](../casos%20de%20uso/gestionar_productos.puml) | Vendedor | Añadir producto; Listar productos; Editar producto; Actualizar cantidad producto; Eliminar producto; Consultar predicción de demanda *(post-MVP)* |
 | Gestionar reportes | [`gestionar_reporte.puml`](../casos%20de%20uso/gestionar_reporte.puml) | Cliente, Vendedor, Domiciliario, Administrador | Reportar problema; Consultar reportes; Resolver reporte |
 | Gestionar recogida en punto fijo | [`gestionar_recogida_punto_fijo.puml`](../casos%20de%20uso/gestionar_recogida_punto_fijo.puml) | Vendedor de punto fijo (y Cliente) | Marcar pedido como lista para recoger; Confirmar retiro del pedido |
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 | Gestionar usuarios | [`gestionar_usuarios.puml`](../casos%20de%20uso/gestionar_usuarios.puml) | Administrador | Consultar un usuario; Editar un usuario; Eliminar un usuario; Listar todos los usuarios |
 
 ### 4.4 Requerimientos funcionales
 
-<<<<<<< HEAD
-Se definieron **70 requerimientos funcionales** derivados de **104 historias de usuario**, organizados en 12 módulos. La prioridad corresponde a la mayor prioridad entre las historias de su especificación (P1 = núcleo del flujo, P2 = importante, P3 = complementario).
-=======
 Se definieron **67 requerimientos funcionales** (66 del MVP y RF-59, documentado como mejora futura) derivados de **98 historias de usuario** (97 del MVP y HU-90, post-MVP), organizados en 12 módulos. Los huecos de numeración (RF-20, RF-21 y RF-46) no se reutilizan. La prioridad corresponde a la mayor prioridad entre las historias de su especificación (P1 = núcleo del flujo, P2 = importante, P3 = complementario).
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 | RF | Requerimiento | Actores | Prioridad | Especificación |
 |---|---|---|:---:|---|
@@ -269,63 +214,6 @@ Se definieron **67 requerimientos funcionales** (66 del MVP y RF-59, documentado
 | RF-26 | Estado y trazabilidad del domicilio | Cliente, Vendedor de punto fijo | P1 | [RF-26](../specs/RF-26-estado-y-trazabilidad-del-domicilio/spec.md) |
 | RF-27 | Consulta de información del domiciliario | Vendedor de punto fijo, Cliente | P2 | [RF-27](../specs/RF-27-consulta-de-informacion-del-domiciliario/spec.md) |
 | | **Gestionar emprendimientos** | | | |
-<<<<<<< HEAD
-| RF-28 | Creación de emprendimiento | Vendedor | P1 | [RF-28](../specs/RF-28-creacion-de-emprendimiento.md) |
-| RF-29 | Edición de emprendimiento | Vendedor | P2 | [RF-29](../specs/RF-29-edicion-de-emprendimiento.md) |
-| RF-30 | Cambio de estado del emprendimiento | Vendedor | P1 | [RF-30](../specs/RF-30-cambio-de-estado-del-emprendimiento.md) |
-| RF-31 | Eliminación de emprendimiento | Vendedor | P3 | [RF-31](../specs/RF-31-eliminacion-de-emprendimiento.md) |
-| RF-32 | Listado de emprendimientos | Cliente | P1 | [RF-32](../specs/RF-32-listado-de-emprendimientos.md) |
-| RF-33 | Consulta de emprendimiento | Cliente | P1 | [RF-33](../specs/RF-33-consulta-de-emprendimiento.md) |
-| RF-34 | Listado de productos de un emprendimiento | Cliente | P2 | [RF-34](../specs/RF-34-listado-de-productos-de-un-emprendimiento.md) |
-| RF-35 | Consulta de información del vendedor | Cliente | P3 | [RF-35](../specs/RF-35-consulta-de-informacion-del-vendedor.md) |
-| | **Gestionar entregas del vendedor ambulante** | | | |
-| RF-36 | Consulta de ubicación de entrega | Vendedor ambulante | P1 | [RF-36](../specs/RF-36-consulta-de-ubicacion-de-entrega.md) |
-| RF-37 | Inicio de entrega directa | Vendedor ambulante | P1 | [RF-37](../specs/RF-37-inicio-de-entrega-directa.md) |
-| RF-38 | Confirmación de entrega directa | Vendedor ambulante | P1 | [RF-38](../specs/RF-38-confirmacion-de-entrega-directa.md) |
-| | **Gestionar notificaciones** | | | |
-| RF-39 | Consulta de notificaciones | Usuario | P2 | [RF-39](../specs/RF-39-consulta-de-notificaciones.md) |
-| RF-40 | Configuración de preferencias de notificación | Usuario | P3 | [RF-40](../specs/RF-40-configuracion-de-preferencias-de-notificacion.md) |
-| | **Gestionar pagos** | | | |
-| RF-41 | Consulta de historial de pagos | Cliente, Vendedor, Domiciliario | P2 | [RF-41](../specs/RF-41-consulta-de-historial-de-pagos.md) |
-| RF-42 | Consulta de historial general de pagos | Administrador | P3 | [RF-42](../specs/RF-42-consulta-de-historial-general-de-pagos.md) |
-| RF-43 | Confirmación de pago del pedido | Vendedor | P1 | [RF-43](../specs/RF-43-confirmacion-de-pago-del-pedido.md) |
-| RF-44 | Confirmación de pago del domicilio | Domiciliario | P2 | [RF-44](../specs/RF-44-confirmacion-de-pago-del-domicilio.md) |
-| RF-45 | Configuración de tarifa mínima de domicilio | Administrador | P3 | [RF-45](../specs/RF-45-configuracion-de-tarifa-minima-de-domicilio.md) |
-| | **Gestionar pedidos** | | | |
-| RF-46 | Realización de pedido | Cliente | P1 | [RF-46](../specs/RF-46-realizacion-de-pedido.md) |
-| RF-47 | Consulta de disponibilidad prevista para reservas | Cliente | P1 | [RF-47](../specs/RF-47-consulta-de-disponibilidad-prevista-para-reservas.md) |
-| RF-48 | Listado de pedidos del cliente | Cliente | P2 | [RF-48](../specs/RF-48-listado-de-pedidos-del-cliente.md) |
-| RF-49 | Consulta del estado del pedido | Cliente | P1 | [RF-49](../specs/RF-49-consulta-del-estado-del-pedido.md) |
-| RF-50 | Contacto con vendedor o domiciliario | Cliente | P2 | [RF-50](../specs/RF-50-contacto-con-vendedor-o-domiciliario.md) |
-| RF-51 | Listado de pedidos del vendedor | Vendedor | P1 | [RF-51](../specs/RF-51-listado-de-pedidos-del-vendedor.md) |
-| RF-52 | Consulta de detalle de pedido | Vendedor | P1 | [RF-52](../specs/RF-52-consulta-de-detalle-de-pedido.md) |
-| RF-53 | Consulta de información del cliente | Vendedor | P2 | [RF-53](../specs/RF-53-consulta-de-informacion-del-cliente.md) |
-| RF-54 | Respuesta del vendedor a un pedido | Vendedor | P1 | [RF-54](../specs/RF-54-respuesta-del-vendedor-a-un-pedido.md) |
-| | **Gestionar productos** | | | |
-| RF-55 | Registro de producto | Vendedor | P1 | [RF-55](../specs/RF-55-registro-de-producto.md) |
-| RF-56 | Listado de productos del vendedor | Vendedor | P1 | [RF-56](../specs/RF-56-listado-de-productos-del-vendedor.md) |
-| RF-57 | Edición de producto | Vendedor | P2 | [RF-57](../specs/RF-57-edicion-de-producto.md) |
-| RF-58 | Actualización de inventario del producto | Vendedor | P1 | [RF-58](../specs/RF-58-actualizacion-de-inventario-del-producto.md) |
-| RF-59 | Eliminación de producto | Vendedor | P2 | [RF-59](../specs/RF-59-eliminacion-de-producto.md) |
-| RF-60 | Predicción de demanda | Vendedor | P2 | [RF-60](../specs/RF-60-prediccion-de-demanda.md) |
-| | **Gestionar reportes** | | | |
-| RF-61 | Creación de reportes | Cliente, Vendedor, Domiciliario | P1 | [RF-61](../specs/RF-61-creacion-de-reportes.md) |
-| RF-62 | Consulta de reportes por administrador | Administrador | P2 | [RF-62](../specs/RF-62-consulta-de-reportes-por-administrador.md) |
-| RF-63 | Resolución de reportes | Administrador | P2 | [RF-63](../specs/RF-63-resolucion-de-reportes.md) |
-| | **Gestionar reservas** | | | |
-| RF-64 | Consulta de ubicación del punto de recogida | Cliente | P2 | [RF-64](../specs/RF-64-consulta-de-ubicacion-del-punto-de-recogida.md) |
-| RF-65 | Reserva lista para recoger | Vendedor de punto fijo | P1 | [RF-65](../specs/RF-65-reserva-lista-para-recoger.md) |
-| RF-66 | Confirmación de retiro de la reserva | Vendedor de punto fijo | P1 | [RF-66](../specs/RF-66-confirmacion-de-retiro-de-la-reserva.md) |
-| | **Gestionar usuarios** | | | |
-| RF-67 | Consulta de usuario por administrador | Administrador | P2 | [RF-67](../specs/RF-67-consulta-de-usuario-por-administrador.md) |
-| RF-68 | Edición de usuario por administrador | Administrador | P3 | [RF-68](../specs/RF-68-edicion-de-usuario-por-administrador.md) |
-| RF-69 | Eliminación de usuario por administrador | Administrador | P3 | [RF-69](../specs/RF-69-eliminacion-de-usuario-por-administrador.md) |
-| RF-70 | Listado de usuarios | Administrador | P2 | [RF-70](../specs/RF-70-listado-de-usuarios.md) |
-
-### 4.5 Requerimientos no funcionales
-
-Se definieron **32 requerimientos no funcionales**. Los medios de pago según vendedor y modalidad (RNF29) y la tolerancia a conectividad intermitente (RNF28) responden directamente a las restricciones de diseño de la sección 3.
-=======
 | RF-28 | Creación de emprendimiento | Vendedor | P1 | [RF-28](../specs/RF-28-creacion-de-emprendimiento/spec.md) |
 | RF-29 | Edición de emprendimiento | Vendedor | P2 | [RF-29](../specs/RF-29-edicion-de-emprendimiento/spec.md) |
 | RF-30 | Eliminación de emprendimiento | Vendedor | P3 | [RF-30](../specs/RF-30-eliminacion-de-emprendimiento/spec.md) |
@@ -379,7 +267,6 @@ Se definieron **32 requerimientos no funcionales**. Los medios de pago según ve
 ### 4.5 Requerimientos no funcionales
 
 Se definieron **31 requerimientos no funcionales**. La tolerancia a conectividad intermitente (RNF28) y los medios de pago admitidos (RNF29: efectivo o transferencia a la cuenta del vendedor, sin que la plataforma procese el dinero) responden directamente a las restricciones de diseño de la sección 3.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 | ID | Categoría | Requerimiento |
 |---|---|---|
@@ -409,43 +296,19 @@ Se definieron **31 requerimientos no funcionales**. La tolerancia a conectividad
 | RNF24 | Usabilidad, compatibilidad y conectividad | **Protección ante errores.** El sistema deberá mostrar mensajes claros al usuario cuando una operación no pueda completarse. |
 | RNF25 | Arquitectura y evolución | **Arquitectura.** El sistema deberá mantener una separación clara de responsabilidades entre sus diferentes componentes y capas para facilitar su evolución. |
 | RNF26 | Seguridad y privacidad | **Moderación de contenido.** El sistema deberá proveer mecanismos que permitan controlar y moderar el contenido generado por los usuarios (comentarios y calificaciones) para prevenir contenido ofensivo, fraudulento o abusivo. |
-<<<<<<< HEAD
-| RNF27 | Integridad y fiabilidad de los datos | **Integridad transaccional de pagos.** El sistema deberá registrar cada pago una sola vez, evitando confirmaciones duplicadas, incompletas o asociadas a un pedido o domicilio que no corresponde. |
-| RNF28 | Usabilidad, compatibilidad y conectividad | **Tolerancia a conectividad intermitente.** Las funcionalidades críticas para vendedores y domiciliarios (publicar disponibilidad, consultar y responder pedidos, confirmar entregas) deberán tolerar conectividad intermitente y sincronizar la información cuando la señal se recupere. |
-| RNF29 | Seguridad y privacidad | **Medios de pago según vendedor y modalidad.** El sistema no deberá procesar ni intermediar pagos: solo permitirá los métodos aceptados por cada vendedor y modalidad (efectivo o transferencia con el vendedor ambulante y en las reservas con retiro; solo transferencia en los domicilios) y registrará el método elegido y la confirmación del pago. El dinero se mueve fuera de la aplicación. |
-=======
 | RNF27 | Integridad y fiabilidad de los datos | **Integridad de pagos.** El sistema deberá registrar cada pago, en efectivo o digital, una sola vez, evitando confirmaciones duplicadas, incompletas o asociadas a un pedido o domicilio que no corresponde. |
 | RNF28 | Usabilidad, compatibilidad y conectividad | **Tolerancia a conectividad intermitente.** Las funcionalidades críticas para vendedores y domiciliarios (publicar disponibilidad, consultar y responder pedidos, confirmar entregas) deberán tolerar conectividad intermitente y sincronizar la información cuando la señal se recupere. |
 | RNF29 | Seguridad y privacidad | **Medios de pago admitidos.** El sistema deberá admitir dos medios de pago: efectivo y transferencia a la cuenta bancaria que el vendedor registre. La entrega directa y la recogida en punto fijo admiten efectivo o cuenta bancaria, según lo que el vendedor haya configurado como aceptado; el domicilio admite exclusivamente pago digital a la cuenta del vendedor, sin cobro en efectivo al domiciliario. El sistema no deberá procesar ni almacenar datos de tarjetas ni billeteras electrónicas de terceros: solo registra la confirmación del cobro en efectivo o la transferencia a la cuenta registrada por el vendedor. |
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 | RNF30 | Rendimiento, disponibilidad y escalabilidad | **Seguimiento oportuno de domicilios.** Los cambios de estado de un domicilio y la ubicación del domiciliario deberán ser visibles para el cliente en un máximo de 30 segundos. |
 | RNF31 | Rendimiento, disponibilidad y escalabilidad | **Eficiencia en dispositivos de gama baja.** El sistema deberá funcionar de forma fluida en dispositivos móviles de gama baja, con almacenamiento y capacidad de procesamiento limitados. |
-| RNF32 | Seguridad y privacidad | **Confidencialidad de datos de pago.** El sistema deberá proteger la información de pago que registra (método y referencias de transferencia), sin almacenar datos de tarjetas, cuentas ni claves, y restringir su acceso a las partes involucradas y al administrador. |
 
 ### 4.6 Especificaciones por requerimiento
 
-<<<<<<< HEAD
-Cada requerimiento funcional cuenta con una especificación en `specs/` (70 archivos, uno por RF) con el formato de *Feature Specification*: historias de usuario priorizadas (P1, P2, P3) con su prueba independiente y escenarios de aceptación *Given / When / Then*, casos borde, requerimientos verificables (`FR-NNN`), entidades clave y criterios de éxito medibles (`SC-NNN`). Además:
-
-- **Una historia por actor.** Cada historia de usuario de un spec tiene un único actor; si un requerimiento lo usan varios roles, se separa en una historia por rol.
-- **Reglas de datos explícitas.** Cada spec incluye una sección *Data Rules* con los datos que ingresa el usuario (campo, obligatoriedad y validación), los que asigna el sistema y los que se muestran o filtran.
-- **Casos borde respondidos.** Cada pregunta de *Edge Cases* tiene su respuesta, con los parámetros iniciales usados (vencimientos, límites y formatos) indicados en el propio spec.
-=======
 Cada requerimiento funcional cuenta con una especificación en `specs/RF-NN-nombre/spec.md` (67 archivos, uno por RF, cada uno con su `plan.md` al entrar a construcción) con el formato de *Feature Specification*: historias de usuario priorizadas (P1, P2, P3) con su prueba independiente y escenarios de aceptación *Given / When / Then*, casos borde, requerimientos verificables (`FR-NNN`), entidades clave y criterios de éxito medibles (`SC-NNN`).
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 | Prioridad | Especificaciones |
 |---|:---:|
 | P1 – núcleo del flujo | 36 |
-<<<<<<< HEAD
-| P2 – importante | 25 |
-| P3 – complementario | 9 |
-| **Total** | **70** |
-
-### 4.7 Trazabilidad
-
-La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) relaciona, para cada módulo, la historia de usuario, el actor, el caso de uso, el requerimiento funcional y su especificación (104 historias → 70 requerimientos → 70 especificaciones → 12 diagramas de casos de uso). Todas las historias de usuario están cubiertas por exactamente un requerimiento.
-=======
 | P2 – importante | 21 |
 | P3 – complementario | 10 |
 | **Total** | **67** |
@@ -453,37 +316,14 @@ La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) 
 ### 4.7 Trazabilidad
 
 La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) relaciona, para cada módulo, la historia de usuario, el actor, el caso de uso, el requerimiento funcional y su especificación (98 historias → 67 requerimientos → 67 especificaciones → 12 diagramas de casos de uso), e incluye el resumen de huecos de numeración. Todas las historias de usuario están cubiertas por exactamente un requerimiento.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ### 4.8 Decisiones de diseño y supuestos
 
 **Decisiones tomadas:**
 
-1. **Vendedor con dos roles.** Ambulante y de punto fijo, definidos al crear la cuenta, con casos de uso distintos; las reservas tienen un diagrama común para ambos.
+1. **Vendedor con dos roles.** Ambulante y de punto fijo, definidos al crear la cuenta, con casos de uso distintos.
 2. **El domicilio no se edita.** Un domicilio solo lleva un pedido del punto A al punto B; se eliminó la edición.
-<<<<<<< HEAD
-<<<<<<< HEAD
-3. **Sin código de confirmación.** La entrega se cierra con dos confirmaciones: el domiciliario confirma la entrega y el cliente confirma la llegada.
-4. **Archivar no es rechazar.** El domiciliario archiva los domicilios que no le interesan (acción personal); no notifica ni afecta a otros usuarios.
-5. **Oferta de precio.** El domiciliario puede ofertar otro precio, nunca inferior a la tarifa mínima ni superior a 3 veces la tarifa publicada; el cliente la acepta o la rechaza y la oferta vence a los 10 minutos.
-6. **Medios de pago por vendedor y modalidad.** Efectivo o transferencia con el vendedor ambulante y en las reservas con retiro; solo transferencia en los domicilios. La plataforma no procesa el dinero: registra el método elegido y la confirmación del pago.
-7. **Estado del emprendimiento.** El vendedor lo cambia entre abierto y cerrado; cerrado no recibe entrega directa ni domicilio, pero sí reservas.
-8. **Reservas para el día siguiente**, validadas contra la disponibilidad prevista (predicción de demanda, inventario y reservas ya aceptadas).
-9. **Tarifa del domicilio.** La calcula el sistema según la distancia entre los puntos A y B, sin ser inferior a la tarifa mínima; la ganancia del domiciliario es la tarifa vigente (publicada u ofertada aceptada), sin comisión de la plataforma.
-10. **Parámetros iniciales configurables.** Vencimiento de pedidos pendientes (entrega directa 10 min, domicilio 30 min, reserva 12 h), de ofertas (10 min) y de la confirmación de llegada del cliente (24 h); máximo de 3 domicilios simultáneos por domiciliario; contraseña de 8 caracteres; listados de 20 registros.
-
-**Puntos pendientes de validar con el equipo y los usuarios:**
-
-- Modalidad "domicilio" del vendedor ambulante: se interpretó como su *entrega directa* (el vendedor lleva el pedido al cliente); no existen domiciliarios en ese flujo.
-- Pago de un domicilio por transferencia: se asumió que el cliente transfiere el valor de los productos al vendedor y el valor del domicilio al domiciliario, y que cada uno confirma su recepción.
-- Reservas con el emprendimiento cerrado: se permiten (quedan pendientes de respuesta), porque el cliente suele reservar cuando el vendedor ya cerró su jornada.
-- Valores de los parámetros iniciales (vencimientos, límites y formatos) definidos en las respuestas de los casos borde de cada spec.
-- Corrección del diagrama de comentarios y calificaciones: se separó la edición y eliminación de comentarios propios de la moderación del administrador y se usó el actor base Usuario; confirmar si se esperaba otro cambio.
-=======
-3. **Código de confirmación en la entrega.** Al asignarse el domicilio se genera un código que el cliente ve y entrega al domiciliario, quien lo ingresa para confirmar la entrega. El cliente confirma además la llegada: el código refuerza, no reemplaza, la doble confirmación.
-=======
 3. **Código de confirmación en la entrega.** Al asignarse el domicilio se genera un código que solo el cliente ve y entrega al domiciliario, quien lo ingresa para confirmar la entrega; al validarse, el domicilio y el pedido pasan a entregado. El código es la única confirmación: no hay una segunda confirmación del cliente.
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba
 4. **Rechazo definitivo, no archivado.** El domiciliario rechaza de forma definitiva los domicilios que no le interesan; el domicilio sigue disponible para los demás, sin notificar ni penalizar a nadie. No existe lista de rechazados ni restauración.
 5. **El domiciliario no negocia el precio.** Acepta el domicilio con la tarifa publicada, que calcula el sistema según la distancia entre los puntos A y B sin ser inferior a la tarifa mínima, o lo rechaza. Se eliminó la oferta de precio (RF-20 y RF-21).
 6. **Pago mixto, sin que la plataforma procese el dinero.** Efectivo o transferencia a la cuenta del vendedor en entrega directa y recogida (según lo que el vendedor acepte); el domicilio es exclusivamente digital. La plataforma solo registra la confirmación de cada cobro.
@@ -504,4 +344,3 @@ La matriz [`requerimientos/trazabilidad.md`](../requerimientos/trazabilidad.md) 
 - Límite de domicilios simultáneos por domiciliario.
 - Reglas para el vendedor ambulante cuando el cliente está demasiado lejos para una entrega directa.
 - Costo mensual de los mensajes de WhatsApp/SMS, aprobación de la plantilla ante Meta y vía de soporte cuando un usuario pierde acceso a su celular verificado.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b

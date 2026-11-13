@@ -1,8 +1,8 @@
 # Feature Specification: Consulta de información del cliente
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-53
-**Historias de usuario relacionadas**: HU-84
+**Requerimiento funcional**: RF-52
+**Historias de usuario relacionadas**: HU-82
 
 ## User Scenarios & Testing *(mandatory)*
 

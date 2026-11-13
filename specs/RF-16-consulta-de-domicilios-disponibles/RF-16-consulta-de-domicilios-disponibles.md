@@ -39,16 +39,9 @@ Como domiciliario, quiero ver los domicilios disponibles junto con lo que ganar�
 
 ### Edge Cases
 
-<<<<<<< HEAD
 - **¿Qué sucede si el domiciliario intenta abrir la información de un domicilio que fue tomado por otro segundos antes?** El sistema informa que ya no está disponible y lo retira de la lista.
-- **¿Cómo se muestra la ganancia cuando el domicilio ya tiene ofertas de otros domiciliarios?** Se muestra siempre la tarifa publicada; las ofertas de otros domiciliarios no son visibles entre ellos.
 - **¿Qué ocurre si un domicilio disponible es cancelado por el administrador mientras aparece en la lista?** Desaparece de la lista al actualizarse (máximo 30 segundos); si el domiciliario lo abre, ve que ya no está disponible.
 - **¿Puede el domiciliario ver domicilios lejanos a su ubicación actual o solo los cercanos?** Ve los de toda la ciudad ordenados por cercanía y puede filtrar por distancia máxima.
-=======
-- ¿Qué sucede si el domiciliario intenta abrir la información de un domicilio que fue tomado por otro segundos antes?
-- ¿Qué ocurre si un domicilio disponible es cancelado por el administrador mientras aparece en la lista?
-- ¿Puede el domiciliario ver domicilios lejanos a su ubicación actual o solo los cercanos?
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ## Requirements *(mandatory)*
 

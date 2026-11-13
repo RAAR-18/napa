@@ -39,4 +39,14 @@ public class DispositivoTokenPersistenceAdapter implements DispositivoTokenRepos
                 .map(DispositivoTokenJpaEntity::toDomain)
                 .toList();
     }
+
+    @Override
+    public void deleteByTokenForOtherUsers(String token, UUID usuarioId) {
+        repository.deleteByTokenForOtherUsers(token, usuarioId);
+    }
+
+    @Override
+    public void deleteByUsuarioIdAndToken(UUID usuarioId, String token) {
+        repository.deleteByUsuarioIdAndToken(usuarioId, token);
+    }
 }

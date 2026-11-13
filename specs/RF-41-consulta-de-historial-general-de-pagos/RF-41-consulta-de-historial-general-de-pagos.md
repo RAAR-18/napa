@@ -1,14 +1,8 @@
 # Feature Specification: Consulta de historial general de pagos
 
 **Created**: 2026-09-11
-<<<<<<< HEAD:specs/RF-42-consulta-de-historial-general-de-pagos.md
-**Actualizado**: 2026-09-18
-**Requerimiento funcional**: RF-42
-**Historias de usuario relacionadas**: HU-71
-=======
 **Requerimiento funcional**: RF-41
 **Historias de usuario relacionadas**: HU-70
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-41-consulta-de-historial-general-de-pagos.md
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -34,7 +28,7 @@ Como administrador, quiero consultar el historial de pagos, para supervisar las 
 
 ### Edge Cases
 
-- **¿Qué ocurre si el volumen de transacciones es muy alto? ¿El sistema pagina o limita los resultados por defecto?** Se pagina de a 20 y se puede filtrar por fecha, estado, tipo y método.
+- **¿Qué ocurre si el volumen de transacciones es muy alto? ¿El sistema pagina o limita los resultados por defecto?** Se pagina de a 20 y se puede filtrar por fecha, estado, tipo y medio.
 - **¿Cómo se muestran los pagos que quedaron en estado pendiente de confirmación por un tiempo prolongado?** Se destacan como "pendiente de confirmación", con su antigüedad; los de más de 48 horas se resaltan para seguimiento.
 - **¿Qué sucede si el administrador aplica un filtro que no arroja resultados?** Muestra "Sin resultados" y la opción de limpiar los filtros.
 
@@ -53,11 +47,11 @@ Como administrador, quiero consultar el historial de pagos, para supervisar las 
 
 ### Data Rules
 
-**Datos que ingresa el usuario**: Ninguno. Filtros opcionales: fecha, estado, tipo y método de pago.
+**Datos que ingresa el usuario**: Ninguno. Filtros opcionales: fecha, estado, tipo y medio.
 
 **Datos que se muestran o filtran**
 
-- Fecha, monto, método, tipo (pedido o domicilio), estado y usuarios involucrados; paginado de a 20.
+- Fecha, monto, medio, tipo (pago del pedido o tarifa del domicilio), estado y usuarios involucrados; paginado de a 20.
 
 ## Success Criteria *(mandatory)*
 

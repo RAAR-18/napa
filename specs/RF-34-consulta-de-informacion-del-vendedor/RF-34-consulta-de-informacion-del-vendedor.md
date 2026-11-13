@@ -1,8 +1,8 @@
 # Feature Specification: Consulta de información del vendedor
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-35
-**Historias de usuario relacionadas**: HU-60
+**Requerimiento funcional**: RF-34
+**Historias de usuario relacionadas**: HU-59
 
 ## User Scenarios & Testing *(mandatory)*
 

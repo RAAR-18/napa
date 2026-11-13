@@ -1,8 +1,8 @@
 # Feature Specification: Consulta de reportes por administrador
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-62
-**Historias de usuario relacionadas**: HU-96
+**Requerimiento funcional**: RF-61
+**Historias de usuario relacionadas**: HU-94
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -10,7 +10,7 @@
 
 Como administrador, quiero consultar los reportes, para identificar y revisar los problemas informados por los usuarios.
 
-**Why this priority**: Depende de que existan reportes creados (RF-61) y complementa la supervisión de la plataforma; no es parte del flujo transaccional diario de clientes, vendedores o domiciliarios.
+**Why this priority**: Depende de que existan reportes creados (RF-60) y complementa la supervisión de la plataforma; no es parte del flujo transaccional diario de clientes, vendedores o domiciliarios.
 
 **Independent Test**: Puede probarse generando un reporte desde cualquier rol y verificando que el administrador puede consultarlo desde su panel.
 
@@ -43,7 +43,7 @@ Como administrador, quiero consultar los reportes, para identificar y revisar lo
 
 ### Key Entities *(include if feature involves data)*
 
-- **Reporte**: Ver definición en RF-61.
+- **Reporte**: Ver definición en RF-60.
 
 ### Data Rules
 

@@ -39,7 +39,7 @@ Como vendedor ambulante, quiero confirmar la entrega del pedido, para registrar 
 ### Edge Cases
 
 - ¿Qué sucede si el cliente paga un monto distinto al total del pedido?
-- ¿Cómo se maneja una entrega parcial en la que el vendedor solo pudo llevar algunos ítems?
+- **¿Cómo se maneja una entrega parcial en la que el vendedor solo pudo llevar algunos ítems?** No se admiten entregas parciales: si no puede entregar todos los ítems, lo informa al cliente y crea un reporte; el pedido no se confirma como entregado.
 
 ## Requirements *(mandatory)*
 
@@ -54,6 +54,19 @@ Como vendedor ambulante, quiero confirmar la entrega del pedido, para registrar 
 
 - **Pedido**: Transición de esta funcionalidad: en camino → entregado.
 - **Pago**: Registro asociado al pedido, confirmado junto con la entrega, con el medio elegido por el cliente.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Cobro recibido | Sí | Confirmación de que recibió el total del pedido por el medio elegido por el cliente (efectivo o cuenta bancaria). |
+
+**Datos que asigna el sistema**
+
+- Estado "entregado", fecha y hora.
+- Pago confirmado con el medio del pedido.
 
 ## Success Criteria *(mandatory)*
 

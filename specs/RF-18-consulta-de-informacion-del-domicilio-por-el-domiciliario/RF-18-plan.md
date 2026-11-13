@@ -20,6 +20,14 @@ El domiciliario abre la información de un domicilio con `GET /domicilios/{id}`:
 
 No existe la consulta. Los datos salen de `domicilio` (RF-14) y, por puertos `in`, de `pedidos` (tarifa, ubicación de entrega, comprador, ítems) y de `usuarios` (nombre del receptor).
 
+## Implementación (Fase 2, 2026-11-13)
+
+Implementado: `GET /api/v1/domicilios/{id}` para el domiciliario. Antes de la asignación el destino va aproximado y el receptor sin celular; el domiciliario asignado ve la dirección exacta, la referencia y el celular, este último a través del nuevo puerto `cuentas.ConsultarContactoUsuarioPort`. El resumen de ítems da su cantidad y se obtiene con `PedidoParaDomicilioPort.cantidadItems`. Un domicilio ajeno ya tomado, o uno rechazado por el propio domiciliario, responde `409 NOT_AVAILABLE`. La ruta en el mapa llega con RF-22 (Fase 4).
+
+### Ajuste (2026-11-13): barrio
+
+Antes de aceptar, el destino muestra el barrio además de la zona aproximada; la dirección y la referencia siguen ocultas. El barrio es obligatorio al pedir a domicilio (`400 VALIDATION_ERROR` "Indica el barrio de entrega").
+
 ## Actors
 
 | Actor | Participación en esta feature |

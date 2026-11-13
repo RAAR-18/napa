@@ -1,8 +1,8 @@
 # Feature Specification: Edición de usuario por administrador
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-68
-**Historias de usuario relacionadas**: HU-102
+**Requerimiento funcional**: RF-67
+**Historias de usuario relacionadas**: HU-100
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -38,7 +38,7 @@ Como administrador, quiero editar un usuario, para actualizar o corregir su info
 
 ### Key Entities *(include if feature involves data)*
 
-- **Usuario**: Ver definición en RF-67.
+- **Usuario**: Ver definición en RF-66.
 
 ### Data Rules
 

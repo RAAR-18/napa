@@ -1,6 +1,7 @@
 package co.edu.napa.pedidos.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.ConsultarNombresUsuarioPort;
+import co.edu.napa.domicilios.application.ports.in.ConsultarDomicilioDePedidoPort;
 import co.edu.napa.pagos.application.ports.in.ConsultarEstadoPagoPedidoPort;
 import co.edu.napa.pedidos.application.ports.in.ConsultarPedidoVendedorPort;
 import co.edu.napa.pedidos.application.ports.in.PedidoVendedorDetalle;
@@ -22,15 +23,18 @@ public class ConsultarPedidoVendedorUseCase implements ConsultarPedidoVendedorPo
     private final PedidoRepositoryPort pedidos;
     private final ConsultarNombresUsuarioPort usuarios;
     private final ConsultarEstadoPagoPedidoPort pagos;
+    private final ConsultarDomicilioDePedidoPort domicilios;
 
     public ConsultarPedidoVendedorUseCase(
             PedidoRepositoryPort pedidos,
             ConsultarNombresUsuarioPort usuarios,
-            ConsultarEstadoPagoPedidoPort pagos
+            ConsultarEstadoPagoPedidoPort pagos,
+            ConsultarDomicilioDePedidoPort domicilios
     ) {
         this.pedidos = Objects.requireNonNull(pedidos, "pedidos");
         this.usuarios = Objects.requireNonNull(usuarios, "usuarios");
         this.pagos = Objects.requireNonNull(pagos, "pagos");
+        this.domicilios = Objects.requireNonNull(domicilios, "domicilios");
     }
 
     @Override
@@ -45,6 +49,10 @@ public class ConsultarPedidoVendedorUseCase implements ConsultarPedidoVendedorPo
             throw new DomainException("NOT_FOUND", "La información del cliente no está disponible.");
         }
         String paymentState = pagos.consultar(pedidoId).orElse(null);
+        PedidoVendedorDetalle.Domicilio delivery = domicilios.porPedido(pedidoId)
+                .map(value -> new PedidoVendedorDetalle.Domicilio(value.id(), value.estado(),
+                        value.motivoCancelacion()))
+                .orElse(null);
         List<PedidoVendedorDetalle.Item> items = pedido.items().stream()
                 .map(item -> new PedidoVendedorDetalle.Item(
                         item.productoId(),
@@ -66,7 +74,8 @@ public class ConsultarPedidoVendedorUseCase implements ConsultarPedidoVendedorPo
                         pedido.ubicacionEntrega().latitud(),
                         pedido.ubicacionEntrega().longitud(),
                         pedido.ubicacionEntrega().direccion(),
-                        pedido.ubicacionEntrega().referencia());
+                        pedido.ubicacionEntrega().referencia(),
+                        pedido.ubicacionEntrega().barrio());
         return new PedidoVendedorDetalle(
                 pedido.id(),
                 pedido.estado(),
@@ -81,7 +90,8 @@ public class ConsultarPedidoVendedorUseCase implements ConsultarPedidoVendedorPo
                 pedido.total(),
                 pedido.medioPago(),
                 paymentState == null ? null : new PedidoVendedorDetalle.Pago(paymentState),
-                location
+                location,
+                delivery
         );
     }
 }

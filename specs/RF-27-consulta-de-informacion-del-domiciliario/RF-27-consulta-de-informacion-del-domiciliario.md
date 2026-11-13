@@ -40,8 +40,8 @@ Como vendedor de punto fijo, quiero consultar la información del domiciliario, 
 ### Edge Cases
 
 - **¿Qué sucede si se consulta la información del domiciliario antes de que un domicilio haya sido aceptado?** Muestra "Aún no hay domiciliario asignado".
-- **¿Cómo se maneja la consulta si el domiciliario cambia (por ejemplo, tras una reasignación)?** No hay reasignación dentro de una misma entrega: se muestra el domiciliario asignado hasta que el domicilio finalice o se cancele.
-- **¿Qué datos sensibles del domiciliario deben quedar ocultos al cliente y al vendedor?** Solo se muestran nombre, foto y calificación; el teléfono y el documento permanecen ocultos y la comunicación se hace por el canal de contacto de la plataforma (RF-50).
+- **¿Cómo se maneja la consulta si el domiciliario cambia (por ejemplo, tras una reasignación)?** No hay reasignación dentro de una misma entrega: se muestra el domiciliario asignado hasta que el domicilio se entregue o se cancele.
+- **¿Qué datos sensibles del domiciliario deben quedar ocultos al cliente y al vendedor?** Solo se muestran nombre, foto y calificación; el teléfono y el documento permanecen ocultos y la comunicación se hace por el canal de contacto de la plataforma (RF-49).
 
 ## Requirements *(mandatory)*
 

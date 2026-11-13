@@ -1,8 +1,8 @@
 # Feature Specification: Consulta de usuario por administrador
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-67
-**Historias de usuario relacionadas**: HU-101
+**Requerimiento funcional**: RF-66
+**Historias de usuario relacionadas**: HU-99
 
 ## User Scenarios & Testing *(mandatory)*
 

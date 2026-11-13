@@ -1,8 +1,8 @@
 # Feature Specification: Listado de productos del vendedor
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-56
-**Historias de usuario relacionadas**: HU-88
+**Requerimiento funcional**: RF-55
+**Historias de usuario relacionadas**: HU-86
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -30,8 +30,8 @@ Como vendedor, quiero ver el listado completo de mis productos publicados, para 
 
 ### Edge Cases
 
-- **¿Cómo se muestran en el listado los productos marcados como agotados?** Al final del listado, en gris y con la etiqueta "Agotado".
-- **¿Qué ocurre si el vendedor tiene productos en más de un emprendimiento?** No aplica: cada vendedor tiene un solo emprendimiento activo.
+- ¿Cómo se muestran en el listado los productos marcados como agotados?
+- ¿Qué ocurre si el vendedor tiene productos en más de un emprendimiento?
 
 ## Requirements *(mandatory)*
 
@@ -43,15 +43,7 @@ Como vendedor, quiero ver el listado completo de mis productos publicados, para 
 
 ### Key Entities *(include if feature involves data)*
 
-- **Producto**: Ver definición en RF-55; en este requerimiento se consulta en forma de listado filtrado por vendedor.
-
-### Data Rules
-
-**Datos que ingresa el usuario**: Ninguno.
-
-**Datos que se muestran o filtran**
-
-- Nombre, precio, unidad y cantidad disponible; los agotados al final y en gris.
+- **Producto**: Ver definición en RF-54; en este requerimiento se consulta en forma de listado filtrado por vendedor.
 
 ## Success Criteria *(mandatory)*
 

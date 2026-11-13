@@ -39,14 +39,8 @@ Como domiciliario, quiero rechazar de forma definitiva un domicilio disponible q
 
 ### Edge Cases
 
-<<<<<<< HEAD
-- **¿Los domicilios archivados se eliminan de la lista de archivados cuando dejan de estar disponibles?** No de inmediato: permanecen en archivados con la etiqueta "no disponible" durante 7 días y luego se eliminan de la lista.
-- **¿Existe un límite de domicilios archivados por domiciliario?** No hay límite.
-- **¿Qué ocurre con las ofertas de precio que el domiciliario ya había hecho sobre un domicilio que luego archiva?** La oferta pendiente sigue vigente: archivar solo oculta el domicilio de su lista.
-=======
 - ¿Existe un límite de rechazos por domiciliario en un período de tiempo, para evitar que un domiciliario "filtre" agresivamente sin aceptar nunca?
 - ¿Qué ocurre si el domicilio es cancelado por el administrador después de que el domiciliario lo rechazó?
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ## Requirements *(mandatory)*
 
@@ -63,15 +57,12 @@ Como domiciliario, quiero rechazar de forma definitiva un domicilio disponible q
 
 ### Data Rules
 
-**Datos que ingresa el usuario**: Ninguno. El domiciliario selecciona el domicilio y lo archiva o lo restaura.
+**Datos que ingresa el usuario**: Ninguno. El domiciliario selecciona un domicilio disponible y lo rechaza; el rechazo es definitivo.
 
 **Datos que asigna el sistema**
 
-- Fecha de archivado y domiciliario que archiva (acción personal).
+- Fecha del rechazo y domiciliario que rechaza (acción personal, sin restauración).
 
-**Datos que se muestran o filtran**
-
-- Lista de archivados: información básica, estado actual y etiqueta "no disponible" si ya no puede tomarse.
 
 ## Success Criteria *(mandatory)*
 

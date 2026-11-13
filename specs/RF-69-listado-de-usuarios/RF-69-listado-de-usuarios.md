@@ -1,8 +1,8 @@
 # Feature Specification: Listado de usuarios
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-70
-**Historias de usuario relacionadas**: HU-104
+**Requerimiento funcional**: RF-69
+**Historias de usuario relacionadas**: HU-102
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -43,7 +43,7 @@ Como administrador, quiero listar todos los usuarios, para tener una visión gen
 
 ### Key Entities *(include if feature involves data)*
 
-- **Usuario**: Ver definición en RF-67.
+- **Usuario**: Ver definición en RF-66.
 
 ### Data Rules
 

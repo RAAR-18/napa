@@ -1,14 +1,9 @@
 # Feature Specification: Respuesta del vendedor a un pedido
 
 **Created**: 2026-09-18
-<<<<<<< HEAD:specs/RF-54-respuesta-del-vendedor-a-un-pedido.md
-**Requerimiento funcional**: RF-54
-**Historias de usuario relacionadas**: HU-85, HU-86
-=======
 **Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-53
 **Historias de usuario relacionadas**: HU-83, HU-84
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-53-respuesta-del-vendedor-a-un-pedido.md
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -25,11 +20,7 @@ Como vendedor, quiero aceptar un pedido, para comprometerme a atenderlo según s
 1. **Scenario**: Aceptación de una entrega directa
    - **Given** soy vendedor ambulante y recibí un pedido de entrega directa
    - **When** lo acepto
-<<<<<<<< HEAD:specs/RF-54-respuesta-del-vendedor-a-un-pedido.md
-   - **Then** el sistema cambia el pedido a aceptado, notifica al cliente y me habilita la ubicación de entrega (RF-36)
-========
    - **Then** el sistema cambia el pedido a aceptado, notifica al cliente y me habilita la ubicación de entrega (RF-35) y crea el pago del pedido en estado pendiente de confirmación, con el medio elegido por el cliente
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-53-respuesta-del-vendedor-a-un-pedido/RF-53-respuesta-del-vendedor-a-un-pedido.md
 
 2. **Scenario**: Aceptación de una recogida en punto fijo
    - **Given** soy vendedor de punto fijo y recibí un pedido de recogida
@@ -85,24 +76,10 @@ Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo.
 
 ### Edge Cases
 
-<<<<<<<< HEAD:specs/RF-54-respuesta-del-vendedor-a-un-pedido.md
-<<<<<<< HEAD:specs/RF-54-respuesta-del-vendedor-a-un-pedido.md
-- **¿Qué sucede si el vendedor ambulante no responde a un pedido de entrega directa en un tiempo razonable? ¿Vence el pedido?** El pedido vence sin respuesta (10 minutos en entrega directa, 30 en domicilio, 12 horas en reserva), pasa a "vencido" y se notifica al cliente.
-- **¿Puede el vendedor indicar un motivo al rechazar un pedido?** Sí, de forma opcional: elige un motivo (sin existencias, muy lejos, cerrado u otro) y puede agregar un texto que ve el cliente.
-- **¿Qué ocurre si dos pedidos pendientes compiten por la misma cantidad de un producto?** Se atienden por orden de aceptación; al aceptar el segundo, el sistema advierte que el inventario ya no alcanza.
-=======
-- ¿Qué sucede si el vendedor ambulante no responde a un pedido de entrega directa en un tiempo razonable? ¿Vence el pedido?
-- ¿Qué sucede si el vendedor no responde a una reserva antes de la fecha acordada?
-- ¿Puede el vendedor indicar un motivo al rechazar un pedido?
-- ¿Qué ocurre si dos pedidos inmediatos pendientes compiten por la misma cantidad de un producto?
-- ¿Qué ocurre si el vendedor acepta un pedido de domicilio y el cliente nunca paga? (no hay plazo ni cancelación automática; el domicilio simplemente no puede publicarse)
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-53-respuesta-del-vendedor-a-un-pedido.md
-========
 - Si el vendedor no responde a un pedido inmediato o reserva, el pedido permanece pendiente sin vencimiento ni transición automática en el MVP.
 - ¿Puede el vendedor indicar un motivo al rechazar un pedido?
 - Si varios pedidos inmediatos compiten por el mismo inventario, cada aceptación valida y descuenta existencias de forma atómica; solo se acepta el pedido cubierto por el inventario restante (FR-003).
 - Si el vendedor acepta un pedido de domicilio y el cliente nunca paga, el pedido permanece aceptado y pendiente de pago, sin vencimiento automático; el domicilio no puede publicarse hasta que el pago se confirme.
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-53-respuesta-del-vendedor-a-un-pedido/RF-53-respuesta-del-vendedor-a-un-pedido.md
 
 ## Requirements *(mandatory)*
 
@@ -121,21 +98,6 @@ Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo.
 - **Pedido**: Transiciones de esta funcionalidad: pendiente → aceptado y pendiente → rechazado. Puede estar marcado como reserva. 
 - **Vendedor**: Ambulante o de punto fijo; decide sobre los pedidos recibidos con su propio criterio.
 - **Pago**: Se crea en estado pendiente de confirmación al aceptar el pedido, con el medio elegido por el cliente.
-
-### Data Rules
-
-**Datos que ingresa el usuario**
-
-| Campo | Obligatorio | Regla de validación |
-|---|:---:|---|
-| Decisión | Sí | Aceptar o rechazar el pedido pendiente. |
-| Motivo del rechazo | No | Uno de: sin existencias, muy lejos, cerrado u otro. |
-| Comentario para el cliente | No | Texto de hasta 200 caracteres, solo al rechazar. |
-
-**Datos que asigna el sistema**
-
-- Estado "aceptado" o "rechazado", fecha y hora.
-- Descuento de cantidades comprometidas (o liberación al rechazar).
 
 ## Success Criteria *(mandatory)*
 

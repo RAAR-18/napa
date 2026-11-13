@@ -2,8 +2,8 @@
 
 **Created**: 2026-09-11
 **Actualizado**: 2026-09-18
-**Requerimiento funcional**: RF-52
-**Historias de usuario relacionadas**: HU-83
+**Requerimiento funcional**: RF-51
+**Historias de usuario relacionadas**: HU-81
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -20,11 +20,7 @@ Como vendedor, quiero consultar un pedido, para conocer todos sus detalles.
 1. **Scenario**: Consulta exitosa del detalle de un pedido
    - **Given** el vendedor tiene un pedido recibido en su listado
    - **When** el vendedor selecciona ese pedido para ver su detalle
-<<<<<<<< HEAD:specs/RF-52-consulta-de-detalle-de-pedido.md
-   - **Then** el sistema muestra los productos y cantidades, el total, la modalidad de entrega (con la fecha y la ubicación de entrega cuando aplique), el método de pago, el monto a cobrar, el estado y los datos básicos del cliente
-========
    - **Then** el sistema muestra los productos y cantidades, el total, la modalidad de entrega (con la fecha y la ubicación de entrega cuando aplique), el total, el medio de pago y el estado del pago, el estado y los datos básicos del cliente
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-51-consulta-de-detalle-de-pedido/RF-51-consulta-de-detalle-de-pedido.md
 
 2. **Scenario**: Intento de consultar el detalle de un pedido de otro emprendimiento
    - **Given** existe un pedido que no pertenece al emprendimiento del vendedor autenticado
@@ -33,39 +29,23 @@ Como vendedor, quiero consultar un pedido, para conocer todos sus detalles.
 
 ### Edge Cases
 
-- **¿Qué sucede si un producto del pedido fue eliminado del catálogo después de haberse registrado en el pedido?** El detalle conserva el nombre y el precio con que se compró y lo marca como "producto no disponible".
-- **¿Cómo se muestra el detalle si el pedido fue cancelado antes de ser confirmado?** Se muestra en solo lectura con el estado (cancelado, rechazado o vencido), la fecha y el motivo si existe.
-- **¿Qué ocurre si el detalle del pedido incluye un domicilio con estado desactualizado?** El estado del domicilio se consulta al abrir el detalle, con su hora de última actualización, y se refresca automáticamente.
+- ¿Qué sucede si un producto del pedido fue eliminado del catálogo después de haberse registrado en el pedido?
+- ¿Cómo se muestra el detalle si el pedido fue cancelado antes de ser confirmado?
+- ¿Qué ocurre si el detalle del pedido incluye un domicilio con estado desactualizado?
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al vendedor consultar el detalle completo de un pedido asociado a su emprendimiento.
-<<<<<<<< HEAD:specs/RF-52-consulta-de-detalle-de-pedido.md
-- **FR-002**: El sistema DEBE mostrar en el detalle los productos, cantidades, método de pago, total a cobrar, modalidad de entrega, ubicación de entrega cuando aplique y estado del pedido.
-========
 - **FR-002**: El sistema DEBE mostrar en el detalle los productos, cantidades, total, medio de pago y estado del pago, modalidad de entrega, ubicación de entrega cuando aplique y estado del pedido.
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-51-consulta-de-detalle-de-pedido/RF-51-consulta-de-detalle-de-pedido.md
 - **FR-003**: El sistema DEBE mostrar en el detalle los datos básicos del cliente asociado al pedido.
 - **FR-004**: El sistema DEBE impedir que el vendedor consulte el detalle de un pedido que no pertenece a su emprendimiento.
 
 ### Key Entities
 
-<<<<<<<< HEAD:specs/RF-52-consulta-de-detalle-de-pedido.md
-- **Pedido**: Entidad consultada; incluye productos, cantidades, método de pago, total a cobrar, modalidad de entrega, ubicación de entrega, estado y referencia al cliente.
-========
 - **Pedido**: Entidad consultada; incluye productos, cantidades, total, medio de pago y estado del pago, modalidad de entrega, ubicación de entrega cuando aplique y estado del pedido.
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-51-consulta-de-detalle-de-pedido/RF-51-consulta-de-detalle-de-pedido.md
 - **Producto**: Ítem incluido en el pedido con su cantidad y precio al momento de la compra.
-
-### Data Rules
-
-**Datos que ingresa el usuario**: Ninguno.
-
-**Datos que se muestran o filtran**
-
-- Ítems con cantidad y precio, total a cobrar, método de pago, modalidad, ubicación de entrega, estado y datos básicos del cliente.
 
 ## Success Criteria *(mandatory)*
 

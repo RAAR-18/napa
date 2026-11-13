@@ -29,15 +29,9 @@ Como administrador, quiero cancelar un domicilio indicando el motivo, para resol
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-13-cancelacion-de-domicilio-por-administrador.md
-- **¿Qué sucede si el domicilio ya fue entregado antes de que el administrador intente cancelarlo?** No puede cancelarlo: en estado entregado o finalizado el sistema informa que el domicilio ya concluyó.
-- **¿Cómo se maneja la cancelación cuando el domicilio ya tiene un pago confirmado?** Se cancela igualmente; el pago confirmado queda marcado para revisión y el administrador coordina la devolución fuera de la plataforma.
-- **¿Qué ocurre si el domiciliario ya está en camino al momento de la cancelación?** Se puede cancelar: el sistema notifica de inmediato a las tres partes y el domiciliario deja de ver la ruta.
-=======
-- ¿Qué sucede si el domicilio ya fue entregado antes de que el administrador intente cancelarlo?
+- **¿Qué sucede si el domicilio ya fue entregado antes de que el administrador intente cancelarlo?** No puede cancelarlo: en estado entregado el sistema informa que el domicilio ya concluyó.
 - ¿Cómo se maneja la cancelación cuando el domicilio ya tiene un pago confirmado? (el dinero se devuelve fuera de la plataforma; la plataforma no lo procesa)
-- ¿Qué ocurre si el domiciliario ya está en camino al momento de la cancelación?
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-13-cancelacion-de-domicilio-por-administrador/RF-13-cancelacion-de-domicilio-por-administrador.md
+- **¿Qué ocurre si el domiciliario ya está en camino al momento de la cancelación?** Se puede cancelar: el sistema notifica de inmediato a las tres partes y el domiciliario deja de ver la ruta.
 
 ## Requirements *(mandatory)*
 

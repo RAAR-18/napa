@@ -20,6 +20,13 @@ Seguimiento del domicilio para las partes. El cliente o el vendedor del pedido c
 
 `domicilio` y `evento_trazabilidad` los crea RF-14 (V11) y cada transición de RF-14, RF-19, RF-23 y RF-24 inserta su evento. Este plan crea la consulta, el envío de la ubicación y las pantallas del cliente y del vendedor. El bloque `domicilio` del detalle de pedido (RF-51 y RF-48) lo completa RF-14 y de ahí se llega a estas pantallas.
 
+## Implementación (Fase 3, 2026-11-13)
+
+Implementado: `GET /api/v1/domicilios/{id}/trazabilidad` para el cliente y el vendedor del pedido (otros, `404`). Responde `domicilioId`, `estado`, `motivoCancelacion`, `updatedAt` y `eventos[{ estado, ocurridoAt }]` en orden, sin autores ni código. Pantalla compartida `trazabilidad-domicilio.tsx`, que se refresca cada 30 s. Cambios respecto al plan:
+
+- **Pendiente para la Fase 4 (mapa)**: `ubicacionDomiciliario` siempre es `null` y aún no existe `PUT /ubicacion-domiciliario`. La app muestra "Sin ubicación reciente del domiciliario".
+- La retención de 12 meses no tiene todavía tarea de purga.
+
 ## Actors
 
 | Actor | Participación en esta feature |

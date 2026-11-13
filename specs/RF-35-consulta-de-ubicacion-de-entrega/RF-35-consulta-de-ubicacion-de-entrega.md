@@ -1,8 +1,8 @@
 # Feature Specification: Consulta de ubicación de entrega
 
 **Created**: 2026-09-18
-**Requerimiento funcional**: RF-36
-**Historias de usuario relacionadas**: HU-61
+**Requerimiento funcional**: RF-35
+**Historias de usuario relacionadas**: HU-60
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -33,15 +33,9 @@ Como vendedor ambulante, quiero ver en un mapa la ubicación del cliente, para l
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-36-consulta-de-ubicacion-de-entrega.md
-- **¿Qué ocurre si el cliente está demasiado lejos del vendedor ambulante para que la entrega sea viable?** El vendedor lo decide al aceptar o rechazar el pedido (RF-54), viendo la distancia; una vez aceptado, si no puede cumplirlo, lo reporta (RF-61).
-- **¿Cómo se maneja una reserva cuya ubicación fue indicada el día anterior y el cliente ya no está allí?** La ubicación del pedido no se edita; el vendedor confirma con el cliente por el canal de contacto (RF-50) antes de iniciar la entrega.
+- **¿Qué ocurre si el cliente está demasiado lejos del vendedor ambulante para que la entrega sea viable?** El vendedor lo decide al aceptar o rechazar el pedido (RF-53), viendo la distancia; una vez aceptado, si no puede cumplirlo, lo reporta (RF-60).
+- **¿Cómo se maneja una reserva cuya ubicación fue indicada mucho antes y el cliente ya no está allí?** La ubicación del pedido no se edita; el vendedor confirma con el cliente por el canal de contacto (RF-49) antes de iniciar la entrega.
 - **¿Qué sucede si el vendedor ambulante no tiene señal o permiso de ubicación?** Muestra la última ruta cargada y la dirección en texto (RNF28).
-=======
-- ¿Qué ocurre si el cliente está demasiado lejos del vendedor ambulante para que la entrega sea viable?
-- ¿Cómo se maneja una reserva cuya ubicación fue indicada mucho antes y el cliente ya no está allí?
-- ¿Qué sucede si el vendedor ambulante no tiene señal o permiso de ubicación?
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-35-consulta-de-ubicacion-de-entrega.md
 
 ## Requirements *(mandatory)*
 

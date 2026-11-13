@@ -18,11 +18,7 @@
 - [8. Pedidos](#8-gestionar-pedidos)
 - [9. Productos](#9-gestionar-productos)
 - [10. Reportes](#10-gestionar-reportes)
-<<<<<<< HEAD
-- [11. Reservas](#11-gestionar-reservas)
-=======
 - [11. Recogida en punto fijo](#11-gestionar-recogida-en-punto-fijo)
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 - [12. Usuarios](#12-gestionar-usuarios)
 
 ---
@@ -32,20 +28,6 @@
 | Módulo | Historias |
 |---|:---:|
 | Comentarios y calificaciones | 23 |
-<<<<<<< HEAD
-| Cuenta | 7 |
-| Domicilios | 22 |
-| Emprendimientos | 8 |
-| Entregas del vendedor ambulante | 3 |
-| Notificaciones | 2 |
-| Pagos | 7 |
-| Pedidos | 14 |
-| Productos | 6 |
-| Reportes | 5 |
-| Reservas | 3 |
-| Usuarios | 4 |
-| **Total** | **104** |
-=======
 | Cuenta | 8 |
 | Domicilios | 17 |
 | Emprendimientos | 7 |
@@ -60,7 +42,6 @@
 | **Total** | **98** |
 
 > HU-90 (predicción de demanda) se conserva documentada pero está fuera de alcance del MVP; se cuenta en el total como historia diseñada, no como historia a implementar en esta entrega.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ---
 
@@ -143,20 +124,11 @@
 |---|---|
 | HU-53 | Como vendedor, quiero crear mi emprendimiento indicando mi ubicación de venta, para ofrecer mis productos en la plataforma. |
 | HU-54 | Como vendedor, quiero editar mi emprendimiento, para mantener actualizada su información (y mi ubicación, si vendo de forma ambulante). |
-<<<<<<< HEAD
-| HU-55 | Como vendedor, quiero cambiar el estado de mi emprendimiento entre abierto y cerrado, para indicar a los clientes cuándo estoy atendiendo pedidos. |
-| HU-56 | Como vendedor, quiero eliminar mi emprendimiento, para dejar de ofrecerlo en la plataforma. |
-| HU-57 | Como cliente, quiero listar los emprendimientos, para conocer las opciones disponibles cerca de mí. |
-| HU-58 | Como cliente, quiero consultar un emprendimiento, para conocer su información, su oferta y las modalidades de entrega que ofrece. |
-| HU-59 | Como cliente, quiero listar los productos de un emprendimiento, para conocer los productos que ofrece. |
-| HU-60 | Como cliente, quiero ver la información del vendedor, para conocer quién está detrás del emprendimiento. |
-=======
 | HU-55 | Como vendedor, quiero eliminar mi emprendimiento, para dejar de ofrecerlo en la plataforma. |
 | HU-56 | Como cliente, quiero listar los emprendimientos, para conocer las opciones disponibles cerca de mí. |
 | HU-57 | Como cliente, quiero consultar un emprendimiento, para conocer su información, su oferta, su ubicación y las modalidades de entrega que ofrece. |
 | HU-58 | Como cliente, quiero listar los productos de un emprendimiento, para conocer los productos que ofrece. |
 | HU-59 | Como cliente, quiero ver la información del vendedor, para conocer quién está detrás del emprendimiento. |
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ---
 
@@ -164,15 +136,9 @@
 
 | ID | Historia de usuario |
 |---|---|
-<<<<<<< HEAD
-| HU-61 | Como vendedor ambulante, quiero ver en un mapa la ubicación del cliente, para llegar hasta donde está y entregarle su pedido. |
-| HU-62 | Como vendedor ambulante, quiero iniciar la entrega de un pedido, para avisar al cliente que voy en camino. |
-| HU-63 | Como vendedor ambulante, quiero confirmar la entrega del pedido, para registrar que fue entregado al cliente y que recibí el pago. |
-=======
 | HU-60 | Como vendedor ambulante, quiero ver en un mapa la ubicación del cliente, para llegar hasta donde está y entregarle su pedido. |
 | HU-61 | Como vendedor ambulante, quiero iniciar la entrega de un pedido, para avisar al cliente que voy en camino. |
 | HU-62 | Como vendedor ambulante, quiero confirmar la entrega del pedido, para registrar que fue entregado al cliente y cobrado (en efectivo o por cuenta bancaria, según lo que acepte). |
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 > Estas historias aplican tanto a pedidos inmediatos como a pedidos de entrega directa marcados como reserva.
 
@@ -182,13 +148,8 @@
 
 | ID | Historia de usuario |
 |---|---|
-<<<<<<< HEAD
-| HU-64 | Como usuario, quiero consultar mis notificaciones, para conocer las novedades y eventos relacionados con mi cuenta (nuevos pedidos, ofertas, cambios de estado, entre otros). |
-| HU-65 | Como usuario, quiero configurar mis preferencias de notificación, para decidir qué tipos de notificaciones deseo recibir. |
-=======
 | HU-63 | Como usuario, quiero consultar mis notificaciones, para conocer las novedades y eventos relacionados con mi cuenta (nuevos pedidos, cambios de estado, entre otros). |
 | HU-64 | Como usuario, quiero configurar mis preferencias de notificación, para decidir qué tipos de notificaciones deseo recibir. |
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 > Estas historias aplican a los diferentes tipos de usuario definidos en el sistema: **cliente, vendedor, domiciliario y administrador**.
 
@@ -198,17 +159,6 @@
 
 | ID | Historia de usuario |
 |---|---|
-<<<<<<< HEAD
-| HU-66 | Como cliente, quiero consultar mi historial de pagos, para revisar los pagos que he realizado. |
-| HU-67 | Como vendedor, quiero confirmar el pago de un pedido (efectivo o transferencia), para registrar que el pedido fue pagado. |
-| HU-68 | Como vendedor, quiero consultar el historial de pagos, para revisar los cobros relacionados con mis pedidos. |
-| HU-69 | Como domiciliario, quiero confirmar el pago del domicilio, para registrar el cobro por el servicio de entrega. |
-| HU-70 | Como domiciliario, quiero consultar el historial de pagos, para revisar lo que he cobrado por mis servicios. |
-| HU-71 | Como administrador, quiero consultar el historial de pagos, para supervisar las transacciones de la plataforma. |
-| HU-72 | Como administrador, quiero configurar la tarifa mínima del domicilio, para establecer el valor mínimo permitido para los servicios de entrega. |
-
-> **Métodos de pago según el vendedor y la modalidad:** vendedor ambulante (entrega directa o reserva): efectivo o transferencia; vendedor de punto fijo con reserva (retiro en el punto): efectivo o transferencia; vendedor de punto fijo con domicilio: solo transferencia. La plataforma no procesa el dinero: registra el método elegido y la confirmación del pago.
-=======
 | HU-65 | Como cliente, quiero consultar mi historial de pagos, para revisar los pagos que he realizado. |
 | HU-66 | Como vendedor, quiero confirmar el pago de un pedido, para registrar que el pedido fue pagado (en efectivo o por cuenta bancaria; en un domicilio, antes de publicarlo). |
 | HU-67 | Como vendedor, quiero consultar el historial de pagos, para revisar los cobros relacionados con mis pedidos. |
@@ -220,7 +170,6 @@
 | HU-104 | Como vendedor de punto fijo, quiero registrar y confirmar el pago de la tarifa al domiciliario una vez entregado el pedido, para cumplir con el pago de su servicio. |
 
 > El pago admite dos medios: **efectivo** o **transferencia a la cuenta bancaria del vendedor**. La entrega directa y la recogida en punto fijo admiten cualquiera de los dos, según lo configurado por el vendedor (HU-103), y el cobro se confirma al registrar la entrega o el retiro. El domicilio admite exclusivamente pago digital y tiene dos pagos distintos: el del **pedido**, un solo monto de productos más tarifa del domicilio que el cliente transfiere apenas el vendedor lo acepta y que este confirma antes de publicar el domicilio (HU-66, HU-31); y el de la **tarifa al domiciliario**, que el vendedor paga y confirma después de la entrega y que el domiciliario confirma haber recibido (HU-104, HU-68).
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ---
 
@@ -228,22 +177,6 @@
 
 | ID | Historia de usuario |
 |---|---|
-<<<<<<< HEAD
-| HU-73 | Como cliente, quiero seleccionar los productos y las cantidades de un emprendimiento, para definir los artículos que deseo comprar. |
-| HU-74 | Como cliente, quiero seleccionar la modalidad de entrega (entrega directa o reserva con un vendedor ambulante; reserva o domicilio con un vendedor de punto fijo), para elegir cómo recibir mi pedido. |
-| HU-75 | Como cliente, quiero indicar la ubicación donde recibiré mi pedido, para que el vendedor o el domiciliario sepan a dónde llevarlo. |
-| HU-76 | Como cliente, quiero consultar la disponibilidad prevista de los productos para el día siguiente, para reservar solo lo que el vendedor tendrá. |
-| HU-77 | Como cliente, quiero seleccionar el método de pago (efectivo o transferencia, según el vendedor y la modalidad de entrega), para definir cómo pagaré mi pedido. |
-| HU-78 | Como cliente, quiero realizar un pedido con los productos seleccionados, para comprarlos al vendedor y pagarlos con el método elegido. |
-| HU-79 | Como cliente, quiero listar mis pedidos, para consultar el historial de mis compras. |
-| HU-80 | Como cliente, quiero consultar el estado de mi pedido, para conocer el avance de mi compra. |
-| HU-81 | Como cliente, quiero contactar al vendedor o domiciliario, para comunicarme con ellos cuando tenga alguna inquietud sobre mi pedido. |
-| HU-82 | Como vendedor, quiero listar los pedidos que recibo, para consultarlos y atenderlos. |
-| HU-83 | Como vendedor, quiero consultar un pedido, para conocer todos sus detalles (ítems, modalidad de entrega y cliente). |
-| HU-84 | Como vendedor, quiero consultar la información del cliente, para conocer los datos necesarios para gestionar su pedido. |
-| HU-85 | Como vendedor, quiero aceptar un pedido, para comprometerme a atenderlo según su modalidad de entrega. |
-| HU-86 | Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo. |
-=======
 | HU-72 | Como cliente, quiero seleccionar los productos y las cantidades de un emprendimiento, para definir los artículos que deseo comprar. |
 | HU-73 | Como cliente, quiero seleccionar la modalidad de entrega según el tipo de vendedor (entrega directa con un vendedor ambulante; recogida en el punto fijo o domicilio con un vendedor de punto fijo), para elegir cómo recibir mi pedido. |
 | HU-74 | Como cliente, quiero indicar la ubicación donde recibiré mi pedido cuando la modalidad lo requiera (entrega directa o domicilio), para que el vendedor o el domiciliario sepan a dónde llevarlo. |
@@ -256,7 +189,6 @@
 | HU-82 | Como vendedor, quiero consultar la información del cliente, para conocer los datos necesarios para gestionar su pedido. |
 | HU-83 | Como vendedor, quiero aceptar un pedido (incluida una reserva, según mi propio criterio), para comprometerme a atenderlo según su modalidad de entrega. |
 | HU-84 | Como vendedor, quiero rechazar un pedido, para indicar que no puedo atenderlo. |
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 > **Reserva** es un atributo del pedido (sí/no, con fecha y hora libremente acordadas con el vendedor), independiente de la modalidad de entrega elegida; no es una modalidad aparte. Para el MVP, la disponibilidad se valida contra el inventario que el propio vendedor declara (RF-46), sin predicción de demanda (RF-59 queda fuera de alcance del MVP).
 
@@ -266,52 +198,32 @@
 
 | ID | Historia de usuario |
 |---|---|
-<<<<<<< HEAD
-| HU-87 | Como vendedor, quiero añadir un producto, para ofrecerlo a los clientes. |
-| HU-88 | Como vendedor, quiero listar mis productos, para consultar los productos que tengo disponibles. |
-| HU-89 | Como vendedor, quiero editar un producto, para actualizar su información. |
-| HU-90 | Como vendedor, quiero actualizar la cantidad de un producto, para mantener actualizado mi inventario. |
-| HU-91 | Como vendedor, quiero eliminar un producto, para dejar de ofrecerlo. |
-| HU-92 | Como vendedor, quiero consultar la predicción de demanda de un producto, para tomar mejores decisiones sobre mi inventario y decidir qué reservas puedo cumplir. |
-
-=======
 | HU-85 | Como vendedor, quiero añadir un producto, para ofrecerlo a los clientes. |
 | HU-86 | Como vendedor, quiero listar mis productos, para consultar los productos que tengo disponibles. |
 | HU-87 | Como vendedor, quiero editar un producto, para actualizar su información. |
 | HU-88 | Como vendedor, quiero actualizar la cantidad de un producto, para mantener actualizado mi inventario. |
 | HU-89 | Como vendedor, quiero eliminar un producto, para dejar de ofrecerlo. |
 | HU-90 | Como vendedor, quiero consultar la predicción de demanda de un producto, para tomar mejores decisiones sobre mi inventario. |
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 ---
 
 # 10. Gestionar reportes
 
 | ID | Historia de usuario |
 |---|---|
-| HU-93 | Como cliente, quiero reportar un problema, para informar situaciones que requieran atención. |
-| HU-94 | Como vendedor, quiero reportar un problema, para informar inconvenientes relacionados con la plataforma o sus servicios. |
-| HU-95 | Como domiciliario, quiero reportar un problema, para informar inconvenientes ocurridos durante mi actividad. |
-| HU-96 | Como administrador, quiero consultar los reportes, para identificar y revisar los problemas informados por los usuarios. |
-| HU-97 | Como administrador, quiero resolver un reporte, para dar solución a los problemas informados. |
+| HU-91 | Como cliente, quiero reportar un problema, para informar situaciones que requieran atención. |
+| HU-92 | Como vendedor, quiero reportar un problema, para informar inconvenientes relacionados con la plataforma o sus servicios. |
+| HU-93 | Como domiciliario, quiero reportar un problema, para informar inconvenientes ocurridos durante mi actividad. |
+| HU-94 | Como administrador, quiero consultar los reportes, para identificar y revisar los problemas informados por los usuarios. |
+| HU-95 | Como administrador, quiero resolver un reporte, para dar solución a los problemas informados. |
 
 ---
 
-<<<<<<< HEAD
-# 11. Gestionar reservas
-
-| ID | Historia de usuario |
-|---|---|
-| HU-98 | Como cliente, quiero ver la ubicación del punto fijo donde recogeré mi reserva, para saber a dónde ir a retirarla. |
-| HU-99 | Como vendedor de punto fijo, quiero marcar una reserva como lista para recoger, para avisar al cliente que ya puede pasar por ella. |
-| HU-100 | Como vendedor de punto fijo, quiero confirmar el retiro de la reserva, para registrar que el cliente recogió su pedido y que recibí el pago. |
-=======
 # 11. Gestionar recogida en punto fijo
 
 | ID | Historia de usuario |
 |---|---|
 | HU-97 | Como vendedor de punto fijo, quiero marcar un pedido como listo para recoger, para avisar al cliente que ya puede pasar por él. |
 | HU-98 | Como vendedor de punto fijo, quiero confirmar el retiro del pedido, para registrar que el cliente lo recogió y lo pagó (en efectivo o por cuenta bancaria). |
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 > El cliente retira el pedido personalmente en el punto fijo, sea o no una reserva.
 
@@ -321,10 +233,10 @@
 
 | ID | Historia de usuario |
 |---|---|
-| HU-101 | Como administrador, quiero consultar un usuario, para revisar su información. |
-| HU-102 | Como administrador, quiero editar un usuario, para actualizar o corregir su información. |
-| HU-103 | Como administrador, quiero eliminar un usuario, para gestionar las cuentas que ya no deben permanecer en la plataforma. |
-| HU-104 | Como administrador, quiero listar todos los usuarios, para tener una visión general de las cuentas registradas. |
+| HU-99 | Como administrador, quiero consultar un usuario, para revisar su información. |
+| HU-100 | Como administrador, quiero editar un usuario, para actualizar o corregir su información. |
+| HU-101 | Como administrador, quiero eliminar un usuario, para gestionar las cuentas que ya no deben permanecer en la plataforma. |
+| HU-102 | Como administrador, quiero listar todos los usuarios, para tener una visión general de las cuentas registradas. |
 
 ---
 
@@ -350,19 +262,6 @@
 | Recogida en punto fijo | — | ✅ | El cliente lo retira personalmente en el punto fijo. |
 | Domicilio | — | ✅ | Un domiciliario lo lleva del punto fijo (A) a la ubicación del cliente (B). |
 
-<<<<<<< HEAD
-## Métodos de pago por vendedor y modalidad
-
-| Vendedor | Modalidad | Efectivo | Transferencia |
-|---|---|:---:|:---:|
-| Ambulante | Entrega directa | ✅ | ✅ |
-| Ambulante | Reserva (entrega al cliente) | ✅ | ✅ |
-| Punto fijo | Reserva (el cliente retira en el punto) | ✅ | ✅ |
-| Punto fijo | Domicilio | — | ✅ |
-
----
-=======
 > **Reserva** no es una cuarta modalidad: es un atributo del pedido (fecha y hora libremente acordadas con el vendedor) que puede aplicarse sobre cualquiera de las tres modalidades anteriores.
 
 ---
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b

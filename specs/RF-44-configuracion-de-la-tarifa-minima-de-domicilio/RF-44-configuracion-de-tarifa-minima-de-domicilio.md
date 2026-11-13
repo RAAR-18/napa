@@ -1,18 +1,9 @@
 # Feature Specification: Configuración de tarifa mínima de domicilio
 
 **Created**: 2026-09-18
-<<<<<<<< HEAD:specs/RF-45-configuracion-de-tarifa-minima-de-domicilio.md
-<<<<<<< HEAD:specs/RF-45-configuracion-de-tarifa-minima-de-domicilio.md
-**Requerimiento funcional**: RF-45
-**Historias de usuario relacionadas**: HU-72
-=======
-**Actualizado**: 2026-10-08
-========
 **Actualizado**: 2026-10-14
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-44-configuracion-de-la-tarifa-minima-de-domicilio/RF-44-configuracion-de-tarifa-minima-de-domicilio.md
 **Requerimiento funcional**: RF-44
 **Historias de usuario relacionadas**: HU-71
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-44-configuracion-de-tarifa-minima-de-domicilio.md
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -43,15 +34,9 @@ Como administrador, quiero configurar la tarifa mínima del domicilio, para esta
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-45-configuracion-de-tarifa-minima-de-domicilio.md
-- **¿Qué sucede si el administrador configura una tarifa mínima igual o menor a cero?** Se rechaza: la tarifa mínima debe ser mayor a cero.
-- **¿Cómo afecta un cambio de tarifa mínima a los domicilios publicados que aún no han sido asignados?** Los domicilios ya publicados conservan su tarifa; el nuevo valor aplica a los pedidos y ofertas nuevos.
-- **¿Qué ocurre si dos administradores modifican la tarifa mínima al mismo tiempo?** Prevalece el último guardado, con aviso de que el valor cambió, y ambos cambios quedan en el registro histórico.
-=======
 - ¿Qué sucede si el administrador configura una tarifa mínima igual o menor a cero?
 - ¿Cómo afecta un cambio de tarifa mínima a los pedidos de domicilio ya realizados que aún no han sido publicados o asignados?
 - ¿Qué ocurre si dos administradores modifican la tarifa mínima al mismo tiempo?
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-44-configuracion-de-tarifa-minima-de-domicilio.md
 
 ## Requirements *(mandatory)*
 
@@ -67,18 +52,6 @@ Como administrador, quiero configurar la tarifa mínima del domicilio, para esta
 ### Key Entities
 
 - **Tarifa mínima de domicilio**: Parámetro global de la plataforma; atributos clave: valor y fecha de última actualización.
-
-### Data Rules
-
-**Datos que ingresa el usuario**
-
-| Campo | Obligatorio | Regla de validación |
-|---|:---:|---|
-| Tarifa mínima | Sí | Entero en pesos colombianos (COP) mayor a 0. |
-
-**Datos que asigna el sistema**
-
-- Fecha de la actualización, administrador y valor anterior (registro histórico).
 
 ## Success Criteria *(mandatory)*
 

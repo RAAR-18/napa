@@ -289,3 +289,11 @@ frontend/__tests__/emprendimientos/
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+
+## Notas de implementación (F9, 2026-11-13)
+
+- `GET` y `PATCH /emprendimientos/me` en `MiEmprendimientoController` (`GestionarEmprendimientoPort`). El cuerpo se lee como mapa para rechazar `nombre`, `categoria`, `estado` o cualquier campo desconocido.
+- `PATCH /emprendimientos/me` queda exento de `Idempotency-Key` en `IdempotencyFilter`, como la edición de productos.
+- La ubicación se actualiza en su misma fila (`ubicacion.id` se conserva). Los pedidos sin cerrar se cuentan con `ConsultarPedidosSinCerrarPort` del módulo `pedidos` (`PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER`, `EN_CAMINO`).
+- Sin control de versión: la última escritura gana; no hay `409 CONFLICT` por edición simultánea.
+- App: pantalla `mi-emprendimiento` con botón «Estoy aquí» (expo-location) y envío solo de los campos que cambiaron.

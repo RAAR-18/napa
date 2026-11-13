@@ -1,8 +1,8 @@
 # Feature Specification: Listado de pedidos del cliente
 
 **Created**: 2026-09-18
-**Requerimiento funcional**: RF-48
-**Historias de usuario relacionadas**: HU-79
+**Requerimiento funcional**: RF-47
+**Historias de usuario relacionadas**: HU-77
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -28,7 +28,7 @@ Como cliente, quiero listar mis pedidos, para consultar el historial de mis comp
 
 ### Edge Cases
 
-- **¿Cómo se muestran las reservas programadas para una fecha futura?** Con la fecha programada y el estado "reservado".
+- **¿Cómo se muestran las reservas programadas para una fecha futura?** Con su estado, la etiqueta "reserva" y la fecha y hora acordadas.
 - **¿Qué ocurre si el volumen de pedidos es alto? ¿Se pagina o se filtra por estado o fecha?** El listado se pagina de a 20 y se puede filtrar por estado y fecha.
 
 ## Requirements *(mandatory)*

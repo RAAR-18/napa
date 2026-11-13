@@ -33,7 +33,19 @@ class CotizarPedidoUseCaseTest {
     private static final UUID PRODUCT_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-11-11T12:00:00Z");
     private static final UbicacionEntrega DESTINATION =
-            new UbicacionEntrega(4.7, -74.0, "Calle de prueba", null);
+            new UbicacionEntrega(4.7, -74.0, "Calle de prueba", null, "Centro");
+
+    @Test
+    void homeDeliveryRequiresTheNeighborhood() {
+        var useCase = useCase(true, true, List.of("EFECTIVO", "CUENTA_BANCARIA"),
+                List.of(product("DISPONIBLE", "5")));
+
+        DomainException error = assertThrows(DomainException.class, () -> useCase.cotizar(request(
+                ModalidadEntrega.DOMICILIO, "1.5", null, new UbicacionEntrega(4.7, -74.0, "Calle de prueba", null))));
+
+        assertEquals("VALIDATION_ERROR", error.code());
+        assertEquals("Indica el barrio de entrega.", error.getMessage());
+    }
 
     @Test
     void quotesFixedPointHomeDeliveryWithBankTransferAndDeliveryFee() {

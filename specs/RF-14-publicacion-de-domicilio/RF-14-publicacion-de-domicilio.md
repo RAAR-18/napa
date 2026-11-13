@@ -49,41 +49,25 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 
 ### Edge Cases
 
-<<<<<<< HEAD
 - **¿Qué sucede si el pedido es cancelado o el domicilio es cancelado por el administrador después de publicado y antes de ser tomado?** El domicilio pasa a cancelado y deja de aparecer en la lista de disponibles; si ya estaba asignado, se notifica al domiciliario.
-- **¿Cómo se comporta el sistema si la ubicación de entrega indicada por el cliente es incompleta o queda fuera de la zona atendida?** No debería ocurrir: la ubicación se valida al crear el pedido (RF-46). Si el vendedor la considera inviable debe rechazar el pedido, porque el domicilio no puede editarse.
+- **¿Cómo se comporta el sistema si la ubicación de entrega indicada por el cliente es incompleta o queda fuera de la zona atendida?** No debería ocurrir: la ubicación se valida al crear el pedido (RF-45). Si el vendedor la considera inviable debe rechazar el pedido, porque el domicilio no puede editarse.
 - **¿Qué ocurre si ningún domiciliario toma el domicilio en un tiempo razonable? ¿Se notifica al vendedor y al cliente?** A los 30 minutos se notifica al vendedor y al cliente; a las 2 horas sin asignación el domicilio y el pedido se cancelan automáticamente y se notifica a ambos.
-- **¿Qué pasa si el vendedor publica el domicilio antes de tener el pedido preparado para entregar?** Está permitido publicar; el vendedor es responsable de tener el pedido listo cuando llegue el domiciliario y, si no lo está, el domiciliario puede reportarlo (RF-61).
-=======
-- ¿Qué sucede si el pedido es cancelado o el domicilio es cancelado por el administrador después de publicado y antes de ser tomado?
-- ¿Cómo se comporta el sistema si la ubicación de entrega indicada por el cliente es incompleta o queda fuera de la zona atendida?
-- ¿Qué ocurre si ningún domiciliario toma el domicilio en un tiempo razonable? ¿Se notifica al vendedor y al cliente?
-- ¿Qué pasa si el vendedor publica el domicilio antes de tener el pedido preparado para entregar?
+- **¿Qué pasa si el vendedor publica el domicilio antes de tener el pedido preparado para entregar?** Está permitido publicar; el vendedor es responsable de tener el pedido listo cuando llegue el domiciliario y, si no lo está, el domiciliario puede reportarlo (RF-60).
 - ¿Qué ocurre si el pedido de domicilio fue aceptado y el cliente nunca paga? (no hay plazo ni cancelación automática definidos: el domicilio simplemente no puede publicarse; punto pendiente de validar)
-<<<<<<< HEAD:specs/RF-14-publicacion-de-domicilio.md
-- ¿Puede publicarse el domicilio de un pedido marcado como reserva antes de la fecha y hora acordadas?
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
-=======
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-14-publicacion-de-domicilio/RF-14-publicacion-de-domicilio.md
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al vendedor de punto fijo publicar un domicilio únicamente para un pedido propio, con modalidad de domicilio, en estado aceptado y con el pago confirmado (RF-42).
-<<<<<<< HEAD:specs/RF-14-publicacion-de-domicilio.md
-- **FR-002**: El sistema DEBE definir como punto A la ubicación del punto fijo y como punto B la ubicación de entrega indicada por el cliente en el pedido, e incluir la persona que recibirá el pedido.
-- **FR-003**: El sistema DEBE asignar al domicilio la tarifa publicada calculada al realizar el pedido, que no puede ser inferior a la tarifa mínima vigente (RF-45).
-- **FR-004**: El sistema DEBE crear el domicilio en estado "disponible", ponerlo a disposición de los domiciliarios y notificarlos.
-=======
 - **FR-002**: El sistema DEBE definir como punto A una copia de la ubicación del punto fijo y como punto B la ubicación de entrega indicada por el cliente en el pedido; el receptor es el cliente que hizo el pedido.
 - **FR-003**: El sistema DEBE tomar como tarifa publicada la tarifa del domicilio calculada al realizar el pedido (que no puede ser inferior a la tarifa mínima vigente, RF-44); el domicilio no la repite.
 - **FR-004**: El sistema DEBE crear el domicilio en estado "disponible", ponerlo a disposición de los domiciliarios y notificar a todos los domiciliarios activos.
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-14-publicacion-de-domicilio/RF-14-publicacion-de-domicilio.md
 - **FR-005**: El sistema DEBE impedir que un pedido tenga más de un domicilio activo al mismo tiempo.
 - **FR-006**: El sistema DEBE impedir la edición de un domicilio una vez publicado (pedido y punto A; el punto B, el receptor y la tarifa provienen del pedido).
 - **FR-007**: El sistema DEBE impedir la publicación de un pedido de domicilio cuyo pago no esté confirmado, indicando el motivo.
 - **FR-008**: En un pedido marcado como reserva, el sistema DEBE permitir publicar el domicilio solo desde 15 minutos antes de la fecha y hora acordadas (RESERVATION_NOT_DUE).
+- **FR-009**: El sistema DEBE notificar al vendedor y al cliente cuando un domicilio lleve 30 minutos disponible sin asignarse, y cancelar automáticamente el domicilio y su pedido a las 2 horas sin asignación, notificando a ambos.
 
 ### Key Entities
 
@@ -110,3 +94,4 @@ Como vendedor de punto fijo, quiero publicar un domicilio para un pedido que ya 
 - **SC-002**: El sistema rechaza el 100% de los intentos de publicar un domicilio para un pedido que no sea de domicilio o no esté aceptado.
 - **SC-003**: El 0% de los domicilios publicados permite modificar su origen, destino o tarifa.
 - **SC-004**: El 0% de los domicilios se publica sin el pago del pedido confirmado.
+- **SC-005**: El 100% de los domicilios sin asignar durante 2 horas quedan cancelados junto con su pedido.

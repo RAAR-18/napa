@@ -1,8 +1,8 @@
 # Feature Specification: Listado de productos de un emprendimiento
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-34
-**Historias de usuario relacionadas**: HU-59
+**Requerimiento funcional**: RF-33
+**Historias de usuario relacionadas**: HU-58
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -28,16 +28,10 @@ Como cliente, quiero ver los productos de un emprendimiento específico, con pre
 
 ### Edge Cases
 
-<<<<<<<< HEAD:specs/RF-34-listado-de-productos-de-un-emprendimiento.md
-- **¿Qué sucede si un producto se agota justo cuando el cliente está visualizando el catálogo?** Al intentar seleccionarlo, el sistema informa que se agotó y actualiza el catálogo.
-- **¿Cómo se ordenan los productos dentro del catálogo (precio, nombre, más vendidos)?** Por nombre de forma predeterminada; el cliente puede ordenar por precio.
-- **¿Qué ocurre si el emprendimiento fue eliminado mientras el cliente consultaba su catálogo?** Se informa que el emprendimiento ya no está disponible.
-========
 - ¿Qué sucede si un producto se agota justo cuando el cliente está visualizando el catálogo? (el producto permanece visible y pasa a mostrarse con la etiqueta "solo reserva")
 - ¿Qué ocurre si el cliente ya agregó un producto a un pedido inmediato y este se agota antes de confirmarlo? (el sistema lo informa y pide ajustar la selección o marcar el pedido como reserva, RF-45)
 - ¿Cómo se ordenan los productos dentro del catálogo (precio, nombre, más vendidos)? ¿Los agotados van al final?
 - ¿Qué ocurre si el emprendimiento fue eliminado mientras el cliente consultaba su catálogo?
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-33-listado-de-productos-de-un-emprendimiento/RF-33-listado-de-productos-de-un-emprendimiento.md
 
 ## Requirements *(mandatory)*
 
@@ -50,14 +44,6 @@ Como cliente, quiero ver los productos de un emprendimiento específico, con pre
 ### Key Entities
 
 - **Producto**: Artículo publicado por el vendedor; incluye nombre, precio, cantidad disponible y emprendimiento al que pertenece.
-
-### Data Rules
-
-**Datos que ingresa el usuario**: Ninguno. Opción: ordenar por nombre o precio.
-
-**Datos que se muestran o filtran**
-
-- Nombre, precio, unidad y cantidad disponible de cada producto con disponibilidad; los agotados se muestran como "Agotado".
 
 ## Success Criteria *(mandatory)*
 

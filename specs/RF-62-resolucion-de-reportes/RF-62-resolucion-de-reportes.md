@@ -1,8 +1,8 @@
 # Feature Specification: Resolución de reportes
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-63
-**Historias de usuario relacionadas**: HU-97
+**Requerimiento funcional**: RF-62
+**Historias de usuario relacionadas**: HU-95
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -10,7 +10,7 @@
 
 Como administrador, quiero resolver un reporte, para dar solución a los problemas informados.
 
-**Why this priority**: Cierra el ciclo de gestión de incidencias iniciado con la creación del reporte (RF-61); es necesario para mantener la confianza de los usuarios en que sus reportes tienen seguimiento.
+**Why this priority**: Cierra el ciclo de gestión de incidencias iniciado con la creación del reporte (RF-60); es necesario para mantener la confianza de los usuarios en que sus reportes tienen seguimiento.
 
 **Independent Test**: Puede probarse tomando un reporte pendiente, registrando la acción tomada y verificando que su estado cambia a resuelto.
 
@@ -44,7 +44,7 @@ Como administrador, quiero resolver un reporte, para dar solución a los problem
 
 ### Key Entities *(include if feature involves data)*
 
-- **Reporte**: Ver definición en RF-61; en este requerimiento se actualiza su estado a resuelto y se agrega la nota de resolución.
+- **Reporte**: Ver definición en RF-60; en este requerimiento se actualiza su estado a resuelto y se agrega la nota de resolución.
 
 ### Data Rules
 

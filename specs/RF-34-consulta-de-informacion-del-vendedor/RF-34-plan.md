@@ -243,3 +243,9 @@ frontend/__tests__/emprendimientos/tarjeta-vendedor.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo. 
+
+## Notas de implementación (F9, 2026-11-13)
+
+- `GET /emprendimientos/{id}/vendedor`: nombre, foto, tipo y `miembroDesde` (fecha en hora de Colombia). Sin celular, correo ni calificación (RF-01 aún no existe).
+- La autorización de datos públicos (FR-002) sigue como pregunta abierta: conjunto público fijo.
+- App: tarjeta «Te atiende…» en el detalle; si falla, el detalle se muestra sin ella.

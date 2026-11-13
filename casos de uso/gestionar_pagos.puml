@@ -32,12 +32,6 @@ d --> UC4
 adm --> UC4
 
 note right of UC1
-<<<<<<< HEAD
-  El cliente elige efectivo o transferencia al hacer
-  el pedido (los domicilios solo admiten transferencia).
-  La plataforma no procesa el dinero: registra el
-  método elegido y la confirmación del pago.
-=======
   Se usa al realizar un pedido.
   El método permitido depende de la MODALIDAD
   DE ENTREGA elegida, no directamente del tipo
@@ -81,7 +75,6 @@ note bottom of UC6
   y/o registra su cuenta bancaria.
   Sin cuenta, el cliente no puede pagar
   por medios digitales.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 end note
 
 @enduml

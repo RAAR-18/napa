@@ -27,6 +27,9 @@ public class UbicacionJpaEntity {
     @Column(length = 300)
     private String referencia;
 
+    @Column(length = 100)
+    private String barrio;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -42,11 +45,12 @@ public class UbicacionJpaEntity {
         longitud = ubicacion.longitud();
         direccion = ubicacion.direccion();
         referencia = ubicacion.referencia();
+        barrio = ubicacion.barrio();
         createdAt = ubicacion.createdAt();
         updatedAt = ubicacion.updatedAt();
     }
 
     public Ubicacion toDomain() {
-        return new Ubicacion(id, latitud, longitud, direccion, referencia, createdAt, updatedAt);
+        return new Ubicacion(id, latitud, longitud, direccion, referencia, barrio, createdAt, updatedAt);
     }
 }

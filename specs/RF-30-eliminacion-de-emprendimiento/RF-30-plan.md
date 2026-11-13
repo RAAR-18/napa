@@ -261,3 +261,9 @@ frontend/__tests__/emprendimientos/eliminar-emprendimiento.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+
+## Notas de implementación (F9, 2026-11-13)
+
+- `POST /emprendimientos/me/eliminar` con `{ "confirmar": true }` → `204`; `409 HAS_PENDING_ORDERS` con `pedidosPendientes`.
+- Sin bloqueo `FOR SHARE` al crear un pedido (RF-45): queda la ventana mínima descrita en Open Questions.
+- Efecto conocido: la lista y el detalle de pedidos del vendedor filtran por emprendimiento `ACTIVO`, así que tras eliminarlo el vendedor deja de ver sus pedidos anteriores en la app (los datos se conservan).

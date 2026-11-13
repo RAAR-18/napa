@@ -20,6 +20,19 @@ El domiciliario consulta los domicilios `DISPONIBLE` con `GET /domicilios/dispon
 
 El módulo `domicilios` y las tablas `domicilio` y `domicilio_rechazo` los crea el plan de RF-14 (V11). La tabla `ubicacion` y `DistanciaLineaRectaPort` (PostGIS) vienen de RF-45. No existe aún ninguna pantalla del domiciliario.
 
+## Implementación (Fase 2, 2026-11-13)
+
+Implementado: `GET /api/v1/domicilios/disponibles` (`orden=cercania|ganancia`, `lat`, `lng`, `page`, `size`) y la pantalla `frontend/src/app/domicilios-disponibles.tsx`, que se refresca cada 15 s. Cambios respecto al plan:
+
+- **Privacidad (RF-18 FR-004, adoptada en la Fase 0)**: el destino va aproximado (`aproximado: true`, sin dirección ni referencia, coordenadas redondeadas a 2 decimales, unos 1,1 km). Reemplaza la decisión anterior de "mostrar todo exacto". No hay datos de barrio en `ubicacion`, así que "zona y barrio" se aproximan con coordenadas redondeadas.
+- La distancia es en línea recta de A a B (PostGIS). `distanciaAlOrigenMetros` solo se calcula si se envían `lat` y `lng`.
+- Aún no existe el filtro de distancia máxima del caso borde 3.
+
+### Ajuste (2026-11-13): barrio y radio de búsqueda
+
+- **Radio**: `lat` y `lng` son obligatorios en `GET /domicilios/disponibles`. Solo se listan los domicilios cuyo origen (A) está a `napa.domicilios.radio-disponibles-metros` o menos del domiciliario (por defecto 5000 m, con `ST_DWithin`). La respuesta incluye `radioMetros` y el conteo usa el mismo filtro. La app pide la ubicación al abrir la lista; sin permiso no muestra domicilios.
+- **Barrio**: el destino aproximado trae `barrio` (V14, columna `ubicacion.barrio`). La lista muestra "Entrega: barrio X" en lugar de la zona redondeada.
+
 ## Actors
 
 | Actor | Participación en esta feature |

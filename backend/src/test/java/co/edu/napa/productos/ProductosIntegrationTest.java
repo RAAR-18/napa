@@ -153,7 +153,7 @@ class ProductosIntegrationTest {
                 "modalidad", "ENTREGA_DIRECTA",
                 "items", List.of(Map.of("productoId", productId, "cantidad", new BigDecimal("2.5"))),
                 "ubicacionEntrega", Map.of(
-                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"));
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"));
         assertEquals(403, request("POST", "/pedidos/cotizacion", seller, quoteRequest, null).statusCode());
         assertEquals(401, request("POST", "/pedidos/cotizacion", null, quoteRequest, null).statusCode());
         var quote = request("POST", "/pedidos/cotizacion", customer, quoteRequest, null);
@@ -188,7 +188,7 @@ class ProductosIntegrationTest {
                 "modalidad", "ENTREGA_DIRECTA",
                 "items", List.of(Map.of("productoId", productId, "cantidad", new BigDecimal("2.5"))),
                 "ubicacionEntrega", Map.of(
-                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"),
                 "medioPago", "EFECTIVO",
                 "totalEsperado", 8750));
         String idempotencyKey = key();
@@ -240,7 +240,7 @@ class ProductosIntegrationTest {
                     "modalidad", "ENTREGA_DIRECTA",
                     "items", List.of(Map.of("productoId", openProductId, "cantidad", BigDecimal.ONE)),
                     "ubicacionEntrega", Map.of(
-                            "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                            "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"),
                     "medioPago", "EFECTIVO",
                     "totalEsperado", 3500));
             if (estado.equals("PENDIENTE")) {
@@ -268,7 +268,7 @@ class ProductosIntegrationTest {
                     "modalidad", "ENTREGA_DIRECTA",
                     "items", List.of(Map.of("productoId", terminalProductId, "cantidad", BigDecimal.ONE)),
                     "ubicacionEntrega", Map.of(
-                            "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                            "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"),
                     "medioPago", "EFECTIVO",
                     "totalEsperado", 3500);
             var created = request("POST", "/pedidos", customer, terminalOrderRequest, key());
@@ -314,7 +314,7 @@ class ProductosIntegrationTest {
                 "modalidad", "RECOGIDA",
                 "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
                 "ubicacionEntrega", Map.of(
-                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba")
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro")
         ), null).statusCode());
 
         Map<String, Object> orderRequest = new HashMap<>(quoteRequest);
@@ -354,7 +354,7 @@ class ProductosIntegrationTest {
         String productId = body(request("POST", "/productos", seller, product("Mango a domicilio", "4"), key()))
                 .get("id").toString();
         Map<String, Object> location = Map.of(
-                "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba");
+                "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro");
         Map<String, Object> quoteRequest = Map.of(
                 "emprendimientoId", business,
                 "modalidad", "DOMICILIO",
@@ -450,7 +450,7 @@ class ProductosIntegrationTest {
                 "modalidad", "ENTREGA_DIRECTA",
                 "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
                 "ubicacionEntrega", Map.of(
-                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"),
                 "medioPago", "EFECTIVO");
         long ordersBefore = jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class);
         long itemsBefore = jdbc.queryForObject("SELECT count(*) FROM item_pedido", Long.class);
@@ -503,7 +503,7 @@ class ProductosIntegrationTest {
                 "modalidad", "ENTREGA_DIRECTA",
                 "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
                 "ubicacionEntrega", Map.of(
-                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"),
                 "medioPago", "EFECTIVO");
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
@@ -567,7 +567,7 @@ class ProductosIntegrationTest {
                 "modalidad", "ENTREGA_DIRECTA",
                 "items", List.of(Map.of("productoId", productId, "cantidad", BigDecimal.ONE)),
                 "ubicacionEntrega", Map.of(
-                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"),
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"),
                 "medioPago", "EFECTIVO",
                 "totalEsperado", 1);
         long ordersBefore = jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class);
@@ -1208,7 +1208,7 @@ class ProductosIntegrationTest {
                 "medioPago", paymentMethod));
         if (modality.equals("ENTREGA_DIRECTA") || modality.equals("DOMICILIO")) {
             orderRequest.put("ubicacionEntrega", Map.of(
-                    "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba"));
+                    "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"));
         }
         if (reservation != null) {
             orderRequest.put("reserva", reservation);

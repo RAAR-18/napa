@@ -52,7 +52,7 @@ Como vendedor de punto fijo, quiero ver el listado de mis domicilios con filtros
 **Datos que se muestran o filtran**
 
 - Pedido asociado, estado, domiciliario asignado (si lo hay), tarifa vigente y fechas.
-- Estados: disponible, asignado, recogido, en camino, entregado, finalizado y cancelado.
+- Estados: disponible, asignado, recogido, en camino, entregado y cancelado.
 
 ## Success Criteria *(mandatory)*
 

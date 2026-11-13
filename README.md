@@ -31,21 +31,12 @@ donde lo no vendido en el día se pierde o pierde valor.
 
 ## Actores principales
 
-<<<<<<< HEAD
-- **Cliente**: descubre emprendimientos cercanos y hace pedidos en tres modalidades: entrega directa, reserva o domicilio.
-- **Vendedor**: administra su emprendimiento (abierto o cerrado) y sus productos y atiende pedidos. Tiene dos perfiles con flujos distintos:
-  - **Vendedor ambulante**: atiende *entregas directas* (va hasta donde está el cliente) y *reservas* para el día siguiente con entrega al cliente.
-  - **Vendedor de punto fijo**: atiende *reservas* que el cliente retira en el punto fijo y ofrece *domicilios* mediante domiciliarios.
-- **Domiciliario**: toma domicilios disponibles (con la ganancia visible), puede ofertar otro precio, recoge el pedido en el punto fijo y lo lleva al cliente.
-- **Administrador**: supervisa usuarios y domicilios de la plataforma.
-=======
 - **Cliente**: descubre emprendimientos cercanos y hace pedidos en tres modalidades: entrega directa, recogida en punto fijo o domicilio. Cualquier pedido puede marcarse como reserva.
 - **Vendedor**: administra su emprendimiento y sus productos y atiende pedidos. Tiene dos perfiles con flujos distintos:
   - **Vendedor ambulante**: atiende *entregas directas* (va hasta donde está el cliente), inmediatas o marcadas como reserva.
   - **Vendedor de punto fijo**: atiende *recogidas* en su punto (inmediatas o reservas) y ofrece *domicilios* mediante domiciliarios.
 - **Domiciliario**: toma domicilios disponibles (con la ganancia visible), los acepta con la tarifa publicada o los rechaza de forma definitiva; no negocia el precio. Recoge el pedido en el punto fijo y lo lleva al cliente.
 - **Administrador**: supervisa usuarios, domicilios, pagos, comentarios y reportes, y define la tarifa mínima de domicilio.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ## Modalidades de entrega
 
@@ -55,18 +46,6 @@ donde lo no vendido en el día se pierde o pierde valor.
 | Recogida en punto fijo | — | ✅ |
 | Domicilio (punto A → punto B, no editable) | — | ✅ |
 
-<<<<<<< HEAD
-## Métodos de pago
-
-| Vendedor | Modalidad | Efectivo | Transferencia |
-|---|---|:---:|:---:|
-| Ambulante | Entrega directa | ✅ | ✅ |
-| Ambulante | Reserva (entrega al cliente) | ✅ | ✅ |
-| Punto fijo | Reserva (el cliente retira) | ✅ | ✅ |
-| Punto fijo | Domicilio | — | ✅ |
-
-La plataforma no procesa el dinero: registra el método elegido y la confirmación del pago.
-=======
 **Reserva** no es una modalidad: es un atributo de cualquier pedido, con fecha y hora acordadas con el vendedor, que este acepta o rechaza con su propio criterio.
 
 ## Pagos
@@ -81,7 +60,6 @@ No se guardan datos de tarjetas ni billeteras electrónicas de terceros.
 ## Stack previsto
 
 Backend: Java 21, Spring Boot 4.1.x, Spring Security, JPA + Hibernate Spatial, PostgreSQL 16 + PostGIS, Redis 7, Firebase Admin (FCM), Twilio Verify (verificación del celular por WhatsApp o SMS). Frontend: React Native + Expo (development build), expo-sqlite. Detalle y decisiones en [`specs/foundations/plan.md`](specs/foundations/plan.md).
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ## Desarrollo local
 
@@ -176,6 +154,23 @@ $env:NAPA_WEB_ALLOWED_ORIGINS = "http://localhost:8081,http://192.168.1.25:8081"
 Cada origen incluye esquema, host y puerto, sin ruta ni barra final. Esta variable reemplaza la lista predeterminada. Fuera de `otp-console` no se permiten orígenes web adicionales salvo configuración explícita. Las solicitudes nativas de Expo Go no necesitan CORS; las rutas protegidas siguen exigiendo un token válido.
 
 La app incluye registro (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), verificación del celular, inicio/cierre de sesión, recuperación y cambio de contraseña. En el perfil `otp-console`, ingresa en la pantalla de verificación el código configurado en `NAPA_OTP_CONSOLE_CODE`. Después de iniciar sesión, el cliente puede explorar emprendimientos y sus productos; el vendedor puede crear su emprendimiento, publicar productos, actualizar sus cantidades y configurar los medios de pago aceptados desde **Configurar métodos de pago**. Allí puede habilitar efectivo y registrar o quitar una cuenta bancaria; una cuenta es necesaria para ofrecer domicilios desde un punto fijo.
+
+### Mapas y notificaciones push: build de desarrollo
+
+Los mapas (`react-native-maps`) y el push (`expo-notifications`) no funcionan en Expo Go: requieren un build de desarrollo (`npx expo run:android` o EAS). `app.config.js` toma dos variables del entorno al generar el build; ninguna se versiona:
+
+| Variable | Para qué | Si falta |
+|---|---|---|
+| `GOOGLE_MAPS_ANDROID_API_KEY` | Clave de Google Maps SDK para Android (rutas, punto fijo y ubicación del cliente) | En Android se muestran solo las direcciones en texto; iOS usa Apple Maps y no la necesita |
+| `GOOGLE_SERVICES_JSON` | Ruta al `google-services.json` del proyecto de Firebase | La app funciona y la bandeja de notificaciones también, pero el teléfono no recibe avisos push |
+
+```powershell
+$env:GOOGLE_MAPS_ANDROID_API_KEY = "tu-clave"
+$env:GOOGLE_SERVICES_JSON = "C:\ruta\google-services.json"
+npx expo run:android
+```
+
+El backend necesita además las credenciales de Firebase para enviar el push; sin ellas, el envío queda desactivado y las notificaciones solo aparecen en la bandeja de la app.
 
 ### Productos e inventario: gestión en línea
 

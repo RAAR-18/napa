@@ -1,8 +1,8 @@
 # Feature Specification: Eliminación de usuario por administrador
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-69
-**Historias de usuario relacionadas**: HU-103
+**Requerimiento funcional**: RF-68
+**Historias de usuario relacionadas**: HU-101
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -44,7 +44,7 @@ Como administrador, quiero eliminar un usuario, para gestionar las cuentas que y
 
 ### Key Entities *(include if feature involves data)*
 
-- **Usuario**: Ver definición en RF-67.
+- **Usuario**: Ver definición en RF-66.
 
 ### Data Rules
 

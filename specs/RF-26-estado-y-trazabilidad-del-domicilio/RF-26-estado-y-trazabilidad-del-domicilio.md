@@ -51,15 +51,9 @@ Como vendedor de punto fijo, quiero consultar el estado de un domicilio, para co
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-26-estado-y-trazabilidad-del-domicilio.md
 - **¿Cómo se muestra la trazabilidad cuando el domiciliario aún no ha actualizado su avance?** Muestra el último estado con su hora y el texto "sin novedades desde hace X minutos".
 - **¿Qué ocurre si el domiciliario desactiva la ubicación durante el trayecto?** Se muestra la última ubicación conocida con su hora y se avisa que no está actualizada.
-- **¿Hasta cuándo permanece consultable la trazabilidad de un domicilio finalizado?** Durante 12 meses después de finalizado.
-=======
-- ¿Cómo se muestra la trazabilidad cuando el domiciliario aún no ha actualizado su avance?
-- ¿Qué ocurre si el domiciliario desactiva la ubicación durante el trayecto?
-- ¿Hasta cuándo permanece consultable la trazabilidad de un domicilio entregado?
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-26-estado-y-trazabilidad-del-domicilio/RF-26-estado-y-trazabilidad-del-domicilio.md
+- **¿Hasta cuándo permanece consultable la trazabilidad de un domicilio entregado?** Durante 12 meses después de entregado o cancelado.
 
 ## Requirements *(mandatory)*
 
@@ -71,6 +65,7 @@ Como vendedor de punto fijo, quiero consultar el estado de un domicilio, para co
 - **FR-004**: El sistema DEBE permitir al vendedor de punto fijo consultar el estado actualizado de sus domicilios.
 - **FR-005**: El sistema DEBE reflejar cada cambio de estado a las partes en un tiempo oportuno (RNF17).
 - **FR-006**: El sistema DEBE restringir la trazabilidad a las partes involucradas en el domicilio.
+- **FR-007**: El sistema DEBE conservar consultable la trazabilidad de un domicilio durante 12 meses después de entregado o cancelado.
 
 ### Key Entities
 

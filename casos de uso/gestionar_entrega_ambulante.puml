@@ -24,11 +24,6 @@ note right of UC1
   ambulante va hasta donde está el cliente.
 end note
 
-<<<<<<< HEAD
-note right of UC4
-  Efectivo o transferencia, según el método
-  que eligió el cliente.
-=======
 note right of UC3
   Aplica a pedidos aceptados de entrega directa
   y a reservas el día programado. El vendedor
@@ -36,7 +31,6 @@ note right of UC3
   (dato que no existe en ningún otro RF, a
   diferencia del punto fijo que ya expone su
   ubicación en su emprendimiento).
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 end note
 
 @enduml

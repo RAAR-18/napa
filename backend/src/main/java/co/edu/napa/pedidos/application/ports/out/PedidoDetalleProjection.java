@@ -21,13 +21,15 @@ public record PedidoDetalleProjection(
         Long tarifaDomicilio,
         long total,
         Ubicacion ubicacionEntrega,
-        List<Item> items
+        List<Item> items,
+        UUID emprendimientoId,
+        String emprendimientoNombre
 ) {
     public PedidoDetalleProjection {
         items = List.copyOf(items);
     }
 
-    public record Ubicacion(double latitud, double longitud, String direccion, String referencia) {
+    public record Ubicacion(double latitud, double longitud, String direccion, String referencia, String barrio) {
     }
 
     public record Item(

@@ -20,11 +20,7 @@ Como domiciliario, quiero consultar la información de un domicilio (de dónde s
 1. **Scenario**: Consulta de la información de un domicilio disponible
    - **Given** el domiciliario ve un domicilio en su lista de disponibles
    - **When** presiona el botón para ver la información del domicilio
-<<<<<<< HEAD:specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md
-   - **Then** el sistema muestra el punto de origen (A), el punto de destino (B) por zona y barrio, la distancia, quién lo recibirá, un resumen de los ítems del pedido y la ganancia
-=======
-   - **Then** el sistema muestra el punto de origen (A), el punto de destino (B), el nombre del cliente que lo recibirá, un resumen de los ítems del pedido y la ganancia
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md
+   - **Then** el sistema muestra el punto de origen (A), el punto de destino (B) por zona y barrio, la distancia, el nombre del cliente que lo recibirá, un resumen de los ítems del pedido y la ganancia
 
 2. **Scenario**: Acciones disponibles desde la información
    - **Given** el domiciliario está viendo la información de un domicilio disponible
@@ -39,41 +35,21 @@ Como domiciliario, quiero consultar la información de un domicilio (de dónde s
 4. **Scenario**: Consulta de un domicilio propio en curso
    - **Given** el domiciliario tiene un domicilio asignado
    - **When** abre su información
-   - **Then** el sistema muestra además la dirección exacta y el teléfono de quien recibe, y le da acceso a la ruta en el mapa (RF-22)
+   - **Then** el sistema muestra los mismos datos y le da acceso a la ruta en el mapa (RF-22)
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md
-- **¿Se restringe la dirección exacta y el teléfono de quien recibe hasta que el domicilio sea asignado, por privacidad (RNF04)?** Sí. Antes de la asignación se muestran el barrio, la zona y la distancia, además del nombre de quien recibe; la dirección exacta y el teléfono se revelan solo al domiciliario asignado.
-- **¿Cómo se muestra el destino si la ubicación del cliente no puede resolverse en el mapa?** Se muestra la dirección en texto y la coordenada registrada por el cliente; el domiciliario asignado puede contactar al cliente (RF-50).
-- **¿Qué ocurre si el domicilio es cancelado mientras el domiciliario revisa su información?** Aparece un aviso de "domicilio cancelado" y las acciones (aceptar, ofertar, archivar) se deshabilitan.
-=======
-- ¿Cómo se muestra el destino si la ubicación del cliente no puede resolverse en el mapa?
-- ¿Qué ocurre si el domicilio es cancelado mientras el domiciliario revisa su información?
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md
+- **¿Cómo se muestra el destino si la ubicación del cliente no puede resolverse en el mapa?** Se muestra la dirección en texto y la coordenada registrada por el cliente; el domiciliario asignado puede contactar al cliente (RF-49).
+- **¿Qué ocurre si el domicilio es cancelado mientras el domiciliario revisa su información?** Aparece un aviso de "domicilio cancelado" y las acciones (aceptar y rechazar) se deshabilitan.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-<<<<<<< HEAD:specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md
-<<<<<<< HEAD
-- **FR-001**: El sistema DEBE mostrar al domiciliario, para un domicilio, el punto de origen (A), el punto de destino (B), la persona que lo recibirá y la ganancia.
-- **FR-002**: El sistema DEBE mostrar un resumen de los ítems del pedido (cantidad de ítems), sin exponer datos de pago del cliente.
-- **FR-003**: El sistema DEBE permitir, desde la información de un domicilio disponible, aceptarlo (RF-19), ofertar otro precio (RF-20) o archivarlo (RF-17).
-- **FR-004**: El sistema DEBE mostrar el destino por zona, barrio y distancia hasta que el domicilio sea asignado, y revelar la dirección exacta y el teléfono de quien recibe únicamente al domiciliario asignado (RNF04).
-=======
-- **FR-001**: El sistema DEBE mostrar al domiciliario, para un domicilio, el punto de origen (A), el punto de destino (B), la persona que lo recibirá y la ganancia (la tarifa publicada).
-- **FR-002**: El sistema DEBE mostrar un resumen de los ítems del pedido (cantidad de ítems), sin exponer datos de pago.
-- **FR-003**: El sistema DEBE permitir, desde la información de un domicilio disponible, aceptarlo (RF-19) o rechazarlo (RF-17).
-- **FR-004**: El sistema DEBE restringir los datos personales del receptor a lo necesario para la entrega, según las reglas de privacidad definidas (RNF04).
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
-=======
 - **FR-001**: El sistema DEBE mostrar al domiciliario, para un domicilio, el punto de origen (A), el punto de destino (B), el cliente que lo recibirá y la ganancia (la tarifa del pedido).
 - **FR-002**: El sistema DEBE mostrar un resumen de los ítems del pedido (cantidad de ítems), sin exponer datos de pago.
 - **FR-003**: El sistema DEBE permitir, desde la información de un domicilio disponible, aceptarlo (RF-19) o rechazarlo (RF-17).
-- **FR-004**: El sistema DEBE mostrar completos el punto B y el nombre del receptor desde antes de la asignación, sin exponer datos de pago.
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md
+- **FR-004**: El sistema DEBE mostrar el punto B por zona, barrio y distancia hasta que el domicilio sea asignado, y revelar la dirección exacta y el teléfono del receptor únicamente al domiciliario asignado (RNF04); nunca expone datos de pago.
 - **FR-005**: El sistema DEBE informar cuando el domicilio consultado ya no esté disponible.
 
 ### Key Entities
@@ -97,13 +73,5 @@ Como domiciliario, quiero consultar la información de un domicilio (de dónde s
 ### Measurable Outcomes
 
 - **SC-001**: La información de un domicilio se muestra al domiciliario en menos de 3 segundos.
-<<<<<<< HEAD:specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md
-<<<<<<< HEAD
 - **SC-002**: El 100% de los domicilios consultados muestran origen, destino, receptor y ganancia.
-- **SC-003**: El 0% de los domiciliarios sin asignación puede ver la dirección exacta ni el teléfono de quien recibe.
-=======
-- **SC-002**: El 100% de los domicilios consultados muestran origen, destino, receptor y ganancia.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
-=======
-- **SC-002**: El 100% de los domicilios consultados muestran origen, destino, receptor y ganancia.
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario/RF-18-consulta-de-informacion-del-domicilio-por-el-domiciliario.md
+- **SC-003**: El 0% de los domiciliarios sin asignación puede ver la dirección exacta o el teléfono del receptor.

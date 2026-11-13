@@ -1,8 +1,8 @@
 # Feature Specification: Inicio de entrega directa
 
 **Created**: 2026-09-18
-**Requerimiento funcional**: RF-37
-**Historias de usuario relacionadas**: HU-62
+**Requerimiento funcional**: RF-36
+**Historias de usuario relacionadas**: HU-61
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -33,17 +33,8 @@ Como vendedor ambulante, quiero iniciar la entrega de un pedido, para avisar al 
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-37-inicio-de-entrega-directa.md
 - **¿Qué ocurre si el vendedor ambulante tiene varios pedidos aceptados y los inicia todos a la vez?** Está permitido: cada pedido cambia de estado por separado y cada cliente recibe su notificación.
-- **¿Puede el vendedor ambulante revertir el inicio de una entrega si cambia de idea?** No; si no puede completar la entrega, lo informa mediante un reporte (RF-61).
-=======
-- ¿Qué ocurre si el vendedor ambulante tiene varios pedidos aceptados y los inicia todos a la vez?
-- ¿Puede el vendedor ambulante revertir el inicio de una entrega si cambia de idea?
-<<<<<<<< HEAD:specs/RF-37-inicio-de-entrega-directa.md
-- ¿Cuánto margen de tolerancia existe para iniciar una reserva ligeramente antes de la hora acordada?
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-36-inicio-de-entrega-directa.md
-========
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-36-inicio-de-entrega-directa/RF-36-inicio-de-entrega-directa.md
+- **¿Puede el vendedor ambulante revertir el inicio de una entrega si cambia de idea?** No; si no puede completar la entrega, lo informa mediante un reporte (RF-60).
 
 ## Requirements *(mandatory)*
 

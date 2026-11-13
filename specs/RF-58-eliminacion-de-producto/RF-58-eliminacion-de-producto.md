@@ -1,8 +1,8 @@
 # Feature Specification: Eliminación de producto
 
 **Created**: 2026-09-11
-**Requerimiento funcional**: RF-59
-**Historias de usuario relacionadas**: HU-91
+**Requerimiento funcional**: RF-58
+**Historias de usuario relacionadas**: HU-89
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -30,8 +30,8 @@ Como vendedor, quiero eliminar un producto que ya no voy a vender, para que no s
 
 ### Edge Cases
 
-- **¿Qué ocurre con el historial de pedidos ya finalizados que incluían el producto eliminado?** Se conserva con el nombre y el precio históricos del producto.
-- **¿Puede el vendedor cancelar la eliminación antes de confirmarla?** Sí: el diálogo de confirmación tiene la opción de cancelar y hasta confirmar no cambia nada.
+- ¿Qué ocurre con el historial de pedidos ya finalizados que incluían el producto eliminado?
+- ¿Puede el vendedor cancelar la eliminación antes de confirmarla?
 
 ## Requirements *(mandatory)*
 
@@ -44,19 +44,7 @@ Como vendedor, quiero eliminar un producto que ya no voy a vender, para que no s
 
 ### Key Entities *(include if feature involves data)*
 
-- **Producto**: Ver definición en RF-55.
-
-### Data Rules
-
-**Datos que ingresa el usuario**
-
-| Campo | Obligatorio | Regla de validación |
-|---|:---:|---|
-| Confirmación de eliminación | Sí | Aceptación expresa; solo si el producto no tiene pedidos pendientes. |
-
-**Datos que asigna el sistema**
-
-- Retiro inmediato del catálogo; historial de pedidos conservado.
+- **Producto**: Ver definición en RF-54.
 
 ## Success Criteria *(mandatory)*
 

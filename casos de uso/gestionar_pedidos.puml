@@ -14,40 +14,6 @@ rectangle "Gestionar pedidos" {
     usecase "Realizar pedido" as UC1
     usecase "Seleccionar productos" as UC2
     usecase "Seleccionar modalidad de entrega" as UC3
-<<<<<<< HEAD
-    usecase "Seleccionar método de pago" as UC4
-    usecase "Indicar ubicación de entrega" as UC5
-    usecase "Consultar disponibilidad prevista" as UC6
-    usecase "Listar mis pedidos" as UC7
-    usecase "Consultar estado del pedido" as UC8
-    usecase "Contactar vendedor o domiciliario" as UC9
-    usecase "Listar pedidos recibidos" as UC10
-    usecase "Consultar detalle del pedido" as UC11
-    usecase "Ver información del cliente" as UC12
-    usecase "Aceptar pedido" as UC13
-    usecase "Rechazar pedido" as UC14
-}
-
-c --> UC1
-c --> UC7
-
-UC10 <-- v
-
-UC1 .> UC2 : <<include>>
-UC1 .> UC3 : <<include>>
-UC1 .> UC4 : <<include>>
-UC5 .> UC1 : <<extend>>
-UC6 .> UC1 : <<extend>>
-
-UC8 .> UC7 : <<extend>>
-UC9 .> UC8 : <<extend>>
-
-UC11 .> UC10 : <<extend>>
-UC12 .> UC10 : <<extend>>
-UC12 .> UC11 : <<extend>>
-UC13 .> UC11 : <<extend>>
-UC14 .> UC11 : <<extend>>
-=======
     usecase "Indicar ubicación de entrega" as UC4
     usecase "Listar mis pedidos" as UC5
     usecase "Consultar estado del pedido" as UC6
@@ -102,7 +68,6 @@ note right of UC11
   + domicilio) antes de que el vendedor pueda
   publicar el domicilio.
 end note
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 note right of UC3
   Modalidades según el tipo de vendedor:
@@ -117,26 +82,6 @@ note right of UC3
 end note
 
 note right of UC4
-<<<<<<< HEAD
-  Ambulante: efectivo o transferencia.
-  Punto fijo: efectivo o transferencia en reserva;
-  solo transferencia en domicilio.
-end note
-
-note right of UC5
-  Solo en entrega directa, reserva con
-  vendedor ambulante y domicilio.
-end note
-
-note right of UC6
-  Solo cuando la modalidad es reserva
-  (pedido para el día siguiente).
-end note
-
-note bottom of UC1
-  Un emprendimiento cerrado no recibe pedidos de
-  entrega directa ni de domicilio; sí reservas.
-=======
   Solo aplica cuando la modalidad implica
   llevar el pedido a una dirección:
   entrega directa o domicilio.
@@ -149,7 +94,6 @@ note right of UC13
   Domicilio: solo transferencia por el total
   (productos + domicilio), pagada apenas el
   vendedor acepta el pedido.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 end note
 
 @enduml

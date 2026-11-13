@@ -1,25 +1,19 @@
 # Feature Specification: Creación de reportes
 
 **Created**: 2026-09-11
-<<<<<<<< HEAD:specs/RF-61-creacion-de-reportes.md
-**Actualizado**: 2026-09-18
-**Requerimiento funcional**: RF-61
-**Historias de usuario relacionadas**: HU-93, HU-94, HU-95
-========
 **Actualizado**: 2026-10-14
 **Requerimiento funcional**: RF-60
 **Historias de usuario relacionadas**: HU-91, HU-92, HU-93
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-60-creacion-de-reportes/RF-60-creacion-de-reportes.md
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Cliente reporta un problema (Priority: P1)
+### User Story 1 - Cliente o vendedor reportan un problema de la plataforma (Priority: P1)
 
-Como cliente, quiero reportar un problema relacionado con la plataforma, un pedido o un domicilio, para informar situaciones que requieran atención del administrador.
+Como cliente o vendedor, quiero reportar un problema relacionado con la plataforma, un pedido o un domicilio, para informar situaciones que requieran atención del administrador.
 
 **Why this priority**: Activa el mecanismo central de soporte y confianza de la plataforma; sin la posibilidad de reportar, las incidencias de pedidos, pagos o comportamiento de otros usuarios no llegan al administrador para su atención.
 
-**Independent Test**: Puede probarse creando un reporte desde el historial de pedidos de un cliente y verificando que queda registrado en estado pendiente y visible para el administrador.
+**Independent Test**: Puede probarse creando un reporte desde el historial de pedidos de un cliente o desde el panel del vendedor y verificando que queda registrado en estado pendiente y visible para el administrador.
 
 **Acceptance Scenarios**:
 
@@ -28,26 +22,14 @@ Como cliente, quiero reportar un problema relacionado con la plataforma, un pedi
    - **When** completa el formulario de reporte indicando el motivo y la descripción
    - **Then** el sistema registra el reporte en estado pendiente y lo pone a disposición del administrador
 
----
-
-### User Story 2 - Vendedor reporta un problema (Priority: P1)
-
-Como vendedor (ambulante o de punto fijo), quiero reportar un problema relacionado con la plataforma, un pedido, un domicilio o un usuario, para informar situaciones que requieran atención del administrador.
-
-**Why this priority**: Permite al vendedor escalar inconvenientes con clientes o domiciliarios que no puede resolver por sí mismo, por lo que se clasifica como P1.
-
-**Independent Test**: Puede probarse creando un reporte desde el panel del vendedor y verificando que queda registrado en estado pendiente y visible para el administrador.
-
-**Acceptance Scenarios**:
-
-1. **Scenario**: Reporte creado por un vendedor
+2. **Scenario**: Reporte creado por un vendedor
    - **Given** el vendedor identifica un inconveniente relacionado con un pedido, domicilio o usuario
    - **When** completa el formulario de reporte indicando el motivo y la descripción
    - **Then** el sistema registra el reporte en estado pendiente asociado a su cuenta
 
 ---
 
-### User Story 3 - Domiciliario reporta un problema durante la entrega (Priority: P1)
+### User Story 2 - Domiciliario reporta un problema durante la entrega (Priority: P1)
 
 Como domiciliario, quiero reportar un problema, para informar inconvenientes ocurridos durante mi actividad de entrega.
 
@@ -68,7 +50,7 @@ Como domiciliario, quiero reportar un problema, para informar inconvenientes ocu
 
 - **¿Qué ocurre si un usuario intenta enviar un reporte sin descripción o motivo?** Se rechaza: el motivo y la descripción (mínimo 10 caracteres) son obligatorios.
 - **¿Cómo maneja el sistema reportes duplicados sobre el mismo incidente?** Advierte si el usuario ya tiene un reporte abierto sobre el mismo pedido o domicilio y motivo, y no crea otro; los reportes de distintos usuarios sobre el mismo incidente se agrupan visualmente para el administrador.
-- **¿Puede un usuario ver el estado de los reportes que ha enviado?** Sí: al enviarlo ve el reporte como "pendiente" y recibe una notificación cuando se resuelve (RF-63).
+- **¿Puede un usuario ver el estado de los reportes que ha enviado?** Sí: al enviarlo ve el reporte como "pendiente" y recibe una notificación cuando se resuelve (RF-62).
 
 ## Requirements *(mandatory)*
 

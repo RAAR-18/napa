@@ -28,15 +28,9 @@ Como usuario, quiero editar los comentarios que he publicado, para corregir o ac
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-04-edicion-de-comentarios-propios.md
 - **¿Qué ocurre si el usuario intenta editar un comentario que ya fue eliminado por un administrador?** No puede editarlo: el sistema informa que el comentario fue retirado por moderación.
 - **¿El sistema conserva un historial de ediciones o solo el estado más reciente?** Sí. Se guarda cada versión con su fecha, visible solo para el administrador; los demás usuarios ven la versión vigente marcada como "editado".
-- **¿Qué sucede si la edición deja el comentario vacío?** Se rechaza: el comentario debe tener entre 1 y 500 caracteres; si el usuario quiere retirarlo debe eliminarlo (RF-05).
-=======
-- ¿Qué ocurre si el usuario intenta editar un comentario que ya fue eliminado por un administrador?
-- ¿El sistema conserva un historial de ediciones o solo el estado más reciente?
 - ¿Qué sucede si la edición deja el comentario vacío?se rechaza; si el usuario no quiere comentario, no lo envía
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-04-edicion-de-comentarios-propios/RF-04-edicion-de-comentarios-propios.md
 
 ## Requirements *(mandatory)*
 

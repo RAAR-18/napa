@@ -1,15 +1,9 @@
 # Feature Specification: Actualización de inventario del producto
 
 **Created**: 2026-09-11
-<<<<<<< HEAD:specs/RF-58-actualizacion-de-inventario-del-producto.md
-**Actualizado**: 2026-09-18
-**Requerimiento funcional**: RF-58
-**Historias de usuario relacionadas**: HU-90
-=======
 **Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-57
 **Historias de usuario relacionadas**: HU-88
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-57-actualizacion-de-inventario-del-producto.md
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -37,20 +31,9 @@ Como vendedor, quiero actualizar rápidamente la cantidad disponible de un produ
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-58-actualizacion-de-inventario-del-producto.md
-- **¿Qué ocurre si dos clientes intentan pedir simultáneamente la última unidad disponible de un producto?** Ambos pedidos pueden crearse como pendientes; al aceptar el primero se descuenta la unidad y, al aceptar el segundo, el sistema advierte que el inventario no alcanza (RNF08).
-- **¿Qué sucede si el vendedor intenta establecer una cantidad negativa?** Se rechaza: la cantidad debe ser un entero mayor o igual a cero.
-- **¿El producto agotado permanece visible en el catálogo en modo "no disponible" o se oculta por completo?** Permanece visible como "Agotado" y no se puede seleccionar; no se oculta.
-=======
 - ¿Qué ocurre si dos clientes intentan pedir simultáneamente la última unidad disponible de un producto?
 - ¿Qué sucede si el vendedor intenta establecer una cantidad negativa?
-<<<<<<<< HEAD:specs/RF-58-actualizacion-de-inventario-del-producto.md
-- ¿El producto agotado permanece visible en el catálogo en modo "no disponible" o se oculta por completo?
-- ¿Cuándo se descuentan las unidades de un pedido marcado como reserva? (se recomienda: al llegar la fecha acordada, cuando el vendedor lo atiende, y no al aceptarlo)
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-57-actualizacion-de-inventario-del-producto.md
-========
 - ¿El producto agotado permanece visible en el catálogo en modo "no disponible" o se oculta por completo? Permanece visible con la etiqueta ‘solo reserva’ (RF-33)
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-57-actualizacion-de-inventario-del-producto/RF-57-actualizacion-de-inventario-del-producto.md
 
 ## Requirements *(mandatory)*
 
@@ -66,28 +49,7 @@ Como vendedor, quiero actualizar rápidamente la cantidad disponible de un produ
 
 ### Key Entities *(include if feature involves data)*
 
-<<<<<<<< HEAD:specs/RF-58-actualizacion-de-inventario-del-producto.md
-<<<<<<< HEAD:specs/RF-58-actualizacion-de-inventario-del-producto.md
-- **Producto**: Ver definición en RF-55; el atributo `cantidad_disponible` y el estado `agotado` son el foco de este requerimiento.
-
-### Data Rules
-
-**Datos que ingresa el usuario**
-
-| Campo | Obligatorio | Regla de validación |
-|---|:---:|---|
-| Cantidad disponible | Sí | Número mayor o igual a 0; con decimales solo para kilogramo, libra y litro. |
-
-**Datos que asigna el sistema**
-
-- Estado "agotado" automático cuando la cantidad llega a 0.
-- Fecha de última actualización.
-=======
-- **Producto**: Ver definición en RF-54; el atributo `cantidad_disponible` (cantidad actual declarada por el vendedor) y el estado `agotado` son el foco de este requerimiento.
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b:specs/RF-57-actualizacion-de-inventario-del-producto.md
-========
 - **Producto**: Ver definición en RF-54; el atributo `cantidad_disponible` (decimal) y unidad (cantidad actual declarada por el vendedor) y el estado `agotado` son el foco de este requerimiento.
->>>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-57-actualizacion-de-inventario-del-producto/RF-57-actualizacion-de-inventario-del-producto.md
 
 ## Success Criteria *(mandatory)*
 

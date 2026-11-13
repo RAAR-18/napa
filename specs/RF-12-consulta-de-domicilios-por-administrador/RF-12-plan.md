@@ -303,3 +303,12 @@ frontend/__tests__/domicilios/
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+## Notas de implementación (2026-11-13)
+
+- Rama del administrador en `GET /domicilios` (`DomicilioController`) y en `GET /domicilios/{id}` (`DomiciliarioController`, con `@PreAuthorize` del método), ambas sobre `SupervisarDomiciliosUseCase`.
+- Origen y destino se leen con un `JOIN ubicacion` en la misma consulta del domicilio (como RF-16); los nombres van en un lote por página (`ConsultarNombresUsuarioPort`). El resumen del pedido sale de `PedidoParaDomicilioPort.resumen` y el pago de la tarifa de `PagoTarifaDomicilioPort.consultar`.
+- El vendedor que se muestra es el nombre del usuario, no el del emprendimiento.
+- V15 agrega los índices `(estado, created_at)`, `(domiciliario_id, created_at)` y `(created_at)`.
+- El detalle incluye `detalleCancelacion` (el texto que escribió el administrador en RF-13); a las partes (RF-26) solo les llega `motivoCancelacion`.
+- App: `domicilios-admin.tsx` (filtros por estado y fechas; vendedor y domiciliario desde el detalle con "Ver domicilios del…") y `domicilio-admin.tsx`. Resalte "sin tomar" desde 30 minutos.
+- Sin Docker no se corrieron los IT (T010–T017) ni el de rendimiento (T014); hay tests unitarios del caso de uso.

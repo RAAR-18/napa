@@ -2,8 +2,8 @@
 
 **Created**: 2026-09-11
 **Actualizado**: 2026-09-18
-**Requerimiento funcional**: RF-31
-**Historias de usuario relacionadas**: HU-56
+**Requerimiento funcional**: RF-30
+**Historias de usuario relacionadas**: HU-55
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -29,7 +29,7 @@ Como vendedor, quiero eliminar mi emprendimiento si dejo de operar, para que ya 
 
 ### Edge Cases
 
-- **¿Qué sucede si el vendedor intenta eliminar un emprendimiento con domicilios en curso pero sin pedidos pendientes?** Lo impide: los domicilios en curso deben finalizar o cancelarse antes de eliminar.
+- **¿Qué sucede si el vendedor intenta eliminar un emprendimiento con domicilios en curso pero sin pedidos pendientes?** Lo impide: los domicilios en curso deben entregarse o cancelarse antes de eliminar.
 - **¿Cómo se maneja el historial de pedidos y calificaciones asociados a un emprendimiento eliminado?** Se conserva para trazabilidad; las calificaciones permanecen asociadas a un "emprendimiento eliminado".
 - **¿Puede el vendedor crear un nuevo emprendimiento inmediatamente después de eliminar el anterior?** Sí, una vez confirmada la eliminación.
 

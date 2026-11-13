@@ -35,16 +35,10 @@ Como usuario registrado, quiero editar mis datos personales (nombre, teléfono, 
 
 ### Edge Cases
 
-<<<<<<< HEAD:specs/RF-08-edicion-de-datos-de-cuenta.md
 - **¿Qué ocurre si el usuario intenta editar su correo o teléfono a uno ya usado por otra cuenta?** Se rechaza e indica que ya está en uso; se conserva el valor anterior.
 - **¿Cómo maneja el sistema la carga de una foto de perfil con formato o tamaño no soportado?** Solo se aceptan imágenes JPG o PNG de hasta 5 MB; cualquier otra se rechaza con un mensaje y se conserva la foto anterior.
-- **¿Qué pasa si la ubicación proporcionada no puede ser validada por el proveedor de mapas?** No se guarda esa ubicación y se pide elegirla en el mapa o escribir otra dirección; los demás campos sí se pueden guardar.
-=======
-- ¿Qué ocurre si el usuario intenta editar su correo o teléfono a uno ya usado por otra cuenta?
-- ¿Cómo maneja el sistema la carga de una foto de perfil con formato o tamaño no soportado?
 - ¿Qué ocurre si el usuario no confirma el código del celular nuevo?
-- ¿Qué pasa si la ubicación proporcionada no puede ser validada por el proveedor de mapas?
->>>>>>> 83c9925992e14d4ed876332b5c1239a1f83fd6ba:specs/RF-08-edicion-de-datos-de-cuenta/RF-08-edicion-de-datos-de-cuenta.md
+- **¿Qué pasa si la ubicación proporcionada no puede ser validada por el proveedor de mapas?** No se guarda esa ubicación y se pide elegirla en el mapa o escribir otra dirección; los demás campos sí se pueden guardar.
 
 ## Requirements *(mandatory)*
 

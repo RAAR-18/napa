@@ -29,15 +29,9 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 
 ### Edge Cases
 
-<<<<<<< HEAD
 - **¿Qué sucede cuando no existen domicilios registrados en el sistema?** Muestra el mensaje "No hay domicilios registrados".
-- **¿Cómo se muestra un domicilio que fue cancelado, o que recibió ofertas de precio que el cliente rechazó?** Un domicilio cancelado muestra su motivo y fecha de cancelación; el detalle lista además las ofertas recibidas con su estado, incluidas las rechazadas.
-- **¿Qué ocurre si el administrador consulta un domicilio que fue eliminado o archivado?** Los domicilios no se eliminan; el archivado es una acción personal de cada domiciliario y no cambia lo que ve el administrador.
-=======
-- ¿Qué sucede cuando no existen domicilios registrados en el sistema?
 - ¿Cómo se muestra un domicilio que fue cancelado, o uno que ningún domiciliario ha tomado por un tiempo prolongado?
-- ¿Qué ocurre si el administrador consulta un domicilio que fue eliminado?
->>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
+- **¿Qué ocurre si el administrador consulta un domicilio que fue eliminado?** Los domicilios no se eliminan; el rechazo de un domiciliario (RF-17) es una acción personal y no cambia lo que ve el administrador.
 
 ## Requirements *(mandatory)*
 
@@ -58,7 +52,7 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 **Datos que se muestran o filtran**
 
 - Estado, origen, destino y costo de cada domicilio.
-- Detalle: vendedor, cliente, domiciliario, ofertas con su estado, trazabilidad y motivo de cancelación.
+- Detalle: vendedor, cliente, domiciliario, trazabilidad y motivo de cancelación.
 
 ## Success Criteria *(mandatory)*
 

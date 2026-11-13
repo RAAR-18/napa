@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 type ApiErrorBody = {
   code?: string;
   message?: string;
+  details?: Record<string, unknown>;
 };
 
 function isApiErrorBody(value: unknown): value is ApiErrorBody {
@@ -10,7 +11,8 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
     typeof value === 'object' &&
     value !== null &&
     (!('code' in value) || typeof value.code === 'string') &&
-    (!('message' in value) || typeof value.message === 'string')
+    (!('message' in value) || typeof value.message === 'string') &&
+    (!('details' in value) || (typeof value.details === 'object' && value.details !== null))
   );
 }
 
@@ -19,6 +21,7 @@ export class ApiError extends Error {
     message: string,
     readonly status: number,
     readonly code?: string,
+    readonly details: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = 'ApiError';
@@ -74,6 +77,7 @@ export async function requestJson<T>(
       errorBody.message ?? 'No fue posible completar la solicitud.',
       response.status,
       errorBody.code,
+      errorBody.details ?? {},
     );
   }
 
@@ -105,6 +109,7 @@ export async function requestVoid(path: string, init: RequestInit): Promise<void
       `No fue posible completar la solicitud (HTTP ${response.status}).`,
     response.status,
     errorBody.code,
+    errorBody.details ?? {},
   );
 }
 
