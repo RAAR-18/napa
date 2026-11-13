@@ -23,6 +23,17 @@ jobs:
         working-directory: backend
         run: ./gradlew --no-daemon test
 
+      - name: Upload backend test report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: |
+            backend/build/reports/tests/test/
+            backend/build/test-results/test/
+          if-no-files-found: error
+          retention-days: 14
+
   frontend:
     runs-on: ubuntu-latest
     steps:
