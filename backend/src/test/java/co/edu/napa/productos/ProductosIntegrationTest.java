@@ -972,7 +972,10 @@ class ProductosIntegrationTest {
         Map<String, Object> page = body(ok("GET", "/pedidos?page=0&size=1", seller, null));
         assertEquals(1, ((List<?>) page.get("content")).size());
         assertEquals(2, ((Number) page.get("totalElements")).longValue());
-        assertEquals(403, request("GET", "/pedidos", customer, null, null).statusCode());
+        // RF-47: la misma ruta lista al cliente solo sus propios pedidos.
+        String strangerCustomer = account("CLIENTE");
+        assertEquals(0, ((Number) body(ok("GET", "/pedidos", strangerCustomer, null))
+                .get("totalElements")).longValue());
         for (String invalidQuery : List.of(
                 "?unknown=value", "?estado=NO_EXISTE", "?modalidad=OTRA", "?reserva=yes",
                 "?page=bad", "?size=101", "?desde=2026-02-02&hasta=2026-02-01",
@@ -1063,7 +1066,9 @@ class ProductosIntegrationTest {
         business(otherSeller);
         assertEquals(404, request("GET", "/pedidos/" + acceptedOrder, otherSeller, null, null).statusCode());
         assertEquals(404, request("GET", "/pedidos/" + UUID.randomUUID(), seller, null, null).statusCode());
-        assertEquals(403, request("GET", "/pedidos/" + acceptedOrder, customer, null, null).statusCode());
+        // RF-48: el cliente ve su propio pedido, pero no el de otro cliente.
+        assertEquals(200, request("GET", "/pedidos/" + acceptedOrder, customer, null, null).statusCode());
+        assertEquals(404, request("GET", "/pedidos/" + acceptedOrder, account("CLIENTE"), null, null).statusCode());
         assertEquals(400, request("GET", "/pedidos/" + acceptedOrder + "?extra=x", seller, null, null).statusCode());
     }
 
