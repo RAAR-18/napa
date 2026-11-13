@@ -207,7 +207,7 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
                 JOIN producto ON producto.id = item.producto_id
                 LEFT JOIN ubicacion ON ubicacion.id = p.ubicacion_entrega_id
                     AND p.estado NOT IN ('RECHAZADO', 'ENTREGADO', 'CANCELADO')
-                WHERE p.id = ? AND """ + owner + """
+                WHERE p.id = ? AND\s""" + owner + "\n" + """
                 ORDER BY item.producto_id
                 """, (row, index) -> new PedidoDetalleRow(
                 row.getObject("id", UUID.class),
@@ -277,7 +277,7 @@ public class PedidoPersistenceAdapter implements PedidoRepositoryPort {
         StringBuilder where = new StringBuilder("""
                 FROM pedido p
                 JOIN emprendimiento e ON e.id = p.emprendimiento_id
-                WHERE """).append(owner).append('\n');
+                WHERE """).append(" ").append(owner).append('\n');
         parameters.add(ownerId);
         if (filtro.estado() != null) {
             where.append(" AND p.estado = ?");
