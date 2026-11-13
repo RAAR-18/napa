@@ -22,6 +22,7 @@ rectangle "Gestionar cuenta" {
   usecase "Cambiar contraseña" as UC3
   usecase "Iniciar sesión en mi cuenta" as UC4
   usecase "Eliminar mi cuenta" as UC5
+  usecase "Verificar celular con código" as UC6
 }
 
 u --> UC1
@@ -33,10 +34,21 @@ u --> UC5
 UC4 <-- adm
 UC3 <-- adm
 
+UC1 .> UC6 : <<include>>
+UC6 .> UC2 : <<extend>>
+UC6 .> UC3 : <<extend>>
+
 note right of UC1
   Al crear la cuenta el usuario elige su rol:
   Cliente, Vendedor Ambulante,
   Vendedor de Punto Fijo o Domiciliario.
+end note
+
+note right of UC6
+  Código de un solo uso por WhatsApp (SMS de respaldo).
+  Verifica el celular al crear la cuenta, al cambiarlo
+  y al recuperar la contraseña. No reemplaza la contraseña
+  para iniciar sesión. El administrador no lo usa.
 end note
 
 @enduml

@@ -1,6 +1,7 @@
 # Feature Specification: Aceptación de domicilio
 
 **Created**: 2026-09-18
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-19
 **Historias de usuario relacionadas**: HU-40
 
@@ -19,38 +20,39 @@ Como domiciliario, quiero aceptar un domicilio con la tarifa publicada, para asi
 1. **Scenario**: Aceptación exitosa
    - **Given** el domiciliario ve la información de un domicilio disponible
    - **When** lo acepta con la tarifa publicada
-   - **Then** el sistema lo asigna al domiciliario, cambia su estado a asignado, notifica al cliente y al vendedor y le muestra el mapa con la ruta
+   - **Then** el sistema lo asigna al domiciliario, cambia su estado a asignado, genera el código de confirmación para el cliente, notifica al cliente y al vendedor y le muestra el mapa con la ruta
 
 2. **Scenario**: Dos domiciliarios aceptan al mismo tiempo
    - **Given** dos domiciliarios intentan aceptar el mismo domicilio casi simultáneamente
    - **When** el sistema procesa ambas solicitudes
    - **Then** el sistema asigna el domicilio únicamente a quien lo aceptó primero e informa al otro que ya no está disponible
 
-3. **Scenario**: Aceptación con ofertas pendientes
-   - **Given** el domicilio tiene ofertas de precio pendientes de otros domiciliarios
-   - **When** un domiciliario lo acepta con la tarifa publicada
-   - **Then** el sistema asigna el domicilio y marca las ofertas pendientes como vencidas, notificando a sus autores
-
 ### Edge Cases
 
+<<<<<<< HEAD
 - **¿Existe un límite de domicilios que un domiciliario puede tener asignados al mismo tiempo?** Sí: un domiciliario puede tener hasta 3 domicilios asignados en curso; al intentar aceptar un cuarto, el sistema lo rechaza con un mensaje.
 - **¿Qué ocurre si el domicilio es cancelado por el administrador justo antes de ser aceptado?** El sistema informa que el domicilio ya no está disponible.
 - **¿Puede un domiciliario aceptar un domicilio que había archivado sin restaurarlo primero?** Sí, desde su lista de archivados puede abrir la información del domicilio y aceptarlo, y deja de estar archivado.
+=======
+- ¿Existe un límite de domicilios que un domiciliario puede tener asignados al mismo tiempo?
+- ¿Qué ocurre si el domicilio es cancelado por el administrador justo antes de ser aceptado?
+>>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE permitir al domiciliario aceptar un domicilio disponible con la tarifa publicada.
+- **FR-001**: El sistema DEBE permitir al domiciliario aceptar un domicilio disponible con la tarifa publicada; el domiciliario no puede modificar el valor.
 - **FR-002**: El sistema DEBE asignar el domicilio de forma exclusiva a un solo domiciliario, controlando aceptaciones simultáneas (RNF08).
 - **FR-003**: El sistema DEBE cambiar el estado del domicilio a "asignado" y notificar al cliente y al vendedor de punto fijo.
-- **FR-004**: El sistema DEBE marcar como vencidas las ofertas pendientes de otros domiciliarios cuando el domicilio se asigne.
-- **FR-005**: El sistema DEBE habilitar al domiciliario asignado la ruta en el mapa interactivo (RF-22).
+- **FR-004**: El sistema DEBE habilitar al domiciliario asignado la ruta en el mapa interactivo (RF-22).
+- **FR-005**: El sistema DEBE generar, al asignarse el domicilio, el código de confirmación que el cliente verá (RF-25) y el domiciliario ingresará al entregar (RF-24).
 
 ### Key Entities
 
-- **Domicilio**: Pasa de "disponible" a "asignado"; su ganancia vigente es la tarifa publicada.
+- **Domicilio**: Pasa de "disponible" a "asignado"; su ganancia es la tarifa publicada.
 - **Domiciliario**: Usuario que se compromete a realizar la entrega.
+- **Código de confirmación**: Valor único generado al asignarse el domicilio.
 
 ### Data Rules
 

@@ -1,8 +1,10 @@
 # Feature Specification: Cambio de contraseña
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-10-08
 **Requerimiento funcional**: RF-09
 **Historias de usuario relacionadas**: HU-26, HU-30
+**Relacionado con**: RF-70 (verificación de celular)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -25,6 +27,11 @@ Como usuario registrado, quiero poder cambiar mi contraseña, para mantener la s
    - **Given** tengo una cuenta activa
    - **When** ingreso una contraseña actual incorrecta
    - **Then** el sistema rechaza el cambio y no modifica la contraseña vigente
+
+3. **Scenario**: Recuperación con código
+   - **Given** olvidé mi contraseña y mi cuenta tiene el celular verificado
+   - **When** solicito recuperarla e ingreso el código que recibo por WhatsApp o SMS (RF-70)
+   - **Then** el sistema me permite definir una contraseña nueva y cierra las demás sesiones activas
 
 ---
 
@@ -53,7 +60,7 @@ Como administrador, quiero cambiar mi contraseña, para mantener segura mi cuent
 
 ### Functional Requirements
 
-- **FR-001**: El sistema MUST permitir a los usuarios y al administrador cambiar su contraseña ingresando la contraseña actual o mediante un mecanismo de recuperación.
+- **FR-001**: El sistema MUST permitir a los usuarios y al administrador cambiar su contraseña ingresando la contraseña actual. Los usuarios (no el administrador) pueden además recuperarla con un código de un solo uso enviado a su celular verificado (RF-70).
 - **FR-002**: El sistema MUST validar que la nueva contraseña cumpla los requisitos mínimos de seguridad definidos.
 - **FR-003**: El sistema MUST cerrar todas las demás sesiones activas de la cuenta al completarse el cambio de contraseña.
 - **FR-004**: El sistema MUST rechazar el cambio si la contraseña actual ingresada no coincide con la almacenada.

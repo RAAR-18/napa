@@ -1,6 +1,7 @@
 # Feature Specification: Consulta de información del domicilio por el domiciliario
 
 **Created**: 2026-09-18
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-18
 **Historias de usuario relacionadas**: HU-39
 
@@ -10,7 +11,7 @@
 
 Como domiciliario, quiero consultar la información de un domicilio (de dónde sale, a dónde va, quién lo recibe y cuánto ganaría), para decidir si lo tomo y saber cómo realizar la entrega.
 
-**Why this priority**: Sin esta información el domiciliario no puede evaluar el domicilio ni ejecutarlo; es el paso previo a aceptar, ofertar o archivar, por lo que se clasifica como P1.
+**Why this priority**: Sin esta información el domiciliario no puede evaluar el domicilio ni ejecutarlo; es el paso previo a aceptar o rechazar, por lo que se clasifica como P1.
 
 **Independent Test**: Puede probarse abriendo desde la lista un domicilio disponible y verificando que se muestran el punto A, el punto B, la persona que recibe y la ganancia.
 
@@ -24,7 +25,7 @@ Como domiciliario, quiero consultar la información de un domicilio (de dónde s
 2. **Scenario**: Acciones disponibles desde la información
    - **Given** el domiciliario está viendo la información de un domicilio disponible
    - **When** revisa las acciones
-   - **Then** el sistema le permite aceptarlo, ofertar otro precio o archivarlo
+   - **Then** el sistema le permite aceptarlo o rechazarlo
 
 3. **Scenario**: Consulta de un domicilio que ya no está disponible
    - **Given** el domicilio fue asignado a otro domiciliario o cancelado
@@ -46,10 +47,17 @@ Como domiciliario, quiero consultar la información de un domicilio (de dónde s
 
 ### Functional Requirements
 
+<<<<<<< HEAD
 - **FR-001**: El sistema DEBE mostrar al domiciliario, para un domicilio, el punto de origen (A), el punto de destino (B), la persona que lo recibirá y la ganancia.
 - **FR-002**: El sistema DEBE mostrar un resumen de los ítems del pedido (cantidad de ítems), sin exponer datos de pago del cliente.
 - **FR-003**: El sistema DEBE permitir, desde la información de un domicilio disponible, aceptarlo (RF-19), ofertar otro precio (RF-20) o archivarlo (RF-17).
 - **FR-004**: El sistema DEBE mostrar el destino por zona, barrio y distancia hasta que el domicilio sea asignado, y revelar la dirección exacta y el teléfono de quien recibe únicamente al domiciliario asignado (RNF04).
+=======
+- **FR-001**: El sistema DEBE mostrar al domiciliario, para un domicilio, el punto de origen (A), el punto de destino (B), la persona que lo recibirá y la ganancia (la tarifa publicada).
+- **FR-002**: El sistema DEBE mostrar un resumen de los ítems del pedido (cantidad de ítems), sin exponer datos de pago.
+- **FR-003**: El sistema DEBE permitir, desde la información de un domicilio disponible, aceptarlo (RF-19) o rechazarlo (RF-17).
+- **FR-004**: El sistema DEBE restringir los datos personales del receptor a lo necesario para la entrega, según las reglas de privacidad definidas (RNF04).
+>>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 - **FR-005**: El sistema DEBE informar cuando el domicilio consultado ya no esté disponible.
 
 ### Key Entities
@@ -73,5 +81,9 @@ Como domiciliario, quiero consultar la información de un domicilio (de dónde s
 ### Measurable Outcomes
 
 - **SC-001**: La información de un domicilio se muestra al domiciliario en menos de 3 segundos.
+<<<<<<< HEAD
 - **SC-002**: El 100% de los domicilios consultados muestran origen, destino, receptor y ganancia.
 - **SC-003**: El 0% de los domiciliarios sin asignación puede ver la dirección exacta ni el teléfono de quien recibe.
+=======
+- **SC-002**: El 100% de los domicilios consultados muestran origen, destino, receptor y ganancia.
+>>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b

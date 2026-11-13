@@ -7,6 +7,7 @@ actor "Cliente" as c
 actor "Vendedor" as v
 actor "Vendedor Ambulante" as va
 actor "Vendedor de Punto Fijo" as vpf
+actor "vendedor Ambulante" as va
 actor "Domiciliario" as d
 actor "Administrador" as adm
 
@@ -15,6 +16,7 @@ v --|> u
 d --|> u
 va --|> v
 vpf --|> v
+va --|> v
 
 rectangle "Gestionar comentarios y calificaciones" {
     usecase "Calificar y comentar emprendimiento" as UC1
@@ -51,7 +53,17 @@ c --> UC8
 v --> UC5
 v --> UC6
 v --> UC8
+<<<<<<< HEAD
 vpf --> UC7
+=======
+v --> UC9
+v --> UC10
+v --> UC3
+v --> UC7
+
+d --> UC1
+d --> UC4
+>>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 d --> UC5
 d --> UC7
 d --> UC8

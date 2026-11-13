@@ -1,7 +1,7 @@
 # Feature Specification: Consulta de domicilios por administrador
 
 **Created**: 2026-09-11
-**Actualizado**: 2026-09-18
+**Actualizado**: 2026-10-01
 **Requerimiento funcional**: RF-12
 **Historias de usuario relacionadas**: HU-51
 
@@ -20,7 +20,7 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 1. **Scenario**: Listado general de domicilios
    - **Given** existen domicilios registrados en el sistema en distintos estados
    - **When** el administrador ingresa a la sección de consulta de domicilios
-   - **Then** el sistema muestra el listado completo de domicilios con su información básica (origen, destino, estado, costo)
+   - **Then** el sistema muestra el listado completo de domicilios con su información básica (origen, destino, estado, tarifa)
 
 2. **Scenario**: Consulta de detalle de un domicilio específico
    - **Given** el administrador está viendo el listado de domicilios
@@ -29,21 +29,27 @@ Como administrador, quiero consultar los domicilios registrados en la plataforma
 
 ### Edge Cases
 
+<<<<<<< HEAD
 - **¿Qué sucede cuando no existen domicilios registrados en el sistema?** Muestra el mensaje "No hay domicilios registrados".
 - **¿Cómo se muestra un domicilio que fue cancelado, o que recibió ofertas de precio que el cliente rechazó?** Un domicilio cancelado muestra su motivo y fecha de cancelación; el detalle lista además las ofertas recibidas con su estado, incluidas las rechazadas.
 - **¿Qué ocurre si el administrador consulta un domicilio que fue eliminado o archivado?** Los domicilios no se eliminan; el archivado es una acción personal de cada domiciliario y no cambia lo que ve el administrador.
+=======
+- ¿Qué sucede cuando no existen domicilios registrados en el sistema?
+- ¿Cómo se muestra un domicilio que fue cancelado, o uno que ningún domiciliario ha tomado por un tiempo prolongado?
+- ¿Qué ocurre si el administrador consulta un domicilio que fue eliminado?
+>>>>>>> adf1c8ba15933f30f704783cb6f2fce2395ced1b
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir al administrador consultar el listado de todos los domicilios registrados en la plataforma, independientemente del vendedor o domiciliario asociado.
-- **FR-002**: El sistema DEBE mostrar, para cada domicilio, su estado actual, origen, destino y costo.
+- **FR-002**: El sistema DEBE mostrar, para cada domicilio, su estado actual, origen, destino y tarifa.
 - **FR-003**: El sistema DEBE permitir al administrador acceder al detalle completo de un domicilio seleccionado desde el listado.
 
 ### Key Entities
 
-- **Domicilio**: Representa un servicio de entrega asociado a un pedido; incluye estado, origen, destino, costo, vendedor, cliente y domiciliario asignado.
+- **Domicilio**: Representa un servicio de entrega asociado a un pedido; incluye estado, origen, destino, tarifa publicada, vendedor, cliente y domiciliario asignado.
 
 ### Data Rules
 

@@ -1,8 +1,10 @@
 # Feature Specification: Inicio de sesión
 
 **Created**: 2026-09-11
+**Actualizado**: 2026-10-08
 **Requerimiento funcional**: RF-10
 **Historias de usuario relacionadas**: HU-27, HU-29
+**Relacionado con**: RF-70 (verificación de celular)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -25,6 +27,11 @@ Como usuario registrado, quiero iniciar sesión con mi correo/teléfono y contra
    - **Given** tengo una cuenta previamente registrada
    - **When** ingreso una contraseña incorrecta
    - **Then** el sistema rechaza el acceso y muestra un mensaje de error sin indicar cuál dato es incorrecto
+
+3. **Scenario**: Cuenta con el celular sin verificar
+   - **Given** me registré pero no he verificado mi celular
+   - **When** ingreso mis credenciales correctas
+   - **Then** el sistema no inicia mi sesión y me lleva a completar la verificación (RF-70)
 
 ---
 
@@ -56,7 +63,8 @@ Como administrador, quiero iniciar sesión en mi cuenta, para acceder a las func
 - **FR-001**: El sistema MUST permitir a los usuarios y al administrador iniciar sesión mediante correo/teléfono y contraseña.
 - **FR-002**: El sistema MUST validar las credenciales antes de conceder acceso a la cuenta.
 - **FR-003**: El sistema MUST redirigir al usuario autenticado al panel correspondiente a su rol (cliente, vendedor, domiciliario o administrador).
-- **FR-004**: El sistema MUST limitar los intentos fallidos consecutivos de inicio de sesión para mitigar ataques de fuerza bruta.
+- **FR-004**: El sistema MUST limitar los intentos fallidos consecutivos de inicio de sesión para mitigar ataques de fuerza bruta; el límite aplica también a los intentos de código de un solo uso (RF-70).
+- **FR-005**: El sistema MUST impedir el inicio de sesión de un usuario cuyo celular no esté verificado (RF-70). El administrador inicia sesión solo con contraseña.
 
 ### Key Entities
 
