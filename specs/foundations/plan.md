@@ -132,24 +132,23 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [x] F012 `IdempotencyFilter` con Redis, integrado después de autenticación; pruebas de concurrencia en `shared/infrastructure/idempotency/`
 - [x] F013 Utilidades geo y `RoutingPort` con adaptador OpenRouteService en `shared/infrastructure/geo/`
 - [x] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
-- [x] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis); validado localmente con Docker el 2026-11-12: suite completa de 279 pruebas en 62 suites, 0 fallos, errores u omisiones (13 suites de integración).
-
+- [x] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis). Validación en GitHub Actions: 287 pruebas, 0 fallos y 0 omitidas; incluye ArchUnit y las suites de integración. 
 **Phase F2 – Identidad (RF-07, RF-09, RF-10, RF-11)**
-- [ ] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración (implementación presente; falta validar migración/JPA con PostgreSQL/PostGIS en Docker CI)
+- [x] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración. Validación de persistencia en PostgreSQL/PostGIS en CI: `UsuarioPersistenceIntegrationTest`, 3 pruebas aprobadas, sin omisiones.
 - [x] F021 Completar el flujo de solicitud/confirmación sobre `VerificarCelularPort`, límites de envíos e intentos en Redis y adaptador `otp-console` (un único adaptador Redis, perfil y código configurados desde el README; pruebas de contexto y recorrido HTTP con Docker validadas localmente)
 - [ ] F022 Integrar Twilio Verify solo después de confirmar elegibilidad, tarifas y presupuesto para Colombia; no habilitar envíos reales antes de aprobar el tope mensual de gasto.
-- [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover (rutas creadas; OTP queda cerrado con 503 hasta configurar un proveedor)
+- [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover. Flujos de identidad validados en CI con `otp-console`; recuperación validada manualmente: actualización de contraseña, rechazo de la anterior y acceso con la nueva. Pendiente validación con proveedor real; sin proveedor configurado, OTP responde 503.
 - [x] F024 Filtro JWT con `sv` y bootstrap admin de un solo uso
-- [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado (pruebas unitarias y suites Redis/PostgreSQL validadas localmente; el recorrido HTTP verifica OTP agotado, consumo único, rotación y revocación. Pendiente proveedor real y confirmar la ejecución en CI)
+- [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado. Pruebas unitarias y suites Redis/PostgreSQL ejecutadas en CI sin fallos ni omisiones; `ConsoleIdentityIntegrationTest` pasó sus 9 pruebas. El recorrido HTTP verifica OTP agotado, consumo único, rotación y revocación. Pendiente validación del proveedor real; la recuperación manual no sustituye esas pruebas.
 
-**Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` selecciona un único `ConsolaVerificacionAdapter` basado en Redis; `NAPA_OTP_CONSOLE_CODE` exige seis dígitos y no tiene valor predeterminado. No puede activarse junto con `prod`. Sin proveedor configurado, solicitar o confirmar la verificación responde `503`; el registro conserva la cuenta pendiente con envío `FALLIDO`. Nunca se persiste ni registra el OTP. La ejecución local con Docker pasó 194 pruebas, sin omisiones, incluyendo el recorrido HTTP de identidad, los registros simultáneos con celular o correo duplicado, CORS para orígenes web explícitos y las integraciones Redis/PostgreSQL/PostGIS; falta confirmar la ejecución en CI. RF-11 se difiere hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes.
+**Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` selecciona un único `ConsolaVerificacionAdapter` basado en Redis; `NAPA_OTP_CONSOLE_CODE` exige seis dígitos y no tiene valor predeterminado. No puede activarse junto con `prod`. Sin proveedor configurado, solicitar o confirmar la verificación responde `503`; el registro conserva la cuenta pendiente con envío `FALLIDO`. Nunca se persiste ni registra el OTP. La ejecución local con Docker pasó 194 pruebas, sin omisiones, incluyendo el recorrido HTTP de identidad, los registros simultáneos con celular o correo duplicado, CORS para orígenes web explícitos y las integraciones Redis/PostgreSQL/PostGIS. La validación en CI de 287 pruebas, sin fallos ni omisiones, y la recuperación manual con `otp-console`. RF-11 se difiere hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes.
 
 **Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. El proveedor real de OTP y sus costos quedan diferidos hasta aprobar presupuesto. RF-11 se implementará después de los módulos de pedidos, emprendimientos y domicilios, porque aún no existen sus tablas para comprobar operaciones pendientes.
 
 **Phase F3 – Notificaciones (RF-38, RF-39)**
-- [ ] F030 Tablas `Notificacion` y `PreferenciaNotificacion` en V4; `DispositivoToken` ya existe en V3. La migración está implementada, pero falta validar en PostgreSQL/PostGIS con Docker CI.
+- [x] F030 Tablas `Notificacion` y `PreferenciaNotificacion` en V4; `DispositivoToken` ya existe en V3. Esquema validado en PostgreSQL/PostGIS en CI: `NotificationSchemaIntegrationTest`, 2 pruebas aprobadas, sin omisiones.
 - [x] F031 Adaptador FCM opt-in (Firebase Admin), lotes máximos de 500, limpieza de tokens `UNREGISTERED` y resultado explícito de entrega. Pruebas unitarias pasan; pendiente validar con credenciales/entorno FCM real.
-- [x] F032 Caso de uso, endpoints feed/detalle/preferencias, job de retención y manejador multi-evento para E01–E12, E14–E19 con deduplicación por destinatario. Pruebas unitarias pasan; la validación del esquema sigue pendiente en F030.
+- [x] F032 Caso de uso, endpoints feed/detalle/preferencias, job de retención y manejador multi-evento para E01–E12, E14–E19 con deduplicación por destinatario. Pruebas unitarias pasan; el esquema quedó validado en CI mediante F030.
 - [ ] F033 Entidad `mensaje` y adaptador Twilio Verify de producción (RF-70); fuera del alcance aprobado para desarrollo, que mantiene OTP real deshabilitado.
 
 **Phase F4 – Frontend base**
@@ -190,7 +189,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 | Vencimientos (pedido sin respuesta, pago sin hacer, llegada sin confirmar) | Varias specs | **Resuelto para MVP: no hay vencimiento automático**; permanecen en su estado actual hasta una acción permitida por las specs. Reabrir la decisión requiere actualizar las specs | Equipo y usuarios |
 
 #### Plan Review Checklist
-*  [x] Spec Change Requests aplicados a las specs 
+*  [x] Spec Change Requests aplicados a las specs
 *  [x] Proveedor de rutas elegido (OpenRouteService)
-*  [ ] ArchUnit y Testcontainers corren en CI
+*  [x] ArchUnit y Testcontainers corren en CI (287 pruebas, 0 fallos y 0 omitidas).
 *  [ ] Checkpoint de la base verificado en un móvil de gama baja
