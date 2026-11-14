@@ -91,6 +91,33 @@ public class CalificacionController {
                 uuid(parametros, "pedidoId"), uuid(parametros, "domicilioId")));
     }
 
+    /** RF-02 en listados: promedio de varios productos o emprendimientos ({@code ids} separados por comas). */
+    @GetMapping("/api/v1/calificaciones/resumenes")
+    @PreAuthorize(PARTICIPANTES)
+    public ResponseEntity<Map<String, Object>> resumenes(@AuthenticationPrincipal Jwt jwt, HttpServletRequest request) {
+        Map<String, String[]> parametros = request.getParameterMap();
+        for (String nombre : parametros.keySet()) {
+            if (!Set.of("tipoEntidad", "ids").contains(nombre)) {
+                throw invalido(nombre, "Filtro no permitido.");
+            }
+        }
+        TipoEntidad tipo = enumValor(parametros, "tipoEntidad", TipoEntidad.class);
+        String texto = valor(parametros, "ids");
+        if (tipo == null || texto == null) {
+            throw invalido(tipo == null ? "tipoEntidad" : "ids", "Obligatorio.");
+        }
+        java.util.List<UUID> ids = new java.util.ArrayList<>();
+        for (String parte : texto.split(",")) {
+            try {
+                ids.add(UUID.fromString(parte.strip()));
+            } catch (IllegalArgumentException e) {
+                throw invalido("ids", "Identificador inválido.");
+            }
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(Map.of("resumenes", consultar.resumenes(usuario(jwt), rol(jwt), tipo, ids)));
+    }
+
     private static UUID uuid(Map<String, String[]> parametros, String nombre) {
         String valor = valor(parametros, nombre);
         if (valor == null) {

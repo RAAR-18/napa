@@ -34,6 +34,9 @@ public interface CalificacionRepositoryPort {
     /** Promedio y total de las {@code ACTIVA} del destino. */
     Resumen resumen(TipoEntidad tipoEntidad, UUID entidadId);
 
+    /** Lo mismo para varios destinos en una consulta; los que no tienen calificaciones no aparecen. */
+    java.util.Map<UUID, Resumen> resumenes(TipoEntidad tipoEntidad, java.util.Collection<UUID> entidadIds);
+
     /** {@code tipoEntidad}/{@code entidadId} y {@code estado} son opcionales (nulos = sin filtro). */
     record Filtro(TipoEntidad tipoEntidad, UUID entidadId, EstadoCalificacion estado) {}
 

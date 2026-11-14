@@ -3,13 +3,16 @@ import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ErrorBanner, Field, HelperText, OptionButton, PrimaryButton, TextButton, palette } from './AuthUI';
+import { textoPromedio, type ResumenCalificaciones } from '../lib/calificaciones';
 import {
   deleteProducto, parseCantidad, productErrorMessage, unidadesProducto, updateInventario,
   type OrdenProductos, type Producto, type ProductosPage,
 } from '../lib/productos';
 
-export function ProductoCard({ producto, inventory = false, onUpdated }: {
+export function ProductoCard({ producto, inventory = false, onUpdated, resumen }: {
   producto: Producto; inventory?: boolean; onUpdated?: () => void;
+  /** RF-02: promedio del producto; ausente si aún no se cargó. */
+  resumen?: ResumenCalificaciones;
 }) {
   const [quantity, setQuantity] = useState(String(producto.cantidadDisponible).replace('.', ','));
   const [busy, setBusy] = useState(false);
@@ -51,6 +54,22 @@ export function ProductoCard({ producto, inventory = false, onUpdated }: {
       <Text style={[productStyles.status, producto.soloReserva && productStyles.exhausted]}>
         {producto.soloReserva ? (inventory ? 'Agotado · Solo reserva' : 'Solo reserva') : 'Disponible'}
       </Text>
+      {resumen ? (
+        <View style={productStyles.rating}>
+          <Text accessibilityLabel={`Calificación de ${producto.nombre}: ${textoPromedio(resumen)}`} style={productStyles.ratingText}>
+            {resumen.promedio !== null ? '★ ' : ''}{textoPromedio(resumen)}
+          </Text>
+          {resumen.total > 0 ? (
+            <TextButton
+              title={`Ver opiniones de ${producto.nombre}`}
+              onPress={() => router.push({
+                pathname: '/calificaciones',
+                params: { tipoEntidad: 'PRODUCTO', entidadId: producto.id, titulo: producto.nombre },
+              })}
+            />
+          ) : null}
+        </View>
+      ) : null}
       {inventory ? (
         <>
           <ErrorBanner message={error} />
@@ -109,6 +128,8 @@ export const productStyles = StyleSheet.create({
   card: { backgroundColor: palette.white, borderColor: palette.border, borderWidth: 1, borderRadius: 16, padding: 18, marginVertical: 8 },
   name: { color: palette.dark, fontSize: 21, fontWeight: '800', marginBottom: 6 },
   price: { color: palette.green, fontSize: 17, fontWeight: '700', marginBottom: 8 },
+  rating: { marginTop: 6 },
+  ratingText: { color: '#9A6700', fontSize: 14, fontWeight: '700' },
   detail: { color: palette.muted, fontSize: 14, lineHeight: 21, marginBottom: 8 },
   status: { color: palette.green, fontWeight: '700', marginBottom: 16 },
   exhausted: { color: '#86510F' },

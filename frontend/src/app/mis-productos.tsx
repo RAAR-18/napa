@@ -5,9 +5,12 @@ import { ActivityIndicator, Text } from 'react-native';
 import { AuthPage, ErrorBanner, HelperText, PageHeading, PrimaryButton, TextButton, palette } from '../components/AuthUI';
 import { OrdenProductosControl, ProductoCard, ProductosPagination, productStyles } from '../components/ProductosUI';
 import { useProductosPage } from '../hooks/useProductosPage';
+import { useResumenesCalificacion } from '../hooks/useResumenesCalificacion';
 
 export default function MisProductosScreen() {
   const { data, busy, error, sort, changeSort, refresh, setPage } = useProductosPage('seller');
+  // RF-02: el vendedor ve cómo califican sus productos.
+  const resumenes = useResumenesCalificacion('PRODUCTO', data?.content.map((item) => item.id) ?? []);
   const [notice, setNotice] = useState<string | null>(null);
   return (
     <AuthPage>
@@ -26,6 +29,7 @@ export default function MisProductosScreen() {
       {busy ? <ActivityIndicator accessibilityLabel="Cargando productos" color={palette.green} /> : null}
       {!busy && data?.emprendimiento && data.content.length === 0 ? <HelperText>Aún no has publicado productos.</HelperText> : null}
       {!busy ? data?.content.map((item) => <ProductoCard key={`${item.id}:${item.updatedAt}`} producto={item} inventory
+        resumen={resumenes[item.id]}
         onUpdated={() => { setNotice('Catálogo actualizado.'); refresh(); }} />) : null}
       {data ? <ProductosPagination data={data} busy={busy} onPage={setPage} /> : null}
       <TextButton title="Actualizar listado" disabled={busy} onPress={refresh} />

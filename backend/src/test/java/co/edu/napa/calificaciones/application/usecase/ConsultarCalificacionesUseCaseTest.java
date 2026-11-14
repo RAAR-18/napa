@@ -130,6 +130,32 @@ class ConsultarCalificacionesUseCaseTest {
                 new Consulta(null, UUID.randomUUID(), null, 0, 20, null, false)));
     }
 
+    @Test
+    void losResumenesDelCatalogoOmitenLoInexistenteYAlVendedorSoloLeLlegaLoSuyo() {
+        UUID propio = UUID.randomUUID();
+        UUID ajeno = UUID.randomUUID();
+        UUID inexistente = UUID.randomUUID();
+        when(interacciones.duenios(TipoEntidad.PRODUCTO, List.of(propio, ajeno, inexistente)))
+                .thenReturn(java.util.Map.of(propio, USUARIO, ajeno, UUID.randomUUID()));
+        when(repositorio.resumenes(eq(TipoEntidad.PRODUCTO), any()))
+                .thenReturn(java.util.Map.of(propio, new CalificacionRepositoryPort.Resumen(4.25, 4)));
+
+        var cliente = useCase.resumenes(UUID.randomUUID(), RolUsuario.CLIENTE, TipoEntidad.PRODUCTO,
+                List.of(propio, ajeno, inexistente, propio));
+        var vendedor = useCase.resumenes(USUARIO, RolUsuario.VENDEDOR_PUNTO_FIJO, TipoEntidad.PRODUCTO,
+                List.of(propio, ajeno, inexistente));
+
+        assertEquals(2, cliente.size());
+        assertEquals(4.3, cliente.get(0).promedio());
+        assertNull(cliente.get(1).promedio());
+        assertEquals(0, cliente.get(1).total());
+        assertEquals(List.of(propio), vendedor.stream().map(r -> r.entidadId()).toList());
+        assertCodigo("VALIDATION_ERROR", () -> useCase.resumenes(USUARIO, RolUsuario.CLIENTE, TipoEntidad.USUARIO,
+                List.of(propio)));
+        assertCodigo("VALIDATION_ERROR", () -> useCase.resumenes(USUARIO, RolUsuario.CLIENTE, TipoEntidad.PRODUCTO,
+                java.util.Collections.nCopies(51, propio)));
+    }
+
     private static CalificacionListada listada(UUID autor) {
         Instant fecha = Instant.parse("2026-11-12T10:00:00Z");
         return new CalificacionListada(UUID.randomUUID(), 5, "Excelente", EstadoCalificacion.ACTIVA, false,

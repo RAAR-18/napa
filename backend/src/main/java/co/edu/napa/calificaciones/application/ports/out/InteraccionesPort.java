@@ -25,6 +25,10 @@ public interface InteraccionesPort {
 
     Optional<String> rolUsuario(UUID usuarioId);
 
+    /** Dueño de cada emprendimiento o producto pedido; los que no existen no aparecen. */
+    java.util.Map<UUID, UUID> duenios(co.edu.napa.calificaciones.domain.model.TipoEntidad tipo,
+                                      java.util.Collection<UUID> entidadIds);
+
     boolean clienteComproAVendedor(UUID vendedorId, UUID clienteId);
 
     boolean domiciliarioLlevoPedidoDeVendedor(UUID vendedorId, UUID domiciliarioId);

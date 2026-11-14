@@ -25,6 +25,7 @@ import java.util.UUID;
 public class ConsultarCalificacionesUseCase implements ConsultarCalificacionesPort {
     private static final String NO_ENCONTRADA = "No encontramos esa entidad.";
     private static final String SIN_PERMISO = "No tienes permiso para ver estas calificaciones.";
+    static final int MAXIMO_RESUMENES = 50;
 
     private final CalificacionRepositoryPort calificaciones;
     private final InteraccionesPort interacciones;
@@ -82,12 +83,43 @@ public class ConsultarCalificacionesUseCase implements ConsultarCalificacionesPo
     @Override
     @Transactional(readOnly = true)
     public Resumen resumen(TipoEntidad tipoEntidad, UUID entidadId) {
-        CalificacionRepositoryPort.Resumen resumen = calificaciones.resumen(tipoEntidad, entidadId);
-        if (resumen.total() == 0 || resumen.promedio() == null) {
+        return redondear(calificaciones.resumen(tipoEntidad, entidadId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ResumenEntidad> resumenes(UUID usuarioId, RolUsuario rol, TipoEntidad tipo, List<UUID> entidadIds) {
+        Objects.requireNonNull(usuarioId, "usuarioId");
+        if (tipo == null || tipo == TipoEntidad.USUARIO) {
+            throw new DomainException("VALIDATION_ERROR", "Solo hay resúmenes de emprendimientos o productos.",
+                    Map.of("fields", Map.of("tipoEntidad", "Usa EMPRENDIMIENTO o PRODUCTO")));
+        }
+        if (entidadIds.isEmpty() || entidadIds.size() > MAXIMO_RESUMENES) {
+            throw new DomainException("VALIDATION_ERROR", "Pide entre 1 y 50 identificadores.",
+                    Map.of("fields", Map.of("ids", "Entre 1 y 50")));
+        }
+        List<UUID> unicos = entidadIds.stream().distinct().toList();
+        Map<UUID, UUID> duenios = interacciones.duenios(tipo, unicos);
+        List<UUID> visibles = unicos.stream()
+                .filter(duenios::containsKey)
+                .filter(id -> !rol.esVendedor() || usuarioId.equals(duenios.get(id)))
+                .toList();
+        if (visibles.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, CalificacionRepositoryPort.Resumen> encontrados = calificaciones.resumenes(tipo, visibles);
+        return visibles.stream().map(id -> {
+            Resumen r = redondear(encontrados.get(id));
+            return new ResumenEntidad(id, r.promedio(), r.total());
+        }).toList();
+    }
+
+    private static Resumen redondear(CalificacionRepositoryPort.Resumen resumen) {
+        if (resumen == null || resumen.total() == 0 || resumen.promedio() == null) {
             return new Resumen(null, 0);
         }
-        double redondeado = BigDecimal.valueOf(resumen.promedio()).setScale(1, RoundingMode.HALF_UP).doubleValue();
-        return new Resumen(redondeado, resumen.total());
+        return new Resumen(BigDecimal.valueOf(resumen.promedio()).setScale(1, RoundingMode.HALF_UP).doubleValue(),
+                resumen.total());
     }
 
     private void autorizar(UUID usuarioId, RolUsuario rol, TipoEntidad tipo, UUID entidadId) {

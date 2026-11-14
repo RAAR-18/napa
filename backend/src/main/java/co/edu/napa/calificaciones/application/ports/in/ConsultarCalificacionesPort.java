@@ -17,6 +17,14 @@ public interface ConsultarCalificacionesPort {
     /** Promedio y total de las calificaciones ACTIVA de un destino; lo usan otras pantallas (RF-27). */
     Resumen resumen(TipoEntidad tipoEntidad, UUID entidadId);
 
+    /**
+     * RF-02 en listados (catálogo): promedio de varios emprendimientos o productos a la vez. El vendedor solo recibe
+     * los suyos; los destinos que no existen o no son visibles se omiten.
+     */
+    List<ResumenEntidad> resumenes(UUID usuarioId, RolUsuario rol, TipoEntidad tipoEntidad, List<UUID> entidadIds);
+
+    record ResumenEntidad(UUID entidadId, Double promedio, long total) {}
+
     record Consulta(
             TipoEntidad tipoEntidad,
             UUID entidadId,

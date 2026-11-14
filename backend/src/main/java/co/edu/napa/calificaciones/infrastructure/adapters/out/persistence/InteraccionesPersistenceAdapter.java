@@ -81,6 +81,22 @@ public class InteraccionesPersistenceAdapter implements InteraccionesPort {
     }
 
     @Override
+    public java.util.Map<UUID, UUID> duenios(co.edu.napa.calificaciones.domain.model.TipoEntidad tipo,
+                                             java.util.Collection<UUID> entidadIds) {
+        String sql = switch (tipo) {
+            case EMPRENDIMIENTO -> "SELECT id, usuario_id FROM emprendimiento WHERE id = ANY (?)";
+            case PRODUCTO -> "SELECT p.id, e.usuario_id FROM producto p JOIN emprendimiento e"
+                    + " ON e.id = p.emprendimiento_id WHERE p.id = ANY (?)";
+            case USUARIO -> throw new IllegalArgumentException("Los usuarios no tienen dueño");
+        };
+        java.util.Map<UUID, UUID> resultado = new java.util.HashMap<>();
+        jdbc.query(sql, rs -> {
+            resultado.put(rs.getObject("id", UUID.class), rs.getObject("usuario_id", UUID.class));
+        }, (Object) entidadIds.toArray(UUID[]::new));
+        return resultado;
+    }
+
+    @Override
     public boolean clienteComproAVendedor(UUID vendedorId, UUID clienteId) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 SELECT EXISTS (

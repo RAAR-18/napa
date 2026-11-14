@@ -164,6 +164,21 @@ public class CalificacionPersistenceAdapter implements CalificacionRepositoryPor
                 entidadId);
     }
 
+    @Override
+    public java.util.Map<UUID, Resumen> resumenes(TipoEntidad tipoEntidad, java.util.Collection<UUID> entidadIds) {
+        String columna = columna(tipoEntidad);
+        java.util.Map<UUID, Resumen> resultado = new java.util.HashMap<>();
+        jdbc.query("SELECT " + columna + " AS entidad_id, AVG(puntaje)::float8 AS promedio, COUNT(*) AS total"
+                        + " FROM calificacion WHERE estado = 'ACTIVA' AND " + columna + " = ANY (?)"
+                        + " GROUP BY " + columna,
+                rs -> {
+                    resultado.put(rs.getObject("entidad_id", UUID.class),
+                            new Resumen(rs.getDouble("promedio"), rs.getLong("total")));
+                },
+                (Object) entidadIds.toArray(UUID[]::new));
+        return resultado;
+    }
+
     private static String where(Filtro filtro, List<Object> args) {
         List<String> condiciones = new ArrayList<>();
         if (filtro.estado() != null) {

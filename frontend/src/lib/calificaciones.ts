@@ -201,3 +201,21 @@ export function textoPromedio(resumen: ResumenCalificaciones | null | undefined)
 export function estrellas(puntaje: number) {
   return '★'.repeat(puntaje) + '☆'.repeat(Math.max(0, 5 - puntaje));
 }
+
+/** RF-02 en listados: hasta 50 productos o emprendimientos por petición; el vendedor solo recibe los suyos. */
+export async function obtenerResumenes(
+  tipo: 'PRODUCTO' | 'EMPRENDIMIENTO',
+  ids: string[],
+): Promise<Record<string, ResumenCalificaciones>> {
+  const unicos = [...new Set(ids)].slice(0, 50);
+  if (unicos.length === 0) return {};
+  const respuesta = await withValidSession((session) =>
+    requestJson<{ resumenes: (ResumenCalificaciones & { entidadId: string })[] }>(
+      `/api/v1/calificaciones/resumenes${query({ tipoEntidad: tipo, ids: unicos.join(',') })}`,
+      { method: 'GET', headers: jsonHeaders({ accessToken: session.accessToken }) },
+    ),
+  );
+  return Object.fromEntries(
+    respuesta.resumenes.map((r) => [r.entidadId, { promedio: r.promedio, total: r.total }]),
+  );
+}

@@ -1,6 +1,12 @@
 import { jsonHeaders, requestJson, requestVoid } from './api';
 import { withValidSession, type StoredSession } from './auth';
-import { calificar, listarCalificaciones, obtenerOpcionesCalificacion, textoPromedio } from './calificaciones';
+import {
+  calificar,
+  listarCalificaciones,
+  obtenerOpcionesCalificacion,
+  obtenerResumenes,
+  textoPromedio,
+} from './calificaciones';
 import { crearReporte, listarReportes } from './reportes';
 import { describirPendientes, eliminarUsuario, urlFoto } from './usuarios';
 
@@ -64,6 +70,25 @@ describe('calificaciones', () => {
     expect(jest.mocked(requestJson).mock.calls[0][0]).toBe(
       '/api/v1/calificaciones?tipoEntidad=EMPRENDIMIENTO&entidadId=e-1&page=0&size=20',
     );
+  });
+
+  it('asks summaries for unique ids in one request and indexes them by entity', async () => {
+    jest.mocked(requestJson).mockResolvedValue({
+      resumenes: [
+        { entidadId: 'p-1', promedio: 4.3, total: 4 },
+        { entidadId: 'p-2', promedio: null, total: 0 },
+      ],
+    });
+
+    const resumenes = await obtenerResumenes('PRODUCTO', ['p-1', 'p-2', 'p-1']);
+
+    expect(requestJson).toHaveBeenCalledTimes(1);
+    expect(jest.mocked(requestJson).mock.calls[0][0]).toBe(
+      '/api/v1/calificaciones/resumenes?tipoEntidad=PRODUCTO&ids=p-1%2Cp-2',
+    );
+    expect(resumenes).toEqual({ 'p-1': { promedio: 4.3, total: 4 }, 'p-2': { promedio: null, total: 0 } });
+    expect(await obtenerResumenes('PRODUCTO', [])).toEqual({});
+    expect(requestJson).toHaveBeenCalledTimes(1);
   });
 
   it('describes the average or the lack of ratings', () => {

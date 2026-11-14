@@ -171,6 +171,15 @@ class CalificacionesYReportesIntegrationTest {
         assertCodigo(403, "FORBIDDEN", enviar("GET", "/calificaciones?tipoEntidad=EMPRENDIMIENTO&entidadId="
                 + emprendimiento, otroVendedor.token(), null));
 
+        // Resúmenes del catálogo: el producto calificado con 4 y uno inexistente que se omite.
+        Map<String, Object> resumenes = body(enviar("GET", "/calificaciones/resumenes?tipoEntidad=PRODUCTO&ids="
+                + producto + "," + UUID.randomUUID(), cliente.token(), null));
+        List<?> listaResumenes = (List<?>) resumenes.get("resumenes");
+        assertEquals(1, listaResumenes.size());
+        assertEquals(4.0, ((Number) ((Map<?, ?>) listaResumenes.getFirst()).get("promedio")).doubleValue());
+        assertTrue(((List<?>) body(enviar("GET", "/calificaciones/resumenes?tipoEntidad=PRODUCTO&ids=" + producto,
+                otroVendedor.token(), null)).get("resumenes")).isEmpty());
+
         // RF-04: el autor edita; otro no puede.
         HttpResponse<String> editada = enviar("PATCH", "/calificaciones/" + calificacionId, cliente.token(),
                 Map.of("puntaje", 3));
