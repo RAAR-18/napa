@@ -7,5 +7,10 @@ import java.util.UUID;
 public interface ConsultarContactoUsuarioPort {
     Optional<Contacto> consultar(UUID usuarioId);
 
-    record Contacto(String nombre, String celular) {}
+    /** {@code eliminada} indica que la cuenta ya no existe para los demás (RF-11, RF-68). */
+    record Contacto(String nombre, String celular, boolean eliminada) {
+        public Contacto(String nombre, String celular) {
+            this(nombre, celular, false);
+        }
+    }
 }

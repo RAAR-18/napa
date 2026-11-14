@@ -19,6 +19,7 @@ public class ConsultarContactoUsuarioUseCase implements ConsultarContactoUsuario
     @Override
     public Optional<Contacto> consultar(UUID usuarioId) {
         Objects.requireNonNull(usuarioId, "usuarioId");
-        return usuarios.findById(usuarioId).map(usuario -> new Contacto(usuario.nombre(), usuario.celular()));
+        return usuarios.findById(usuarioId).map(usuario -> new Contacto(usuario.nombre(), usuario.celular(),
+                usuario.estado() == co.edu.napa.cuentas.domain.model.EstadoUsuario.ELIMINADA));
     }
 }

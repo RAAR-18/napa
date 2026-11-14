@@ -1,5 +1,6 @@
 package co.edu.napa.pedidos.infrastructure.adapters.in.web;
 
+import co.edu.napa.pedidos.application.ports.in.ConsultarClientePedidoPort;
 import co.edu.napa.pedidos.application.ports.in.ContactarDesdePedidoPort;
 import co.edu.napa.pedidos.application.ports.in.ContactarDesdePedidoPort.CanalContacto;
 import co.edu.napa.shared.domain.DomainException;
@@ -23,9 +24,11 @@ import java.util.UUID;
 @RestController
 public class ContactoPedidoController {
     private final ContactarDesdePedidoPort contactar;
+    private final ConsultarClientePedidoPort clientes;
 
-    public ContactoPedidoController(ContactarDesdePedidoPort contactar) {
+    public ContactoPedidoController(ContactarDesdePedidoPort contactar, ConsultarClientePedidoPort clientes) {
         this.contactar = Objects.requireNonNull(contactar, "contactar");
+        this.clientes = Objects.requireNonNull(clientes, "clientes");
     }
 
     @PostMapping("/api/v1/pedidos/{pedidoId}/contactar")
@@ -42,6 +45,21 @@ public class ContactoPedidoController {
         CanalContacto canal = contactar.contactar(UUID.fromString(jwt.getSubject()), pedidoId,
                 body.destinatario(), body.tipo());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(canal);
+    }
+
+    /** RF-52: datos del cliente para el vendedor del pedido. */
+    @org.springframework.web.bind.annotation.GetMapping("/api/v1/pedidos/{pedidoId}/cliente")
+    @PreAuthorize("hasAnyAuthority('ROLE_VENDEDOR_AMBULANTE', 'ROLE_VENDEDOR_PUNTO_FIJO')")
+    public ResponseEntity<ConsultarClientePedidoPort.ClientePedido> cliente(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID pedidoId,
+            HttpServletRequest request
+    ) {
+        if (!request.getParameterMap().isEmpty()) {
+            throw new DomainException("VALIDATION_ERROR", "Esta operación no admite parámetros de consulta.");
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(clientes.consultar(UUID.fromString(jwt.getSubject()), pedidoId));
     }
 
     public record ContactarRequest(

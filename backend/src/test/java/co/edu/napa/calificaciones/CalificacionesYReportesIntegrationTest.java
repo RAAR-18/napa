@@ -301,6 +301,30 @@ class CalificacionesYReportesIntegrationTest {
                 Map.of("destinatario", "OTRO", "tipo", "LLAMADA")));
         assertCodigo(403, "FORBIDDEN", enviar("POST", "/pedidos/" + enCamino + "/contactar", vendedor.token(),
                 Map.of("destinatario", "VENDEDOR", "tipo", "LLAMADA")));
+
+        // RF-52: el vendedor ve celular y dirección del pedido en curso; del entregado, solo el nombre.
+        Map<String, Object> enCurso = body(enviar("GET", "/pedidos/" + enCamino + "/cliente", vendedor.token(), null));
+        assertEquals(jdbc.queryForObject("SELECT celular FROM usuario WHERE id = ?", String.class, cliente.id()),
+                enCurso.get("celular"));
+        assertEquals("Calle 1", ((Map<?, ?>) enCurso.get("direccionEntrega")).get("direccion"));
+        Map<String, Object> cerrado = body(enviar("GET", "/pedidos/" + pedido + "/cliente", vendedor.token(), null));
+        assertNull(cerrado.get("celular"));
+        assertCodigo(404, "NOT_FOUND", enviar("GET", "/pedidos/" + enCamino + "/cliente",
+                registrar("VENDEDOR_AMBULANTE").token(), null));
+
+        // RF-26: el domiciliario comparte su posición y el cliente la ve redondeada en la trazabilidad.
+        UUID domicilioEnCamino = jdbc.queryForObject("SELECT id FROM domicilio WHERE pedido_id = ?", UUID.class, enCamino);
+        HttpResponse<String> posicion = enviar("PUT", "/domicilios/" + domicilioEnCamino + "/ubicacion-domiciliario",
+                domiciliario.token(), Map.of("latitud", 11.24537, "longitud", -74.20612));
+        assertEquals(204, posicion.statusCode(), posicion.body());
+        assertCodigo(429, "RATE_LIMITED", enviar("PUT", "/domicilios/" + domicilioEnCamino + "/ubicacion-domiciliario",
+                domiciliario.token(), Map.of("latitud", 11.2, "longitud", -74.2)));
+        Map<String, Object> traza = body(enviar("GET", "/domicilios/" + domicilioEnCamino + "/trazabilidad",
+                cliente.token(), null));
+        Map<?, ?> ubicacion = (Map<?, ?>) traza.get("ubicacionDomiciliario");
+        assertEquals(11.245, ((Number) ubicacion.get("latitud")).doubleValue());
+        assertCodigo(409, "INVALID_STATE", enviar("PUT", "/domicilios/" + domicilio + "/ubicacion-domiciliario",
+                domiciliario.token(), Map.of("latitud", 11.2, "longitud", -74.2)));
     }
 
     private HttpResponse<String> calificar(Usuario autor, String tipo, UUID entidad, int puntaje, String comentario)
@@ -363,7 +387,7 @@ class CalificacionesYReportesIntegrationTest {
                 .timeout(Duration.ofSeconds(15))
                 .header("Content-Type", "application/json")
                 .header("X-Device-Id", "calificaciones-test");
-        if (!"GET".equals(metodo)) {
+        if ("POST".equals(metodo) || "PATCH".equals(metodo)) {
             builder.header("Idempotency-Key", UUID.randomUUID().toString());
         }
         if (token != null) {

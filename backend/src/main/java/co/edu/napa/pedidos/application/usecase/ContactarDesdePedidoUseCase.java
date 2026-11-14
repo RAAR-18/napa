@@ -66,6 +66,7 @@ public class ContactarDesdePedidoUseCase implements ContactarDesdePedidoPort {
                         .orElseThrow(() -> new DomainException("NOT_FOUND", "El pedido no está disponible."))
                 : domiciliarioEnCurso(pedidoId);
         String celular = contactos.consultar(destinatarioId)
+                .filter(contacto -> !contacto.eliminada())
                 .map(ConsultarContactoUsuarioPort.Contacto::celular)
                 .filter(valor -> valor != null && !valor.isBlank())
                 .orElseThrow(() -> new DomainException("INVALID_STATE", "No es posible contactar a esta persona.",
