@@ -238,7 +238,7 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
             case REPORTE_RESUELTO ->
                     add(recipients, payloadUuid(event, "autorId"), "Reporte resuelto", "El administrador resolvió tu reporte.");
             case COMENTARIO_MODERADO ->
-                    add(recipients, payloadUuid(event, "autorId"), "Comentario moderado", "El administrador moderó uno de tus comentarios.");
+                    add(recipients, payloadUuid(event, "autorId"), "Comentario moderado", comentarioModerado(event));
             case REPORTE_CREADO -> audience.findActiveAdministrators().forEach(userId ->
                     add(recipients, userId, "Nuevo reporte", "Hay un nuevo reporte pendiente para revisar."));
         }
@@ -262,6 +262,14 @@ public class NotificationUseCase implements ProcessNotificationEventPort, Notifi
             Notificacion.Referencia referencia
     ) {
         recipients.putIfAbsent(userId, new NotificationContent(title, body, referencia));
+    }
+
+    /** RF-06 FR-005: el autor sabe qué se hizo con su comentario y por qué. */
+    private static String comentarioModerado(NotificationEvent event) {
+        String accion = "ELIMINADO".equals(event.payload().get("accion")) ? "eliminó" : "editó";
+        Object motivo = event.payload().get("motivo");
+        String texto = "El administrador " + accion + " uno de tus comentarios.";
+        return motivo instanceof String valor && !valor.isBlank() ? texto + " Motivo: " + valor : texto;
     }
 
     /** Cliente y vendedor abren el pedido. */

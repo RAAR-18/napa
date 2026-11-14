@@ -1,5 +1,7 @@
 package co.edu.napa.pedidos.application.usecase;
 
+import co.edu.napa.calificaciones.application.ports.in.ConsultarCalificacionesPort;
+import co.edu.napa.calificaciones.domain.model.TipoEntidad;
 import co.edu.napa.cuentas.application.ports.in.ConsultarPerfilPublicoUsuarioPort;
 import co.edu.napa.domicilios.application.ports.in.ConsultarDomicilioDePedidoPort;
 import co.edu.napa.pedidos.application.ports.in.ConsultarDomiciliarioPedidoPort;
@@ -17,15 +19,18 @@ public class ConsultarDomiciliarioPedidoUseCase implements ConsultarDomiciliario
     private final PedidoRepositoryPort pedidos;
     private final ConsultarDomicilioDePedidoPort domicilios;
     private final ConsultarPerfilPublicoUsuarioPort usuarios;
+    private final ConsultarCalificacionesPort calificaciones;
 
     public ConsultarDomiciliarioPedidoUseCase(
             PedidoRepositoryPort pedidos,
             ConsultarDomicilioDePedidoPort domicilios,
-            ConsultarPerfilPublicoUsuarioPort usuarios
+            ConsultarPerfilPublicoUsuarioPort usuarios,
+            ConsultarCalificacionesPort calificaciones
     ) {
         this.pedidos = Objects.requireNonNull(pedidos, "pedidos");
         this.domicilios = Objects.requireNonNull(domicilios, "domicilios");
         this.usuarios = Objects.requireNonNull(usuarios, "usuarios");
+        this.calificaciones = Objects.requireNonNull(calificaciones, "calificaciones");
     }
 
     @Override
@@ -53,8 +58,15 @@ public class ConsultarDomiciliarioPedidoUseCase implements ConsultarDomiciliario
                         domicilio.id(),
                         domicilio.estado(),
                         domicilio.domiciliarioId() == null ? null : usuarios.consultarPerfil(domicilio.domiciliarioId())
-                                .map(perfil -> new Domiciliario(perfil.nombre(), perfil.fotoUrl(), null))
+                                .map(perfil -> new Domiciliario(perfil.nombre(), perfil.fotoUrl(),
+                                        calificacion(domicilio.domiciliarioId())))
                                 .orElse(null)))
                 .orElseGet(() -> new DomiciliarioDePedido(pedidoId, null, null, null));
+    }
+
+    /** RF-01/RF-02: promedio de las calificaciones ACTIVA del domiciliario; nulo si aún no tiene. */
+    private Calificacion calificacion(UUID domiciliarioId) {
+        ConsultarCalificacionesPort.Resumen resumen = calificaciones.resumen(TipoEntidad.USUARIO, domiciliarioId);
+        return resumen.promedio() == null ? null : new Calificacion(resumen.promedio(), resumen.total());
     }
 }

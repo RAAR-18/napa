@@ -122,6 +122,28 @@ class ArchitectureTest {
     }
 
     @Test
+    void calificacionesYReportesDomainMustNotDependOnOtherFeatureModules() {
+        noClasses().that().resideInAnyPackage("co.edu.napa.calificaciones.domain..", "co.edu.napa.reportes.domain..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "co.edu.napa.cuentas..", "co.edu.napa.emprendimientos..",
+                        "co.edu.napa.notificaciones..", "co.edu.napa.productos..",
+                        "co.edu.napa.pedidos..", "co.edu.napa.pagos..", "co.edu.napa.tarifas..",
+                        "co.edu.napa.domicilios..")
+                .check(classes);
+    }
+
+    @Test
+    void calificacionesYReportesDoNotUseOtherModulesCode() {
+        noClasses().that().resideInAnyPackage("co.edu.napa.calificaciones..", "co.edu.napa.reportes..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "co.edu.napa.cuentas..", "co.edu.napa.emprendimientos..",
+                        "co.edu.napa.notificaciones..", "co.edu.napa.productos..",
+                        "co.edu.napa.pedidos..", "co.edu.napa.pagos..", "co.edu.napa.tarifas..",
+                        "co.edu.napa.domicilios..")
+                .check(classes);
+    }
+
+    @Test
     void productosApplicationUsesOnlyTheIncomingEmprendimientosPort() {
         noClasses().that().resideInAPackage("co.edu.napa.productos.application..")
                 .should().dependOnClassesThat().resideInAnyPackage(
