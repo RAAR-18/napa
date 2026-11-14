@@ -122,26 +122,48 @@ $env:GOOGLE_APPLICATION_CREDENTIALS = "C:\ruta\fuera-del-repo\firebase-service-a
 $env:NAPA_NOTIFICATIONS_FCM_ENABLED = "true"
 ```
 
-En otra terminal, prepara e inicia la app móvil:
+### Android físico: development build 
+
+El proyecto usa Expo SDK 58, Expo Router y un cliente HTTP centralizado con `fetch` en `frontend/src/lib/api.ts`. No requiere Axios. La aplicación Android tiene identificador `co.edu.napa.app` y está vinculada al [proyecto Expo del equipo](https://expo.dev/accounts/raar-18/projects/napa).
+
+Desde otra terminal en la raíz del repositorio:
 
 ```powershell
 cd frontend
-npm ci
-npm run lint
-npm run typecheck
-npm start
+npm.cmd ci
+npx.cmd expo-doctor
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd test
 ```
 
-Escanea el QR con Expo Go. El frontend utiliza la dirección de red del servidor Expo como dirección del backend y asume que ambos dispositivos están en la misma red Wi-Fi. Si usas un túnel de Expo, un emulador o la detección automática no funciona, configura la IP local del computador antes de arrancar Expo:
+CI utiliza Node 24. La validación local se realizó con Node 26.13.1: Expo Doctor 20/20, lint y TypeScript sin errores, 90 pruebas aprobadas en 17 suites. Estas comprobaciones no requieren backend ni contenedores.
+
+Para generar una APK, inicia sesión con una cuenta que tenga acceso al proyecto y utiliza la configuración existente de `eas.json` (no crees otro proyecto Expo):
+
+```powershell
+npx.cmd eas-cli@latest login
+npx.cmd eas-cli@latest build --platform android --profile development
+```
+
+El perfil `development` incluye `developmentClient: true` y distribución interna. Instala la APK desde el enlace o QR de la compilación. Si pregunta por ejecutar en un emulador, responde No para usar el teléfono físico. No se necesita enviar la aplicación a una tienda.
+
+Para usar la APK instalada, inicia PostgreSQL/Redis y el backend con el perfil `otp-console` según las instrucciones anteriores. Conecta el teléfono y el PC a la misma red; consulta la IPv4 del PC con `ipconfig` y reemplaza la IP del ejemplo:
 
 ```powershell
 $env:EXPO_PUBLIC_API_URL = "http://192.168.1.25:8080"
-npm start
+npx.cmd expo start --dev-client
 ```
 
-Reemplaza `192.168.1.25` por la IPv4 del computador en tu red local. No uses `localhost` en un teléfono físico: apuntaría al propio teléfono. El backend debe estar ejecutándose en el puerto `8080`.
+Abre el proyecto en la aplicación Ñapa instalada mediante el QR del servidor. Mantén esta terminal abierta. El QR de compilación instala la APK; el del servidor conecta la aplicación al código de desarrollo.
 
-`EXPO_PUBLIC_API_URL` debe contener solo el origen del backend, por ejemplo `http://192.168.1.25:8080`, sin `/api/v1`: el cliente añade las rutas de la API. Reinicia Expo si cambias esta variable. Para probar el iPhone, abre el proyecto con Expo Go escaneando el QR; la vista del navegador es la versión web. La sesión y el identificador del dispositivo usan SecureStore en iOS/Android y `localStorage` en web. Si el navegador bloquea ese almacenamiento, la app muestra un mensaje para habilitarlo.
+No uses `localhost` como dirección del backend en el teléfono: apuntaría al propio dispositivo. `EXPO_PUBLIC_API_URL` contiene solo el origen, sin `/api/v1`; reinicia Expo si lo cambias. La API debe ser accesible desde la red local en el puerto 8080. Si Windows solicita acceso de red, permite el acceso necesario en la red privada. Las variables de PowerShell deben volver a configurarse al abrir otra terminal.
+
+Los cambios habituales de JavaScript/TypeScript y estilos se cargan desde el servidor de desarrollo. Cambios en dependencias nativas, plugins o configuración nativa requieren compilar e instalar otra APK. Esta entrega se validó en Android físico; la compilación y prueba equivalente en iOS siguen pendientes.
+
+La sesión y el identificador del dispositivo usan SecureStore en iOS/Android y `localStorage` en web. Si el navegador bloquea ese almacenamiento, la app muestra un mensaje para habilitarlo. Para ejecutar la versión web utiliza `npm.cmd run web`.
+
+**Prueba manual**: cerrar sesión, iniciar nuevamente y abrir Explorar emprendimientos. Se confirmó el inicio de sesión.
 
 `metro.config.js` incluye soporte para los archivos `.wasm` de SQLite y añade `Cross-Origin-Embedder-Policy: credentialless` y `Cross-Origin-Opener-Policy: same-origin` al servidor de desarrollo. Si se despliega la versión web, el hosting debe servir esas cabeceras y un contexto seguro para usar SQLite en navegador. Reinicia Expo cuando cambies su configuración de Metro.
 
@@ -151,7 +173,7 @@ Para acceder a la API desde el navegador, el perfil `otp-console` permite CORS d
 $env:NAPA_WEB_ALLOWED_ORIGINS = "http://localhost:8081,http://192.168.1.25:8081"
 ```
 
-Cada origen incluye esquema, host y puerto, sin ruta ni barra final. Esta variable reemplaza la lista predeterminada. Fuera de `otp-console` no se permiten orígenes web adicionales salvo configuración explícita. Las solicitudes nativas de Expo Go no necesitan CORS; las rutas protegidas siguen exigiendo un token válido.
+Cada origen incluye esquema, host y puerto, sin ruta ni barra final. Esta variable reemplaza la lista predeterminada. Fuera de `otp-console` no se permiten orígenes web adicionales salvo configuración explícita. Las solicitudes nativas de la aplicación Android no necesitan CORS; las rutas protegidas siguen exigiendo un token válido.
 
 La app incluye registro (cliente, vendedor ambulante, vendedor de punto fijo o domiciliario), verificación del celular, inicio/cierre de sesión, recuperación y cambio de contraseña. En el perfil `otp-console`, ingresa en la pantalla de verificación el código configurado en `NAPA_OTP_CONSOLE_CODE`. Después de iniciar sesión, el cliente puede explorar emprendimientos y sus productos; el vendedor puede crear su emprendimiento, publicar productos, actualizar sus cantidades y configurar los medios de pago aceptados desde **Configurar métodos de pago**. Allí puede habilitar efectivo y registrar o quitar una cuenta bancaria; una cuenta es necesaria para ofrecer domicilios desde un punto fijo.
 
