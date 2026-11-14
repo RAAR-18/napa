@@ -11,6 +11,7 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
+import MapaPunto from '../components/MapaPunto';
 import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
 import {
@@ -22,6 +23,8 @@ import {
 
 /** Mientras la pantalla está abierta se refresca para ver el avance sin tocar nada (RF-26). */
 const REFRESCO_MS = 30_000;
+/** Con el domicilio en camino el cliente sigue la posición del domiciliario cada 15 s. */
+const REFRESCO_EN_CAMINO_MS = 15_000;
 const FINALES = ['ENTREGADO', 'CANCELADO'];
 
 function formatDate(value: string) {
@@ -36,6 +39,7 @@ export default function TrazabilidadDomicilioScreen() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const enCamino = data?.estado === 'EN_CAMINO';
 
   useEffect(() => {
     let active = true;
@@ -75,12 +79,12 @@ export default function TrazabilidadDomicilioScreen() {
       }
     }
     void load(false);
-    const timer = setInterval(() => void load(true), REFRESCO_MS);
+    const timer = setInterval(() => void load(true), enCamino ? REFRESCO_EN_CAMINO_MS : REFRESCO_MS);
     return () => {
       active = false;
       clearInterval(timer);
     };
-  }, [domicilioId, loadAttempt]);
+  }, [domicilioId, loadAttempt, enCamino]);
 
   return (
     <AuthPage>
@@ -103,6 +107,22 @@ export default function TrazabilidadDomicilioScreen() {
               <Text style={styles.detailText}>Sin ubicación reciente del domiciliario.</Text>
             ) : null}
           </View>
+          {data.estado === 'EN_CAMINO' && data.ubicacionDomiciliario ? (
+            <>
+              <MapaPunto
+                punto={{
+                  latitud: data.ubicacionDomiciliario.latitud,
+                  longitud: data.ubicacionDomiciliario.longitud,
+                  direccion: null,
+                }}
+                titulo="Domiciliario"
+                etiqueta="Ubicación aproximada del domiciliario"
+              />
+              <HelperText>
+                {`Ubicación aproximada, actualizada ${formatDate(data.ubicacionDomiciliario.actualizadaAt)}.`}
+              </HelperText>
+            </>
+          ) : null}
           <Text accessibilityRole="header" style={styles.sectionTitle}>Cronología</Text>
           {data.eventos.map((evento, index) => (
             <View
@@ -118,7 +138,11 @@ export default function TrazabilidadDomicilioScreen() {
             </View>
           ))}
           {!FINALES.includes(data.estado) ? (
-            <HelperText>La información se actualiza sola cada 30 segundos.</HelperText>
+            <HelperText>
+              {enCamino
+                ? 'La información se actualiza sola cada 15 segundos.'
+                : 'La información se actualiza sola cada 30 segundos.'}
+            </HelperText>
           ) : null}
         </>
       ) : null}

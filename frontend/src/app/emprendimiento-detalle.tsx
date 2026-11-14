@@ -150,6 +150,15 @@ export default function EmprendimientoDetalleScreen() {
               })
             }
           />
+          <TextButton
+            title="Ver calificaciones"
+            onPress={() =>
+              router.push({
+                pathname: '/calificaciones',
+                params: { tipoEntidad: 'EMPRENDIMIENTO', entidadId: detalle.id, titulo: detalle.nombre },
+              })
+            }
+          />
         </>
       ) : null}
       <TextButton title="Volver a emprendimientos" onPress={() => router.replace('/emprendimientos')} />

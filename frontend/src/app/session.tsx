@@ -196,8 +196,15 @@ export default function SessionScreen() {
             onPress={() => router.push('/notificaciones')}
           />
           {session.rol === 'ADMINISTRADOR' ? (
-            <PrimaryButton title="Supervisar domicilios" onPress={() => router.push('/domicilios-admin')} />
-          ) : null}
+            <>
+              <PrimaryButton title="Supervisar domicilios" onPress={() => router.push('/domicilios-admin')} />
+              <PrimaryButton title="Reportes" onPress={() => router.push('/reportes-admin')} />
+              <TextButton title="Usuarios" onPress={() => router.push('/usuarios-admin')} />
+              <TextButton title="Calificaciones y comentarios" onPress={() => router.push('/moderacion-admin')} />
+            </>
+          ) : (
+            <TextButton title="Mis reportes" onPress={() => router.push('/mis-reportes')} />
+          )}
           <TextButton
             title={session.rol === 'ADMINISTRADOR' ? 'Historial general de pagos' : 'Historial de pagos'}
             onPress={() => router.push('/historial-pagos')}
@@ -208,6 +215,7 @@ export default function SessionScreen() {
       {error ? (
         <PrimaryButton busy={busy} title="Reintentar" onPress={() => void retry()} />
       ) : null}
+      <TextButton title="Mi perfil" onPress={() => router.push('/perfil')} />
       <TextButton
         title="Cambiar contraseña"
         onPress={() => router.push('/change-password')}

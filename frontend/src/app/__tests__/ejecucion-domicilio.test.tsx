@@ -27,6 +27,14 @@ import {
   type PedidoVendedorDetalle,
 } from '../../lib/pedidos';
 
+jest.mock('react-native-maps', () => {
+  const { Text, View } = jest.requireActual('react-native');
+  const MapView = ({ children, accessibilityLabel }: { children: unknown; accessibilityLabel: string }) => (
+    <View accessibilityLabel={accessibilityLabel}>{children as never}</View>
+  );
+  const Marker = ({ title }: { title: string }) => <Text>{`marcador ${title}`}</Text>;
+  return { __esModule: true, default: MapView, Marker };
+});
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: () => ({ domicilioId: 'delivery-id', pedidoId: 'order-id' }),

@@ -11,6 +11,7 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
+import ContactarPedido from '../components/ContactarPedido';
 import DomiciliarioAsignado from '../components/DomiciliarioAsignado';
 import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
@@ -33,6 +34,8 @@ import {
 /** RF-48: mientras la pantalla está abierta el estado se refresca solo. */
 const REFRESCO_MS = 30_000;
 const CODIGO_VISIBLE: EstadoDomicilio[] = ['ASIGNADO', 'RECOGIDO', 'EN_CAMINO'];
+/** RF-49: con el pedido cerrado ya no hay contacto. */
+const PEDIDO_CERRADO: EstadoPedido[] = ['ENTREGADO', 'RECHAZADO', 'CANCELADO'];
 
 /** Pasos normales de cada modalidad (la API devuelve estados; los textos viven en la app). */
 const pasosPorModalidad: Record<ModalidadPedido, EstadoPedido[]> = {
@@ -195,6 +198,9 @@ export default function PedidoClienteScreen() {
               {delivery.motivoCancelacion ? (
                 <Text style={styles.detailText}>{motivoCancelacionNombres[delivery.motivoCancelacion]}</Text>
               ) : null}
+              {CODIGO_VISIBLE.includes(delivery.estado) && !PEDIDO_CERRADO.includes(detail.estado) ? (
+                <ContactarPedido pedidoId={detail.id} destinatario="DOMICILIARIO" />
+              ) : null}
               {delivery.estado === 'DISPONIBLE' ? (
                 <Text style={styles.detailText}>
                   Buscando domiciliario. Tu código aparecerá cuando uno acepte el domicilio.
@@ -232,6 +238,46 @@ export default function PedidoClienteScreen() {
             ) : null}
           </View>
         </>
+      ) : null}
+      {detail ? (
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{detail.emprendimiento.nombre}</Text>
+          {!PEDIDO_CERRADO.includes(detail.estado) ? (
+            <ContactarPedido pedidoId={detail.id} destinatario="VENDEDOR" />
+          ) : null}
+          <TextButton
+            title="Ver calificaciones del emprendimiento"
+            onPress={() =>
+              router.push({
+                pathname: '/calificaciones',
+                params: {
+                  tipoEntidad: 'EMPRENDIMIENTO',
+                  entidadId: detail.emprendimiento.id,
+                  titulo: detail.emprendimiento.nombre,
+                },
+              })
+            }
+          />
+        </View>
+      ) : null}
+      {detail?.estado === 'ENTREGADO' ? (
+        <PrimaryButton
+          title="Calificar mi experiencia"
+          onPress={() => router.push({ pathname: '/calificar-pedido', params: { pedidoId: detail.id } })}
+        />
+      ) : null}
+      {detail ? (
+        <TextButton
+          title="Reportar un problema"
+          onPress={() =>
+            router.push({
+              pathname: '/reportar',
+              params: delivery
+                ? { domicilioId: delivery.id, contexto: `Domicilio del pedido a ${detail.emprendimiento.nombre}` }
+                : { pedidoId: detail.id, contexto: `Pedido a ${detail.emprendimiento.nombre}` },
+            })
+          }
+        />
       ) : null}
       <PrimaryButton title="Actualizar" disabled={loading} onPress={() => setLoadAttempt((a) => a + 1)} />
       <TextButton title="Mis pedidos" onPress={() => router.replace('/mis-pedidos')} />
