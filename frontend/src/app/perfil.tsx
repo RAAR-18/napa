@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as Crypto from 'expo-crypto';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -14,6 +14,7 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
+import FotoPerfil from '../components/FotoPerfil';
 import { ApiError } from '../lib/api';
 import { clearSession } from '../lib/auth';
 import { manejarError, mensajeDeCampo } from '../lib/errores';
@@ -25,7 +26,6 @@ import {
   obtenerMiPerfil,
   rolNombres,
   solicitarCambioCelular,
-  urlFoto,
   type PerfilUsuario,
 } from '../lib/usuarios';
 
@@ -51,7 +51,6 @@ export default function PerfilScreen() {
     void cargar();
   }, []);
 
-  const foto = urlFoto(perfil?.fotoUrl ?? null);
   const esAdmin = perfil?.rol === 'ADMINISTRADOR';
 
   return (
@@ -66,7 +65,14 @@ export default function PerfilScreen() {
       ) : null}
       {perfil ? (
         <>
-          {foto ? <Image accessibilityLabel="Foto de perfil" source={{ uri: foto }} style={styles.photo} /> : null}
+          <FotoPerfil
+            nombre={perfil.nombre}
+            fotoUrl={perfil.fotoUrl}
+            onCambiada={(fotoUrl) => {
+              setPerfil({ ...perfil, fotoUrl });
+              setAviso('Tu foto se actualizó.');
+            }}
+          />
           <DatosBasicos perfil={perfil} onGuardado={(p) => { setPerfil(p); setAviso('Tus datos se actualizaron.'); }} />
           {!esAdmin ? (
             <CambioCelular perfil={perfil} onCambiado={(p) => { setPerfil(p); setAviso('Tu celular se actualizó.'); }} />
@@ -294,7 +300,6 @@ const styles = StyleSheet.create({
   section: { color: palette.dark, fontSize: 16, fontWeight: '800', marginBottom: 6 },
   spaced: { marginTop: 12 },
   detail: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
-  photo: { alignSelf: 'center', borderRadius: 48, height: 96, marginBottom: 8, width: 96 },
   ok: { backgroundColor: '#EAF4EE', borderRadius: 12, marginBottom: 8, padding: 12 },
   okText: { color: palette.green, fontWeight: '700' },
 });

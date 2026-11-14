@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import { apiBaseUrl, jsonHeaders, requestJson, requestVoid } from './api';
 import { withValidSession } from './auth';
 
@@ -114,12 +116,21 @@ export function confirmarCambioCelular(codigo: string, idempotencyKey: string) {
   );
 }
 
-/** RF-08: la foto se sube como multipart (JPEG, PNG o WebP de hasta 2 MB). */
+export const FOTO_MAXIMA_BYTES = 2 * 1024 * 1024;
+export const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp'];
+
+/** RF-08: la foto se sube como multipart (JPEG, PNG o WebP de hasta 2 MB); el servidor la valida por su contenido. */
 export function subirFotoPerfil(archivo: { uri: string; name: string; type: string }) {
   return withValidSession(async (session) => {
     const form = new FormData();
-    // React Native acepta { uri, name, type } como parte de archivo.
-    form.append('foto', archivo as unknown as Blob);
+    if (Platform.OS === 'web') {
+      // En el navegador la imagen elegida es un blob: o data: URI; se envía como Blob.
+      const blob = await (await fetch(archivo.uri)).blob();
+      form.append('foto', blob, archivo.name);
+    } else {
+      // React Native acepta { uri, name, type } como parte de archivo.
+      form.append('foto', archivo as unknown as Blob);
+    }
     return requestJson<{ fotoUrl: string }>('/api/v1/usuarios/me/foto', {
       method: 'PUT',
       headers: { Authorization: `Bearer ${session.accessToken}` },

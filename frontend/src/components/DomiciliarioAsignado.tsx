@@ -4,6 +4,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import type { EstadoDomicilio } from '../lib/domicilios';
 import { obtenerDomiciliarioPedido, type DomiciliarioDePedido } from '../lib/pedidos';
 import { palette } from './AuthUI';
+import { urlFoto } from '../lib/usuarios';
 
 type Props = {
   pedidoId: string;
@@ -51,7 +52,7 @@ export default function DomiciliarioAsignado({ pedidoId, estadoDomicilio }: Prop
       {domiciliario.fotoUrl ? (
         <Image
           accessibilityLabel={`Foto de ${domiciliario.nombre}`}
-          source={{ uri: domiciliario.fotoUrl }}
+          source={{ uri: urlFoto(domiciliario.fotoUrl) ?? undefined }}
           style={styles.photo}
         />
       ) : (

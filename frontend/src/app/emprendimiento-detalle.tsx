@@ -13,6 +13,7 @@ import {
   type EmprendimientoDetalle,
   type VendedorPublico,
 } from '../lib/emprendimientos';
+import { urlFoto } from '../lib/usuarios';
 
 const modalidadNombres = {
   ENTREGA_DIRECTA: 'Entrega directa: el vendedor te lo lleva',
@@ -127,7 +128,7 @@ export default function EmprendimientoDetalleScreen() {
           {vendedor ? (
             <View style={[styles.card, styles.seller]}>
               {vendedor.fotoUrl ? (
-                <Image accessibilityLabel={`Foto de ${vendedor.nombre}`} source={{ uri: vendedor.fotoUrl }} style={styles.photo} />
+                <Image accessibilityLabel={`Foto de ${vendedor.nombre}`} source={{ uri: urlFoto(vendedor.fotoUrl) ?? undefined }} style={styles.photo} />
               ) : (
                 <View style={[styles.photo, styles.initials]}>
                   <Text style={styles.initialsText}>{vendedor.nombre.charAt(0).toUpperCase()}</Text>
