@@ -274,6 +274,59 @@ class NotificationUseCaseTest {
         assertEquals("BUSINESS_RULE", exception.code());
     }
 
+    @Test
+    void buyersAndSellersOpenTheOrderWhileTheCourierOpensTheDelivery() {
+        UUID buyerId = UUID.fromString("40000000-0000-0000-0000-000000000001");
+        UUID vendorId = UUID.fromString("40000000-0000-0000-0000-000000000002");
+        UUID courierId = UUID.fromString("40000000-0000-0000-0000-000000000003");
+        UUID pedidoId = UUID.fromString("40000000-0000-0000-0000-000000000004");
+        UUID domicilioId = UUID.fromString("40000000-0000-0000-0000-000000000005");
+        when(audience.isActiveUser(any())).thenReturn(true);
+        when(preferences.findByUsuario(any())).thenReturn(Map.of());
+        when(notifications.saveIfAbsent(any(), any())).thenReturn(true);
+        when(audience.findPushTokens(any())).thenReturn(List.of());
+
+        useCase.process(event("domicilios.domicilio-cancelado", Map.of(
+                "domicilioId", domicilioId,
+                "pedidoId", pedidoId,
+                "compradorId", buyerId,
+                "vendedorId", vendorId,
+                "domiciliarioId", courierId,
+                "motivo", "ADMINISTRADOR"
+        )));
+
+        ArgumentCaptor<Notificacion> saved = ArgumentCaptor.forClass(Notificacion.class);
+        verify(notifications, times(3)).saveIfAbsent(any(), saved.capture());
+        Map<UUID, Notificacion.Referencia> references = new java.util.HashMap<>();
+        saved.getAllValues().forEach(notification -> references.put(notification.usuarioId(), notification.referencia()));
+        assertEquals(new Notificacion.Referencia("PEDIDO", pedidoId), references.get(buyerId));
+        assertEquals(new Notificacion.Referencia("PEDIDO", pedidoId), references.get(vendorId));
+        assertEquals(new Notificacion.Referencia("DOMICILIO", domicilioId), references.get(courierId));
+    }
+
+    @Test
+    void reportNotificationsHaveNoReference() {
+        UUID authorId = UUID.fromString("40000000-0000-0000-0000-000000000006");
+        when(audience.isActiveUser(authorId)).thenReturn(true);
+        when(preferences.findByUsuario(authorId)).thenReturn(Map.of());
+        when(notifications.saveIfAbsent(any(), any())).thenReturn(true);
+        when(audience.findPushTokens(authorId)).thenReturn(List.of());
+
+        useCase.process(event("reportes.reporte-resuelto", Map.of("autorId", authorId)));
+
+        ArgumentCaptor<Notificacion> saved = ArgumentCaptor.forClass(Notificacion.class);
+        verify(notifications).saveIfAbsent(any(), saved.capture());
+        assertEquals(null, saved.getValue().referencia());
+    }
+
+    @Test
+    void countsUnreadNotificationsOfTheActiveUser() {
+        when(audience.isActiveUser(USER_ID)).thenReturn(true);
+        when(notifications.countUnread(USER_ID)).thenReturn(4L);
+
+        assertEquals(4L, useCase.contarNoLeidas(USER_ID));
+    }
+
     private NotificationEvent event(String type, Map<String, Object> payload) {
         return new NotificationEvent(UUID.randomUUID(), type, payload);
     }

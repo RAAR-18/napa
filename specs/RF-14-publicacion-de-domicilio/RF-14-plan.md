@@ -22,6 +22,19 @@ Este plan además crea la base de todo el ciclo: la migración V13 (`domicilio`,
 
 No existe el módulo `domicilios` ni sus tablas. La tabla `pago` (RF-53, V10) tiene `domicilio_id` sin clave foránea; la agrega este plan. Del pedido se reutilizan `Pedido.tarifa_domicilio`, la `Ubicacion` de entrega (RF-45), `VentanaReserva` y `reserva.margen_minutos` (RF-36), `ConsultarPagoPedidoPort` (RF-51 y RF-42) y `ConsultarEmprendimientoParaPedidoPort` (RF-45, T004: punto fijo y dueño).
 
+## Implementación (Fase 1, 2026-11-13)
+
+Implementado en backend y frontend. Decisiones tomadas al implementar, que ajustan este plan:
+
+- **Migración V13** (no V11): `domicilio`, `evento_trazabilidad`, `domicilio_rechazo` y la FK `pago.domicilio_id`.
+- **Sin índice "un domicilio activo por domiciliario"**: la regla adoptada es un máximo de 3 en curso (RF-19 FR-006), que se valida en el caso de uso de RF-19 con el índice `(domiciliario_id, estado)`.
+- **El domicilio copia `tarifa` y `comprador_id`** del pedido al publicar (inmutables) y referencia el punto B con `ubicacion_destino_id`, para que RF-15, RF-16 y RF-18 no tengan que leer `pedidos`.
+- **La copia cifrada de la cuenta bancaria** del vendedor queda para RF-43 (Fase 5).
+- **No existe `VentanaReserva`** en el código: el margen de 15 min es `napa.domicilios.plazos.margen-reserva`.
+- **FR-009**: `DomiciliosSinAsignarJob` (cada minuto, `napa.domicilios.sin-asignar.*`) con `FOR UPDATE SKIP LOCKED`. Plazos configurables en `napa.domicilios.plazos.*` (30 min y 2 h por defecto). Los eventos que emite el sistema usan como actor el UUID nulo.
+- **Puertos entre módulos**: `pedidos` expone `PedidoParaDomicilioPort` (bloquear y cancelar por domicilio); `domicilios` expone `ConsultarDomicilioDePedidoPort`, que alimenta el bloque `domicilio` del detalle del pedido del vendedor.
+- **Pruebas**: unitarias de dominio y casos de uso, y regla ArchUnit. Las de integración con Testcontainers quedan pendientes porque en la máquina de desarrollo no hay Docker.
+
 ## Actors
 
 | Actor | Participación en esta feature |
@@ -62,7 +75,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | US1-E6 | Reserva publicada antes de tiempo | `409 RESERVATION_NOT_DUE` | T020 |
 | Edge 1 | Domicilio cancelado por el administrador antes de ser tomado | El índice parcial excluye `CANCELADO`: el pedido podría volver a publicarse solo si sigue `ACEPTADO` (RF-13 pasa el pedido a `CANCELADO`, así que no) | T014 |
 | Edge 2 | Ubicación incompleta o fuera de zona | La ubicación ya se valida al crear el pedido (RF-45); no hay "zona atendida" definida (Open Questions) | — |
-| Edge 3 | Nadie toma el domicilio | Sin vencimiento ni aviso adicional (foundations) | — |
+| Edge 3 | Nadie toma el domicilio | FR-009: tarea programada que avisa a los 30 min (E20) y cancela domicilio y pedido a las 2 h (E15, `motivo = SIN_ASIGNAR`) | FR-009 |
 | Edge 4 | Publicado antes de tener el pedido preparado | El vendedor decide cuándo publicar; la spec no pide un estado de preparación | — |
 | Edge 5 | Pago que nunca se hace | No se puede publicar; sin vencimiento (foundations) | T012 |
 
@@ -176,7 +189,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 |---|---|---|
 | Unitarias | `Domicilio.publicar` (estado inicial, evento de trazabilidad) | FR-004 |
 | Integración | Endpoint con Testcontainers y PostGIS: publicación completa (A copiado, B del pedido, ganancia = tarifa, evento de trazabilidad, E08), modalidad y estados no válidos, pago sin confirmar, duplicado, concurrencia, reserva en y fuera de la ventana, ajeno, rol equivocado, `405` | US1-E1–E6, FR-001–FR-008 |
-| Migración | V11 aplica sobre V10: `vendedor_id` e índice `(vendedor_id, created_at)`, índices parciales (un domicilio activo por pedido y por domiciliario), claves foráneas y la de `pago.domicilio_id` | FR-005 |
+| Migración | V13 aplica sobre V12: `vendedor_id` e índice `(vendedor_id, created_at)`, índice único parcial de un domicilio activo por pedido, índice `(domiciliario_id, estado)` para el máximo de 3 en curso (RF-19 FR-006), claves foráneas y la de `pago.domicilio_id` | FR-005 |
 | Arquitectura | `domicilios` usa otros módulos solo por `ports/in` y `domain/event`; ciclo `pedidos` ↔ `domicilios` limitado a los puertos de este plan | RNF13, RNF25 |
 | Frontend | Jest: botón visible solo en domicilio aceptado y pagado, errores por código, mensaje de reserva con la hora | US1-E3, US1-E6 |
 
@@ -249,7 +262,7 @@ frontend/__tests__/domicilios/publicar.test.tsx
 - [ ] T019 [P] [US1] Test de `PUT`/`PATCH`/`DELETE` sobre `/domicilios/{id}` (`405`) en `.../domicilios/DomicilioNoEditableIT.java`
 - [ ] T020 [P] [US1] Test de reserva en y fuera de la ventana (`RESERVATION_NOT_DUE` con `disponibleDesde`) en `.../domicilios/PublicarDomicilioReservaIT.java`
 - [ ] T021 [P] [US1] Test de pedido ajeno (`404`), rol equivocado (`403`), falta de `Idempotency-Key` (`400`) y repetición con la misma clave en `.../domicilios/PublicarDomicilioAutorizacionIT.java`
-- [ ] T022 [P] [US1] Test de `ConsultarDomicilioDePedidoPort` (devuelve el activo o `null`) y de la migración V11 en `.../domicilios/ConsultarDomicilioDePedidoIT.java`
+- [ ] T022 [P] [US1] Test de `ConsultarDomicilioDePedidoPort` (devuelve el activo o `null`) y de la migración V13 en `.../domicilios/ConsultarDomicilioDePedidoIT.java`
 - [ ] T030 [P] [US1] Test de `AccionPublicarDomicilio` (visibilidad, errores por código, mensaje con la hora, sin conexión) en `frontend/__tests__/domicilios/publicar.test.tsx`
 
 ### Implementation
@@ -285,7 +298,7 @@ frontend/__tests__/domicilios/publicar.test.tsx
 | El domicilio nace de un pedido y el detalle del pedido expone su domicilio: `pedidos` y `domicilios` dependen uno del otro por puertos `in` | Estructura (RNF13) | Aceptar el ciclo limitado a `ConsultarPedidoParaDomicilioPort`, `TransicionarPedidoPort` y `ConsultarDomicilioDePedidoPort`, con regla ArchUnit | Equipo |
 | `PAYMENT_NOT_CONFIRMED` y `ALREADY_PUBLISHED` ya están en spec-general §2.2.1 como "(ya listado)" | Catálogo | Usar los códigos tal cual | Equipo |
 | Edge 2: "zona atendida" no está definida en ninguna spec | Regla | No se valida; la ubicación se validó al hacer el pedido | Equipo |
-| Edge 3: nadie toma el domicilio | Regla | Sin vencimiento ni aviso adicional (foundations) | Equipo |
+| Edge 3: nadie toma el domicilio | Regla | Resuelto por FR-009 (aviso 30 min, cancelación 2 h) | Equipo |
 | La publicación no bloquea el pedido: un pedido cancelado entre la lectura y la inserción podría publicarse (RF-13 es P2) | Concurrencia | Se asume el riesgo hasta RF-13; el único parcial evita duplicados | Equipo |
 | `domicilio_rechazo` se crea aquí pero lo puebla RF-17 (P2, no está en el catálogo de rutas) | Alcance | Crear la tabla ya; el endpoint de rechazo queda fuera de la ola | Equipo |
 | El estado "preparado" del pedido no existe (Edge 4) | Alcance | No se agrega | Equipo |

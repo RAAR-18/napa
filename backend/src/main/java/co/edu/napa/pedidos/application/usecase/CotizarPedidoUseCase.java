@@ -170,6 +170,14 @@ public class CotizarPedidoUseCase implements CotizarPedidoPort {
                 || ubicacion.referencia() != null && ubicacion.referencia().length() > 300)) {
             throw invalid("ubicacionEntrega", "Escribe una dirección válida de hasta 300 caracteres.");
         }
+        if (ubicacion != null && ubicacion.barrio() != null
+                && (ubicacion.barrio().isBlank() || ubicacion.barrio().length() > 100)) {
+            throw invalid("barrio", "Escribe un barrio válido de hasta 100 caracteres.");
+        }
+        // El domiciliario ve el barrio antes de aceptar en lugar de la dirección exacta (RF-16, RF-18).
+        if (ubicacion != null && solicitud.modalidad() == ModalidadEntrega.DOMICILIO && ubicacion.barrio() == null) {
+            throw invalid("barrio", "Indica el barrio de entrega.");
+        }
         if (ubicacion != null) new GeoPoint(ubicacion.latitud(), ubicacion.longitud());
     }
 

@@ -20,6 +20,15 @@ El domiciliario acepta un domicilio `DISPONIBLE` con `POST /domicilios/{id}/acep
 
 El domicilio `DISPONIBLE` lo crea RF-14 y la pantalla de información (con el botón Aceptar) RF-18. No existe la columna de código generado (la tabla `domicilio` ya tiene `codigo_confirmacion` nulo, V11).
 
+## Implementación (Fase 2, 2026-11-13)
+
+Implementado: `POST /api/v1/domicilios/{id}/aceptar`. Cambios respecto al plan:
+
+- **Máximo 3 en curso** (FR-006) en lugar de uno: si ya tiene 3 responde `409 MAX_ACTIVE_DELIVERIES` (`details.enCurso`, `details.maximo`); el código `ACTIVE_DELIVERY_EXISTS` desaparece.
+- **Concurrencia**: un bloqueo consultivo por domiciliario (`pg_advisory_xact_lock`) y luego `SELECT … FOR UPDATE` del domicilio. Dos domiciliarios no pueden tomar el mismo domicilio y uno solo no puede superar el máximo con aceptaciones simultáneas.
+- **Código de confirmación** (FR-005): 6 dígitos con `SecureRandom`, guardado en `domicilio.codigo_confirmacion`; no viaja en E09 ni en la respuesta.
+- Nuevo `GET /api/v1/domicilios/en-curso` y la pantalla `domicilios-en-curso.tsx` para volver a los domicilios aceptados.
+
 ## Actors
 
 | Actor | Participación en esta feature |

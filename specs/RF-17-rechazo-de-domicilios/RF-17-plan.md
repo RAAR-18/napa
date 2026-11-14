@@ -20,6 +20,10 @@ El domiciliario descarta un domicilio `DISPONIBLE` con `POST /domicilios/{id}/re
 
 La tabla `domicilio_rechazo` (clave compuesta domiciliario + domicilio) la crea RF-14 (V11) y RF-16 la usa para excluir los rechazados. RF-18 oculta el botón "Rechazar" hasta que exista este endpoint.
 
+## Implementación (Fase 2, 2026-11-13)
+
+Implementado: `POST /api/v1/domicilios/{id}/rechazar` responde `204`, es idempotente (`ON CONFLICT DO NOTHING`) y el domicilio rechazado ya no aparece en RF-16 ni se puede abrir ni aceptar. La app pide confirmación y advierte que el rechazo es definitivo.
+
 ## Actors
 
 | Actor | Participación en esta feature |

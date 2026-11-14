@@ -20,6 +20,12 @@ El domiciliario con un domicilio asignado abre el mapa con `GET /domicilios/{id}
 
 `RoutingPort.computeRoute(GeoPoint, GeoPoint)` devuelve `RouteResult(distanceMeters, duration, encodedPolyline)`; ya existen `GeoPoint`, el adaptador de rutas y el caché en Redis planificado en foundations (F013). El domicilio asignado lo produce RF-19. No existe la consulta de la ruta ni el mapa del domiciliario.
 
+### Implementación (Fase 4, 2026-11-13)
+
+- **Backend**: `GET /api/v1/domicilios/{id}/ruta` en `RutaDomicilioController` y `ConsultarRutaDomicilioUseCase`. Otro domiciliario o un domicilio sin asignar → `403 FORBIDDEN`; `ENTREGADO`/`CANCELADO` → `409 INVALID_STATE`; inexistente → `404`. Los tramos se piden en paralelo (hilos virtuales) y sin transacción abierta. El respaldo usa la línea recta (haversine) × `napa.pedidos.tarifa.factor-linea-recta`. La caché de rutas es la del `OpenRouteServiceAdapter` (24 h, coordenadas a 4 decimales).
+- **App**: pantalla `ruta-domicilio.tsx` con `react-native-maps` (`MapaRutaDomicilio`; en web solo texto). Un tramo aproximado se dibuja punteado. La última ruta se guarda en SQLite (`lib/ruta-cache.ts`, tabla `cache_lectura`) y se borra al entregar, al recibir `403/404/409` y al cerrar sesión. Se abre con "Ver ruta en el mapa" desde el detalle del domicilio asignado.
+- **Pendiente**: en un build propio de Android, `react-native-maps` exige una clave de Google Maps (`android.config.googleMaps.apiKey`); en Expo Go no hace falta.
+
 ## Actors
 
 | Actor | Participación en esta feature |

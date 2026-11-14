@@ -15,6 +15,8 @@ public interface ProductoRepositoryPort {
     Optional<Producto> buscar(UUID id);
     Producto actualizarInventario(Producto producto);
     boolean descontar(UUID productoId, BigDecimal cantidad, Instant now);
+    /** Suma la cantidad al inventario; devuelve {@code false} si el producto ya fue eliminado. */
+    boolean devolver(UUID productoId, BigDecimal cantidad, Instant now);
     Producto actualizarDatos(Producto producto);
     void eliminar(Producto producto);
     Resultado listar(UUID emprendimientoId, Consulta consulta);

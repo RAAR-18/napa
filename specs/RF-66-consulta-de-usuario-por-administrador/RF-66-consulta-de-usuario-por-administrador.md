@@ -25,8 +25,8 @@ Como administrador, quiero consultar un usuario, para revisar su información.
 
 ### Edge Cases
 
-- ¿Qué ocurre si el administrador busca un usuario que fue eliminado previamente?
-- ¿Se muestra al administrador el historial de actividad relevante del usuario (pedidos, domicilios, reportes)?
+- **¿Qué ocurre si el administrador busca un usuario que fue eliminado previamente?** Se muestra en solo lectura como "eliminado", con los datos anonimizados según la política de retención.
+- **¿Se muestra al administrador el historial de actividad relevante del usuario (pedidos, domicilios, reportes)?** Sí, un resumen: número de pedidos, domicilios y reportes recibidos, y calificación promedio; sin el contenido de las conversaciones.
 
 ## Requirements *(mandatory)*
 
@@ -38,6 +38,19 @@ Como administrador, quiero consultar un usuario, para revisar su información.
 ### Key Entities *(include if feature involves data)*
 
 - **Usuario**: Representa a cualquier persona registrada en la plataforma (cliente, vendedor, domiciliario); atributos clave: nombre, contacto, rol, estado de la cuenta, fecha de registro.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Búsqueda | Sí | Nombre, correo o teléfono del usuario. |
+
+**Datos que se muestran o filtran**
+
+- Datos del usuario, rol y estado de la cuenta.
+- Resumen de actividad: pedidos, domicilios, reportes y calificación promedio.
 
 ## Success Criteria *(mandatory)*
 

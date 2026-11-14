@@ -260,7 +260,7 @@ public class EmprendimientoController {
             String estado,
             UbicacionResponse ubicacion
     ) {
-        private static EmprendimientoResponse from(CrearEmprendimientoResult result) {
+        static EmprendimientoResponse from(CrearEmprendimientoResult result) {
             Emprendimiento emprendimiento = result.emprendimiento();
             Ubicacion ubicacion = result.ubicacion();
             return new EmprendimientoResponse(

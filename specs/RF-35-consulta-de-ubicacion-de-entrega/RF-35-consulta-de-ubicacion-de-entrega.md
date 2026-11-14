@@ -33,9 +33,9 @@ Como vendedor ambulante, quiero ver en un mapa la ubicación del cliente, para l
 
 ### Edge Cases
 
-- ¿Qué ocurre si el cliente está demasiado lejos del vendedor ambulante para que la entrega sea viable?
-- ¿Cómo se maneja una reserva cuya ubicación fue indicada mucho antes y el cliente ya no está allí?
-- ¿Qué sucede si el vendedor ambulante no tiene señal o permiso de ubicación?
+- **¿Qué ocurre si el cliente está demasiado lejos del vendedor ambulante para que la entrega sea viable?** El vendedor lo decide al aceptar o rechazar el pedido (RF-53), viendo la distancia; una vez aceptado, si no puede cumplirlo, lo reporta (RF-60).
+- **¿Cómo se maneja una reserva cuya ubicación fue indicada mucho antes y el cliente ya no está allí?** La ubicación del pedido no se edita; el vendedor confirma con el cliente por el canal de contacto (RF-49) antes de iniciar la entrega.
+- **¿Qué sucede si el vendedor ambulante no tiene señal o permiso de ubicación?** Muestra la última ruta cargada y la dirección en texto (RNF28).
 
 ## Requirements *(mandatory)*
 
@@ -49,6 +49,14 @@ Como vendedor ambulante, quiero ver en un mapa la ubicación del cliente, para l
 
 - **Ubicación de entrega**: Punto indicado por el cliente al hacer el pedido, con su dirección de referencia.
 - **Pedido**: De entrega directa, en estado aceptado; puede estar marcado como reserva con su fecha y hora acordadas.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Requiere permiso de ubicación del dispositivo.
+
+**Datos que se muestran o filtran**
+
+- Ubicación del cliente indicada en el pedido, dirección de referencia y posición actual del vendedor.
 
 ## Success Criteria *(mandatory)*
 

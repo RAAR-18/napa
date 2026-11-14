@@ -30,8 +30,8 @@ Como administrador, quiero resolver un reporte, para dar solución a los problem
 
 ### Edge Cases
 
-- ¿Puede el administrador reabrir un reporte que fue cerrado incorrectamente?
-- ¿Qué información mínima debe registrarse al resolver un reporte (nota de resolución, responsable)?
+- **¿Puede el administrador reabrir un reporte que fue cerrado incorrectamente?** No en esta versión: si el problema persiste, el usuario crea un nuevo reporte que hace referencia al anterior.
+- **¿Qué información mínima debe registrarse al resolver un reporte (nota de resolución, responsable)?** Una nota de resolución obligatoria (mínimo 10 caracteres); el administrador responsable y la fecha se registran automáticamente.
 
 ## Requirements *(mandatory)*
 
@@ -45,6 +45,19 @@ Como administrador, quiero resolver un reporte, para dar solución a los problem
 ### Key Entities *(include if feature involves data)*
 
 - **Reporte**: Ver definición en RF-60; en este requerimiento se actualiza su estado a resuelto y se agrega la nota de resolución.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Nota de resolución | Sí | Texto de 10 a 500 caracteres. |
+
+**Datos que asigna el sistema**
+
+- Administrador responsable, fecha y estado "resuelto".
+- Notificación al autor del reporte.
 
 ## Success Criteria *(mandatory)*
 

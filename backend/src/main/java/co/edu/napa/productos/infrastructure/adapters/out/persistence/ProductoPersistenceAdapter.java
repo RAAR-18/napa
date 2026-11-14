@@ -67,6 +67,17 @@ public class ProductoPersistenceAdapter implements ProductoRepositoryPort {
                 """, cantidad, cantidad, Timestamp.from(now), productoId, cantidad) == 1;
     }
 
+    @Override
+    public boolean devolver(UUID productoId, java.math.BigDecimal cantidad, java.time.Instant now) {
+        return jdbc.update("""
+                UPDATE producto
+                SET cantidad_disponible = cantidad_disponible + ?,
+                    estado = 'DISPONIBLE',
+                    updated_at = ?, version = version + 1
+                WHERE id = ? AND estado <> 'ELIMINADO'
+                """, cantidad, Timestamp.from(now), productoId) == 1;
+    }
+
     public Optional<Producto> buscar(UUID id) {
         return jdbc.query("SELECT * FROM producto WHERE id = ?", MAPPER, id).stream().findFirst();
     }

@@ -23,7 +23,8 @@ public record PedidoVendedorDetalle(
         long total,
         MedioPagoPedido medioPago,
         Pago pago,
-        UbicacionEntrega ubicacionEntrega
+        UbicacionEntrega ubicacionEntrega,
+        Domicilio domicilio
 ) {
     public PedidoVendedorDetalle {
         items = List.copyOf(items);
@@ -46,6 +47,16 @@ public record PedidoVendedorDetalle(
     public record Pago(String estado) {
     }
 
-    public record UbicacionEntrega(double latitud, double longitud, String direccion, String referencia) {
+    /** Domicilio publicado para el pedido (RF-14), o nulo si aún no se publica. */
+    public record Domicilio(UUID id, String estado, String motivoCancelacion) {
+    }
+
+    public record UbicacionEntrega(
+            double latitud,
+            double longitud,
+            String direccion,
+            String referencia,
+            String barrio
+    ) {
     }
 }

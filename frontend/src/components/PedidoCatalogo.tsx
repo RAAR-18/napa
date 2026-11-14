@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import * as Crypto from 'expo-crypto';
+import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -89,6 +90,8 @@ function deliveryLocation(
   latitude: string,
   longitude: string,
   reference: string,
+  neighborhood: string,
+  requireNeighborhood: boolean,
 ): UbicacionEntregaInput {
   const lat = Number(latitude.trim().replace(',', '.'));
   const lng = Number(longitude.trim().replace(',', '.'));
@@ -107,11 +110,18 @@ function deliveryLocation(
       'Indica una dirección y coordenadas válidas. La dirección y la referencia admiten hasta 300 caracteres.',
     );
   }
+  if (requireNeighborhood && !neighborhood.trim()) {
+    throw new Error('Indica el barrio de entrega.');
+  }
+  if (neighborhood.trim().length > 100) {
+    throw new Error('El barrio admite hasta 100 caracteres.');
+  }
   return {
     latitud: lat,
     longitud: lng,
     direccion: address.trim(),
     referencia: reference.trim() || null,
+    barrio: neighborhood.trim() || null,
   };
 }
 
@@ -136,6 +146,7 @@ export function PedidoCatalogo({
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [reference, setReference] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   const [reserve, setReserve] = useState(false);
   const [reservationDate, setReservationDate] = useState('');
   const [quote, setQuote] = useState<CotizacionPedido | null>(null);
@@ -233,6 +244,8 @@ export function PedidoCatalogo({
         latitude,
         longitude,
         reference,
+        neighborhood,
+        modalidad === 'DOMICILIO',
       );
     }
     if (reserve) {
@@ -348,9 +361,10 @@ export function PedidoCatalogo({
         <Text style={styles.total}>
           Total: ${created.total.toLocaleString('es-CO')} COP
         </Text>
-        <HelperText>
-          Guarda este identificador para consultar tu pedido: {created.id}
-        </HelperText>
+        <PrimaryButton
+          title="Ver estado del pedido"
+          onPress={() => router.push({ pathname: '/pedido-cliente', params: { pedidoId: created.id } })}
+        />
       </View>
     );
   }
@@ -449,6 +463,15 @@ export function PedidoCatalogo({
                 value={address}
                 onChangeText={(value) => {
                   setAddress(value);
+                  invalidateQuote();
+                }}
+              />
+              <Field
+                label={modalidad === 'DOMICILIO' ? 'Barrio' : 'Barrio (opcional)'}
+                maxLength={100}
+                value={neighborhood}
+                onChangeText={(value) => {
+                  setNeighborhood(value);
                   invalidateQuote();
                 }}
               />

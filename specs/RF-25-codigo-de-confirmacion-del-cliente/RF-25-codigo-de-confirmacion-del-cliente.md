@@ -56,6 +56,14 @@ Como cliente, quiero ver mi código de confirmación, para entregárselo al domi
 
 - **Código de confirmación**: Valor asociado al domicilio, visible solo para el cliente (RF-25) y exigido al domiciliario para cerrar la entrega (RF-24).
 
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El cliente consulta su código y se lo dicta al domiciliario al recibir el pedido.
+
+**Datos que asigna el sistema**
+
+- Código de confirmación generado al asignarse el domicilio (RF-19), visible solo para el cliente hasta la entrega o la cancelación.
+
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes

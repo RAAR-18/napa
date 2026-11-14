@@ -276,3 +276,12 @@ frontend/__tests__/domicilios/cancelar-domicilio.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo. 
+## Notas de implementación (2026-11-13)
+
+- El motivo usa la regla de la spec (10 a 300 caracteres), no la del plan (5 a 200). Se guarda en la columna nueva `detalle_cancelacion` (V15); `motivo_cancelacion` queda en `ADMINISTRADOR`.
+- Decisión del usuario: al cancelar, el inventario del pedido inmediato se devuelve (lo hace `PedidoParaDomicilioPort.cancelarPorDomicilio`); el dinero se devuelve fuera de la app.
+- El domicilio cancelado conserva al domiciliario (para la supervisión), pero el código queda en nulo; el domiciliario sale de "en curso" y puede tomar otro.
+- Los contadores del código en Redis se borran dentro del caso de uso; si Redis falla no se impide la cancelación (vencen por TTL). No hay ubicación en vivo que borrar: la ruta de RF-22 se calcula al pedirla y responde `409` si el domicilio ya no está en curso.
+- E15 sale con `domiciliarioId` cuando lo había; los avisos ya existían en `NotificationUseCase`.
+- App: `CancelarDomicilioAdmin.tsx` dentro de `domicilio-admin.tsx`, visible solo si no está `ENTREGADO` ni `CANCELADO`.
+- Sin Docker no se corrieron los IT (T010–T019); hay tests unitarios del caso de uso.

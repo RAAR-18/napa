@@ -29,8 +29,8 @@ Como domiciliario, quiero aceptar un domicilio con la tarifa publicada, para asi
 
 ### Edge Cases
 
-- ¿Existe un límite de domicilios que un domiciliario puede tener asignados al mismo tiempo?
-- ¿Qué ocurre si el domicilio es cancelado por el administrador justo antes de ser aceptado?
+- **¿Existe un límite de domicilios que un domiciliario puede tener asignados al mismo tiempo?** Sí: un domiciliario puede tener hasta 3 domicilios asignados en curso; al intentar aceptar un cuarto, el sistema lo rechaza con un mensaje.
+- **¿Qué ocurre si el domicilio es cancelado por el administrador justo antes de ser aceptado?** El sistema informa que el domicilio ya no está disponible.
 
 ## Requirements *(mandatory)*
 
@@ -41,12 +41,23 @@ Como domiciliario, quiero aceptar un domicilio con la tarifa publicada, para asi
 - **FR-003**: El sistema DEBE cambiar el estado del domicilio a "asignado" y notificar al cliente y al vendedor de punto fijo.
 - **FR-004**: El sistema DEBE habilitar al domiciliario asignado la ruta en el mapa interactivo (RF-22).
 - **FR-005**: El sistema DEBE generar, al asignarse el domicilio, el código de confirmación que el cliente verá (RF-25) y el domiciliario ingresará al entregar (RF-24).
+- **FR-006**: El sistema DEBE impedir que un domiciliario acepte un domicilio si ya tiene 3 domicilios en curso (asignado, recogido o en camino), indicando el motivo.
 
 ### Key Entities
 
 - **Domicilio**: Pasa de "disponible" a "asignado"; su ganancia es la tarifa publicada.
 - **Domiciliario**: Usuario que se compromete a realizar la entrega.
 - **Código de confirmación**: Valor único generado al asignarse el domicilio.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El domiciliario acepta el domicilio con la tarifa publicada.
+
+**Datos que asigna el sistema**
+
+- Domiciliario asignado, estado "asignado" y fecha.
+- Ganancia vigente igual a la tarifa publicada.
+- Código de confirmación del cliente (RF-25).
 
 ## Success Criteria *(mandatory)*
 

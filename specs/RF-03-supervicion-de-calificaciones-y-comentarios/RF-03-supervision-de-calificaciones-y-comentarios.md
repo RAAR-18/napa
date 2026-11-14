@@ -28,9 +28,9 @@ Como administrador, quiero consultar las calificaciones y comentarios publicados
 
 ### Edge Cases
 
-- ¿Qué ocurre si un comentario fue eliminado por su autor antes de ser revisado por el administrador?
-- ¿Cómo se identifican comentarios con lenguaje potencialmente ofensivo dentro del listado?
-- ¿Qué sucede si el volumen de comentarios es muy alto y se requiere paginación?
+- **¿Qué ocurre si un comentario fue eliminado por su autor antes de ser revisado por el administrador?** Sigue visible solo para el administrador, marcado como "eliminado por su autor", con fecha y contenido original para auditoría; deja de ser público.
+- **¿Cómo se identifican comentarios con lenguaje potencialmente ofensivo dentro del listado?** El sistema marca con una etiqueta los comentarios que contengan términos de una lista de palabras ofensivas configurable, para revisión prioritaria; no los elimina automáticamente.
+- **¿Qué sucede si el volumen de comentarios es muy alto y se requiere paginación?** El listado se pagina de a 20, ordenado del más reciente al más antiguo, con filtro por entidad calificada.
 
 ## Requirements *(mandatory)*
 
@@ -43,6 +43,15 @@ Como administrador, quiero consultar las calificaciones y comentarios publicados
 ### Key Entities
 
 - **Comentario**: Contenido textual y calificación asociados a un autor y a una entidad, sujeto a supervisión administrativa.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El administrador puede filtrar por entidad calificada (emprendimiento, producto, domiciliario o cliente).
+
+**Datos que se muestran o filtran**
+
+- Autor, entidad calificada, calificación, texto y fecha de cada comentario.
+- Etiqueta de posible lenguaje ofensivo y marca de comentarios eliminados por su autor.
 
 ## Success Criteria *(mandatory)*
 

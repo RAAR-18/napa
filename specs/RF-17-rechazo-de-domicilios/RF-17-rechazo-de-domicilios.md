@@ -55,6 +55,15 @@ Como domiciliario, quiero rechazar de forma definitiva un domicilio disponible q
 
 - **Rechazo de domicilio**: Relación definitiva entre un domiciliario y un domicilio que este decidió descartar; incluye fecha de rechazo. No es editable ni reversible.
 
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El domiciliario selecciona un domicilio disponible y lo rechaza; el rechazo es definitivo.
+
+**Datos que asigna el sistema**
+
+- Fecha del rechazo y domiciliario que rechaza (acción personal, sin restauración).
+
+
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes

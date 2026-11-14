@@ -34,6 +34,20 @@ class PedidoTest {
         assertInvalidState(rejected::rechazar);
     }
 
+    @Test
+    void cancelsAnAcceptedHomeDeliveryOrderWhenItsDeliveryIsCancelled() {
+        Pedido delivery = Pedido.nuevo(UUID.randomUUID(), UUID.randomUUID(), ModalidadEntrega.DOMICILIO, null,
+                MedioPagoPedido.CUENTA_BANCARIA, 1_000L, 4_500, UUID.randomUUID(),
+                List.of(new ItemPedido(UUID.randomUUID(), UUID.randomUUID(), BigDecimal.ONE, 3500)), CREATED_AT);
+
+        assertInvalidState(delivery::cancelarPorDomicilio);
+        Pedido cancelled = delivery.aceptar(RESPONDED_AT).cancelarPorDomicilio(RESPONDED_AT.plusSeconds(7_200));
+
+        assertEquals(EstadoPedido.CANCELADO, cancelled.estado());
+        assertInvalidState(cancelled::cancelarPorDomicilio);
+        assertInvalidState(pending().aceptar(RESPONDED_AT)::cancelarPorDomicilio);
+    }
+
     private static void assertInvalidState(java.util.function.Function<Instant, Pedido> transition) {
         DomainException exception = assertThrows(DomainException.class,
                 () -> transition.apply(RESPONDED_AT.plusSeconds(1)));

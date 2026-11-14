@@ -20,6 +20,10 @@ Vista del cliente sobre su pedido: estado actual, coherente con la modalidad, fe
 
 `pedido` y `pago` los crean los planes de RF-45 y RF-53. No existe la consulta del cliente ni el listado del cliente (RF-47, P2); desde el flujo de RF-45 se llega a esta pantalla al crear el pedido o desde una notificación.
 
+## Implementación (Fase 3, 2026-11-13)
+
+Implementado: la rama del cliente en `GET /api/v1/pedidos/{id}` (`ConsultarPedidoClienteUseCase`; si el pedido es de otro, `404`). Trae el `emprendimiento`, los ítems, `pago`, la ubicación de entrega y el bloque `domicilio { id, estado, motivoCancelacion }`; `updatedAt` es el mayor entre el del pedido y el de su domicilio. App: `pedido-cliente.tsx` muestra la línea de estados por modalidad, el código del domicilio (RF-25), el aviso de pago pendiente y el enlace a la trazabilidad, y se refresca cada 30 s. Tras crear un pedido se llega con "Ver estado del pedido". Falta el refresco al recibir una notificación (Fase 7) y la caché sin conexión.
+
 ## Actors
 
 | Actor | Participación en esta feature |

@@ -13,6 +13,8 @@ public record PedidoListadoProjection(
         EstadoPedido estado,
         ModalidadEntrega modalidad,
         Instant reserva,
-        long total
+        long total,
+        UUID emprendimientoId,
+        String emprendimientoNombre
 ) {
 }

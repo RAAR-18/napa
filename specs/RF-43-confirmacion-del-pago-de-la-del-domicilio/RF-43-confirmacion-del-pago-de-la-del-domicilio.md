@@ -64,7 +64,7 @@ Como domiciliario, quiero confirmar que recibí el pago de mi tarifa por el domi
 - ¿Qué ocurre si el domiciliario no recibió la transferencia, o recibió un monto distinto a la tarifa publicada? (se recomienda permitir crear un reporte, RF-60)
 - ¿Qué sucede si el vendedor no registra el pago de la tarifa en un tiempo razonable tras la entrega? ¿Se notifica al domiciliario o se escala al administrador?
 - ¿Qué ocurre si el domicilio es cancelado por el administrador después de que el cliente pagó el total del pedido?
-- ¿Qué sucede si el domiciliario intenta confirmar el pago de un domicilio que no le fue asignado?
+- **¿Qué sucede si el domiciliario intenta confirmar el pago de un domicilio que no le fue asignado?** Se rechaza la operación: el domicilio no le pertenece.
 
 ## Requirements *(mandatory)*
 
@@ -83,6 +83,21 @@ Como domiciliario, quiero confirmar que recibí el pago de mi tarifa por el domi
 
 - **Pago de la tarifa**: Registro digital asociado a un domicilio; atributos clave: monto (tarifa publicada), medio ("cuenta bancaria"), fecha y estado (pendiente de registro, registrado por el vendedor, confirmado por el domiciliario). Es distinto del pago del pedido (RF-42), que el cliente hace al vendedor por productos más tarifa.
 - **Domicilio**: Su tarifa publicada determina el monto del pago.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Registro del pago (vendedor) | Sí | Solo con el domicilio entregado; medio "cuenta bancaria" y valor igual a la tarifa publicada. |
+| Confirmación de recepción (domiciliario) | Sí | Solo después de que el vendedor registre el pago. |
+| Cuenta bancaria del domiciliario | Sí | Banco, número y tipo; se muestra al vendedor solo con el domicilio entregado. |
+
+**Datos que asigna el sistema**
+
+- Vendedor y fecha del registro; domiciliario y fecha de la confirmación.
+- Estado del pago: registrado y luego confirmado.
 
 ## Success Criteria *(mandatory)*
 

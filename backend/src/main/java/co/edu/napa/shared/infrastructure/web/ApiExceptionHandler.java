@@ -138,7 +138,7 @@ public class ApiExceptionHandler {
                 || requestPath.startsWith("/api/v1/emprendimientos/")) {
             builder.header(HttpHeaders.CACHE_CONTROL, "no-store");
         }
-        if ("RATE_LIMITED".equals(code)) {
+        if ("RATE_LIMITED".equals(code) || "CODE_ATTEMPTS_LOCKED".equals(code)) {
             Object retryAfter = details.get("retryAfter");
             long seconds = retryAfter instanceof Number value ? Math.max(1, value.longValue()) : 1;
             builder.header(HttpHeaders.RETRY_AFTER, Long.toString(seconds));
@@ -168,7 +168,7 @@ public class ApiExceptionHandler {
     private HttpStatus statusFor(String code) {
         return switch (code) {
             case "VALIDATION_ERROR", "OTP_INVALID", "OTP_EXPIRED",
-                 "INVALID_CURRENT_PASSWORD", "PASSWORD_REUSED" -> HttpStatus.BAD_REQUEST;
+                 "INVALID_CURRENT_PASSWORD", "PASSWORD_REUSED", "CODE_INVALID" -> HttpStatus.BAD_REQUEST;
             case "UNAUTHORIZED", "TOKEN_EXPIRED", "INVALID_CREDENTIALS" -> HttpStatus.UNAUTHORIZED;
             case "FORBIDDEN", "ACCOUNT_NOT_VERIFIED" -> HttpStatus.FORBIDDEN;
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
@@ -176,7 +176,8 @@ public class ApiExceptionHandler {
             case "INVALID_STATE", "ALREADY_CONFIRMED", "CONFLICT", "PAYMENT_NOT_CONFIRMED",
                  "ALREADY_PUBLISHED", "PHONE_ALREADY_REGISTERED", "EMAIL_ALREADY_REGISTERED",
                  "OTP_ATTEMPTS_EXHAUSTED", "OUT_OF_STOCK", "PRODUCT_UNAVAILABLE", "HAS_PENDING_ORDERS",
-                 "BANK_ACCOUNT_REQUIRED", "RESERVATION_NOT_DUE", "NOT_AVAILABLE" -> HttpStatus.CONFLICT;
+                 "BANK_ACCOUNT_REQUIRED", "RESERVATION_NOT_DUE", "NOT_AVAILABLE", "MAX_ACTIVE_DELIVERIES",
+                 "FEE_NOT_REGISTERED" -> HttpStatus.CONFLICT;
             case "IDEMPOTENCY_KEY_REUSED", "BUSINESS_RULE" -> HttpStatus.UNPROCESSABLE_CONTENT;
             case "RATE_LIMITED", "CODE_ATTEMPTS_LOCKED" -> HttpStatus.TOO_MANY_REQUESTS;
             case "EXTERNAL_SERVICE_UNAVAILABLE" -> HttpStatus.SERVICE_UNAVAILABLE;

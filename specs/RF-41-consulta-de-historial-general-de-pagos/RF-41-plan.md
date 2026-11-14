@@ -20,6 +20,10 @@ El administrador supervisa todos los pagos de la plataforma con `GET /pagos` (ra
 
 RF-40 define `GET /pagos` para cliente, vendedor y domiciliario y agrega a `pago` las columnas de copia `comprador_id`, `vendedor_id` y `domiciliario_id` con sus índices; este plan solo agrega la rama del administrador y los nombres de los usuarios, que salen de `cuentas` en lote. No hay detalle de un pago por id en la spec.
 
+### Implementación (Fase 5, 2026-11-13)
+
+Misma ruta y pantalla que RF-40; con `ROLE_ADMINISTRADOR` no se filtra por usuario y cada fila trae `comprador`, `vendedor` y `domiciliario` con nombre (en lote por `ConsultarNombresUsuarioPort`). En una tarifa `comprador` es `null`; en un pago de pedido, `domiciliario`.
+
 ## Actors
 
 | Actor | Participación en esta feature |

@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 
-import { jsonHeaders, requestJson } from './api';
+import { jsonHeaders, requestJson, requestVoid } from './api';
 import { withValidSession } from './auth';
 
 export type TipoVendedor = 'AMBULANTE' | 'PUNTO_FIJO';
@@ -110,5 +110,97 @@ export async function listEmprendimientos(
         headers: jsonHeaders({ accessToken: session.accessToken }),
       },
     ),
+  );
+}
+
+/** RF-29: campos editables; los que no se envían se conservan. */
+export type EditarEmprendimientoInput = {
+  descripcion?: string;
+  horaApertura?: string;
+  horaCierre?: string;
+  ubicacion?: {
+    latitud: number;
+    longitud: number;
+    direccion: string | null;
+    referencia: string | null;
+  };
+};
+
+/** RF-32: lo que ve el cliente antes de pedir. */
+export type EmprendimientoDetalle = {
+  id: string;
+  nombre: string;
+  categoria: CategoriaEmprendimiento;
+  tipoVendedor: TipoVendedor;
+  descripcion: string;
+  horaApertura: string;
+  horaCierre: string;
+  abierto: boolean;
+  ubicacion: { latitud: number; longitud: number; direccion: string | null; referencia: string | null };
+  modalidadesEntrega: ('ENTREGA_DIRECTA' | 'RECOGIDA' | 'DOMICILIO')[];
+  ofreceDomicilio: boolean;
+};
+
+/** RF-34: solo datos públicos; nunca celular ni correo. */
+export type VendedorPublico = {
+  nombre: string;
+  fotoUrl: string | null;
+  tipoVendedor: TipoVendedor;
+  miembroDesde: string | null;
+};
+
+export const categoriaNombres: Record<CategoriaEmprendimiento, string> = {
+  FRUTAS_VERDURAS: 'Frutas y verduras',
+  PESCADO_MARISCOS: 'Pescado y mariscos',
+  ALIMENTOS_PREPARADOS: 'Alimentos preparados',
+  BEBIDAS: 'Bebidas',
+  SNACKS: 'Snacks',
+  OTROS: 'Otros',
+};
+
+export function obtenerMiEmprendimiento() {
+  return withValidSession((session) =>
+    requestJson<Emprendimiento>('/api/v1/emprendimientos/me', {
+      method: 'GET',
+      headers: jsonHeaders({ accessToken: session.accessToken }),
+    }),
+  );
+}
+
+export function editarMiEmprendimiento(input: EditarEmprendimientoInput) {
+  return withValidSession((session) =>
+    requestJson<Emprendimiento>('/api/v1/emprendimientos/me', {
+      method: 'PATCH',
+      headers: jsonHeaders({ accessToken: session.accessToken }),
+      body: JSON.stringify(input),
+    }),
+  );
+}
+
+export function eliminarMiEmprendimiento(idempotencyKey: string) {
+  return withValidSession((session) =>
+    requestVoid('/api/v1/emprendimientos/me/eliminar', {
+      method: 'POST',
+      headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
+      body: JSON.stringify({ confirmar: true }),
+    }),
+  );
+}
+
+export function obtenerEmprendimiento(emprendimientoId: string) {
+  return withValidSession((session) =>
+    requestJson<EmprendimientoDetalle>(`/api/v1/emprendimientos/${encodeURIComponent(emprendimientoId)}`, {
+      method: 'GET',
+      headers: jsonHeaders({ accessToken: session.accessToken }),
+    }),
+  );
+}
+
+export function obtenerVendedorEmprendimiento(emprendimientoId: string) {
+  return withValidSession((session) =>
+    requestJson<VendedorPublico>(`/api/v1/emprendimientos/${encodeURIComponent(emprendimientoId)}/vendedor`, {
+      method: 'GET',
+      headers: jsonHeaders({ accessToken: session.accessToken }),
+    }),
   );
 }

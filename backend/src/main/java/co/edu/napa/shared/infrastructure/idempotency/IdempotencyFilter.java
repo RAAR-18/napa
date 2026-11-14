@@ -99,9 +99,13 @@ public class IdempotencyFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/auth/logout")
                 || path.startsWith("/api/v1/auth/verify-phone")
                 || path.equals("/api/v1/auth/password/recover/request")
-                || path.equals("/api/v1/pedidos/cotizacion");
+                || path.equals("/api/v1/pedidos/cotizacion")
+                // RF-38: único por (usuario, token) en la base; repetirlo no duplica (spec-general).
+                || path.equals("/api/v1/dispositivos");
         boolean productEdit = "PATCH".equalsIgnoreCase(request.getMethod())
-                && path.matches("/api/v1/productos/[^/]+");
+                && (path.matches("/api/v1/productos/[^/]+")
+                // RF-29: repetir la misma edición deja el mismo resultado (spec-general: PATCH sin clave).
+                || path.equals("/api/v1/emprendimientos/me"));
         return exempt || productEdit || !(path.startsWith("/api/v1/")
                 && ("POST".equalsIgnoreCase(request.getMethod())
                 || "PATCH".equalsIgnoreCase(request.getMethod())));

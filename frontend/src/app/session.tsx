@@ -18,6 +18,9 @@ import {
   logout,
   type StoredSession,
 } from '../lib/auth';
+import { contarNoLeidas } from '../lib/notificaciones';
+import { darDeBajaPush, registrarPush } from '../lib/push';
+import { borrarTodasLasRutas } from '../lib/ruta-cache';
 
 const roleNames: Record<string, string> = {
   CLIENTE: 'Cliente',
@@ -31,6 +34,7 @@ export default function SessionScreen() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noLeidas, setNoLeidas] = useState<number | null>(null);
 
   const handleLoadError = useCallback(async (cause: unknown) => {
     if (cause instanceof ApiError && cause.status === 401) {
@@ -51,6 +55,13 @@ export default function SessionScreen() {
       .then((validSession) => {
         if (active) {
           setSession(validSession);
+          // El push es opcional: si no está disponible, la lista de notificaciones sigue funcionando.
+          void registrarPush();
+          contarNoLeidas()
+            .then((total) => {
+              if (active) setNoLeidas(total);
+            })
+            .catch(() => undefined);
         }
       })
       .catch((cause: unknown) => {
@@ -85,7 +96,9 @@ export default function SessionScreen() {
     setError(null);
     setBusy(true);
     try {
+      await darDeBajaPush();
       await logout();
+      await borrarTodasLasRutas().catch(() => undefined);
       setSession(null);
       router.replace('/');
     } catch (cause) {
@@ -142,23 +155,53 @@ export default function SessionScreen() {
           session.rol === 'VENDEDOR_PUNTO_FIJO' ? (
             <>
               <PrimaryButton title="Pedidos recibidos" onPress={() => router.push('/pedidos-vendedor')} />
+              {session.rol === 'VENDEDOR_PUNTO_FIJO' ? (
+                <PrimaryButton title="Mis domicilios" onPress={() => router.push('/domicilios-vendedor')} />
+              ) : null}
               <PrimaryButton title="Mis productos" onPress={() => router.push('/mis-productos')} />
               <TextButton
                 title="Configurar métodos de pago"
                 onPress={() => router.push('/configuracion-pagos')}
               />
+              <TextButton title="Mi emprendimiento" onPress={() => router.push('/mi-emprendimiento')} />
+            </>
+          ) : null}
+          {session.rol === 'DOMICILIARIO' ? (
+            <>
+              <PrimaryButton
+                title="Domicilios disponibles"
+                onPress={() => router.push('/domicilios-disponibles')}
+              />
               <TextButton
-                title="Crear mi emprendimiento"
-                onPress={() => router.push('/emprendimiento')}
+                title="Mis domicilios en curso"
+                onPress={() => router.push('/domicilios-en-curso')}
+              />
+              <TextButton
+                title="Mi cuenta para cobrar"
+                onPress={() => router.push('/cuenta-domiciliario')}
               />
             </>
           ) : null}
           {session.rol === 'CLIENTE' ? (
-            <PrimaryButton
-              title="Explorar emprendimientos"
-              onPress={() => router.push('/emprendimientos')}
-            />
+            <>
+              <PrimaryButton
+                title="Explorar emprendimientos"
+                onPress={() => router.push('/emprendimientos')}
+              />
+              <TextButton title="Mis pedidos" onPress={() => router.push('/mis-pedidos')} />
+            </>
           ) : null}
+          <PrimaryButton
+            title={noLeidas ? `Notificaciones (${noLeidas} sin leer)` : 'Notificaciones'}
+            onPress={() => router.push('/notificaciones')}
+          />
+          {session.rol === 'ADMINISTRADOR' ? (
+            <PrimaryButton title="Supervisar domicilios" onPress={() => router.push('/domicilios-admin')} />
+          ) : null}
+          <TextButton
+            title={session.rol === 'ADMINISTRADOR' ? 'Historial general de pagos' : 'Historial de pagos'}
+            onPress={() => router.push('/historial-pagos')}
+          />
         </>
       ) : null}
       <ErrorBanner message={error} />

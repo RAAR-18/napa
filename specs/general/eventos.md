@@ -14,6 +14,7 @@
 7. El payload lleva identificadores y datos mínimos, sin datos personales (RNF04). El destinatario consulta lo demás.
 8. Excepción: la **verificación del celular** (RF-70) no usa eventos ni outbox: es una llamada directa al puerto `VerificarCelularPort`; si se pierde, el usuario pulsa "reenviar".
 9. La numeración no se reutiliza: **E13 está retirado** (ya no existe la finalización del domicilio por el cliente).
+10. Los eventos que emite una tarea programada (E15 por cancelación automática, E20) usan como `actorUserId` el UUID nulo `00000000-0000-0000-0000-000000000000` (el sistema).
 
 ## Sobre (envelope)
 
@@ -47,7 +48,8 @@
 | E11 | `domicilios.domicilio-en-camino` (`DomicilioEnCaminoEvent`) | RF-23 | El vendedor confirma la salida | `domicilioId`, `compradorId` | notificaciones → avisar al comprador |
 | E12 | `domicilios.domicilio-entregado` (`DomicilioEntregadoEvent`) | RF-24 | El domiciliario ingresa el código correcto del cliente | `domicilioId`, `pedidoId`, `compradorId`, `vendedorId`, `domiciliarioId` | notificaciones → vendedor (pagar la tarifa, RF-43) y comprador (aviso de entrega); el texto del aviso al comprador incluye la invitación a calificar |
 | E14 | `pagos.pago-tarifa-registrado` (`PagoTarifaRegistradoEvent`) | RF-43 | El vendedor registra el pago de la tarifa | `pagoId`, `domicilioId`, `domiciliarioId`, `monto` | notificaciones → avisar al domiciliario |
-| E15 | `domicilios.domicilio-cancelado` (`DomicilioCanceladoEvent`) | RF-13 | El administrador cancela (el pedido pasa a `CANCELADO` en la misma transacción) | `domicilioId`, `pedidoId`, `compradorId`, `vendedorId`, `domiciliarioId?` | notificaciones → avisar a las partes |
+| E15 | `domicilios.domicilio-cancelado` (`DomicilioCanceladoEvent`) | RF-13 y RF-14 (FR-009) | El administrador cancela, o el sistema cancela automáticamente un domicilio sin asignar durante 2 horas (en ambos casos el pedido pasa a `CANCELADO` en la misma transacción) | `domicilioId`, `pedidoId`, `compradorId`, `vendedorId`, `domiciliarioId?`, `motivo` | notificaciones → avisar a las partes |
+| E20 | `domicilios.domicilio-sin-asignar` (`DomicilioSinAsignarEvent`) | RF-14 (FR-009) | Un domicilio cumple 30 minutos en `DISPONIBLE` sin asignarse (lo emite una tarea programada, una sola vez por domicilio) | `domicilioId`, `pedidoId`, `compradorId`, `vendedorId` | notificaciones → avisar al vendedor y al comprador |
 | E16 | `reportes.reporte-resuelto` (`ReporteResueltoEvent`) | RF-62 | El administrador cierra el reporte | `reporteId`, `autorId` | notificaciones → avisar al autor |
 | E17 | `calificaciones.comentario-moderado` (`ComentarioModeradoEvent`) | RF-06 | El administrador edita o elimina | `calificacionId`, `autorId`, `accion`, `motivo` | notificaciones → avisar al autor de lo que se hizo y por qué |
 | E18 | `cuentas.cuenta-eliminada` (`CuentaEliminadaEvent`) | RF-11 · `EliminarCuentaUseCase` | La cuenta cambia a `ELIMINADA` | `usuarioId` | notificaciones → eliminar las notificaciones de la cuenta |

@@ -43,7 +43,7 @@ Como vendedor de punto fijo, quiero marcar un pedido de recogida como listo para
 
 ### Edge Cases
 
-- ¿Qué ocurre si el cliente no llega a retirar un pedido marcado como listo? ¿Vence?
+- **¿Qué ocurre si el cliente no llega a retirar un pedido marcado como listo? ¿Vence?** El pedido sigue listo hasta el cierre del día (en una reserva, del día acordado); luego se cancela y las unidades descontadas vuelven al inventario.
 
 ## Requirements *(mandatory)*
 
@@ -57,6 +57,14 @@ Como vendedor de punto fijo, quiero marcar un pedido de recogida como listo para
 ### Key Entities
 
 - **Pedido**: Modalidad recogida; transición de esta funcionalidad: aceptado → listo para recoger. Puede o no estar marcado como reserva.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El vendedor de punto fijo marca como listo un pedido de recogida aceptado (si es reserva, desde 15 minutos antes de la fecha y hora acordadas).
+
+**Datos que asigna el sistema**
+
+- Estado "listo para recoger", fecha y hora; notificación al cliente.
 
 ## Success Criteria *(mandatory)*
 

@@ -28,9 +28,9 @@ Como usuario, quiero eliminar mis comentarios, para retirar contenido que ya no 
 
 ### Edge Cases
 
-- ¿Qué ocurre con el promedio de calificación de una entidad cuando se elimina un comentario que incluía una calificación?
-- ¿El sistema conserva el comentario eliminado para fines de auditoría aunque ya no sea visible públicamente?
-- ¿Qué pasa si el usuario intenta eliminar un comentario que ya fue eliminado previamente por un administrador?
+- **¿Qué ocurre con el promedio de calificación de una entidad cuando se elimina un comentario que incluía una calificación?** El promedio de la entidad se recalcula sin la calificación eliminada.
+- **¿El sistema conserva el comentario eliminado para fines de auditoría aunque ya no sea visible públicamente?** Sí. Se conserva con marca de eliminado, autor y fecha, visible solo para el administrador.
+- **¿Qué pasa si el usuario intenta eliminar un comentario que ya fue eliminado previamente por un administrador?** No puede: el sistema informa que el comentario ya no existe.
 
 ## Requirements *(mandatory)*
 
@@ -43,6 +43,15 @@ Como usuario, quiero eliminar mis comentarios, para retirar contenido que ya no 
 ### Key Entities
 
 - **Comentario**: Contenido textual y calificación eliminable únicamente por su autor original.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. El autor selecciona su comentario y confirma la eliminación.
+
+**Datos que asigna el sistema**
+
+- Marca de eliminado con fecha y autor (auditoría).
+- Recálculo del promedio de la entidad.
 
 ## Success Criteria *(mandatory)*
 

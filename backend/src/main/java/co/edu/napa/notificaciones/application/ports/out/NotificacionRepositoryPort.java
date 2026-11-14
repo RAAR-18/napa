@@ -13,6 +13,8 @@ public interface NotificacionRepositoryPort {
 
     Optional<Notificacion> openForUsuario(UUID notificacionId, UUID usuarioId, Instant openedAt);
 
+    long countUnread(UUID usuarioId);
+
     int deleteByUsuario(UUID usuarioId);
 
     int deleteCreatedBefore(Instant cutoff);

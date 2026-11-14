@@ -20,6 +20,10 @@ Cada usuario consulta su historial de pagos con `GET /pagos`, paginado y sin nin
 
 La tabla `pago` y los pagos de tipo `PEDIDO` vienen de RF-53 y RF-42, y los de tipo `TARIFA_DOMICILIO` de RF-43. El `pago` no guarda a qué usuarios pertenece: se deduce de su pedido o domicilio (spec-general). Listar por usuario obligaría a unir con `pedido`, `domicilio` y `emprendimiento`, que son de otros módulos, así que este plan agrega a `pago` tres columnas de copia (`comprador_id`, `vendedor_id`, `domiciliario_id`), con el mismo criterio que `domicilio.vendedor_id`: son copias físicas, no cambian el ER (Open Questions). RF-41 reutiliza la misma ruta para el administrador.
 
+### Implementación (Fase 5, 2026-11-13)
+
+`GET /api/v1/pagos` en `HistorialPagosController` con `ConsultarHistorialPagosUseCase`: el filtro por usuario sale del rol del JWT (cliente → `comprador_id` y tipo `PEDIDO`; vendedor → `vendedor_id`; domiciliario → `domiciliario_id` y tipo `TARIFA_DOMICILIO`). Filtros `medio`, `estado`, `tipo`, `desde`, `hasta` (días completos en hora de Colombia), `page`, `size` (máx. 100) y `sort` (`createdAt`/`monto`). La modalidad sale de un `LEFT JOIN pedido` en el adaptador, para no crear el ciclo `pagos` → `pedidos`. App: `historial-pagos.tsx`, enlazada desde la sesión. Sin caché local de la primera página.
+
 ## Actors
 
 | Actor | Participación en esta feature |

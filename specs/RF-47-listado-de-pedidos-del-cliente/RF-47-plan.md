@@ -20,6 +20,13 @@ El cliente lista sus pedidos con `GET /pedidos`, la misma ruta que usa el vended
 
 RF-50 ya implementa `GET /pedidos` para el vendedor y responde `403` a los demás roles hasta que exista esta rama. La tabla `pedido`, sus estados y `GET /pedidos/{id}` (RF-48) vienen de RF-45 y RF-48. El nombre del emprendimiento se lee por un puerto de `emprendimientos`.
 
+## Implementación (Fase 3, 2026-11-13)
+
+Implementado: la rama del cliente en `GET /api/v1/pedidos`. El controlador elige el caso de uso por rol (`ROLE_CLIENTE` → `ListarPedidosClienteUseCase`). Comparte filtros y validaciones con el vendedor y cada fila trae `emprendimiento { id, nombre }`. Cambios respecto al plan:
+
+- El nombre del emprendimiento sale del mismo `JOIN` de la consulta del pedido, en lugar de un puerto en lote. El cliente ve sus pedidos aunque el emprendimiento ya no esté activo.
+- App: `mis-pedidos.tsx` con filtro por estado y paginación. Falta la caché SQLite sin conexión.
+
 ## Actors
 
 | Actor | Participación en esta feature |

@@ -63,9 +63,9 @@ Como domiciliario, quiero consultar el historial de pagos, para revisar las tari
 
 ### Edge Cases
 
-- ¿Qué sucede si un usuario intenta consultar pagos que no le pertenecen?
-- ¿Cómo se muestra un pago que sigue pendiente de confirmación tras haberse entregado el pedido?
-- ¿Qué ocurre si el historial tiene un volumen alto de registros? ¿Se pagina o filtra por fecha o por medio?
+- **¿Qué sucede si un usuario intenta consultar pagos que no le pertenecen?** El acceso se deniega: cada usuario solo ve sus propios pagos.
+- **¿Cómo se muestra un pago que sigue pendiente de confirmación tras haberse entregado el pedido?** Se muestra como "pendiente de confirmación" con su antigüedad, y se recuerda a quien debe confirmarlo (vendedor o domiciliario).
+- **¿Qué ocurre si el historial tiene un volumen alto de registros? ¿Se pagina o filtra por fecha o por medio?** Se pagina de a 20 y se puede filtrar por fecha, medio y estado.
 
 ## Requirements *(mandatory)*
 
@@ -81,6 +81,14 @@ Como domiciliario, quiero consultar el historial de pagos, para revisar las tari
 ### Key Entities
 
 - **Pago**: Registro de un pago; atributos clave: monto, fecha, medio (efectivo o cuenta bancaria), estado, tipo (pago del pedido o pago de la tarifa del domicilio) y usuario asociado. La plataforma no procesa el dinero directamente: solo registra su confirmación.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Filtros opcionales: fecha, medio y estado.
+
+**Datos que se muestran o filtran**
+
+- Fecha, monto, medio (efectivo o cuenta bancaria), pedido o domicilio asociado y estado; paginado de a 20.
 
 ## Success Criteria *(mandatory)*
 

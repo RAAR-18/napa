@@ -303,3 +303,11 @@ frontend/__tests__/notificaciones/
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo. 
+## Notas de implementación (2026-11-13)
+
+- El backend de la bandeja ya existía (`NotificationUseCase`, `NotificationController`); abrir el detalle es `GET /notificaciones/{id}` (marca leída) en lugar de `POST /notificaciones/{id}/leer`.
+- Nuevo: `referencia { tipo: PEDIDO | DOMICILIO, id }` en cada notificación (V16). Cliente y vendedor abren el pedido; el domiciliario abre el domicilio. Reportes y comentarios no llevan referencia. E09 ahora trae `pedidoId`.
+- Nuevo: `GET /notificaciones/no-leidas` → `{ noLeidas }` para el contador del menú.
+- Nuevo: `POST /dispositivos` (`{ token, plataforma }`, 204, exento de `Idempotency-Key`) y `DELETE /dispositivos` (`{ token }`) al cerrar sesión. Al registrar, el token se borra de otras cuentas (un teléfono, una sesión). No se exige `X-Device-Id`.
+- App: `notificaciones.tsx` (todas / no leídas, abrir marca leída, "Ver pedido" / "Ver domicilio"), contador en el menú, `lib/push.ts` con `expo-notifications` (token FCM nativo; tocar un aviso abre la lista).
+- Pendiente de configuración: el push necesita un build propio con `google-services.json` (Android) y credenciales de Firebase en el backend; en Expo Go no hay token y la app sigue funcionando solo con la lista. Sin caché SQLite de la bandeja (exige conexión).

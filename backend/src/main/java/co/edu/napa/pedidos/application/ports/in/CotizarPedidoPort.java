@@ -20,7 +20,17 @@ public interface CotizarPedidoPort {
 
     record ItemSolicitud(UUID productoId, BigDecimal cantidad) {}
 
-    record UbicacionEntrega(double latitud, double longitud, String direccion, String referencia) {}
+    record UbicacionEntrega(
+            double latitud,
+            double longitud,
+            String direccion,
+            String referencia,
+            String barrio
+    ) {
+        public UbicacionEntrega(double latitud, double longitud, String direccion, String referencia) {
+            this(latitud, longitud, direccion, referencia, null);
+        }
+    }
 
     record Cotizacion(
             List<Item> items,

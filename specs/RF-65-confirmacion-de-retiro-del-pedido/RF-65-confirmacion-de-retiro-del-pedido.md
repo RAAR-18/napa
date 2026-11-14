@@ -33,8 +33,8 @@ Como vendedor de punto fijo, quiero confirmar el retiro de un pedido, para regis
 
 ### Edge Cases
 
-- ¿Qué sucede si el cliente retira solo una parte del pedido?
-- ¿Cómo se maneja un pedido que el cliente nunca retira? ¿Se cancela y el producto vuelve al inventario?
+- **¿Qué sucede si el cliente retira solo una parte del pedido?** No se admiten retiros parciales: si no retira todo, el vendedor lo reporta y el pedido no se confirma como entregado.
+- **¿Cómo se maneja un pedido que el cliente nunca retira? ¿Se cancela y el producto vuelve al inventario?** Al cierre del día (en una reserva, del día acordado) el pedido se cancela y las unidades descontadas regresan al inventario.
 
 ## Requirements *(mandatory)*
 
@@ -48,6 +48,19 @@ Como vendedor de punto fijo, quiero confirmar el retiro de un pedido, para regis
 
 - **Pedido**: Modalidad recogida; transición de esta funcionalidad: listo para recoger → entregado.
 - **Pago**: Registro asociado al pedido, confirmado junto con el retiro, con el medio elegido por el cliente.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Cobro recibido | Sí | Confirmación de que recibió el total del pedido por el medio elegido por el cliente (efectivo o cuenta bancaria). |
+
+**Datos que asigna el sistema**
+
+- Estado "entregado", fecha y hora.
+- Pago confirmado con el medio del pedido.
 
 ## Success Criteria *(mandatory)*
 

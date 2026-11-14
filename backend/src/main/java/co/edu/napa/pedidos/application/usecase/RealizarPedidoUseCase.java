@@ -90,6 +90,7 @@ public class RealizarPedidoUseCase implements RealizarPedidoPort {
                 ubicacionSolicitada.longitud(),
                 ubicacionSolicitada.direccion(),
                 ubicacionSolicitada.referencia(),
+                ubicacionSolicitada.barrio() == null ? null : ubicacionSolicitada.barrio().strip(),
                 now,
                 now
         ));

@@ -28,9 +28,9 @@ Como administrador, quiero consultar el historial de pagos, para supervisar las 
 
 ### Edge Cases
 
-- ¿Qué ocurre si el volumen de transacciones es muy alto? ¿El sistema pagina o limita los resultados por defecto?
-- ¿Cómo se muestran los pagos que quedaron en estado pendiente de confirmación por un tiempo prolongado?
-- ¿Qué sucede si el administrador aplica un filtro que no arroja resultados?
+- **¿Qué ocurre si el volumen de transacciones es muy alto? ¿El sistema pagina o limita los resultados por defecto?** Se pagina de a 20 y se puede filtrar por fecha, estado, tipo y medio.
+- **¿Cómo se muestran los pagos que quedaron en estado pendiente de confirmación por un tiempo prolongado?** Se destacan como "pendiente de confirmación", con su antigüedad; los de más de 48 horas se resaltan para seguimiento.
+- **¿Qué sucede si el administrador aplica un filtro que no arroja resultados?** Muestra "Sin resultados" y la opción de limpiar los filtros.
 
 ## Requirements *(mandatory)*
 
@@ -44,6 +44,14 @@ Como administrador, quiero consultar el historial de pagos, para supervisar las 
 ### Key Entities
 
 - **Pago**: Representa una transacción registrada en la plataforma; atributos clave: monto, fecha, medio, estado, tipo, usuarios involucrados.
+
+### Data Rules
+
+**Datos que ingresa el usuario**: Ninguno. Filtros opcionales: fecha, estado, tipo y medio.
+
+**Datos que se muestran o filtran**
+
+- Fecha, monto, medio, tipo (pago del pedido o tarifa del domicilio), estado y usuarios involucrados; paginado de a 20.
 
 ## Success Criteria *(mandatory)*
 

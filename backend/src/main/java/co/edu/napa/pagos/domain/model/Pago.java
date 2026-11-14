@@ -68,4 +68,31 @@ public record Pago(
         return new Pago(id, tipo, monto, medio, EstadoPago.CONFIRMADO, now, pedidoId, domicilioId,
                 compradorId, vendedorId, domiciliarioId, createdAt, now);
     }
+
+    /** RF-43: el vendedor deja constancia de que transfirió la tarifa; siempre por cuenta bancaria. */
+    public static Pago tarifaRegistrada(
+            UUID domicilioId,
+            UUID compradorId,
+            UUID vendedorId,
+            UUID domiciliarioId,
+            long monto,
+            Instant now
+    ) {
+        Objects.requireNonNull(domiciliarioId, "domiciliarioId");
+        return new Pago(UUID.randomUUID(), TipoPago.TARIFA_DOMICILIO, monto, MedioPago.CUENTA_BANCARIA,
+                EstadoPago.REGISTRADO, null, null, domicilioId, compradorId, vendedorId, domiciliarioId, now, now);
+    }
+
+    /** RF-43: el domiciliario confirma que la transferencia le llegó. */
+    public Pago confirmarTarifa(Instant now) {
+        Objects.requireNonNull(now, "now");
+        if (tipo != TipoPago.TARIFA_DOMICILIO) {
+            throw new DomainException("BUSINESS_RULE", "Este pago no corresponde a una tarifa de domicilio.");
+        }
+        if (estado == EstadoPago.CONFIRMADO) {
+            throw new DomainException("ALREADY_CONFIRMED", "Ya confirmaste este pago.");
+        }
+        return new Pago(id, tipo, monto, medio, EstadoPago.CONFIRMADO, now, pedidoId, domicilioId,
+                compradorId, vendedorId, domiciliarioId, createdAt, now);
+    }
 }

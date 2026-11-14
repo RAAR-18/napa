@@ -75,6 +75,18 @@ public class NotificationController {
                 .body(NotificationResponse.from(notifications.abrir(UUID.fromString(jwt.getSubject()), id)));
     }
 
+    /** Insignia de la app: notificaciones sin leer. */
+    @GetMapping("/no-leidas")
+    public ResponseEntity<UnreadCountResponse> unreadCount(
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletRequest request
+    ) {
+        rejectNoQueryParameters(request);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(new UnreadCountResponse(notifications.contarNoLeidas(UUID.fromString(jwt.getSubject()))));
+    }
+
     @GetMapping("/preferencias")
     public ResponseEntity<PreferencesResponse> listPreferences(
             @AuthenticationPrincipal Jwt jwt,
@@ -139,7 +151,8 @@ public class NotificationController {
             String cuerpo,
             boolean leida,
             Instant leidaAt,
-            Instant createdAt
+            Instant createdAt,
+            ReferenceResponse referencia
     ) {
         private static NotificationResponse from(Notificacion notification) {
             return new NotificationResponse(
@@ -149,9 +162,17 @@ public class NotificationController {
                     notification.cuerpo(),
                     notification.leidaAt() != null,
                     notification.leidaAt(),
-                    notification.createdAt()
+                    notification.createdAt(),
+                    notification.referencia() == null ? null : new ReferenceResponse(
+                            notification.referencia().tipo(), notification.referencia().id())
             );
         }
+    }
+
+    public record ReferenceResponse(String tipo, UUID id) {
+    }
+
+    public record UnreadCountResponse(long noLeidas) {
     }
 
     public record PreferencesRequest(@NotNull List<@Valid PreferenceRequest> preferencias) {

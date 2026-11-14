@@ -20,6 +20,13 @@ Cuando el domicilio está `ENTREGADO`, el vendedor de punto fijo registra el pag
 
 La tabla `pago` y el pago de tipo `PEDIDO` vienen de RF-53 y RF-42; RF-14 agrega la clave foránea `pago.domicilio_id`. Nada crea todavía el pago `TARIFA_DOMICILIO`: nace aquí, ya `REGISTRADO`. Tampoco existe la cuenta bancaria del domiciliario: la spec y spec-general solo contemplan `ConfiguracionPago` para el vendedor, así que su registro es un cambio de spec que este plan incorpora (Open Questions). RF-24 deja el domicilio `ENTREGADO` y publica E12, que avisa al vendedor de que debe pagar la tarifa; el listener de E14 está planeado en RF-38 (T027).
 
+### Implementación (Fase 5, 2026-11-13)
+
+- **Backend**: `POST/GET /api/v1/domicilios/{id}/pago-tarifa` y `POST .../pago-tarifa/confirmar` en `PagoTarifaController` (`domicilios`), con `PagoTarifaUseCase` (bloquea el domicilio, valida dueño/asignado y estado `ENTREGADO`; monto = `domicilio.tarifa`). El registro vive en `pagos` (`PagoTarifaDomicilioUseCase`, `Pago.tarifaRegistrada`/`confirmarTarifa`, E14 `PagoTarifaRegistradoEvent`, que ya notificaba al domiciliario). `FEE_NOT_REGISTERED` → 409. No hizo falta migración: V12 ya tenía el único por `domicilio_id` y el CHECK de cuenta bancaria.
+- **Cuenta del domiciliario (FR-008)**: `PUT/GET /api/v1/domiciliarios/me/configuracion-pago` (`CuentaDomiciliarioController`), reutiliza `configuracion_pago` cifrada; la respuesta va enmascarada. El vendedor la ve completa solo en el domicilio `ENTREGADO`, por `PagoTarifaDomicilioPort.cuentaDelDomiciliario` (así `domicilios` no toca el dominio de `pagos`).
+- **App**: `PagoTarifaDomicilio` en el detalle del pedido del vendedor y en el del domicilio del domiciliario, con paso de confirmación; pantalla `cuenta-domiciliario.tsx`.
+- **No incluido**: outbox sin conexión (las acciones piden red, como el resto de domicilios) y "Reportar un problema" (RF-60 aún no existe). FR-008 sigue pendiente de agregarse a la spec.
+
 ## Actors
 
 | Actor | Participación en esta feature |

@@ -24,6 +24,7 @@ jest.mock('../../lib/auth', () => ({
   getValidSession: jest.fn(),
 }));
 jest.mock('../../lib/pedidos', () => ({
+  MARGEN_RESERVA_MS: jest.requireActual('../../lib/pedidos').MARGEN_RESERVA_MS,
   aceptarPedido: jest.fn(),
   confirmarPagoPedido: jest.fn(),
   listarPedidosVendedor: jest.fn(),

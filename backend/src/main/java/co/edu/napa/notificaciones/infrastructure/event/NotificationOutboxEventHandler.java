@@ -32,6 +32,7 @@ public class NotificationOutboxEventHandler implements OutboxEventHandler {
             "domicilios.domicilio-entregado",
             "pagos.pago-tarifa-registrado",
             "domicilios.domicilio-cancelado",
+            "domicilios.domicilio-sin-asignar",
             "reportes.reporte-resuelto",
             "calificaciones.comentario-moderado",
             "cuentas.cuenta-eliminada",

@@ -48,9 +48,9 @@ Como domiciliario, quiero reportar un problema, para informar inconvenientes ocu
 
 ### Edge Cases
 
-- ¿Qué ocurre si un usuario intenta enviar un reporte sin descripción o motivo?
-- ¿Cómo maneja el sistema reportes duplicados sobre el mismo incidente?
-- ¿Puede un usuario ver el estado de los reportes que ha enviado?
+- **¿Qué ocurre si un usuario intenta enviar un reporte sin descripción o motivo?** Se rechaza: el motivo y la descripción (mínimo 10 caracteres) son obligatorios.
+- **¿Cómo maneja el sistema reportes duplicados sobre el mismo incidente?** Advierte si el usuario ya tiene un reporte abierto sobre el mismo pedido o domicilio y motivo, y no crea otro; los reportes de distintos usuarios sobre el mismo incidente se agrupan visualmente para el administrador.
+- **¿Puede un usuario ver el estado de los reportes que ha enviado?** Sí: al enviarlo ve el reporte como "pendiente" y recibe una notificación cuando se resuelve (RF-62).
 
 ## Requirements *(mandatory)*
 
@@ -65,6 +65,20 @@ Como domiciliario, quiero reportar un problema, para informar inconvenientes ocu
 ### Key Entities *(include if feature involves data)*
 
 - **Reporte**: Representa un problema informado por un usuario; atributos clave: autor (su rol se deduce de su cuenta), motivo, descripción, entidad relacionada (como máximo una: pedido, domicilio o usuario), estado (pendiente, en revisión, resuelto), fecha de creación.
+
+### Data Rules
+
+**Datos que ingresa el usuario**
+
+| Campo | Obligatorio | Regla de validación |
+|---|:---:|---|
+| Motivo | Sí | Uno de: pedido, domicilio, pago, comportamiento de un usuario, plataforma u otro. |
+| Descripción | Sí | Texto de 10 a 500 caracteres. |
+| Entidad relacionada | Condicional | Pedido, domicilio o usuario involucrado, cuando el motivo lo requiere. |
+
+**Datos que asigna el sistema**
+
+- Autor (usuario en sesión), fecha y estado "pendiente".
 
 ## Success Criteria *(mandatory)*
 

@@ -20,6 +20,10 @@ El cliente consulta el código de confirmación de su domicilio con `GET /domici
 
 El código lo genera RF-19 al asignar y lo valida RF-24. No existe la consulta del cliente. La pantalla del domicilio del cliente (trazabilidad) la crea RF-26; este plan añade el componente del código a esa pantalla.
 
+## Implementación (Fase 3, 2026-11-13)
+
+Implementado: `GET /api/v1/domicilios/{id}/codigo-confirmacion` (solo el cliente del pedido; a cualquier otro, `404`). Responde `{ domicilioId, estado, codigo }` en `ASIGNADO`, `RECOGIDO` y `EN_CAMINO`; en `DISPONIBLE` responde `409 INVALID_STATE` con "Tu código estará disponible cuando un domiciliario acepte el domicilio", y también en `ENTREGADO` y `CANCELADO`. La app lo muestra en grande en `pedido-cliente.tsx` (RF-48) en lugar de en la pantalla de trazabilidad.
+
 ## Actors
 
 | Actor | Participación en esta feature |
