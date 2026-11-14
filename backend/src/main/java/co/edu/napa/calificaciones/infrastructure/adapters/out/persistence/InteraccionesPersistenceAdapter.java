@@ -42,6 +42,23 @@ public class InteraccionesPersistenceAdapter implements InteraccionesPort {
     }
 
     @Override
+    public Optional<UUID> pedidoDeDomicilio(UUID domicilioId) {
+        return jdbc.queryForList("SELECT pedido_id FROM domicilio WHERE id = ?", UUID.class, domicilioId)
+                .stream().findFirst();
+    }
+
+    @Override
+    public Optional<String> nombre(co.edu.napa.calificaciones.domain.model.TipoEntidad tipo, UUID entidadId) {
+        String tabla = switch (tipo) {
+            case EMPRENDIMIENTO -> "emprendimiento";
+            case PRODUCTO -> "producto";
+            case USUARIO -> "usuario";
+        };
+        return jdbc.queryForList("SELECT nombre FROM " + tabla + " WHERE id = ?", String.class, entidadId)
+                .stream().findFirst();
+    }
+
+    @Override
     public Optional<UUID> duenioEmprendimiento(UUID emprendimientoId) {
         return jdbc.queryForList("SELECT usuario_id FROM emprendimiento WHERE id = ?", UUID.class, emprendimientoId)
                 .stream().findFirst();

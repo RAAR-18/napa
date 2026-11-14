@@ -77,6 +77,32 @@ public class CalificacionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(CalificacionCreada.de(calificacion));
     }
 
+    /** A quién puede calificar el usuario en un pedido entregado (por pedido o, para el domiciliario, por domicilio). */
+    @GetMapping("/api/v1/calificaciones/opciones")
+    @PreAuthorize(PARTICIPANTES)
+    public ResponseEntity<CalificarPort.Opciones> opciones(@AuthenticationPrincipal Jwt jwt, HttpServletRequest request) {
+        Map<String, String[]> parametros = request.getParameterMap();
+        for (String nombre : parametros.keySet()) {
+            if (!Set.of("pedidoId", "domicilioId").contains(nombre)) {
+                throw invalido(nombre, "Filtro no permitido.");
+            }
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(calificar.opciones(usuario(jwt), rol(jwt),
+                uuid(parametros, "pedidoId"), uuid(parametros, "domicilioId")));
+    }
+
+    private static UUID uuid(Map<String, String[]> parametros, String nombre) {
+        String valor = valor(parametros, nombre);
+        if (valor == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(valor);
+        } catch (IllegalArgumentException e) {
+            throw invalido(nombre, "Identificador inválido.");
+        }
+    }
+
     /** Una ruta con dos ramas: los participantes (RF-02) y el administrador (RF-03, RF-06). */
     @GetMapping("/api/v1/calificaciones")
     public ResponseEntity<?> listar(@AuthenticationPrincipal Jwt jwt, HttpServletRequest request) {

@@ -11,6 +11,12 @@ import java.util.UUID;
 public interface InteraccionesPort {
     Optional<ParticipantesPedido> participantes(UUID pedidoId);
 
+    /** Pedido de un domicilio, para que el domiciliario llegue a sus opciones de calificación. */
+    Optional<UUID> pedidoDeDomicilio(UUID domicilioId);
+
+    /** Nombre visible de un emprendimiento, producto o usuario. */
+    Optional<String> nombre(co.edu.napa.calificaciones.domain.model.TipoEntidad tipo, UUID entidadId);
+
     /** Dueño del emprendimiento, aunque esté inactivo o eliminado (histórico, RF-02 Edge 3). */
     Optional<UUID> duenioEmprendimiento(UUID emprendimientoId);
 

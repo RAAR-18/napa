@@ -67,6 +67,42 @@ public class CalificarUseCase implements CalificarPort {
         return calificacion;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Opciones opciones(UUID usuarioId, RolUsuario rol, UUID pedidoId, UUID domicilioId) {
+        Objects.requireNonNull(usuarioId, "usuarioId");
+        if ((pedidoId == null) == (domicilioId == null)) {
+            throw new DomainException("VALIDATION_ERROR", "Indica el pedido o el domicilio.",
+                    Map.of("fields", Map.of("pedidoId", "Indica pedidoId o domicilioId")));
+        }
+        UUID idPedido = pedidoId != null ? pedidoId : interacciones.pedidoDeDomicilio(domicilioId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", NO_ENCONTRADO));
+        ParticipantesPedido pedido = interacciones.participantes(idPedido)
+                .filter(p -> participa(usuarioId, rol, p))
+                .orElseThrow(() -> new DomainException("NOT_FOUND", NO_ENCONTRADO));
+        if (!ENTREGADO.equals(pedido.estado())) {
+            return new Opciones(idPedido, pedido.estado(), java.util.List.of());
+        }
+        Map<String, UUID> hechas = new java.util.HashMap<>();
+        calificaciones.delAutorEnPedido(usuarioId, idPedido)
+                .forEach(c -> hechas.put(c.tipoEntidad() + ":" + c.entidadId(), c.id()));
+        java.util.List<Opcion> opciones = new java.util.ArrayList<>();
+        java.util.function.BiConsumer<TipoEntidad, UUID> agregar = (tipo, id) -> {
+            if (id == null || id.equals(usuarioId) || !destinoPermitido(rol, pedido, tipo, id)) {
+                return;
+            }
+            String rolDestino = tipo != TipoEntidad.USUARIO ? null
+                    : id.equals(pedido.clienteId()) ? "CLIENTE" : "DOMICILIARIO";
+            opciones.add(new Opcion(tipo, id, interacciones.nombre(tipo, id).orElse(null), rolDestino,
+                    hechas.get(tipo + ":" + id)));
+        };
+        agregar.accept(TipoEntidad.EMPRENDIMIENTO, pedido.emprendimientoId());
+        pedido.productoIds().stream().sorted().forEach(id -> agregar.accept(TipoEntidad.PRODUCTO, id));
+        agregar.accept(TipoEntidad.USUARIO, pedido.clienteId());
+        agregar.accept(TipoEntidad.USUARIO, pedido.domiciliarioId());
+        return new Opciones(idPedido, pedido.estado(), opciones);
+    }
+
     static DomainException yaCalificado() {
         return new DomainException("CONFLICT", "Ya calificaste esto.");
     }

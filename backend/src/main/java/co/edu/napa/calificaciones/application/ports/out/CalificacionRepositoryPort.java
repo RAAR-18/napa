@@ -13,6 +13,9 @@ import java.util.UUID;
 public interface CalificacionRepositoryPort {
     boolean existe(UUID autorId, UUID pedidoId, TipoEntidad tipoEntidad, UUID entidadId);
 
+    /** Calificaciones del autor en el pedido (cualquier estado). */
+    List<Calificacion> delAutorEnPedido(UUID autorId, UUID pedidoId);
+
     /** Lanza {@code CONFLICT} si el índice único detecta una calificación igual (carrera de dos envíos). */
     void insertar(Calificacion calificacion);
 

@@ -125,6 +125,14 @@ class CalificacionesYReportesIntegrationTest {
 
     @Test
     void ciclo_completo_de_calificaciones() throws Exception {
+        // Opciones: el cliente puede calificar emprendimiento, producto y domiciliario; el domiciliario llega por domicilio.
+        Map<String, Object> opciones = body(enviar("GET", "/calificaciones/opciones?pedidoId=" + pedido, cliente.token(), null));
+        assertEquals(3, ((List<?>) opciones.get("opciones")).size());
+        Map<String, Object> delDomiciliario = body(enviar("GET", "/calificaciones/opciones?domicilioId=" + domicilio,
+                domiciliario.token(), null));
+        assertEquals(pedido.toString(), delDomiciliario.get("pedidoId"));
+        assertEquals(2, ((List<?>) delDomiciliario.get("opciones")).size());
+
         // RF-01: cliente califica emprendimiento, producto y domiciliario.
         HttpResponse<String> creada = calificar(cliente, "EMPRENDIMIENTO", emprendimiento, 5, "Muy frescas");
         assertEquals(201, creada.statusCode(), creada.body());
@@ -132,6 +140,8 @@ class CalificacionesYReportesIntegrationTest {
         String calificacionId = body(creada).get("id").toString();
         assertEquals(201, calificar(cliente, "PRODUCTO", producto, 4, null).statusCode());
         assertEquals(201, calificar(cliente, "USUARIO", domiciliario.id(), 3, "Algo tarde").statusCode());
+        Map<String, Object> yaHechas = body(enviar("GET", "/calificaciones/opciones?pedidoId=" + pedido, cliente.token(), null));
+        assertTrue(contenidoDe(yaHechas).stream().allMatch(o -> o.get("calificacionId") != null));
         // Vendedor y domiciliario califican a sus contrapartes.
         assertEquals(201, calificar(vendedor, "USUARIO", cliente.id(), 5, null).statusCode());
         assertEquals(201, calificar(vendedor, "USUARIO", domiciliario.id(), 4, null).statusCode());
@@ -420,6 +430,11 @@ class CalificacionesYReportesIntegrationTest {
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> contenido(Map<String, Object> pagina) {
         return (List<Map<String, Object>>) pagina.get("content");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> contenidoDe(Map<String, Object> opciones) {
+        return (List<Map<String, Object>>) opciones.get("opciones");
     }
 
     private record Usuario(UUID id, String token) {}

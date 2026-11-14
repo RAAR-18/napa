@@ -74,6 +74,12 @@ public class CalificacionPersistenceAdapter implements CalificacionRepositoryPor
     }
 
     @Override
+    public List<Calificacion> delAutorEnPedido(UUID autorId, UUID pedidoId) {
+        return jdbc.query("SELECT " + COLUMNAS + " FROM calificacion c WHERE c.autor_id = ? AND c.pedido_id = ?",
+                CALIFICACION, autorId, pedidoId);
+    }
+
+    @Override
     public void insertar(Calificacion c) {
         try {
             jdbc.update("""
