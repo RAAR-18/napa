@@ -268,6 +268,41 @@ class CalificacionesYReportesIntegrationTest {
                 .contains(reporteId));
     }
 
+    @Test
+    void rf49_el_cliente_contacta_al_vendedor_y_al_domiciliario_en_camino() throws Exception {
+        UUID enCamino = pedido("EN_CAMINO");
+        Timestamp ahora = Timestamp.from(Instant.now());
+        jdbc.update("""
+                INSERT INTO domicilio (id, pedido_id, vendedor_id, comprador_id, domiciliario_id, estado, tarifa,
+                                       ubicacion_origen_id, ubicacion_destino_id, codigo_confirmacion, asignado_at,
+                                       created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 'EN_CAMINO', 5000, ?, ?, '654321', ?, ?, ?)
+                """, UUID.randomUUID(), enCamino, vendedor.id(), cliente.id(), domiciliario.id(), ubicacion(),
+                ubicacion(), ahora, ahora, ahora);
+        String celularVendedor = jdbc.queryForObject("SELECT celular FROM usuario WHERE id = ?", String.class,
+                vendedor.id());
+
+        HttpResponse<String> llamada = enviar("POST", "/pedidos/" + enCamino + "/contactar", cliente.token(),
+                Map.of("destinatario", "VENDEDOR", "tipo", "LLAMADA"));
+        assertEquals(200, llamada.statusCode(), llamada.body());
+        assertEquals("tel:" + celularVendedor, body(llamada).get("enlace"));
+        HttpResponse<String> mensaje = enviar("POST", "/pedidos/" + enCamino + "/contactar", cliente.token(),
+                Map.of("destinatario", "DOMICILIARIO", "tipo", "MENSAJE"));
+        assertEquals(200, mensaje.statusCode(), mensaje.body());
+        assertTrue(body(mensaje).get("enlace").toString().startsWith("https://wa.me/57"));
+        assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM canal_contacto WHERE pedido_id = ?",
+                Integer.class, enCamino));
+
+        assertCodigo(409, "INVALID_STATE", enviar("POST", "/pedidos/" + pedido + "/contactar", cliente.token(),
+                Map.of("destinatario", "VENDEDOR", "tipo", "LLAMADA")));
+        assertCodigo(404, "NOT_FOUND", enviar("POST", "/pedidos/" + enCamino + "/contactar",
+                registrar("CLIENTE").token(), Map.of("destinatario", "VENDEDOR", "tipo", "LLAMADA")));
+        assertCodigo(400, "VALIDATION_ERROR", enviar("POST", "/pedidos/" + enCamino + "/contactar", cliente.token(),
+                Map.of("destinatario", "OTRO", "tipo", "LLAMADA")));
+        assertCodigo(403, "FORBIDDEN", enviar("POST", "/pedidos/" + enCamino + "/contactar", vendedor.token(),
+                Map.of("destinatario", "VENDEDOR", "tipo", "LLAMADA")));
+    }
+
     private HttpResponse<String> calificar(Usuario autor, String tipo, UUID entidad, int puntaje, String comentario)
             throws Exception {
         Map<String, Object> cuerpo = new HashMap<>(Map.of(

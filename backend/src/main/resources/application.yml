@@ -11,6 +11,10 @@ spring:
       port: ${REDIS_PORT:6379}
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 3MB
   jpa:
     hibernate:
       ddl-auto: validate
@@ -30,6 +34,9 @@ management:
         enabled: true
 
 napa:
+  fotos:
+    directorio: ${NAPA_FOTOS_DIRECTORIO:./data/fotos}
+    url-base: ${NAPA_FOTOS_URL_BASE:}
   pedidos:
     enabled: ${NAPA_PEDIDOS_ENABLED:true}
     tarifa:

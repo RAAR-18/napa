@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         "napa.auth.admin-bootstrap.email=usuarios-admin@example.test",
         "napa.auth.admin-bootstrap.password=StrongPassword123",
         "napa.outbox.enabled=false",
+        "napa.fotos.directorio=build/test-fotos",
         "NAPA_OTP_CONSOLE_CODE=654321",
         "napa.verification.console-code=654321"
 })
@@ -120,6 +121,54 @@ class UsuariosIntegrationTest {
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM outbox_event WHERE event_type = 'cuentas.cuenta-eliminada'"
                 + " AND aggregate_id = ?", Integer.class, ana.id()));
         assertEquals(401, enviar("GET", "/usuarios/me", ana.token(), null).statusCode());
+    }
+
+    @Test
+    void cambioDeCelularConCodigoYFotoDePerfil() throws Exception {
+        Usuario luis = registrar("DOMICILIARIO", "Luis Díaz");
+        String anterior = jdbc.queryForObject("SELECT celular FROM usuario WHERE id = ?", String.class, luis.id());
+        String nuevo = "+573" + ThreadLocalRandom.current().nextLong(100_000_000, 1_000_000_000);
+
+        HttpResponse<String> solicitud = enviar("POST", "/usuarios/me/celular/solicitar-cambio", luis.token(),
+                Map.of("celular", nuevo));
+        assertEquals(202, solicitud.statusCode(), solicitud.body());
+        assertEquals(anterior, jdbc.queryForObject("SELECT celular FROM usuario WHERE id = ?", String.class, luis.id()));
+        assertCodigo(400, "OTP_INVALID", enviar("POST", "/usuarios/me/celular/confirmar", luis.token(),
+                Map.of("codigo", "111111")));
+        HttpResponse<String> confirmado = enviar("POST", "/usuarios/me/celular/confirmar", luis.token(),
+                Map.of("codigo", "654321"));
+        assertEquals(200, confirmado.statusCode(), confirmado.body());
+        assertEquals(nuevo, body(confirmado).get("celular"));
+        assertCodigo(409, "PHONE_ALREADY_REGISTERED", enviar("POST", "/usuarios/me/celular/solicitar-cambio",
+                registrar("CLIENTE", "Otra").token(), Map.of("celular", nuevo)));
+
+        byte[] png = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0};
+        HttpResponse<String> foto = subirFoto(luis.token(), png);
+        assertEquals(200, foto.statusCode(), foto.body());
+        String url = body(foto).get("fotoUrl").toString();
+        assertTrue(url.startsWith("/media/perfiles/") && url.endsWith(".png"), url);
+        HttpResponse<byte[]> servida = client.send(HttpRequest.newBuilder(
+                URI.create("http://localhost:" + port + url)).build(), HttpResponse.BodyHandlers.ofByteArray());
+        assertEquals(200, servida.statusCode());
+        assertEquals(png.length, servida.body().length);
+        assertCodigo(400, "VALIDATION_ERROR", subirFoto(luis.token(), "GIF89a no soportado".getBytes()));
+    }
+
+    private HttpResponse<String> subirFoto(String token, byte[] contenido) throws Exception {
+        String limite = "----napa" + UUID.randomUUID();
+        byte[] inicio = ("--" + limite + "\r\nContent-Disposition: form-data; name=\"foto\"; filename=\"f.bin\"\r\n"
+                + "Content-Type: application/octet-stream\r\n\r\n").getBytes();
+        byte[] fin = ("\r\n--" + limite + "--\r\n").getBytes();
+        byte[] cuerpo = new byte[inicio.length + contenido.length + fin.length];
+        System.arraycopy(inicio, 0, cuerpo, 0, inicio.length);
+        System.arraycopy(contenido, 0, cuerpo, inicio.length, contenido.length);
+        System.arraycopy(fin, 0, cuerpo, inicio.length + contenido.length, fin.length);
+        return client.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/v1/usuarios/me/foto"))
+                .header("Authorization", "Bearer " + token)
+                .header("X-Device-Id", "usuarios-test")
+                .header("Content-Type", "multipart/form-data; boundary=" + limite)
+                .PUT(HttpRequest.BodyPublishers.ofByteArray(cuerpo))
+                .build(), HttpResponse.BodyHandlers.ofString());
     }
 
     @Test

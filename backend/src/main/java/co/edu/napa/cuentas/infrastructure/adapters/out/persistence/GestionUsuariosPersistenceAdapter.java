@@ -84,15 +84,19 @@ public class GestionUsuariosPersistenceAdapter implements GestionUsuariosReposit
     @Override
     public void actualizarCelular(UUID usuarioId, String celular, Instant ahora) {
         try {
-            // El administrador fija el celular sin código (RF-67); queda como verificado.
+            // Lo confirma el código (RF-08) o lo fija el administrador sin código (RF-67): queda verificado.
             jdbc.update("""
-                    UPDATE usuario SET celular = ?, celular_verificado_at = COALESCE(celular_verificado_at, ?),
-                                       updated_at = ?
+                    UPDATE usuario SET celular = ?, celular_verificado_at = ?, updated_at = ?
                     WHERE id = ?
                     """, celular, Timestamp.from(ahora), Timestamp.from(ahora), usuarioId);
         } catch (DuplicateKeyException e) {
             throw new DomainException("PHONE_ALREADY_REGISTERED", "Ese celular ya está registrado.");
         }
+    }
+
+    @Override
+    public void actualizarFoto(UUID usuarioId, String fotoUrl, Instant ahora) {
+        jdbc.update("UPDATE usuario SET foto_url = ?, updated_at = ? WHERE id = ?", fotoUrl, Timestamp.from(ahora), usuarioId);
     }
 
     @Override

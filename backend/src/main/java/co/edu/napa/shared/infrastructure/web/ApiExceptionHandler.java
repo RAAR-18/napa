@@ -72,6 +72,14 @@ public class ApiExceptionHandler {
         );
     }
 
+    /** RF-08: la foto supera el tamaño permitido. */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleUploadTooLarge(Exception exception, HttpServletRequest request) {
+        String message = "La foto no puede pesar más de 2 MB.";
+        return response(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message,
+                Map.of("fields", Map.of("foto", message)), request);
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiError> handleAuthentication(
             AuthenticationException exception,

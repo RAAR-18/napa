@@ -23,6 +23,8 @@ public interface GestionUsuariosRepositoryPort {
     /** Lanza {@code PHONE_ALREADY_REGISTERED} o {@code EMAIL_ALREADY_REGISTERED} si el dato es de otra cuenta. */
     void actualizarCelular(UUID usuarioId, String celular, Instant ahora);
 
+    void actualizarFoto(UUID usuarioId, String fotoUrl, Instant ahora);
+
     void actualizarCorreo(UUID usuarioId, String correo, Instant ahora);
 
     void actualizarRol(UUID usuarioId, String rol, Instant ahora);

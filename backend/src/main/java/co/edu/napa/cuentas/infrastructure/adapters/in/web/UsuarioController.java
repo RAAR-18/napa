@@ -1,6 +1,9 @@
 package co.edu.napa.cuentas.infrastructure.adapters.in.web;
 
 import co.edu.napa.cuentas.application.ports.in.AdministrarUsuariosPort;
+import co.edu.napa.cuentas.application.ports.in.CambiarCelularYFotoPort;
+import co.edu.napa.cuentas.application.ports.in.SolicitarVerificacionPort;
+import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.application.ports.in.GestionarCuentaPropiaPort;
 import co.edu.napa.cuentas.application.ports.in.PerfilUsuario;
 import co.edu.napa.shared.domain.DomainException;
@@ -14,8 +17,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 import java.util.Map;
 import java.util.Objects;
@@ -35,10 +43,78 @@ public class UsuarioController {
 
     private final GestionarCuentaPropiaPort propia;
     private final AdministrarUsuariosPort administrar;
+    private final CambiarCelularYFotoPort celularYFoto;
 
-    public UsuarioController(GestionarCuentaPropiaPort propia, AdministrarUsuariosPort administrar) {
+    public UsuarioController(
+            GestionarCuentaPropiaPort propia,
+            AdministrarUsuariosPort administrar,
+            CambiarCelularYFotoPort celularYFoto
+    ) {
         this.propia = Objects.requireNonNull(propia, "propia");
         this.administrar = Objects.requireNonNull(administrar, "administrar");
+        this.celularYFoto = Objects.requireNonNull(celularYFoto, "celularYFoto");
+    }
+
+    /** RF-08: la foto (JPEG, PNG o WebP, hasta 2 MB) se valida por su contenido. */
+    @PutMapping(value = "/api/v1/usuarios/me/foto", consumes = "multipart/form-data")
+    public ResponseEntity<Map<String, String>> cambiarFoto(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(value = "foto", required = false) MultipartFile foto,
+            HttpServletRequest request
+    ) throws IOException {
+        if (foto == null || foto.isEmpty()) {
+            throw invalido("foto", "Adjunta una foto.");
+        }
+        String url = celularYFoto.cambiarFoto(usuario(jwt), foto.getBytes());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(Map.of("fotoUrl", url));
+    }
+
+    /** RF-08 US2, paso 1: envía un código al número nuevo; el anterior sigue vigente. */
+    @PostMapping("/api/v1/usuarios/me/celular/solicitar-cambio")
+    public ResponseEntity<Map<String, Object>> solicitarCambioCelular(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody(required = false) Map<String, Object> body,
+            HttpServletRequest request
+    ) {
+        sinQuery(request);
+        Map<String, Object> datos = body == null ? Map.of() : body;
+        for (String campo : datos.keySet()) {
+            if (!Set.of("celular", "canal").contains(campo)) {
+                throw invalido(campo, "Campo no permitido.");
+            }
+        }
+        if (!(datos.get("celular") instanceof String celular)) {
+            throw invalido("celular", "El celular es obligatorio.");
+        }
+        CanalVerificacion canal = null;
+        if (datos.get("canal") != null) {
+            try {
+                canal = CanalVerificacion.valueOf(String.valueOf(datos.get("canal")));
+            } catch (IllegalArgumentException e) {
+                throw invalido("canal", "Usa WHATSAPP o SMS.");
+            }
+        }
+        SolicitarVerificacionPort.EnvioSolicitado envio = celularYFoto.solicitarCambioCelular(
+                usuario(jwt), jwt.getClaimAsString("rol"), celular, canal, request.getRemoteAddr());
+        return ResponseEntity.accepted().cacheControl(CacheControl.noStore()).body(Map.of(
+                "mensajeId", envio.mensajeId(),
+                "canal", envio.canal().name(),
+                "reenvioDisponibleEn", envio.reenvioDisponibleEn()));
+    }
+
+    /** RF-08 US2, paso 2: con el código correcto el celular nuevo reemplaza al anterior. */
+    @PostMapping("/api/v1/usuarios/me/celular/confirmar")
+    public ResponseEntity<PerfilUsuario> confirmarCambioCelular(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody(required = false) Map<String, Object> body,
+            HttpServletRequest request
+    ) {
+        sinQuery(request);
+        Object codigo = body == null ? null : body.get("codigo");
+        if (!(codigo instanceof String texto)) {
+            throw invalido("codigo", "El código es obligatorio.");
+        }
+        return sinCache(celularYFoto.confirmarCambioCelular(usuario(jwt), jwt.getClaimAsString("rol"), texto));
     }
 
     @GetMapping("/api/v1/usuarios/me")
