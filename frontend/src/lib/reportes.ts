@@ -82,9 +82,14 @@ export function crearReporte(
     requestJson<ReporteCreado>('/api/v1/reportes', {
       method: 'POST',
       headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
-      body: JSON.stringify({ ...input, descripcion: input.descripcion.trim() }),
+      body: JSON.stringify(cuerpoReporte(input)),
     }),
   );
+}
+
+/** El mismo cuerpo en línea y en la cola sin conexión (F041). */
+export function cuerpoReporte(input: { motivo: MotivoReporte; descripcion: string } & EntidadReporte) {
+  return { ...input, descripcion: input.descripcion.trim() };
 }
 
 /** El administrador ve todos (RF-61); cualquier otro rol, solo los suyos. */

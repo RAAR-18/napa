@@ -109,14 +109,25 @@ export function calificar(
   },
   idempotencyKey: string,
 ) {
-  const comentario = input.comentario?.trim();
   return withValidSession((session) =>
     requestJson<CalificacionCreada>('/api/v1/calificaciones', {
       method: 'POST',
       headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
-      body: JSON.stringify({ ...input, comentario: comentario ? comentario : undefined }),
+      body: JSON.stringify(cuerpoCalificacion(input)),
     }),
   );
+}
+
+/** El mismo cuerpo en línea y en la cola sin conexión (F041), para que la clave de idempotencia coincida. */
+export function cuerpoCalificacion(input: {
+  pedidoId: string;
+  tipoEntidad: TipoEntidadCalificada;
+  entidadId: string;
+  puntaje: number;
+  comentario?: string | null;
+}) {
+  const comentario = input.comentario?.trim();
+  return { ...input, comentario: comentario ? comentario : undefined };
 }
 
 /** RF-02 (participantes) o RF-03 (administrador): la API decide la rama por el rol de la sesión. */

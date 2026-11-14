@@ -14,10 +14,12 @@ import {
   palette,
 } from '../components/AuthUI';
 import Estrellas from '../components/Estrellas';
-import { ApiError } from '../lib/api';
+import { outbox } from '../database/outbox';
+import { ApiError, NetworkError } from '../lib/api';
 import {
   COMENTARIO_MAXIMO,
   calificar,
+  cuerpoCalificacion,
   obtenerOpcionesCalificacion,
   type OpcionCalificacion,
   type OpcionesCalificacion,
@@ -71,6 +73,8 @@ export default function CalificarPedidoScreen() {
     void cargar();
   }, [pedidoId, domicilioId]);
 
+  const PENDIENTE_ENVIO = 'pendiente-envio';
+
   const pendientes = data?.opciones.filter((o) => !o.calificacionId) ?? [];
   const hechas = data?.opciones.filter((o) => o.calificacionId) ?? [];
 
@@ -112,7 +116,8 @@ export default function CalificarPedidoScreen() {
           <Text style={styles.title}>Ya calificaste</Text>
           {hechas.map((opcion) => (
             <Text key={clave(opcion)} style={styles.detail}>
-              {etiqueta(opcion)}: {opcion.nombre ?? 'Sin nombre'} ✓
+              {etiqueta(opcion)}: {opcion.nombre ?? 'Sin nombre'}{' '}
+              {opcion.calificacionId === PENDIENTE_ENVIO ? '(pendiente de envío)' : '✓'}
             </Text>
           ))}
           <HelperText>Puedes editar o eliminar tus calificaciones desde el perfil de cada uno.</HelperText>
@@ -150,13 +155,23 @@ function FormularioCalificacion({
     setBusy(true);
     setError(null);
     key.current ??= Crypto.randomUUID();
+    const datos = { pedidoId, tipoEntidad: opcion.tipoEntidad, entidadId: opcion.entidadId, puntaje, comentario };
     try {
-      const creada = await calificar(
-        { pedidoId, tipoEntidad: opcion.tipoEntidad, entidadId: opcion.entidadId, puntaje, comentario },
-        key.current,
-      );
+      const creada = await calificar(datos, key.current);
       onCalificado(creada.id);
     } catch (cause) {
+      if (cause instanceof NetworkError) {
+        // F041: se guarda con la misma clave y se envía sola cuando vuelva la conexión.
+        await outbox.encolar({
+          method: 'POST',
+          path: '/api/v1/calificaciones',
+          body: cuerpoCalificacion(datos),
+          idempotencyKey: key.current,
+          descripcion: `Calificación de ${opcion.nombre ?? etiqueta(opcion)}`,
+        });
+        onCalificado('pendiente-envio');
+        return;
+      }
       if (cause instanceof ApiError && cause.code === 'CONFLICT') {
         onCalificado('ya-calificado');
         return;

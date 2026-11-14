@@ -153,9 +153,9 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 **Phase F4 – Frontend base**
 - [ ] F040 Proyecto Expo con development build, navegación y cliente Axios en `frontend/src/services/http/`
-- [ ] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`
+- [x] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`. Tabla `outbox` en `napa.db` con clave única por `Idempotency-Key`; reenvío en orden con retroceso exponencial (5 s a 5 min); fallo de red, 401, 408, 429 y 5xx se reintentan (5xx hasta 8 veces); `CONFLICT`/`ALREADY_*` cuentan como ya aplicada; otro 4xx queda `FALLIDA` para reintentar o descartar. Se procesa al abrir la app, al volver a primer plano y cada minuto, y se vacía al cerrar sesión. Usada por RF-01 (calificar) y RF-60 (reportar); pantalla "Pendientes de envío".
 - [ ] F042 Registro del token FCM nativo y pantalla de notificaciones; el frontend actual no tiene autenticación, navegación ni cliente HTTP.
-- [ ] F043 Pruebas Jest de outbox (sin red, reintento, duplicado)
+- [x] F043 Pruebas Jest de outbox (sin red, reintento, duplicado) en `frontend/src/database/outbox/outbox.test.ts` y `sqlite-store.test.ts`, más la pantalla de reporte sin conexión.
 
 **Checkpoint**: se puede registrar un usuario, verificar su celular, iniciar sesión, recibir una notificación push y reenviar una acción creada sin conexión sin duplicarla.
 

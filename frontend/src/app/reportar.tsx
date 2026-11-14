@@ -14,13 +14,15 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
-import { ApiError } from '../lib/api';
+import { outbox } from '../database/outbox';
+import { ApiError, NetworkError } from '../lib/api';
 import { manejarError, mensajeDeCampo } from '../lib/errores';
 import {
   DESCRIPCION_MAXIMA,
   DESCRIPCION_MINIMA,
   MOTIVOS_CON_ENTIDAD,
   crearReporte,
+  cuerpoReporte,
   motivoReporteNombres,
   type EntidadReporte,
   type MotivoReporte,
@@ -54,6 +56,7 @@ export default function ReportarScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creado, setCreado] = useState<ReporteCreado | null>(null);
+  const [guardadoSinConexion, setGuardadoSinConexion] = useState(false);
   const key = useRef<string | null>(null);
 
   const sinEntidad = !entidad.pedidoId && !entidad.domicilioId && !entidad.usuarioId;
@@ -75,9 +78,22 @@ export default function ReportarScreen() {
     setBusy(true);
     setError(null);
     key.current ??= Crypto.randomUUID();
+    const datos = { motivo, descripcion, ...entidad };
     try {
-      setCreado(await crearReporte({ motivo, descripcion, ...entidad }, key.current));
+      setCreado(await crearReporte(datos, key.current));
     } catch (cause) {
+      if (cause instanceof NetworkError) {
+        // F041: se guarda con la misma clave y se envía sola cuando vuelva la conexión.
+        await outbox.encolar({
+          method: 'POST',
+          path: '/api/v1/reportes',
+          body: cuerpoReporte(datos),
+          idempotencyKey: key.current,
+          descripcion: `Reporte: ${motivoReporteNombres[motivo]}`,
+        });
+        setGuardadoSinConexion(true);
+        return;
+      }
       key.current = null;
       if (cause instanceof ApiError && cause.code === 'CONFLICT') {
         setError('Ya tienes un reporte abierto sobre esto. Te avisaremos cuando se resuelva.');
@@ -89,6 +105,20 @@ export default function ReportarScreen() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (guardadoSinConexion) {
+    return (
+      <AuthPage>
+        <PageHeading
+          eyebrow="Sin conexión"
+          title="Guardamos tu reporte"
+          description="Se enviará solo cuando vuelva la conexión. Puedes verlo en Pendientes de envío."
+        />
+        <PrimaryButton title="Ver pendientes de envío" onPress={() => router.replace('/pendientes-envio')} />
+        <TextButton title="Volver" onPress={() => router.back()} />
+      </AuthPage>
+    );
   }
 
   if (creado) {

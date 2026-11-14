@@ -28,6 +28,14 @@ export class ApiError extends Error {
   }
 }
 
+/** La petición no llegó al servidor (sin señal o API caída): la acción puede reintentarse con la misma clave. */
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
 function getApiBaseUrl(): string {
   const configuredUrl = process.env.EXPO_PUBLIC_API_URL;
   if (configuredUrl?.trim()) {
@@ -131,7 +139,7 @@ async function sendRequest(path: string, init: RequestInit): Promise<Response> {
         ))
     ) {
       const detail = error instanceof Error ? ` Detalle: ${error.message}` : '';
-      throw new Error(
+      throw new NetworkError(
         `No se pudo conectar con la API en ${apiBaseUrl}. Comprueba que el backend esté activo en el puerto 8080 y que el teléfono y el computador estén en la misma red Wi-Fi.${detail}`,
       );
     }

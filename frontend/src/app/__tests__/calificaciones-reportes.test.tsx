@@ -4,7 +4,8 @@ import * as Crypto from 'expo-crypto';
 import CalificarPedidoScreen from '../calificar-pedido';
 import ReportarScreen from '../reportar';
 import UsuarioAdminScreen from '../usuario-admin';
-import { ApiError } from '../../lib/api';
+import { outbox } from '../../database/outbox';
+import { ApiError, NetworkError } from '../../lib/api';
 import { calificar, obtenerOpcionesCalificacion } from '../../lib/calificaciones';
 import { crearReporte } from '../../lib/reportes';
 import { eliminarUsuario, obtenerUsuario } from '../../lib/usuarios';
@@ -25,6 +26,9 @@ jest.mock('../../lib/calificaciones', () => ({
 jest.mock('../../lib/reportes', () => ({
   ...jest.requireActual('../../lib/reportes'),
   crearReporte: jest.fn(),
+}));
+jest.mock('../../database/outbox', () => ({
+  outbox: { encolar: jest.fn().mockResolvedValue(undefined) },
 }));
 jest.mock('../../lib/usuarios', () => ({
   ...jest.requireActual('../../lib/usuarios'),
@@ -128,6 +132,27 @@ describe('reportar un problema (RF-60)', () => {
     await waitFor(() =>
       expect(view.getByText('Ya tienes un reporte abierto sobre esto. Te avisaremos cuando se resuelva.')).toBeTruthy(),
     );
+  });
+});
+
+describe('sin conexión (F041)', () => {
+  it('queues the report with the same idempotency key when the request does not reach the server', async () => {
+    mockParams = { pedidoId: 'p-1' };
+    jest.mocked(crearReporte).mockRejectedValue(new NetworkError('No se pudo conectar con la API'));
+    const view = await render(<ReportarScreen />);
+
+    await fireEvent.press(view.getByRole('radio', { name: 'Problema con un pedido' }));
+    await fireEvent.changeText(view.getByLabelText('Descripción'), '  Me llegó incompleto.  ');
+    await fireEvent.press(view.getByRole('button', { name: 'Enviar reporte' }));
+
+    await waitFor(() => expect(view.getByText('Guardamos tu reporte')).toBeTruthy());
+    expect(outbox.encolar).toHaveBeenCalledWith({
+      method: 'POST',
+      path: '/api/v1/reportes',
+      body: { motivo: 'PEDIDO', descripcion: 'Me llegó incompleto.', pedidoId: 'p-1', domicilioId: undefined, usuarioId: undefined },
+      idempotencyKey: 'key-1',
+      descripcion: 'Reporte: Problema con un pedido',
+    });
   });
 });
 
