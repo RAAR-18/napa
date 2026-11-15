@@ -133,6 +133,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [x] F013 Utilidades geo y `RoutingPort` con adaptador OpenRouteService en `shared/infrastructure/geo/`
 - [x] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
 - [x] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis). Validación en GitHub Actions: 287 pruebas, 0 fallos y 0 omitidas; incluye ArchUnit y las suites de integración. 
+
 **Phase F2 – Identidad (RF-07, RF-09, RF-10, RF-11)**
 - [x] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración. Validación de persistencia en PostgreSQL/PostGIS en CI: `UsuarioPersistenceIntegrationTest`, 3 pruebas aprobadas, sin omisiones.
 - [x] F021 Completar el flujo de solicitud/confirmación sobre `VerificarCelularPort`, límites de envíos e intentos en Redis y adaptador `otp-console` (un único adaptador Redis, perfil y código configurados desde el README; pruebas de contexto y recorrido HTTP con Docker validadas localmente)
@@ -152,10 +153,14 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [ ] F033 Entidad `mensaje` y adaptador Twilio Verify de producción (RF-70); fuera del alcance aprobado para desarrollo, que mantiene OTP real deshabilitado.
 
 **Phase F4 – Frontend base**
-- [ ] F040 Proyecto Expo con development build, navegación y cliente Axios en `frontend/src/services/http/`
+- [x] F040 Proyecto Expo con development build Android (`expo-dev-client` y perfil `development` en `frontend/eas.json`), navegación con Expo Router y cliente HTTP basado en `fetch` en `frontend/src/lib/api.ts`. APK instalada y cierre/nuevo inicio de sesión validados en Android físico.
 - [x] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`. Tabla `outbox` en `napa.db` con clave única por `Idempotency-Key`; reenvío en orden con retroceso exponencial (5 s a 5 min); fallo de red, 401, 408, 429 y 5xx se reintentan (5xx hasta 8 veces); `CONFLICT`/`ALREADY_*` cuentan como ya aplicada; otro 4xx queda `FALLIDA` para reintentar o descartar. Se procesa al abrir la app, al volver a primer plano y cada minuto, y se vacía al cerrar sesión. Usada por RF-01 (calificar) y RF-60 (reportar); pantalla "Pendientes de envío".
 - [ ] F042 Registro del token FCM nativo y pantalla de notificaciones; el frontend actual no tiene autenticación, navegación ni cliente HTTP.
 - [x] F043 Pruebas Jest de outbox (sin red, reintento, duplicado) en `frontend/src/database/outbox/outbox.test.ts` y `sqlite-store.test.ts`, más la pantalla de reporte sin conexión.
+
+**Decisión — cliente HTTP**: se conserva `fetch` centralizado en `frontend/src/lib/api.ts`, que ya maneja errores y cabeceras de autenticación e idempotencia. Sustituye la previsión inicial de Axios; no cambia los contratos de la API.
+
+**Validación F040**: se reportó Expo Doctor 20/20, lint y TypeScript sin errores y Jest con 90 pruebas aprobadas en 17 suites. Se instaló el development build en Android físico, se confirmó cierre y nuevo inicio de sesión contra el backend local. [Compilación Android](https://expo.dev/accounts/raar-18/projects/napa/builds/cda665c6-350e-49e7-bdc5-cd7b42cb1206). 
 
 **Checkpoint**: se puede registrar un usuario, verificar su celular, iniciar sesión, recibir una notificación push y reenviar una acción creada sin conexión sin duplicarla.
 
