@@ -38,7 +38,7 @@
           "locationWhenInUsePermission": "Ñapa usa tu ubicación para mostrarte emprendimientos y domicilios cercanos y para guiarte en la ruta de entrega."
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
       "expo-notifications"
     ],
     "extra": {
