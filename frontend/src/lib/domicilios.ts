@@ -298,6 +298,19 @@ export function obtenerTrazabilidad(domicilioId: string) {
   );
 }
 
+/** RF-26: la app del domiciliario envía su posición cada 15 s mientras el domicilio está en camino. */
+export const INTERVALO_UBICACION_MS = 15_000;
+
+export function enviarUbicacionDomiciliario(domicilioId: string, latitud: number, longitud: number) {
+  return withValidSession((session) =>
+    requestVoid(`/api/v1/domicilios/${encodeURIComponent(domicilioId)}/ubicacion-domiciliario`, {
+      method: 'PUT',
+      headers: jsonHeaders({ accessToken: session.accessToken }),
+      body: JSON.stringify({ latitud, longitud }),
+    }),
+  );
+}
+
 export type TramoRuta = {
   tipo: 'HACIA_ORIGEN' | 'HACIA_DESTINO';
   distanciaMetros: number;

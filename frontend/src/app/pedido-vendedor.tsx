@@ -12,6 +12,7 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
+import ClienteDelPedido from '../components/ClienteDelPedido';
 import DomiciliarioAsignado from '../components/DomiciliarioAsignado';
 import PagoTarifaDomicilio from '../components/PagoTarifaDomicilio';
 import { ApiError } from '../lib/api';
@@ -270,6 +271,7 @@ export default function PedidoVendedorScreen() {
               <Text style={styles.reservation}>Reserva: {formatDate(detail.reserva)}</Text>
             ) : null}
           </View>
+          <ClienteDelPedido pedidoId={detail.id} estado={detail.estado} />
           <Text accessibilityRole="header" style={styles.sectionTitle}>Productos</Text>
           {detail.items.map((item) => (
             <View key={item.productoId} style={styles.card}>
@@ -486,6 +488,25 @@ export default function PedidoVendedorScreen() {
             </View>
           ) : null}
         </>
+      ) : null}
+      {detail?.estado === 'ENTREGADO' ? (
+        <PrimaryButton
+          title="Calificar al cliente"
+          onPress={() => router.push({ pathname: '/calificar-pedido', params: { pedidoId: detail.id } })}
+        />
+      ) : null}
+      {detail ? (
+        <TextButton
+          title="Reportar un problema con este pedido"
+          onPress={() =>
+            router.push({
+              pathname: '/reportar',
+              params: detail.domicilio
+                ? { domicilioId: detail.domicilio.id, contexto: `Pedido de ${detail.cliente.nombre}` }
+                : { pedidoId: detail.id, contexto: `Pedido de ${detail.cliente.nombre}` },
+            })
+          }
+        />
       ) : null}
       {!loading && error && !detail ? (
         <PrimaryButton title="Reintentar carga" onPress={() => setLoadAttempt((attempt) => attempt + 1)} />

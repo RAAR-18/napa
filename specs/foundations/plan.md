@@ -154,9 +154,9 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 **Phase F4 – Frontend base**
 - [x] F040 Proyecto Expo con development build Android (`expo-dev-client` y perfil `development` en `frontend/eas.json`), navegación con Expo Router y cliente HTTP basado en `fetch` en `frontend/src/lib/api.ts`. APK instalada y cierre/nuevo inicio de sesión validados en Android físico.
-- [ ] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`
-- [ ] F042 Registro del token FCM nativo y pantalla de notificaciones. Ya existen autenticación, navegación y cliente HTTP; falta completar y validar el flujo push en dispositivo.
-- [ ] F043 Pruebas Jest de outbox (sin red, reintento, duplicado)
+- [x] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`. Tabla `outbox` en `napa.db` con clave única por `Idempotency-Key`; reenvío en orden con retroceso exponencial (5 s a 5 min); fallo de red, 401, 408, 429 y 5xx se reintentan (5xx hasta 8 veces); `CONFLICT`/`ALREADY_*` cuentan como ya aplicada; otro 4xx queda `FALLIDA` para reintentar o descartar. Se procesa al abrir la app, al volver a primer plano y cada minuto, y se vacía al cerrar sesión. Usada por RF-01 (calificar) y RF-60 (reportar); pantalla "Pendientes de envío".
+- [ ] F042 Registro del token FCM nativo y pantalla de notificaciones; el frontend actual no tiene autenticación, navegación ni cliente HTTP.
+- [x] F043 Pruebas Jest de outbox (sin red, reintento, duplicado) en `frontend/src/database/outbox/outbox.test.ts` y `sqlite-store.test.ts`, más la pantalla de reporte sin conexión.
 
 **Decisión — cliente HTTP**: se conserva `fetch` centralizado en `frontend/src/lib/api.ts`, que ya maneja errores y cabeceras de autenticación e idempotencia. Sustituye la previsión inicial de Axios; no cambia los contratos de la API.
 

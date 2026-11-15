@@ -44,6 +44,8 @@ public class AuthSecurityConfiguration {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        // RF-08/RF-27: las fotos de perfil se muestran sin cabecera Authorization.
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/media/perfiles/**").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",

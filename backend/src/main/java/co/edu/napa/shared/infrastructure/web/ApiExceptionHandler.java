@@ -72,6 +72,14 @@ public class ApiExceptionHandler {
         );
     }
 
+    /** RF-08: la foto supera el tamaño permitido. */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleUploadTooLarge(Exception exception, HttpServletRequest request) {
+        String message = "La foto no puede pesar más de 2 MB.";
+        return response(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message,
+                Map.of("fields", Map.of("foto", message)), request);
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiError> handleAuthentication(
             AuthenticationException exception,
@@ -177,7 +185,7 @@ public class ApiExceptionHandler {
                  "ALREADY_PUBLISHED", "PHONE_ALREADY_REGISTERED", "EMAIL_ALREADY_REGISTERED",
                  "OTP_ATTEMPTS_EXHAUSTED", "OUT_OF_STOCK", "PRODUCT_UNAVAILABLE", "HAS_PENDING_ORDERS",
                  "BANK_ACCOUNT_REQUIRED", "RESERVATION_NOT_DUE", "NOT_AVAILABLE", "MAX_ACTIVE_DELIVERIES",
-                 "FEE_NOT_REGISTERED" -> HttpStatus.CONFLICT;
+                 "FEE_NOT_REGISTERED", "HAS_PENDING_OPERATIONS" -> HttpStatus.CONFLICT;
             case "IDEMPOTENCY_KEY_REUSED", "BUSINESS_RULE" -> HttpStatus.UNPROCESSABLE_CONTENT;
             case "RATE_LIMITED", "CODE_ATTEMPTS_LOCKED" -> HttpStatus.TOO_MANY_REQUESTS;
             case "EXTERNAL_SERVICE_UNAVAILABLE" -> HttpStatus.SERVICE_UNAVAILABLE;

@@ -11,7 +11,7 @@ public interface ConsultarDomiciliarioPedidoPort {
     /** {@code domiciliario} es nulo si el pedido no tiene domicilio o nadie lo ha aceptado todavía. */
     record DomiciliarioDePedido(UUID pedidoId, UUID domicilioId, String estadoDomicilio, Domiciliario domiciliario) {}
 
-    /** Sin celular ni documento (FR-003). La calificación es nula hasta que exista RF-01. */
+    /** Sin celular ni documento (FR-003). La calificación es nula si aún no tiene calificaciones (RF-02). */
     record Domiciliario(String nombre, String fotoUrl, Calificacion calificacion) {}
 
     record Calificacion(double promedio, long total) {}

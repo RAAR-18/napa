@@ -105,7 +105,11 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         boolean productEdit = "PATCH".equalsIgnoreCase(request.getMethod())
                 && (path.matches("/api/v1/productos/[^/]+")
                 // RF-29: repetir la misma edición deja el mismo resultado (spec-general: PATCH sin clave).
-                || path.equals("/api/v1/emprendimientos/me"));
+                || path.equals("/api/v1/emprendimientos/me")
+                // RF-04 y RF-06: editar una calificación o moderar su texto no exige clave (spec-general §2.4).
+                || path.matches("/api/v1/calificaciones/[^/]+(/moderar-texto)?")
+                // RF-08 y RF-67: editar un perfil deja el mismo resultado si se repite.
+                || path.matches("/api/v1/usuarios/[^/]+"));
         return exempt || productEdit || !(path.startsWith("/api/v1/")
                 && ("POST".equalsIgnoreCase(request.getMethod())
                 || "PATCH".equalsIgnoreCase(request.getMethod())));

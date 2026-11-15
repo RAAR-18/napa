@@ -379,3 +379,41 @@ export function obtenerDomiciliarioPedido(pedidoId: string) {
     }),
   );
 }
+
+export type DestinatarioContacto = 'VENDEDOR' | 'DOMICILIARIO';
+export type TipoContacto = 'MENSAJE' | 'LLAMADA';
+
+/** RF-49: enlace `tel:` o `https://wa.me/…` para abrir con las apps del teléfono. */
+export function contactarDesdePedido(
+  pedidoId: string,
+  destinatario: DestinatarioContacto,
+  tipo: TipoContacto,
+  idempotencyKey: string,
+) {
+  return withValidSession((session) =>
+    requestJson<{ id: string; destinatario: DestinatarioContacto; tipo: TipoContacto; enlace: string }>(
+      `/api/v1/pedidos/${encodeURIComponent(pedidoId)}/contactar`,
+      {
+        method: 'POST',
+        headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
+        body: JSON.stringify({ destinatario, tipo }),
+      },
+    ),
+  );
+}
+
+/** RF-52: celular y dirección solo mientras el pedido está en curso. */
+export type ClienteDePedido = {
+  nombre: string;
+  celular: string | null;
+  direccionEntrega: { latitud: number; longitud: number; direccion: string | null; referencia: string | null } | null;
+};
+
+export function obtenerClienteDePedido(pedidoId: string) {
+  return withValidSession((session) =>
+    requestJson<ClienteDePedido>(`/api/v1/pedidos/${encodeURIComponent(pedidoId)}/cliente`, {
+      method: 'GET',
+      headers: jsonHeaders({ accessToken: session.accessToken }),
+    }),
+  );
+}

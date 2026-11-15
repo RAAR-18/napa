@@ -264,6 +264,15 @@ export default function MiEmprendimientoScreen() {
           />
           <Field label="Referencia (opcional)" value={referencia} onChangeText={setReferencia} maxLength={300} />
           <PrimaryButton title="Guardar cambios" busy={busy && !confirmDelete} onPress={() => void save()} />
+          <TextButton
+            title="Ver la reputación de mi emprendimiento"
+            onPress={() =>
+              router.push({
+                pathname: '/calificaciones',
+                params: { tipoEntidad: 'EMPRENDIMIENTO', entidadId: actual.id, titulo: actual.nombre },
+              })
+            }
+          />
           <View style={styles.danger}>
             <Text style={styles.section}>Eliminar emprendimiento</Text>
             <HelperText>

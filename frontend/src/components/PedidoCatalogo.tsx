@@ -14,6 +14,7 @@ import {
   palette,
 } from './AuthUI';
 import { ProductoCard, ProductosPagination } from './ProductosUI';
+import { useResumenesCalificacion } from '../hooks/useResumenesCalificacion';
 import { ApiError } from '../lib/api';
 import {
   type CotizacionPedido,
@@ -134,6 +135,8 @@ export function PedidoCatalogo({
   pageBusy,
   onPage,
 }: Props) {
+  // RF-02: el promedio de cada producto de la página, en una sola petición.
+  const resumenes = useResumenesCalificacion('PRODUCTO', productos.map((producto) => producto.id));
   const [cart, setCart] = useState<CartItem[]>([]);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'cart' | 'delivery' | 'summary'>('cart');
@@ -382,7 +385,7 @@ export function PedidoCatalogo({
           </HelperText>
           {productos.map((producto) => (
             <View key={producto.id} style={styles.product}>
-              <ProductoCard producto={producto} />
+              <ProductoCard producto={producto} resumen={resumenes[producto.id]} />
               <Field
                 label={`Cantidad de ${producto.nombre}`}
                 keyboardType="decimal-pad"

@@ -113,9 +113,10 @@ public class DomiciliosConfiguration {
             PedidoParaDomicilioPort pedidos,
             IntentosCodigoEntregaPort intentos,
             EventPublisherPort eventos,
+            co.edu.napa.domicilios.application.ports.out.UbicacionDomiciliarioPort ubicaciones,
             Clock clock
     ) {
-        return new EjecucionDomicilioUseCase(domicilios, pedidos, intentos, eventos, clock);
+        return new EjecucionDomicilioUseCase(domicilios, pedidos, intentos, eventos, ubicaciones, clock);
     }
 
     /** RF-22: el respaldo usa el mismo factor de línea recta que la tarifa, para que mapa y tarifa degraden igual. */

@@ -29,6 +29,7 @@ import {
 } from '../lib/domicilios';
 import { borrarRuta } from '../lib/ruta-cache';
 import PagoTarifaDomicilio from '../components/PagoTarifaDomicilio';
+import { useCompartirUbicacion } from '../hooks/useCompartirUbicacion';
 
 type Action = 'accept' | 'reject';
 
@@ -210,6 +211,8 @@ export default function DomicilioDomiciliarioScreen() {
 
   const canDecide = detail?.estado === 'DISPONIBLE' && !detail.asignadoAMi && !unavailable;
   const mine = Boolean(detail?.asignadoAMi) && !unavailable;
+  // RF-26: el cliente ve dónde va el pedido mientras está en camino.
+  const compartir = useCompartirUbicacion(detail?.id, mine && detail?.estado === 'EN_CAMINO');
 
   return (
     <AuthPage>
@@ -302,11 +305,32 @@ export default function DomicilioDomiciliarioScreen() {
           <PrimaryButton title="Confirmar entrega" busy={busy} onPress={() => void deliver()} />
         </View>
       ) : null}
+      {mine && detail?.estado === 'EN_CAMINO' ? (
+        <HelperText>
+          {compartir === 'compartiendo'
+            ? 'Compartiendo tu ubicación aproximada con el cliente mientras vas en camino.'
+            : compartir === 'sin-permiso'
+              ? 'Activa el permiso de ubicación para que el cliente vea por dónde vas.'
+              : compartir === 'error'
+                ? 'No pudimos enviar tu ubicación; lo seguiremos intentando.'
+                : 'Preparando el envío de tu ubicación…'}
+        </HelperText>
+      ) : null}
       {mine && detail?.estado === 'ENTREGADO' && !loading ? (
         <>
           <HelperText>Este domicilio ya fue entregado.</HelperText>
           <PagoTarifaDomicilio domicilioId={detail.id} rol="DOMICILIARIO" />
+          <PrimaryButton
+            title="Calificar al cliente y al emprendimiento"
+            onPress={() => router.push({ pathname: '/calificar-pedido', params: { domicilioId: detail.id } })}
+          />
         </>
+      ) : null}
+      {mine && detail ? (
+        <TextButton
+          title="Reportar un problema con este domicilio"
+          onPress={() => router.push({ pathname: '/reportar', params: { domicilioId: detail.id } })}
+        />
       ) : null}
       {!loading && error && !detail && !unavailable ? (
         <PrimaryButton title="Reintentar carga" onPress={() => setLoadAttempt((attempt) => attempt + 1)} />

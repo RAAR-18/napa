@@ -18,6 +18,8 @@ import {
   logout,
   type StoredSession,
 } from '../lib/auth';
+import { outbox } from '../database/outbox';
+import { useAccionesPendientes } from '../hooks/useOutbox';
 import { contarNoLeidas } from '../lib/notificaciones';
 import { darDeBajaPush, registrarPush } from '../lib/push';
 import { borrarTodasLasRutas } from '../lib/ruta-cache';
@@ -35,6 +37,7 @@ export default function SessionScreen() {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noLeidas, setNoLeidas] = useState<number | null>(null);
+  const pendientesEnvio = useAccionesPendientes();
 
   const handleLoadError = useCallback(async (cause: unknown) => {
     if (cause instanceof ApiError && cause.status === 401) {
@@ -99,6 +102,8 @@ export default function SessionScreen() {
       await darDeBajaPush();
       await logout();
       await borrarTodasLasRutas().catch(() => undefined);
+      // Las acciones sin enviar son de esta cuenta; no deben salir con la sesión de otra.
+      await outbox.vaciar().catch(() => undefined);
       setSession(null);
       router.replace('/');
     } catch (cause) {
@@ -191,13 +196,26 @@ export default function SessionScreen() {
               <TextButton title="Mis pedidos" onPress={() => router.push('/mis-pedidos')} />
             </>
           ) : null}
+          {pendientesEnvio.length > 0 ? (
+            <PrimaryButton
+              title={`Pendientes de envío (${pendientesEnvio.length})`}
+              onPress={() => router.push('/pendientes-envio')}
+            />
+          ) : null}
           <PrimaryButton
             title={noLeidas ? `Notificaciones (${noLeidas} sin leer)` : 'Notificaciones'}
             onPress={() => router.push('/notificaciones')}
           />
           {session.rol === 'ADMINISTRADOR' ? (
-            <PrimaryButton title="Supervisar domicilios" onPress={() => router.push('/domicilios-admin')} />
-          ) : null}
+            <>
+              <PrimaryButton title="Supervisar domicilios" onPress={() => router.push('/domicilios-admin')} />
+              <PrimaryButton title="Reportes" onPress={() => router.push('/reportes-admin')} />
+              <TextButton title="Usuarios" onPress={() => router.push('/usuarios-admin')} />
+              <TextButton title="Calificaciones y comentarios" onPress={() => router.push('/moderacion-admin')} />
+            </>
+          ) : (
+            <TextButton title="Mis reportes" onPress={() => router.push('/mis-reportes')} />
+          )}
           <TextButton
             title={session.rol === 'ADMINISTRADOR' ? 'Historial general de pagos' : 'Historial de pagos'}
             onPress={() => router.push('/historial-pagos')}
@@ -208,6 +226,7 @@ export default function SessionScreen() {
       {error ? (
         <PrimaryButton busy={busy} title="Reintentar" onPress={() => void retry()} />
       ) : null}
+      <TextButton title="Mi perfil" onPress={() => router.push('/perfil')} />
       <TextButton
         title="Cambiar contraseña"
         onPress={() => router.push('/change-password')}

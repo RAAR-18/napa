@@ -9,8 +9,8 @@ public interface ConsultarTrazabilidadPort {
     Trazabilidad consultarTrazabilidad(UUID usuarioId, UUID domicilioId);
 
     /**
-     * Sin código ni autores de los eventos. {@code ubicacionDomiciliario} queda nula hasta que exista el envío
-     * de la ubicación del domiciliario (Fase 4).
+     * Sin código ni autores de los eventos. {@code ubicacionDomiciliario} solo llega al cliente con el domicilio
+     * EN_CAMINO y es nula si el domiciliario no envió su posición en los últimos 2 minutos.
      */
     record Trazabilidad(
             UUID domicilioId,

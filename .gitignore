@@ -22,3 +22,6 @@ frontend/expo-env.d.ts
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Fotos de perfil guardadas en local (RF-08)
+backend/data/

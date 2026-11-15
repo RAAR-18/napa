@@ -5,10 +5,13 @@ import co.edu.napa.domicilios.application.ports.in.ConsultarTrazabilidadPort;
 import co.edu.napa.domicilios.application.ports.in.EjecutarDomicilioPort;
 import co.edu.napa.domicilios.application.ports.out.DomicilioRepositoryPort;
 import co.edu.napa.domicilios.application.ports.out.IntentosCodigoEntregaPort;
+import co.edu.napa.domicilios.application.ports.out.UbicacionDomiciliarioPort;
+import co.edu.napa.domicilios.application.ports.in.ActualizarUbicacionDomiciliarioPort;
 import co.edu.napa.domicilios.domain.event.DomicilioEnCaminoEvent;
 import co.edu.napa.domicilios.domain.event.DomicilioEntregadoEvent;
 import co.edu.napa.domicilios.domain.event.DomicilioRecogidoEvent;
 import co.edu.napa.domicilios.domain.model.Domicilio;
+import co.edu.napa.domicilios.domain.model.EstadoDomicilio;
 import co.edu.napa.domicilios.domain.model.EventoTrazabilidad;
 import co.edu.napa.pedidos.application.ports.in.PedidoParaDomicilioPort;
 import co.edu.napa.shared.application.ports.out.EventPublisherPort;
@@ -23,13 +26,15 @@ import java.util.UUID;
 
 /** Ejecución y seguimiento del domicilio: RF-23, RF-24, RF-25 y RF-26. */
 public class EjecucionDomicilioUseCase
-        implements EjecutarDomicilioPort, ConsultarCodigoConfirmacionPort, ConsultarTrazabilidadPort {
+        implements EjecutarDomicilioPort, ConsultarCodigoConfirmacionPort, ConsultarTrazabilidadPort,
+        ActualizarUbicacionDomiciliarioPort {
     private static final String NO_DISPONIBLE = "El domicilio no está disponible.";
 
     private final DomicilioRepositoryPort domicilios;
     private final PedidoParaDomicilioPort pedidos;
     private final IntentosCodigoEntregaPort intentos;
     private final EventPublisherPort eventos;
+    private final UbicacionDomiciliarioPort ubicaciones;
     private final Clock clock;
 
     public EjecucionDomicilioUseCase(
@@ -39,6 +44,18 @@ public class EjecucionDomicilioUseCase
             EventPublisherPort eventos,
             Clock clock
     ) {
+        this(domicilios, pedidos, intentos, eventos, UbicacionDomiciliarioPort.NINGUNA, clock);
+    }
+
+    public EjecucionDomicilioUseCase(
+            DomicilioRepositoryPort domicilios,
+            PedidoParaDomicilioPort pedidos,
+            IntentosCodigoEntregaPort intentos,
+            EventPublisherPort eventos,
+            UbicacionDomiciliarioPort ubicaciones,
+            Clock clock
+    ) {
+        this.ubicaciones = Objects.requireNonNull(ubicaciones, "ubicaciones");
         this.domicilios = Objects.requireNonNull(domicilios, "domicilios");
         this.pedidos = Objects.requireNonNull(pedidos, "pedidos");
         this.intentos = Objects.requireNonNull(intentos, "intentos");
@@ -104,6 +121,7 @@ public class EjecucionDomicilioUseCase
         domicilios.registrarEvento(EventoTrazabilidad.de(entregado, domiciliarioId));
         eventos.publish(DomicilioEntregadoEvent.de(entregado));
         intentos.limpiar(entregado.id());
+        ubicaciones.borrar(entregado.id());
         return transicion(entregado);
     }
 
@@ -142,8 +160,51 @@ public class EjecucionDomicilioUseCase
                 domicilios.listarEventos(domicilio.id()).stream()
                         .map(evento -> new Evento(evento.estado().name(), evento.ocurridoAt()))
                         .toList(),
-                null
+                ubicacionParaCliente(domicilio, usuarioId)
         );
+    }
+
+    /** RF-26 FR-003: solo el cliente, solo EN_CAMINO y redondeada a 3 decimales (≈ 110 m). */
+    private UbicacionDomiciliario ubicacionParaCliente(Domicilio domicilio, UUID usuarioId) {
+        if (!domicilio.compradorId().equals(usuarioId) || domicilio.estado() != EstadoDomicilio.EN_CAMINO) {
+            return null;
+        }
+        return ubicaciones.consultar(domicilio.id())
+                .map(p -> new UbicacionDomiciliario(redondear(p.latitud()), redondear(p.longitud()), p.actualizadaAt()))
+                .orElse(null);
+    }
+
+    private static double redondear(double valor) {
+        return Math.round(valor * 1000d) / 1000d;
+    }
+
+    /** RF-26: solo el domiciliario asignado y con el domicilio EN_CAMINO; como mucho un envío cada 5 s. */
+    @Override
+    public void actualizarUbicacion(UUID domiciliarioId, UUID domicilioId, double latitud, double longitud) {
+        Objects.requireNonNull(domiciliarioId, "domiciliarioId");
+        if (Double.isNaN(latitud) || latitud < -90 || latitud > 90) {
+            throw coordenada("latitud", "La latitud debe estar entre -90 y 90.");
+        }
+        if (Double.isNaN(longitud) || longitud < -180 || longitud > 180) {
+            throw coordenada("longitud", "La longitud debe estar entre -180 y 180.");
+        }
+        Domicilio domicilio = domicilios.buscar(Objects.requireNonNull(domicilioId, "domicilioId"))
+                .orElseThrow(() -> new DomainException("NOT_FOUND", NO_DISPONIBLE));
+        if (!domicilio.asignadoA(domiciliarioId)) {
+            throw new DomainException("FORBIDDEN", "Este domicilio está asignado a otro domiciliario.");
+        }
+        if (domicilio.estado() != EstadoDomicilio.EN_CAMINO) {
+            throw new DomainException("INVALID_STATE", "Solo se comparte la ubicación con el domicilio en camino.",
+                    Map.of("estadoActual", domicilio.estado().name()));
+        }
+        if (!ubicaciones.guardar(domicilio.id(), latitud, longitud, Instant.now(clock))) {
+            throw new DomainException("RATE_LIMITED", "Envía la ubicación como mucho cada 5 segundos.",
+                    Map.of("retryAfter", 5));
+        }
+    }
+
+    private static DomainException coordenada(String campo, String mensaje) {
+        return new DomainException("VALIDATION_ERROR", mensaje, Map.of("fields", Map.of(campo, mensaje)));
     }
 
     private Domicilio bloquearDelDomiciliario(UUID domiciliarioId, UUID domicilioId) {

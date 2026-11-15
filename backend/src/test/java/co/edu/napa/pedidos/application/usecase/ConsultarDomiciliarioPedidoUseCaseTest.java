@@ -1,5 +1,7 @@
 package co.edu.napa.pedidos.application.usecase;
 
+import co.edu.napa.calificaciones.application.ports.in.ConsultarCalificacionesPort;
+
 import co.edu.napa.cuentas.application.ports.in.ConsultarPerfilPublicoUsuarioPort;
 import co.edu.napa.cuentas.application.ports.in.ConsultarPerfilPublicoUsuarioPort.PerfilPublico;
 import co.edu.napa.domicilios.application.ports.in.ConsultarDomicilioDePedidoPort;
@@ -34,6 +36,7 @@ class ConsultarDomiciliarioPedidoUseCaseTest {
     private PedidoRepositoryPort pedidos;
     private ConsultarDomicilioDePedidoPort domicilios;
     private ConsultarPerfilPublicoUsuarioPort usuarios;
+    private ConsultarCalificacionesPort calificaciones;
     private ConsultarDomiciliarioPedidoUseCase useCase;
 
     @BeforeEach
@@ -41,7 +44,9 @@ class ConsultarDomiciliarioPedidoUseCaseTest {
         pedidos = mock(PedidoRepositoryPort.class);
         domicilios = mock(ConsultarDomicilioDePedidoPort.class);
         usuarios = mock(ConsultarPerfilPublicoUsuarioPort.class);
-        useCase = new ConsultarDomiciliarioPedidoUseCase(pedidos, domicilios, usuarios);
+        calificaciones = mock(ConsultarCalificacionesPort.class);
+        when(calificaciones.resumen(any(), any())).thenReturn(new ConsultarCalificacionesPort.Resumen(null, 0));
+        useCase = new ConsultarDomiciliarioPedidoUseCase(pedidos, domicilios, usuarios, calificaciones);
         when(pedidos.consultarDetalleCliente(CLIENTE, PEDIDO))
                 .thenReturn(Optional.of(mock(PedidoDetalleProjection.class)));
         when(pedidos.consultarDetalleVendedor(VENDEDOR, PEDIDO))
