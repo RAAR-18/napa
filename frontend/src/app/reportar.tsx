@@ -79,19 +79,26 @@ export default function ReportarScreen() {
     setError(null);
     key.current ??= Crypto.randomUUID();
     const datos = { motivo, descripcion, ...entidad };
+    let usuarioId: string | null = null;
     try {
+      usuarioId = await outbox.propietario();
       setCreado(await crearReporte(datos, key.current));
     } catch (cause) {
-      if (cause instanceof NetworkError) {
+      if (cause instanceof NetworkError && usuarioId) {
         // F041: se guarda con la misma clave y se envía sola cuando vuelva la conexión.
-        await outbox.encolar({
-          method: 'POST',
-          path: '/api/v1/reportes',
-          body: cuerpoReporte(datos),
-          idempotencyKey: key.current,
-          descripcion: `Reporte: ${motivoReporteNombres[motivo]}`,
-        });
-        setGuardadoSinConexion(true);
+        try {
+          await outbox.encolar({
+            usuarioId,
+            method: 'POST',
+            path: '/api/v1/reportes',
+            body: cuerpoReporte(datos),
+            idempotencyKey: key.current,
+            descripcion: `Reporte: ${motivoReporteNombres[motivo]}`,
+          });
+          setGuardadoSinConexion(true);
+        } catch {
+          setError('No se pudo guardar la acción en el teléfono. Conserva el formulario e intenta de nuevo.');
+        }
         return;
       }
       key.current = null;

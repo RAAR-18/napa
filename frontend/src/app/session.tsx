@@ -18,7 +18,6 @@ import {
   logout,
   type StoredSession,
 } from '../lib/auth';
-import { outbox } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
 import { contarNoLeidas } from '../lib/notificaciones';
 import { darDeBajaPush, registrarPush } from '../lib/push';
@@ -102,8 +101,7 @@ export default function SessionScreen() {
       await darDeBajaPush();
       await logout();
       await borrarTodasLasRutas().catch(() => undefined);
-      // Las acciones sin enviar son de esta cuenta; no deben salir con la sesión de otra.
-      await outbox.vaciar().catch(() => undefined);
+      // Los pendientes se conservan por propietario; otra cuenta no puede enviarlos.
       setSession(null);
       router.replace('/');
     } catch (cause) {

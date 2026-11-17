@@ -262,7 +262,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
                     request,
                     response,
                     HttpStatus.CONFLICT,
-                    "CONFLICT",
+                    "IDEMPOTENCY_IN_PROGRESS",
                     "La solicitud con esta clave todavía se está procesando.",
                     Map.of()
             );

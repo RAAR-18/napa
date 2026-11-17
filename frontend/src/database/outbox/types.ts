@@ -5,6 +5,7 @@ export type MetodoEnvio = 'POST' | 'PUT' | 'PATCH';
 
 export type AccionPendiente = {
   id: string;
+  usuarioId: string;
   method: MetodoEnvio;
   path: string;
   /** JSON ya serializado, o nulo si la acción no lleva cuerpo. */

@@ -6,6 +6,7 @@ const DATABASE_NAME = 'napa.db';
 
 type Fila = {
   id: string;
+  usuario_id: string;
   method: string;
   path: string;
   body: string | null;
@@ -21,6 +22,7 @@ type Fila = {
 function aAccion(fila: Fila): AccionPendiente {
   return {
     id: fila.id,
+    usuarioId: fila.usuario_id,
     method: fila.method as AccionPendiente['method'],
     path: fila.path,
     body: fila.body,
@@ -34,7 +36,7 @@ function aAccion(fila: Fila): AccionPendiente {
   };
 }
 
-/** Tabla `outbox` de foundations (F041) en la misma base local que las cachés de lectura. */
+/** Cola por cuenta; la tabla antigua sin propietario se conserva aislada, sin reasignar sus filas. */
 export class SqliteOutboxStore implements OutboxStore {
   private databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -43,18 +45,20 @@ export class SqliteOutboxStore implements OutboxStore {
       this.databasePromise = (async () => {
         const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
         await db.execAsync(`
-          CREATE TABLE IF NOT EXISTS outbox (
+          CREATE TABLE IF NOT EXISTS outbox_por_cuenta (
             id TEXT PRIMARY KEY NOT NULL,
+            usuario_id TEXT NOT NULL,
             method TEXT NOT NULL,
             path TEXT NOT NULL,
             body TEXT,
-            idempotency_key TEXT NOT NULL UNIQUE,
+            idempotency_key TEXT NOT NULL,
             descripcion TEXT NOT NULL,
             status TEXT NOT NULL,
             attempts INTEGER NOT NULL DEFAULT 0,
             last_error TEXT,
             next_attempt_at INTEGER NOT NULL,
-            created_at INTEGER NOT NULL
+            created_at INTEGER NOT NULL,
+            UNIQUE (usuario_id, idempotency_key)
           );
         `);
         return db;
@@ -72,35 +76,35 @@ export class SqliteOutboxStore implements OutboxStore {
     const db = await this.db();
     // Si la misma acción se encola dos veces (doble toque), la clave única deja solo una.
     await db.runAsync(
-      `INSERT OR IGNORE INTO outbox
-         (id, method, path, body, idempotency_key, descripcion, status, attempts, last_error, next_attempt_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      a.id, a.method, a.path, a.body, a.idempotencyKey, a.descripcion, a.status, a.attempts, a.lastError,
+      `INSERT OR IGNORE INTO outbox_por_cuenta
+         (id, usuario_id, method, path, body, idempotency_key, descripcion, status, attempts, last_error, next_attempt_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      a.id, a.usuarioId, a.method, a.path, a.body, a.idempotencyKey, a.descripcion, a.status, a.attempts, a.lastError,
       a.nextAttemptAt, a.createdAt,
     );
   }
 
   async listar(): Promise<AccionPendiente[]> {
     const db = await this.db();
-    const filas = await db.getAllAsync<Fila>('SELECT * FROM outbox ORDER BY created_at, id');
+    const filas = await db.getAllAsync<Fila>('SELECT * FROM outbox_por_cuenta ORDER BY created_at, id');
     return filas.map(aAccion);
   }
 
   async actualizar(a: AccionPendiente): Promise<void> {
     const db = await this.db();
     await db.runAsync(
-      'UPDATE outbox SET status = ?, attempts = ?, last_error = ?, next_attempt_at = ? WHERE id = ?',
+      'UPDATE outbox_por_cuenta SET status = ?, attempts = ?, last_error = ?, next_attempt_at = ? WHERE id = ?',
       a.status, a.attempts, a.lastError, a.nextAttemptAt, a.id,
     );
   }
 
   async borrar(id: string): Promise<void> {
     const db = await this.db();
-    await db.runAsync('DELETE FROM outbox WHERE id = ?', id);
+    await db.runAsync('DELETE FROM outbox_por_cuenta WHERE id = ?', id);
   }
 
   async borrarTodo(): Promise<void> {
     const db = await this.db();
-    await db.runAsync('DELETE FROM outbox');
+    await db.runAsync('DELETE FROM outbox_por_cuenta');
   }
 }

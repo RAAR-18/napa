@@ -13,6 +13,7 @@ jest.mock('expo-sqlite', () => ({
 
 const accion: AccionPendiente = {
   id: 'id-1',
+  usuarioId: 'cuenta-A',
   method: 'POST',
   path: '/api/v1/reportes',
   body: '{"motivo":"OTRO"}',
@@ -33,10 +34,10 @@ it('creates the outbox table once with a unique idempotency key and ignores repe
   await store.insertar(accion);
 
   expect(mockDatabase.execAsync).toHaveBeenCalledTimes(1);
-  expect(mockDatabase.execAsync.mock.calls[0][0]).toContain('idempotency_key TEXT NOT NULL UNIQUE');
+  expect(mockDatabase.execAsync.mock.calls[0][0]).toContain('UNIQUE (usuario_id, idempotency_key)');
   expect(mockDatabase.runAsync.mock.calls[0][0]).toContain('INSERT OR IGNORE INTO outbox');
   expect(mockDatabase.runAsync.mock.calls[0].slice(1)).toEqual([
-    'id-1', 'POST', '/api/v1/reportes', '{"motivo":"OTRO"}', 'key-1', 'Reporte: Otro', 'PENDIENTE', 0, null, 10, 10,
+    'id-1', 'cuenta-A', 'POST', '/api/v1/reportes', '{"motivo":"OTRO"}', 'key-1', 'Reporte: Otro', 'PENDIENTE', 0, null, 10, 10,
   ]);
 });
 
@@ -44,6 +45,7 @@ it('reads rows oldest first and maps the columns', async () => {
   mockDatabase.getAllAsync.mockResolvedValue([
     {
       id: 'id-1',
+      usuario_id: 'cuenta-A',
       method: 'POST',
       path: '/api/v1/reportes',
       body: null,
@@ -59,6 +61,6 @@ it('reads rows oldest first and maps the columns', async () => {
 
   const filas = await new SqliteOutboxStore().listar();
 
-  expect(mockDatabase.getAllAsync).toHaveBeenCalledWith('SELECT * FROM outbox ORDER BY created_at, id');
+  expect(mockDatabase.getAllAsync).toHaveBeenCalledWith('SELECT * FROM outbox_por_cuenta ORDER BY created_at, id');
   expect(filas).toEqual([{ ...accion, body: null, status: 'FALLIDA', attempts: 2, lastError: 'Rechazado', nextAttemptAt: 50 }]);
 });
