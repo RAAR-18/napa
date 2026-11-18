@@ -121,11 +121,20 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 **Eventos que consume esta feature**: ninguno. El aviso al cliente es un listener del plan de RF-38.
 
-## Offline & Concurrency Strategy
+### Conectividad de RF-64 en el MVP
 
-- **Tolerancia a mala conexión (RNF28)**: la acción se escribe en el outbox con su `Idempotency-Key` y la pantalla muestra "pendiente de envío"; al reconectar, los errores `RESERVATION_NOT_DUE` o `INVALID_STATE` se explican y se refresca el detalle.
-- **Concurrencia (RNF08)**: el pedido se bloquea `FOR UPDATE`; dos solicitudes simultáneas: una transiciona y la otra recibe `INVALID_STATE` con `LISTO_PARA_RECOGER`.
-- **Idempotencia (RNF27)**: Redis `idem:{userId}:{key}`.
+Marcar un pedido de recogida como listo requiere conexión a internet.
+Al confirmar la acción, la app envía directamente
+`POST /api/v1/pedidos/{id}/marcar-listo` al servidor.
+
+Si la solicitud falla por un problema de conexión, la app muestra el
+mensaje de error de red existente. La acción no se guarda en la cola
+local ni se reenvía automáticamente al recuperar la conexión. El
+vendedor puede volver a intentarla manualmente.
+
+El MVP conserva este comportamiento. El encolado offline de RF-64
+(#50) queda fuera del alcance del MVP. La cancelación automática al
+cierre del día queda como decisión independiente.
 
 ## Error Handling
 
@@ -135,7 +144,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | Pedido de otra modalidad | La app no muestra la acción; la API responde `422` | US1-E3 |
 | Reserva antes de tiempo | `409 RESERVATION_NOT_DUE` con la hora | US1-E5 |
 | Pedido ajeno | `404` | RNF03 |
-| Sin conexión | Outbox con reintento | RNF28 |
+| Sin conexión | mensaje de error de red |
 
 ## Testing Strategy
 
@@ -209,14 +218,13 @@ frontend/__tests__/recogida/marcar-listo.test.tsx
 - [ ] T013 [P] [US1] Test de modalidad distinta (entrega directa y domicilio → `422 BUSINESS_RULE`), pedido ajeno (`404`) y rol equivocado (`403`) en `.../recogida/MarcarListoAutorizacionIT.java`
 - [ ] T017 [P] [US1] Test de reserva anticipada (`RESERVATION_NOT_DUE` con `disponibleDesde`, sin cambio de estado ni E06) en `.../recogida/MarcarListoAnticipadoIT.java`
 - [ ] T018 [P] [US1] Test de dos solicitudes simultáneas y de repetición con la misma `Idempotency-Key` en `.../recogida/MarcarListoConcurrenciaIT.java`
-- [ ] T022 [P] [US1] Test de `AccionesRecogida` (solo aparece en recogida `ACEPTADO`, mensaje con la hora, errores, outbox sin red) en `frontend/__tests__/recogida/marcar-listo.test.tsx`
+- [ ] T022 [US1] Verificar que «Marcar como listo» solo se ofrece para pedidos de recogida en estado `ACEPTADO`, que se muestra la hora habilitada si una reserva aún no está en su ventana y que, si falla la conexión, se muestra el error de red existente y la acción no queda encolada.
 
 ### Implementation
 
 - [ ] T014 [US1] `Pedido.marcarListoParaRecoger(ahora, margen)` en `pedidos/domain/model/Pedido.java`
 - [ ] T015 [US1] `TransicionarPedidoPort.marcarListoParaRecoger` y su caso de uso (bloqueo, dueño, modalidad, estado, ventana y publicación de E06) en `pedidos/application/`
 - [ ] T016 [US1] `MarcarListoParaRecogerUseCase` y `POST /pedidos/{id}/marcar-listo` en `recogida/`
-- [ ] T020 [US1] Servicio `marcarListo()` por el outbox en `frontend/src/services/recogida.ts`
 - [ ] T021 [US1] `AccionesRecogida` (botón "Marcar como listo") en `frontend/src/components/recogida/` e integración en `frontend/src/app/(vendedor)/pedidos/[id].tsx` (solo recogida `ACEPTADO`)
 
 **Checkpoint**: US1 funcional.
