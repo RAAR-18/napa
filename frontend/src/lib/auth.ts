@@ -8,6 +8,10 @@ const DEVICE_ID_KEY = 'napa.auth.device-id';
 const AUTH_PATH = '/api/v1/auth';
 
 let sessionGeneration = 0;
+
+export function getSessionGeneration(): number {
+  return sessionGeneration;
+}
 let refreshInFlight: {
   refreshToken: string;
   generation: number;
@@ -274,13 +278,25 @@ export async function withValidSession<T>(
 }
 
 export async function logout(): Promise<void> {
-  await withValidSession((session) =>
-    requestVoid(`${AUTH_PATH}/logout`, {
+  const session = await withValidSession(async (currentSession) => {
+    await requestVoid(`${AUTH_PATH}/logout`, {
       method: 'POST',
-      headers: jsonHeaders({ accessToken: session.accessToken }),
-    }),
-  );
+      headers: jsonHeaders({ accessToken: currentSession.accessToken }),
+    });
+    return currentSession;
+  });
   await clearSession();
+
+  const vendedor =
+    session.rol === 'VENDEDOR_AMBULANTE' || session.rol === 'VENDEDOR_PUNTO_FIJO';
+  if (vendedor && session.usuarioId) {
+    try {
+      const { borrarInventarioGuardado } = await import('./inventario-cache');
+      await borrarInventarioGuardado(session.usuarioId);
+    } catch (cause) {
+      console.warn('No se pudo borrar el inventario al cerrar sesión.', cause);
+    }
+  }
 }
 
 export async function changePassword(
