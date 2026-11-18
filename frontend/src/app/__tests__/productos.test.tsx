@@ -6,8 +6,9 @@ import CatalogoScreen from '../catalogo';
 import MisProductosScreen from '../mis-productos';
 import NuevoProductoScreen from '../nuevo-producto';
 import EditarProductoScreen from '../editar-producto';
-import { ApiError } from '../../lib/api';
-import { clearSession, getValidSession } from '../../lib/auth';
+import { ApiError, NetworkError } from '../../lib/api';
+import { clearSession, getValidSession, readSession } from '../../lib/auth';
+import { leerPaginaInventario } from '../../lib/inventario-cache';
 import { createProducto, deleteProducto, editProducto, getMiProducto, listCatalogo, listMisProductos, updateInventario, type Producto, type ProductosPage } from '../../lib/productos';
 
 jest.mock('expo-router', () => ({
@@ -22,7 +23,17 @@ jest.mock('expo-router', () => ({
     React.useEffect(effect, [effect]);
   },
 }));
-jest.mock('../../lib/auth', () => ({ getValidSession: jest.fn(), clearSession: jest.fn() }));
+jest.mock('../../lib/auth', () => ({
+  getSessionGeneration: () => 0,
+  getValidSession: jest.fn(),
+  readSession: jest.fn(),
+  clearSession: jest.fn(),
+}));
+jest.mock('../../lib/inventario-cache', () => ({
+  guardarPaginaInventario: jest.fn(),
+  leerPaginaInventario: jest.fn(),
+  borrarInventarioGuardado: jest.fn(),
+}));
 jest.mock('../../lib/productos', () => ({
   ...jest.requireActual('../../lib/productos'),
   createProducto: jest.fn(), listCatalogo: jest.fn(), listMisProductos: jest.fn(), updateInventario: jest.fn(),
@@ -44,6 +55,7 @@ const page: ProductosPage = { content: [available], page: 0, size: 20, totalElem
 beforeEach(() => {
   jest.clearAllMocks();
   jest.mocked(getValidSession).mockResolvedValue(seller);
+  jest.mocked(readSession).mockResolvedValue(seller);
   jest.mocked(listMisProductos).mockResolvedValue(page);
   jest.mocked(listCatalogo).mockResolvedValue(page);
   jest.mocked(createProducto).mockResolvedValue(available);
@@ -275,3 +287,19 @@ it('returns to the last valid page after deleting its last product', async () =>
   await waitFor(() => expect(view.getByText('Mango')).toBeTruthy());
   expect(listMisProductos).toHaveBeenLastCalledWith(0, 'nombre,asc');
 }, 15000);
+
+it('shows saved inventory in read-only mode when token renewal fails offline', async () => {
+  jest.mocked(readSession).mockResolvedValue({
+    ...seller, usuarioId: 'seller-id', expiresAt: 0,
+  });
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  const updatedAt = Date.now();
+  jest.mocked(leerPaginaInventario).mockResolvedValue({ data: page, updatedAt });
+
+  const screen = await render(<MisProductosScreen />);
+
+  await waitFor(() => expect(screen.getByText(/Cantidad guardada/)).toBeTruthy());
+  expect(screen.getByText(/Datos guardados/)).toBeTruthy();
+  expect(screen.queryByText('Agregar producto')).toBeNull();
+  expect(leerPaginaInventario).toHaveBeenCalledWith('seller-id', 'nombre,asc', 0);
+});

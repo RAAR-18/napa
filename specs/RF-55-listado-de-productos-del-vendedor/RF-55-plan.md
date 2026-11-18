@@ -18,7 +18,7 @@ Listado paginado de los productos del emprendimiento `ACTIVO` del vendedor auten
 
 ## Estado actual del código
 
-Primera entrega en línea implementada el 2026-11-11 sobre `V7__productos.sql`. `GET /api/v1/productos` usa `ProductosUseCase` y `ProductoPersistenceAdapter`; pagina, ordena por nombre o precio y admite el filtro de estado. Solo devuelve productos no eliminados del emprendimiento activo del vendedor autenticado; un vendedor sin emprendimiento recibe lista vacía. `frontend/src/app/mis-productos.tsx` muestra precio, unidad, cantidad, estado y acciones de inventario. Las pruebas HTTP cubren aislamiento entre vendedores, paginación y filtrado. Pendientes la caché SQLite de este listado y la medición de rendimiento.
+Primera entrega en línea implementada el 2026-11-11 sobre `V7__productos.sql`. `GET /api/v1/productos` usa `ProductosUseCase` y `ProductoPersistenceAdapter`; pagina, ordena por nombre o precio y admite el filtro de estado. Solo devuelve productos no eliminados del emprendimiento activo del vendedor autenticado; un vendedor sin emprendimiento recibe lista vacía. `frontend/src/app/mis-productos.tsx` muestra precio, unidad, cantidad, estado y acciones de inventario. Las pruebas HTTP cubren aislamiento entre vendedores, paginación y filtrado. En la entrega offline se añadió la caché SQLite de solo lectura. La verificación manual en Android quedó registrada en la sección de pruebas. La medición de rendimiento sigue pendiente.
 
 ## Actors
 
@@ -116,7 +116,9 @@ Un vendedor sin emprendimiento activo recibe `200` con lista vacía.
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: la app guarda el último listado en SQLite (`database/schema`) y lo muestra con "Última actualización: hh:mm" cuando no hay red; al reconectar refresca. El servidor es la autoridad.
+- **Inventario guardado en el MVP (RNF28)**. Los vendedores ambulantes y de punto fijo consultan desde **Mis productos** las páginas de su emprendimiento activo que descargaron correctamente. La app guarda las respuestas en SQLite por cuenta, emprendimiento, orden y página. Cada página vence 7 días después de su última descarga exitosa. El límite es de 50 páginas por cuenta, independiente del catálogo del cliente. Al superarlo, se elimina la página actualizada hace más tiempo.
+- Ante un fallo de red, la app muestra la página vigente con su fecha de actualización y avisa que las cantidades y los estados pueden haber cambiado. La copia es de solo lectura. Si la página no está guardada o ya venció, la app indica que no hay datos descargados para esa página. Una descarga exitosa reemplaza la copia y renueva su fecha.
+- Con el token vencido, se permite leer la copia ante un fallo de red si la misma cuenta sigue identificada como vendedora. Si el servidor rechaza la sesión o el acceso, se bloquea la lectura de la copia. Al cerrar sesión, se eliminan las páginas de esa cuenta. Una respuesta exitosa que indique otro emprendimiento activo o ninguno invalida las páginas anteriores.
 - **Concurrencia (RNF08)**: no aplica (lectura).
 - **Idempotencia (RNF27)**: no aplica.
 
@@ -125,8 +127,8 @@ Un vendedor sin emprendimiento activo recibe `200` con lista vacía.
 | Escenario | Comportamiento esperado | Fuente |
 |---|---|---|
 | Sin productos | `200` + `content: []` y estado vacío | US1-E2 |
-| Filtro desconocido | `400` | spec-general §2.3 |
-| Sin conexión | Se muestra la caché con la hora de actualización | RNF28 |
+| Filtro desconocido | `400` | spec-general  |
+| Sin conexión | Copia vigente de solo lectura con fecha de descarga, o aviso de que no hay datos descargados para la página | RNF28 |
 
 ## Testing Strategy
 
@@ -137,6 +139,13 @@ Un vendedor sin emprendimiento activo recibe `200` con lista vacía.
 | Frontend | Jest: estado vacío, etiqueta de agotado, uso de caché sin red | FR-003, US1-E2 |
 
 **Cobertura mínima**: todos los escenarios Given/When/Then tienen al menos un test.
+
+### Evidencia de verificación de inventario offline
+
+- Android, reapertura en modo avión: se mostró el inventario guardado con su fecha original y en solo lectura después de cerrar y reabrir la app.
+- Android, cambio a otra cuenta vendedora sin inventario descargado: se mostró el aviso de ausencia de datos guardados sin exponer productos de la primera cuenta.
+- Android, cierre e inicio de sesión con la misma cuenta: al abrir Mis productos sin conexión antes de descargar de nuevo, se mostró el aviso de ausencia de datos guardados.
+- Android, reapertura con el backend detenido: se comprobó la persistencia de la copia guardada tras reiniciar la app.
 
 ## Project Structure
 
@@ -164,7 +173,7 @@ frontend/src/app/(vendedor)/productos/index.tsx          # ruta Expo Router: "Mi
 frontend/src/components/productos/ItemProducto.tsx       # fila con precio, cantidad y etiqueta "Agotado"
 frontend/src/components/productos/FiltroEstado.tsx
 frontend/src/services/productos.ts                       # listarProductos()
-frontend/src/database/schema/productos_cache.ts          # caché de lectura
+frontend/src/lib/inventario-cache.ts                   # caché SQLite de lectura
 frontend/__tests__/productos/listado.test.tsx
 ```
 
@@ -192,14 +201,14 @@ frontend/__tests__/productos/listado.test.tsx
 - [ ] T011 [P] [US1] Test del filtro `estado` y de productos agotados en `.../productos/ListarProductosFiltroIT.java`
 - [ ] T012 [P] [US1] Test de listado vacío y de vendedor sin emprendimiento activo en `.../productos/ListarProductosVacioIT.java`
 - [ ] T016 [P] [US1] Test de que no aparecen productos `ELIMINADO` ni de otros emprendimientos en `.../productos/ListarProductosExclusionIT.java`
-- [ ] T023 [P] [US1] Test de la pantalla (estado vacío, etiqueta de agotado, caché sin red) en `frontend/__tests__/productos/listado.test.tsx`
+- [ ] T023 [P] [US1] Verificar en `frontend/src/app/__tests__/productos.test.tsx` el listado y la consulta de solo lectura cuando falla la renovación del token. Verificar en Android la reapertura sin conexión, el aislamiento entre cuentas y la limpieza al cerrar sesión.
 
 ### Implementation
 
 - [ ] T013 [US1] `ListarProductosVendedorUseCase` en `productos/application/usecase/`
 - [ ] T014 [US1] `GET /productos` en `ProductoController`
 - [ ] T015 [US1] DTO de ítem y validación de filtros (`400` ante desconocidos)
-- [ ] T020 [US1] Servicio `listarProductos()` con caché SQLite en `frontend/src/services/productos.ts` y `frontend/src/database/schema/productos_cache.ts`
+- [ ] T020 [US1] Integrar `frontend/src/lib/inventario-cache.ts` con `useProductosPage`, la pantalla Mis productos y el cierre de sesión.
 - [ ] T021 [US1] `ItemProducto` y `FiltroEstado` en `frontend/src/components/productos/`
 - [ ] T022 [US1] Pantalla `frontend/src/app/(vendedor)/productos/index.tsx` con paginación, estado vacío y actualización al deslizar
 
