@@ -148,9 +148,17 @@ class IdempotencyFilterRedisIntegrationTest {
             );
 
             assertEquals(409, duplicateResponse.getStatus());
+            assertTrue(duplicateResponse.getContentAsString().contains("IDEMPOTENCY_IN_PROGRESS"));
             assertEquals("1", duplicateResponse.getHeader("Retry-After"));
             finishOperation.countDown();
             originalOperation.get(5, TimeUnit.SECONDS);
+            MockHttpServletResponse replay = new MockHttpServletResponse();
+            filter.doFilter(request(idempotencyKey, "{\"pedido\":1}"), replay,
+                    (request, response) -> {
+                        throw new AssertionError("A completed duplicate must replay without executing");
+                    });
+            assertEquals(201, replay.getStatus());
+            assertEquals("true", replay.getHeader("Idempotent-Replayed"));
         } finally {
             finishOperation.countDown();
             executor.shutdownNow();

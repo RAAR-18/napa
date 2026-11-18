@@ -28,7 +28,7 @@ jest.mock('../../lib/reportes', () => ({
   crearReporte: jest.fn(),
 }));
 jest.mock('../../database/outbox', () => ({
-  outbox: { encolar: jest.fn().mockResolvedValue(undefined) },
+  outbox: { propietario: jest.fn().mockResolvedValue('cuenta-A'), encolar: jest.fn().mockResolvedValue(undefined) },
 }));
 jest.mock('../../lib/usuarios', () => ({
   ...jest.requireActual('../../lib/usuarios'),
@@ -147,6 +147,7 @@ describe('sin conexión (F041)', () => {
 
     await waitFor(() => expect(view.getByText('Guardamos tu reporte')).toBeTruthy());
     expect(outbox.encolar).toHaveBeenCalledWith({
+      usuarioId: 'cuenta-A',
       method: 'POST',
       path: '/api/v1/reportes',
       body: { motivo: 'PEDIDO', descripcion: 'Me llegó incompleto.', pedidoId: 'p-1', domicilioId: undefined, usuarioId: undefined },

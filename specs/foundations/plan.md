@@ -154,7 +154,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 **Phase F4 – Frontend base**
 - [x] F040 Proyecto Expo con development build Android (`expo-dev-client` y perfil `development` en `frontend/eas.json`), navegación con Expo Router y cliente HTTP basado en `fetch` en `frontend/src/lib/api.ts`. APK instalada y cierre/nuevo inicio de sesión validados en Android físico.
-- [x] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`. Tabla `outbox` en `napa.db` con clave única por `Idempotency-Key`; reenvío en orden con retroceso exponencial (5 s a 5 min); fallo de red, 401, 408, 429 y 5xx se reintentan (5xx hasta 8 veces); `CONFLICT`/`ALREADY_*` cuentan como ya aplicada; otro 4xx queda `FALLIDA` para reintentar o descartar. Se procesa al abrir la app, al volver a primer plano y cada minuto, y se vacía al cerrar sesión. Usada por RF-01 (calificar) y RF-60 (reportar); pantalla "Pendientes de envío".
+- [x] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`. Tabla `outbox_por_cuenta` en `napa.db` con clave única por usuario e `Idempotency-Key`; reenvío en orden con retroceso exponencial (5 s a 5 min); fallo de red, 401, 408, 429 y 5xx se reintentan (5xx hasta 8 veces); `CONFLICT` se conserva como fallida para revisión y reintento manual, sin asumir éxito; otro 4xx queda `FALLIDA` para reintentar o descartar. Se procesa al abrir la app, al volver a primer plano y cada minuto, y conserva las acciones por propietario al cerrar sesión. Usada por RF-01 (calificar) y RF-60 (reportar); pantalla "Pendientes de envío".
 - [ ] F042 Registro del token FCM nativo y pantalla de notificaciones; el frontend actual no tiene autenticación, navegación ni cliente HTTP.
 - [x] F043 Pruebas Jest de outbox (sin red, reintento, duplicado) en `frontend/src/database/outbox/outbox.test.ts` y `sqlite-store.test.ts`, más la pantalla de reporte sin conexión.
 
@@ -198,3 +198,5 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 *  [x] Proveedor de rutas elegido (OpenRouteService)
 *  [x] ArchUnit y Testcontainers corren en CI (287 pruebas, 0 fallos y 0 omitidas).
 *  [ ] Checkpoint de la base verificado en un móvil de gama baja
+
+**idempotencia en curso:** `409 IDEMPOTENCY_IN_PROGRESS` conserva la acción pendiente y se reintenta con la misma clave y cuerpo usando retroceso exponencial (inicialmente 5 s). Los conflictos de negocio permanecen fallidos para revisión. La repetición de una operación terminada reproduce su respuesta guardada. Validación: 12 pruebas de idempotencia del backend aprobadas, incluidas 3 de integración con Redis; 33 suites y 212 pruebas del frontend aprobadas. En Android se comprobó que un reporte pendiente sobrevive al cierre completo de la app con el backend apagado y se envía al restablecerlo. El aislamiento entre cuentas cuenta con pruebas automatizadas; su comprobación manual sigue pendiente.

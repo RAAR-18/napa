@@ -34,6 +34,8 @@ export default function PendientesEnvioScreen() {
       setMensaje(
         resultado.pendientes === 0 && resultado.fallidas === 0
           ? 'Todo se envió.'
+          : resultado.fallidas > 0
+            ? `Hay ${resultado.fallidas} acciones que requieren revisión. Consulta el mensaje y decide si reintentar o descartar.`
           : resultado.enviadas > 0
             ? `Se enviaron ${resultado.enviadas}. Las demás se intentarán de nuevo.`
             : 'Aún no hay conexión con el servidor. Lo intentaremos de nuevo en un momento.',

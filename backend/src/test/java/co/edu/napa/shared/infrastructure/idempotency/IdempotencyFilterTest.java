@@ -24,6 +24,31 @@ import static org.mockito.Mockito.when;
 
 class IdempotencyFilterTest {
     @Test
+    void inProgressDuplicateReturnsRetryableCodeWithoutExecuting() throws Exception {
+        StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
+        @SuppressWarnings("unchecked")
+        ValueOperations<String, String> values = mock(ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(values);
+        var lock = new java.util.concurrent.atomic.AtomicReference<String>();
+        when(values.setIfAbsent(anyString(), anyString(), org.mockito.ArgumentMatchers.eq(Duration.ofMinutes(2))))
+                .thenAnswer(invocation -> {
+                    lock.set(invocation.getArgument(1));
+                    return false;
+                });
+        when(values.get(anyString())).thenAnswer(invocation -> lock.get());
+        MockHttpServletRequest request = request();
+        request.addHeader("Idempotency-Key", UUID.randomUUID().toString());
+        request.setContent("{}".getBytes(StandardCharsets.UTF_8));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        filter(redisTemplate).doFilter(request, response, (req, res) -> {
+            throw new AssertionError("An in-progress duplicate must not execute");
+        });
+        assertEquals(409, response.getStatus());
+        assertTrue(response.getContentAsString().contains("IDEMPOTENCY_IN_PROGRESS"));
+        assertEquals("1", response.getHeader("Retry-After"));
+    }
+
+    @Test
     void rejectsWriteWithoutIdempotencyKey() throws Exception {
         StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
         IdempotencyFilter filter = filter(redisTemplate);

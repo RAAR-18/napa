@@ -156,20 +156,27 @@ function FormularioCalificacion({
     setError(null);
     key.current ??= Crypto.randomUUID();
     const datos = { pedidoId, tipoEntidad: opcion.tipoEntidad, entidadId: opcion.entidadId, puntaje, comentario };
+    let usuarioId: string | null = null;
     try {
+      usuarioId = await outbox.propietario();
       const creada = await calificar(datos, key.current);
       onCalificado(creada.id);
     } catch (cause) {
-      if (cause instanceof NetworkError) {
+      if (cause instanceof NetworkError && usuarioId) {
         // F041: se guarda con la misma clave y se envía sola cuando vuelva la conexión.
-        await outbox.encolar({
-          method: 'POST',
-          path: '/api/v1/calificaciones',
-          body: cuerpoCalificacion(datos),
-          idempotencyKey: key.current,
-          descripcion: `Calificación de ${opcion.nombre ?? etiqueta(opcion)}`,
-        });
-        onCalificado('pendiente-envio');
+        try {
+          await outbox.encolar({
+            usuarioId,
+            method: 'POST',
+            path: '/api/v1/calificaciones',
+            body: cuerpoCalificacion(datos),
+            idempotencyKey: key.current,
+            descripcion: `Calificación de ${opcion.nombre ?? etiqueta(opcion)}`,
+          });
+          onCalificado('pendiente-envio');
+        } catch {
+          setError('No se pudo guardar la acción en el teléfono. Conserva el formulario e intenta de nuevo.');
+        }
         return;
       }
       if (cause instanceof ApiError && cause.code === 'CONFLICT') {

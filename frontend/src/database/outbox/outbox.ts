@@ -9,16 +9,13 @@ export const RETROCESO_MAXIMO_MS = 5 * 60_000;
 /** Errores del servidor (5xx) que se reintentan antes de dar la acción por fallida. */
 export const MAXIMO_REINTENTOS_SERVIDOR = 8;
 
-/**
- * Respuestas que significan que la acción ya quedó aplicada en un envío anterior cuya respuesta se perdió
- * (por ejemplo, la calificación o el reporte ya existen): se dan por enviadas.
- */
-const YA_APLICADA = new Set(['CONFLICT', 'ALREADY_CONFIRMED', 'ALREADY_PUBLISHED']);
+// Un conflicto no prueba que esta acción haya sido aplicada.
 
 export type ResultadoProceso = { enviadas: number; pendientes: number; fallidas: number };
 
 type Opciones = {
   store: OutboxStore;
+  usuarioActual: () => Promise<string | null>;
   enviar: EnviarAccion;
   ahora?: () => number;
   nuevoId: () => string;
@@ -30,28 +27,41 @@ type Opciones = {
  */
 export class Outbox {
   private readonly store: OutboxStore;
+  private readonly usuarioActual: () => Promise<string | null>;
   private readonly enviar: EnviarAccion;
   private readonly ahora: () => number;
   private readonly nuevoId: () => string;
   private enCurso: Promise<ResultadoProceso> | null = null;
   private readonly oyentes = new Set<() => void>();
 
-  constructor({ store, enviar, ahora = Date.now, nuevoId }: Opciones) {
+  constructor({ store, enviar, usuarioActual, ahora = Date.now, nuevoId }: Opciones) {
     this.store = store;
+    this.usuarioActual = usuarioActual;
     this.enviar = enviar;
     this.ahora = ahora;
     this.nuevoId = nuevoId;
   }
 
-  /** Guarda la acción para enviarla después; `idempotencyKey` debe ser la del primer intento. */
+  /** Captura el propietario antes de iniciar una petición que puede fallar por red. */
+  async propietario(): Promise<string> {
+    const id = await this.usuarioActual();
+    if (!id) throw new Error('Inicia sesión nuevamente para guardar acciones pendientes.');
+    return id;
+  }
+
+  /** Guarda la acción con su propietario original y la clave del primer intento. */
   async encolar(input: {
+    usuarioId: string;
     method: MetodoEnvio;
     path: string;
     body?: unknown;
     idempotencyKey: string;
     descripcion: string;
   }): Promise<AccionPendiente> {
+    const usuarioId = input.usuarioId;
+    if (!usuarioId) throw new Error('La acción debe tener propietario.');
     const accion: AccionPendiente = {
+      usuarioId,
       id: this.nuevoId(),
       method: input.method,
       path: input.path,
@@ -69,24 +79,29 @@ export class Outbox {
     return accion;
   }
 
-  listar(): Promise<AccionPendiente[]> {
-    return this.store.listar();
+  async listar(): Promise<AccionPendiente[]> {
+    const usuarioId = await this.usuarioActual();
+    if (!usuarioId) return [];
+    const acciones = await this.store.listar();
+    if (usuarioId !== await this.usuarioActual()) return [];
+    return acciones.filter((a) => a.usuarioId === usuarioId);
   }
 
   async descartar(id: string): Promise<void> {
+    if (!(await this.listar()).some((a) => a.id === id)) return;
     await this.store.borrar(id);
     this.avisar();
   }
 
-  /** Al cerrar sesión: las acciones pertenecen a la cuenta que las creó. */
+  /** Descarte explícito solo de los pendientes de la cuenta activa; no usar al cerrar sesión. */
   async vaciar(): Promise<void> {
-    await this.store.borrarTodo();
+    for (const accion of await this.listar()) await this.store.borrar(accion.id);
     this.avisar();
   }
 
   /** Vuelve a poner una acción fallida en la cola para intentarla ya. */
   async reintentar(id: string): Promise<void> {
-    const accion = (await this.store.listar()).find((a) => a.id === id);
+    const accion = (await this.listar()).find((a) => a.id === id);
     if (!accion) return;
     await this.store.actualizar({ ...accion, status: 'PENDIENTE', lastError: null, nextAttemptAt: this.ahora() });
     this.avisar();
@@ -108,8 +123,9 @@ export class Outbox {
 
   private async pasada(forzar: boolean): Promise<ResultadoProceso> {
     let enviadas = 0;
-    const acciones = await this.store.listar();
+    const acciones = await this.listar();
     for (const accion of acciones) {
+      if (accion.usuarioId !== await this.usuarioActual()) break;
       if (accion.status !== 'PENDIENTE') continue;
       if (!forzar && accion.nextAttemptAt > this.ahora()) continue;
       const resultado = await this.intentar(accion);
@@ -120,8 +136,8 @@ export class Outbox {
         break;
       }
     }
-    const restantes = await this.store.listar();
-    if (enviadas > 0 || restantes.length !== acciones.length) this.avisar();
+    const restantes = await this.listar();
+    this.avisar();
     return {
       enviadas,
       pendientes: restantes.filter((a) => a.status === 'PENDIENTE').length,
@@ -135,10 +151,6 @@ export class Outbox {
       await this.store.borrar(accion.id);
       return 'enviada';
     } catch (cause) {
-      if (cause instanceof ApiError && cause.code && YA_APLICADA.has(cause.code)) {
-        await this.store.borrar(accion.id);
-        return 'enviada';
-      }
       const attempts = accion.attempts + 1;
       const mensaje = cause instanceof Error ? cause.message : 'Error desconocido';
       if (cause instanceof NetworkError) {
@@ -147,7 +159,8 @@ export class Outbox {
       }
       const reintentable =
         cause instanceof ApiError &&
-        (cause.status === 401 || cause.status === 408 || cause.status === 429 || cause.status >= 500);
+        ((cause.status === 409 && cause.code === 'IDEMPOTENCY_IN_PROGRESS') ||
+          cause.status === 401 || cause.status === 408 || cause.status === 429 || cause.status >= 500);
       if (reintentable && (cause.status < 500 || attempts < MAXIMO_REINTENTOS_SERVIDOR)) {
         await this.store.actualizar({ ...accion, attempts, lastError: mensaje, nextAttemptAt: this.siguiente(attempts) });
         return 'reintentar';

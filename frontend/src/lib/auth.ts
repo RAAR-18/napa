@@ -26,6 +26,7 @@ export type AuthTokens = {
   expiresIn: number;
   tokenType: string;
   rol: string;
+  usuarioId?: string;
 };
 
 type AuthResponse = {
@@ -42,6 +43,7 @@ function sessionTokens(response: AuthResponse): AuthTokens {
     expiresIn: response.expiresIn,
     tokenType: 'Bearer',
     rol: response.usuario.rol,
+    usuarioId: response.usuario.id,
   };
 }
 

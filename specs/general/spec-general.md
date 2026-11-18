@@ -32,6 +32,8 @@ Prefijo /api/v1. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCULA
     *   Clave en Redis: `idem:{userId}:{key}`. En endpoints sin sesión que la exijan (registro) se usa `idem:{deviceId}:{key}` con `X-Device-Id`.
     *   **Exentos** (propuesta, a confirmar): `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, las solicitudes de OTP (ya limitadas por rate-limit) y `POST /dispositivos` (único por `(usuario, token)` en BD).
 
+Una repetición con la misma clave y petición mientras la original sigue en curso devuelve `409 IDEMPOTENCY_IN_PROGRESS` y `Retry-After: 1`. El cliente conserva clave y cuerpo y reintenta con retroceso (la outbox espera inicialmente 5 segundos). Cuando existe respuesta guardada, el servidor la reproduce sin volver a ejecutar la operación. Un `409 CONFLICT` de negocio no demuestra éxito y requiere revisión; no se descarta la acción automáticamente.
+
 #### 2.1.1 Cabeceras 
 
 | Cabecera | Sentido | Cuándo | Contenido |
@@ -44,7 +46,7 @@ Prefijo /api/v1. JSON en UTF-8. Fechas ISO-8601 UTC. Enumeraciones en MAYÚSCULA
 | X-Request-Id | Request/Response | Opcional en request; siempre en response | Identificador de traza; se repite en traceId del error |
 | Location | Response | 201 | URL del recurso creado, solo cuando el recurso tiene un GET propio (no aplica a POST /reportes ni a POST /calificaciones) |
 | Idempotent-Replayed: true | Response | Cuando se devuelve una respuesta guardada | Indica repetición, no una nueva operación |
-| Retry-After | Response | 429, 503 | Segundos de espera |
+| Retry-After | Response | 409 IDEMPOTENCY_IN_PROGRESS, 429, 503 | Segundos de espera |
 | Cache-Control: no-store | Response | Auth, pagos, ubicación, código de confirmación | Evita caché de datos sensibles |
 
 #### 2.2 Códigos HTTP
@@ -78,6 +80,7 @@ Cuerpo de error: { "code": "...", "message": "mensaje para el usuario", "details
 | 403 | ACCOUNT_NOT_VERIFIED | Cuenta PENDIENTE_VERIFICACION |
 | 400 | OTP_INVALID | Código incorrecto; details.intentosRestantes |
 | 400 | OTP_EXPIRED | Código vencido |
+| 409 | IDEMPOTENCY_IN_PROGRESS | Petición original aún en curso; reintentar conservando clave y cuerpo |
 | 409 | OTP_ATTEMPTS_EXHAUSTED | 5 intentos fallidos: pedir código nuevo |
 | 409 | PHONE_ALREADY_REGISTERED / EMAIL_ALREADY_REGISTERED | Dato en uso |
 | 400 | INVALID_CURRENT_PASSWORD | Contraseña actual incorrecta |

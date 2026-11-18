@@ -91,7 +91,7 @@ describe('session continuity against the HTTP contract', () => {
       .mockResolvedValueOnce(tokenResponse({ ...rotated, refreshToken: 'next-refresh' }));
 
     await changePassword('old-password', 'new-password');
-    expect(await readSession()).toEqual({ ...rotated, expiresAt: initialTime + 900_000 });
+    expect(await readSession()).toEqual({ ...rotated, usuarioId: 'user-1', expiresAt: initialTime + 900_000 });
 
     now += 901_000;
     await getValidSession();
