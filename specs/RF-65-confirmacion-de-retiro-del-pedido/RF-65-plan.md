@@ -63,7 +63,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | RNF23 Consistencia | ☑ | Estado del pedido y del pago coherentes |
 | RNF24 Errores claros | ☑ | `INVALID_STATE` con `estadoActual` |
 | RNF27 Integridad | ☑ | `Idempotency-Key` y único del pago por pedido |
-| RNF28 Conectividad | ☑ | Acción por el outbox del dispositivo |
+| RNF28 Conectividad | ☑ | En el MVP, confirmar el retiro y el cobro requiere conexión. La app envía la solicitud directamente al servidor. Si falla la conexión, muestra el error de red existente y el vendedor puede reintentar manualmente. |
 
 ## Entities Involved
 
@@ -130,11 +130,21 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 **Eventos que consume esta feature**: ninguno.
 
-## Offline & Concurrency Strategy
+### Conectividad de RF-65 en el MVP
 
-- **Tolerancia a mala conexión (RNF28)**: la acción se escribe en el outbox con su `Idempotency-Key` y la pantalla muestra "pendiente de envío"; al reconectar, si el servidor responde `INVALID_STATE` la app actualiza el detalle y lo explica.
-- **Concurrencia (RNF08)**: pedido y pago se bloquean `FOR UPDATE` (siempre en ese orden); dos solicitudes simultáneas: una confirma y la otra recibe `INVALID_STATE` con `ENTREGADO`.
-- **Idempotencia (RNF27)**: Redis `idem:{userId}:{key}`; el único de `Pago` por pedido es la garantía final.
+Confirmar el retiro y el cobro de un pedido de recogida requiere conexión
+a internet. El vendedor confirma ambos hechos en una sola acción sobre
+un pedido en estado `LISTO_PARA_RECOGER`. La app envía directamente
+`POST /api/v1/pedidos/{id}/confirmar-retiro` con
+`{ "cobroConfirmado": true }`.
+
+Si la solicitud falla por un problema de conexión, la app muestra el
+error de red existente. La acción no se guarda en la cola del dispositivo
+ni se reenvía automáticamente. El vendedor puede reintentar manualmente
+con la misma `Idempotency-Key` mientras conserve el intento en pantalla.
+
+El encolado offline de RF-65 (#51) queda fuera del MVP. La política de
+vencimiento de los pedidos de recogida queda como decisión independiente.
 
 ## Error Handling
 
@@ -144,7 +154,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | Doble confirmación | `409 INVALID_STATE` (`ENTREGADO`); con la misma clave, repite la respuesta | RNF27 |
 | Sin confirmar el cobro | `400 VALIDATION_ERROR`; no cambia nada | FR-002 |
 | Falla al confirmar el pago | Se revierte el cambio de estado del pedido | RNF15 |
-| Sin conexión | Outbox con reintento | RNF28 |
+| Sin conexión |mensaje de error de red |
 
 ## Testing Strategy
 
@@ -217,14 +227,13 @@ frontend/__tests__/recogida/confirmar-retiro.test.tsx
 - [ ] T013 [P] [US1] Test unitario de `Pedido.confirmarRetiro` en `backend/src/test/java/co/edu/napa/pedidos/PedidoConfirmarRetiroTest.java`
 - [ ] T017 [P] [US1] Test de atomicidad (si falla el pago, el pedido sigue `LISTO_PARA_RECOGER` y no hay eventos), de dos solicitudes simultáneas y de repetición con la misma clave en `.../recogida/ConfirmarRetiroAtomicidadIT.java`
 - [ ] T018 [P] [US1] Test de pedido ajeno (`404`), rol equivocado (`403`) y falta de `Idempotency-Key` (`400`) en `.../recogida/ConfirmarRetiroAutorizacionIT.java`
-- [ ] T022 [P] [US1] Test de la pantalla (hoja de cobro según el medio, casilla obligatoria, error por estado, outbox sin red) en `frontend/__tests__/recogida/confirmar-retiro.test.tsx`
+- [ ] T022 [P] [US1] Test de la pantalla (hoja de cobro según el medio, casilla obligatoria, error por estado, error de red ante un fallo de conexión y ausencia de un pendiente loca) en `frontend/__tests__/recogida/confirmar-retiro.test.tsx`
 
 ### Implementation
 
 - [ ] T014 [US1] `Pedido.confirmarRetiro()` en `pedidos/domain/model/Pedido.java`
 - [ ] T015 [US1] `TransicionarPedidoPort.confirmarRetiro` y su caso de uso (bloqueo, dueño, modalidad, estado y publicación de E07) en `pedidos/application/`
 - [ ] T016 [US1] `ConfirmarRetiroUseCase` (transición y cobro por `CobroPedidoPort`) y `POST /pedidos/{id}/confirmar-retiro` con su DTO en `recogida/`
-- [ ] T020 [US1] Servicio `confirmarRetiro()` por el outbox en `frontend/src/services/recogida.ts`
 - [ ] T021 [US1] Botón "Confirmar retiro" y uso de `ConfirmarCobroSheet` en `frontend/src/components/recogida/AccionesRecogida.tsx` (visible en recogida `LISTO_PARA_RECOGER`) e integración en `frontend/src/app/(vendedor)/pedidos/[id].tsx`
 
 **Checkpoint**: US1 funcional.
