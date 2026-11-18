@@ -127,7 +127,33 @@ Los `DISPONIBLE` van primero y los `AGOTADO` después; dentro de cada grupo rige
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: la app guarda en SQLite la primera página de cada catálogo consultado y la muestra con "datos guardados" si no hay red. Al volver a primer plano o recuperar la conexión, se refresca; la cantidad y la marca "solo reserva" se actualizan.
+- **Consulta del catálogo sin conexión en el MVP (RNF28)**
+    - El cliente accede por el recorrido habitual **Emprendimientos → Catálogo**.
+      Sin conexión, puede abrir el catálogo desde la tarjeta del emprendimiento
+      si aparece en el listado guardado.
+    - La app guarda en SQLite únicamente las páginas consultadas con éxito.
+      Cada página se identifica por cuenta, emprendimiento, orden y número
+      de página.
+    - Cada página se conserva durante 7 días desde su última descarga exitosa.
+      Una descarga exitosa reemplaza la copia y reinicia el plazo. Abrir la
+      copia o intentar actualizarla sin éxito conserva la fecha anterior.
+    - Se guardan hasta 50 páginas por cuenta. Al superar el límite, se elimina
+      la página cuya última descarga exitosa sea la más antigua.
+    - Ante un fallo de conexión, la app muestra la copia vigente con la etiqueta
+      «Datos guardados», la fecha de actualización y un aviso de que el precio
+      y la disponibilidad pueden haber cambiado. Se conserva la marca
+      «Solo reserva» recibida del servidor.
+    - La app distingue una página sin descargar de una consulta descargada
+      sin resultados e indica cuando solo hay parte del catálogo disponible.
+      Mientras muestra la copia guardada, deshabilita los controles para armar
+      pedidos.
+    - Si el token vence sin conexión, la misma cuenta puede consultar sus
+      páginas vigentes, incluso tras reiniciar la app. Si al reconectar el
+      servidor rechaza la sesión, la app bloquea el acceso a la copia y pide
+      iniciar sesión.
+    - Al cerrar sesión se borran las páginas guardadas de esa cuenta. Si el
+      servidor confirma que un emprendimiento ya no está disponible para esa
+      cuenta, se borran únicamente las páginas de ese emprendimiento.
 - **Concurrencia (RNF08)**: no aplica a la lectura; si un producto se agota después de listarlo, RF-45 lo detecta al confirmar.
 - **Idempotencia (RNF27)**: no aplica a un `GET`.
 
@@ -213,7 +239,7 @@ frontend/__tests__/productos/catalogo.test.tsx
 - [ ] T014 [P] [US1] Test de emprendimiento sin productos (`200`, lista vacía) en `.../productos/CatalogoVacioIT.java`
 - [ ] T015 [P] [US1] Test de orden y paginación: disponibles primero, `nombre` o `precio` dentro de cada grupo, `sort` inválido (`400`), `size` > 100 en `.../productos/CatalogoOrdenIT.java`
 - [ ] T016 [P] [US1] Test de emprendimiento inactivo, eliminado e inexistente (`404`), rol distinto de cliente (`403`) y sin sesión (`401`) en `.../productos/CatalogoAutorizacionIT.java`
-- [ ] T030 [P] [US1] Test de `TarjetaProductoCatalogo`, de la etiqueta "solo reserva" y de la pantalla (lista vacía, caché sin red) en `frontend/__tests__/productos/catalogo.test.tsx`
+- [ ] T030 [P] [US1] Verificar la etiqueta «Solo reserva», la diferencia entre una consulta sin resultados y una página sin descargar, la fecha de última descarga exitosa, la vigencia de 7 días, el límite de 50 páginas por cuenta, el aislamiento y la limpieza de la caché, y la consulta de solo lectura sin conexión.
 - [ ] T031 [P] [US1] Test del refresco del catálogo al volver a primer plano en `frontend/__tests__/productos/catalogo-refresco.test.tsx`
 
 ### Implementation
@@ -222,7 +248,7 @@ frontend/__tests__/productos/catalogo.test.tsx
 - [ ] T021 [US1] `GET /emprendimientos/{id}/productos` y su DTO en `ProductoController`
 - [ ] T022 [US1] Consulta JPA con orden por estado y luego por `nombre` o `precio`, y `soloReserva` calculado
 - [ ] T032 [US1] `EtiquetaSoloReserva` y `TarjetaProductoCatalogo` en `frontend/src/components/productos/`
-- [ ] T033 [US1] `listarCatalogo()` con caché SQLite en `frontend/src/services/productos.ts`
+- [ ] T033 [US1] Implementar la caché SQLite de lectura del catálogo según las reglas del MVP definidas en «Consulta del catálogo sin conexión en el MVP».
 - [ ] T034 [US1] Pantalla `frontend/src/app/(cliente)/emprendimientos/[id]/productos.tsx`, enlazada desde el detalle (RF-32) y como punto de partida de RF-45
 
 **Checkpoint**: el catálogo funciona de extremo a extremo.
