@@ -5,7 +5,9 @@ import { Platform } from 'react-native';
 
 import NotificacionesScreen from '../notificaciones';
 import PreferenciasNotificacionesScreen from '../preferencias-notificaciones';
-import { getValidSession } from '../../lib/auth';
+import { NetworkError } from '../../lib/api';
+import { getValidSession, readSession } from '../../lib/auth';
+import { leerPaginaNotificaciones, listarPaginasGuardadas } from '../../lib/notificaciones-cache';
 import {
   abrirNotificacion,
   actualizarPreferencias,
@@ -27,7 +29,16 @@ jest.mock('expo-notifications', () => ({
   getDevicePushTokenAsync: jest.fn(),
   setNotificationHandler: jest.fn(),
 }));
-jest.mock('../../lib/auth', () => ({ clearSession: jest.fn(), getValidSession: jest.fn() }));
+jest.mock('../../lib/auth', () => ({
+  clearSession: jest.fn(), getValidSession: jest.fn(), getSessionGeneration: () => 0,
+  readSession: jest.fn().mockResolvedValue(null),
+}));
+jest.mock('../../lib/notificaciones-cache', () => ({
+  borrarNotificacionesGuardadas: jest.fn(),
+  guardarPaginaNotificaciones: jest.fn(),
+  leerPaginaNotificaciones: jest.fn(),
+  listarPaginasGuardadas: jest.fn(),
+}));
 jest.mock('../../lib/notificaciones', () => ({
   ...jest.requireActual('../../lib/notificaciones'),
   abrirNotificacion: jest.fn(),
@@ -73,6 +84,7 @@ const leida: Notificacion = {
 beforeEach(() => {
   jest.clearAllMocks();
   jest.mocked(getValidSession).mockResolvedValue(session('CLIENTE'));
+  jest.mocked(readSession).mockResolvedValue(null);
 });
 
 describe('notificaciones (RF-38)', () => {
@@ -213,3 +225,35 @@ describe('registro del push', () => {
     expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
   });
 });
+
+it('expands a saved notification without marking it read or exposing its link', async () => {
+  jest.mocked(readSession).mockResolvedValue({ ...session('CLIENTE'), usuarioId: 'cliente', expiresAt: 0 });
+  jest.mocked(getValidSession).mockRejectedValueOnce(new NetworkError('Sin conexión'));
+  const { id, titulo, cuerpo, leida, createdAt } = sinLeer;
+  jest.mocked(leerPaginaNotificaciones).mockResolvedValueOnce({
+    data: { page: 0, size: 20, totalElements: 1, content: [{ id, titulo, cuerpo, leida, createdAt }] },
+    fecha: Date.now(),
+  });
+  const view = await render(<NotificacionesScreen />);
+  await waitFor(() => expect(view.getByText(/Datos guardados/)).toBeTruthy());
+  await fireEvent.press(view.getByRole('button', { name: 'Sin leer: Pedido aceptado' }));
+  expect(view.getByText(cuerpo)).toBeTruthy();
+  expect(view.getByRole('button', { name: 'Sin leer: Pedido aceptado' })).toBeTruthy();
+  expect(view.queryByText('Ver pedido')).toBeNull();
+  expect(abrirNotificacion).not.toHaveBeenCalled();
+  expect(leerPaginaNotificaciones).toHaveBeenCalledWith('cliente', false, 0);
+}, 15000);
+
+it('distinguishes an undownloaded filter from an inbox with no results', async () => {
+  jest.mocked(readSession).mockResolvedValue({ ...session('CLIENTE'), usuarioId: 'cliente' });
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  jest.mocked(leerPaginaNotificaciones).mockResolvedValueOnce({
+    data: { page: 0, size: 20, totalElements: 0, content: [] }, fecha: Date.now(),
+  }).mockResolvedValueOnce(null);
+  jest.mocked(listarPaginasGuardadas).mockResolvedValueOnce([]);
+  const view = await render(<NotificacionesScreen />);
+  await waitFor(() => expect(view.getByText('No tienes notificaciones.')).toBeTruthy());
+  await fireEvent.press(view.getByRole('radio', { name: 'No leídas' }));
+  await waitFor(() => expect(view.getByText(/No hay notificaciones descargadas/)).toBeTruthy());
+  expect(leerPaginaNotificaciones).toHaveBeenLastCalledWith('cliente', true, 0);
+}, 15000);
