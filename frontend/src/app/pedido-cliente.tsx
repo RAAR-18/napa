@@ -14,7 +14,9 @@ import {
 import ContactarPedido from '../components/ContactarPedido';
 import DomiciliarioAsignado from '../components/DomiciliarioAsignado';
 import { ApiError } from '../lib/api';
-import { clearSession, getValidSession } from '../lib/auth';
+import { clearSession } from '../lib/auth';
+import type { DetallePedidoGuardado } from '../lib/pedidos-cliente-cache';
+import { consultarDetalleCliente } from '../lib/pedidos-cliente-consulta';
 import {
   estadoDomicilioNombres,
   motivoCancelacionNombres,
@@ -25,7 +27,6 @@ import {
 import {
   estadoPedidoNombres,
   modalidadPedidoNombres,
-  obtenerPedidoCliente,
   type EstadoPedido,
   type ModalidadPedido,
   type PedidoClienteDetalle,
@@ -85,7 +86,8 @@ function LineaEstado({ modalidad, estado }: { modalidad: ModalidadPedido; estado
 export default function PedidoClienteScreen() {
   const { pedidoId: rawId } = useLocalSearchParams<{ pedidoId?: string | string[] }>();
   const pedidoId = Array.isArray(rawId) ? rawId[0] : rawId;
-  const [detail, setDetail] = useState<PedidoClienteDetalle | null>(null);
+  const [detail, setDetail] = useState<PedidoClienteDetalle | DetallePedidoGuardado | null>(null);
+  const [fechaCopia, setFechaCopia] = useState<number | null>(null);
   const [codigo, setCodigo] = useState<CodigoConfirmacion | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -93,8 +95,13 @@ export default function PedidoClienteScreen() {
 
   useEffect(() => {
     let active = true;
+    let cargando = false;
     async function load(silent: boolean) {
+      if (cargando) return;
       if (!silent) {
+        setDetail(null);
+        setCodigo(null);
+        setFechaCopia(null);
         setLoading(true);
         setError(null);
       }
@@ -103,17 +110,22 @@ export default function PedidoClienteScreen() {
         setLoading(false);
         return;
       }
+      cargando = true;
       try {
-        const session = await getValidSession();
-        if (!active) return;
-        if (session.rol !== 'CLIENTE') {
-          setError('Solo el cliente que hizo el pedido puede consultarlo aquí.');
+        const resultado = await consultarDetalleCliente(pedidoId, () => active);
+        if (!active || !resultado) return;
+        setCodigo(null);
+        if (resultado.origen === 'sin-copia') {
+          setDetail(null);
+          setFechaCopia(null);
+          setError('Conéctate para consultar el detalle de este pedido.');
           return;
         }
-        const response = await obtenerPedidoCliente(pedidoId);
-        if (!active) return;
-        setDetail(response);
-        const delivery = response.domicilio;
+        setDetail(resultado.data);
+        setError(null);
+        setFechaCopia(resultado.origen === 'copia' ? resultado.fecha : null);
+        if (resultado.origen === 'copia') return;
+        const delivery = resultado.data.domicilio;
         if (delivery && CODIGO_VISIBLE.includes(delivery.estado)) {
           try {
             const code = await obtenerCodigoConfirmacion(delivery.id);
@@ -126,21 +138,24 @@ export default function PedidoClienteScreen() {
           setCodigo(null);
         }
       } catch (cause) {
+        if (!active) return;
+        setDetail(null);
+        setCodigo(null);
+        setFechaCopia(null);
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
           return;
         }
-        if (active && !silent) {
-          setError(
-            cause instanceof ApiError && cause.status === 404
-              ? 'El pedido no está disponible.'
-              : cause instanceof Error
-                ? cause.message
-                : 'No se pudo cargar el pedido.',
-          );
-        }
+        setError(
+          cause instanceof ApiError && cause.status === 404
+            ? 'El pedido no está disponible.'
+            : cause instanceof Error
+              ? cause.message
+              : 'No se pudo cargar el pedido.',
+        );
       } finally {
+        cargando = false;
         if (active && !silent) setLoading(false);
       }
     }
@@ -152,7 +167,8 @@ export default function PedidoClienteScreen() {
     };
   }, [pedidoId, loadAttempt]);
 
-  const delivery = detail?.domicilio ?? null;
+  const delivery = detail && 'domicilio' in detail ? detail.domicilio : null;
+  const online = fechaCopia === null;
 
   return (
     <AuthPage>
@@ -163,6 +179,12 @@ export default function PedidoClienteScreen() {
       />
       {loading ? <ActivityIndicator accessibilityLabel="Cargando pedido" color={palette.green} /> : null}
       <ErrorBanner message={error} />
+      {fechaCopia !== null ? (
+        <HelperText>
+          Datos guardados. Última descarga: {formatDate(new Date(fechaCopia).toISOString())}.
+          El estado del pedido y del pago puede haber cambiado.
+        </HelperText>
+      ) : null}
       {detail ? (
         <>
           <View style={styles.card}>
@@ -177,7 +199,7 @@ export default function PedidoClienteScreen() {
             ) : null}
             <LineaEstado modalidad={detail.modalidad} estado={detail.estado} />
           </View>
-          {codigo ? (
+          {online && codigo ? (
             <View style={styles.codeCard}>
               <Text style={styles.sectionTitle}>Código de entrega</Text>
               <Text accessibilityLabel={`Código ${codigo.codigo.split('').join(' ')}`} style={styles.code}>
@@ -231,7 +253,7 @@ export default function PedidoClienteScreen() {
                 Pago: {pagoNombres[detail.pago.estado] ?? detail.pago.estado}
               </Text>
             ) : null}
-            {detail.modalidad === 'DOMICILIO' && detail.pago?.estado === 'PENDIENTE_CONFIRMACION' ? (
+            {online && detail.modalidad === 'DOMICILIO' && detail.pago?.estado === 'PENDIENTE_CONFIRMACION' ? (
               <HelperText>
                 Transfiere {formatPrice(detail.total)} al vendedor. Cuando lo confirme, publicará tu domicilio.
               </HelperText>
@@ -239,7 +261,7 @@ export default function PedidoClienteScreen() {
           </View>
         </>
       ) : null}
-      {detail ? (
+      {online && detail ? (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{detail.emprendimiento.nombre}</Text>
           {!PEDIDO_CERRADO.includes(detail.estado) ? (
@@ -260,13 +282,13 @@ export default function PedidoClienteScreen() {
           />
         </View>
       ) : null}
-      {detail?.estado === 'ENTREGADO' ? (
+      {online && detail?.estado === 'ENTREGADO' ? (
         <PrimaryButton
           title="Calificar mi experiencia"
           onPress={() => router.push({ pathname: '/calificar-pedido', params: { pedidoId: detail.id } })}
         />
       ) : null}
-      {detail ? (
+      {online && detail ? (
         <TextButton
           title="Reportar un problema"
           onPress={() =>
