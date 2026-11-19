@@ -18,7 +18,7 @@ El cliente abre el catálogo de un emprendimiento con `GET /emprendimientos/{id}
 
 ## Estado actual del código
 
-Primera entrega en línea implementada el 2026-11-11. `ProductoController` expone `GET /api/v1/emprendimientos/{id}/productos` para clientes; consulta la vigencia del emprendimiento por el puerto de entrada de ese módulo. Devuelve disponibles primero y agotados después, paginados y ordenados por nombre o precio, con `soloReserva` calculado en el servidor. `frontend/src/app/catalogo.tsx` se abre desde cada tarjeta del listado, muestra el estado vacío y se refresca al volver a la pantalla, al primer plano o manualmente. Hay pruebas HTTP con PostgreSQL/Redis y pruebas de pantalla y refresco. Pendientes la caché sin conexión, la medición con 5000 productos y la integración con pedidos RF-45; el detalle completo RF-32 todavía no existe.
+Primera entrega en línea implementada el 2026-11-11. `ProductoController` expone `GET /api/v1/emprendimientos/{id}/productos` para clientes; consulta la vigencia del emprendimiento por el puerto de entrada de ese módulo. Devuelve disponibles primero y agotados después, paginados y ordenados por nombre o precio, con `soloReserva` calculado en el servidor. `frontend/src/app/catalogo.tsx` se abre desde cada tarjeta del listado, muestra el estado vacío y se refresca al volver a la pantalla, al primer plano o manualmente. Hay pruebas HTTP con PostgreSQL/Redis y pruebas de pantalla y refresco. La entrega offline añade la caché SQLite de solo lectura en `frontend/src/lib/catalogo-cache.ts`. La prueba manual en Android está registrada en la estrategia de pruebas. La medición con 5000 productos queda pendiente; el detalle completo RF-32 todavía no existe.
 
 ## Actors
 
@@ -177,6 +177,12 @@ Los `DISPONIBLE` van primero y los `AGOTADO` después; dentro de cada grupo rige
 
 **Cobertura mínima**: todos los escenarios Given/When/Then tienen al menos un test.
 
+### Evidencia de la consulta offline
+
+- Android, verificado por el autor de la prueba. Tras guardar páginas del catálogo y reabrir la app con el backend detenido, se pudo acceder desde Emprendimientos → Catálogo. Las páginas guardadas conservaron su fecha y se mostraron en solo lectura. La página sin descargar mostró el aviso correspondiente.
+
+- Verificación local. TypeScript y ESLint pasaron. Las 35 pruebas de productos, emprendimientos y sesión pasaron al repetirlas con un límite de espera mayor.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -205,8 +211,9 @@ backend/src/test/java/co/edu/napa/productos/
 frontend/src/app/(cliente)/emprendimientos/[id]/productos.tsx     # ruta Expo Router: catálogo
 frontend/src/components/productos/TarjetaProductoCatalogo.tsx     # nombre, precio, cantidad y etiqueta "solo reserva"
 frontend/src/components/productos/EtiquetaSoloReserva.tsx
-frontend/src/services/productos.ts                                # listarCatalogo() con caché local
-frontend/src/database/schema/catalogo_cache.ts
+frontend/src/lib/productos.ts                                      # consulta paginada del catálogo
+frontend/src/lib/catalogo-cache.ts                                 # caché SQLite de lectura
+frontend/src/hooks/useProductosPage.ts                             # carga y recuperación de páginas
 frontend/__tests__/productos/catalogo.test.tsx
 ```
 
