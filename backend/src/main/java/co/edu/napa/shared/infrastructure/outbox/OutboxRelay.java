@@ -13,7 +13,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -153,7 +153,7 @@ public class OutboxRelay {
                 resultSet.getObject("event_id", UUID.class),
                 resultSet.getString("event_type"),
                 resultSet.getInt("event_version"),
-                resultSet.getObject("occurred_at", Instant.class),
+                resultSet.getObject("occurred_at", OffsetDateTime.class).toInstant(),
                 resultSet.getString("aggregate_type"),
                 resultSet.getObject("aggregate_id", UUID.class),
                 resultSet.getObject("actor_user_id", UUID.class),

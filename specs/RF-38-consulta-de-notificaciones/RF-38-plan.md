@@ -151,7 +151,10 @@ E09 no está en la lista mínima de RF-38 FR-004, pero está en el catálogo y l
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: la notificación queda guardada aunque el push falle; la app la ve al consultar. Caché de lectura en SQLite en el dispositivo (foundations).
+- **Consulta sin conexión (RNF28, #56)**. SQLite guarda hasta 50 páginas por cuenta, separadas por filtro Todas o No leídas. Cada página vence 7 días después de la última descarga exitosa. La copia muestra la fecha de descarga y conserva el título, mensaje, fecha y estado de lectura de las notificaciones.
+- Al expandir una notificación guardada se muestra el mensaje en solo lectura. El estado de lectura conserva el valor descargado y los enlaces a pedidos y domicilios aparecen al consultar en línea.
+- Ante un fallo de red, la misma cuenta puede consultar las copias vigentes con el token vencido, incluso tras reiniciar. Cerrar sesión elimina sus páginas. Un rechazo del servidor bloquea el acceso a la copia.
+- Aunque falle el push, la notificación sigue disponible en el servidor para consultarla desde la bandeja.
 - **Concurrencia (RNF08)**: el relay usa `FOR UPDATE SKIP LOCKED`; el listener es idempotente por `eventId` (restricción única en la tabla de eventos procesados / `notificacion`).
 - **Idempotencia (RNF27)**: clave natural `eventId` + destinatario + tipo.
 
@@ -310,4 +313,8 @@ frontend/__tests__/notificaciones/
 - Nuevo: `GET /notificaciones/no-leidas` → `{ noLeidas }` para el contador del menú.
 - Nuevo: `POST /dispositivos` (`{ token, plataforma }`, 204, exento de `Idempotency-Key`) y `DELETE /dispositivos` (`{ token }`) al cerrar sesión. Al registrar, el token se borra de otras cuentas (un teléfono, una sesión). No se exige `X-Device-Id`.
 - App: `notificaciones.tsx` (todas / no leídas, abrir marca leída, "Ver pedido" / "Ver domicilio"), contador en el menú, `lib/push.ts` con `expo-notifications` (token FCM nativo; tocar un aviso abre la lista).
-- Pendiente de configuración: el push necesita un build propio con `google-services.json` (Android) y credenciales de Firebase en el backend; en Expo Go no hay token y la app sigue funcionando solo con la lista. Sin caché SQLite de la bandeja (exige conexión).
+- Pendiente de configuración: el push necesita un build propio con `google-services.json` (Android) y credenciales de Firebase en el backend; en Expo Go no hay token y la app sigue funcionando solo con la lista. El MVP incorpora la caché SQLite de la bandeja de solo lectura. La prueba manual en Android quedó confirmada.
+
+**Evidencia Android (2026-11-19, #56).** Los avisos de los pedidos pendientes aparecieron en la bandeja tras corregir el mapeo de fechas del relay del outbox y reiniciar el backend. Con el backend detenido y Metro activo, el vendedor reabrió la app y vio «Datos guardados» con la fecha original. Al expandir un aviso vio el mensaje y conservó la marca de sin leer, con el enlace oculto. El filtro No leídas mostró el aviso de página sin descargar. Al restablecer el backend y actualizar la bandeja, la notificación seguía sin leer.
+
+**Verificación local.** TypeScript y ESLint pasaron. Las 18 pruebas de notificaciones y sesión pasaron al repetirlas con un límite de espera mayor. Pasaron también las 5 pruebas del backend, incluida la regresión del relay con PostgreSQL.

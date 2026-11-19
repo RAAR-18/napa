@@ -15,7 +15,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import tools.jackson.databind.ObjectMapper;
+
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -110,6 +114,39 @@ class OutboxEventPublisherIntegrationTest {
                         event.eventId()
                 )
         );
+    }
+
+    @Test
+    void relayReadsPostgresTimestampAndDispatchesPendingEvent() {
+        Instant occurredAt = Instant.parse("2026-10-20T12:00:00.123456Z");
+        TestEvent event = new TestEvent(
+                UUID.randomUUID(), occurredAt, UUID.randomUUID(), UUID.randomUUID(), Map.of()
+        );
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> eventPublisher.publish(event));
+
+        List<OutboxEnvelope> handled = new ArrayList<>();
+        OutboxEventHandler handler = new OutboxEventHandler() {
+            @Override
+            public String eventType() {
+                return event.type();
+            }
+
+            @Override
+            public void handle(OutboxEnvelope envelope) {
+                handled.add(envelope);
+            }
+        };
+        new OutboxRelay(jdbcTemplate, new ObjectMapper(), transactionManager, List.of(handler))
+                .dispatchPendingEvents();
+
+        OutboxEnvelope envelope = handled.stream()
+                .filter(candidate -> candidate.eventId().equals(event.eventId()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(occurredAt, envelope.occurredAt());
+        assertEquals("PROCESSED", jdbcTemplate.queryForObject(
+                "SELECT status FROM outbox_event WHERE event_id = ?", String.class, event.eventId()
+        ));
     }
 
     private record TestEvent(

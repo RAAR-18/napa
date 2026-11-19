@@ -294,6 +294,12 @@ export async function logout(): Promise<void> {
     } catch (cause) {
       console.warn('No se pudo borrar el perfil guardado al cerrar sesión.', cause);
     }
+    try {
+      const { borrarNotificacionesGuardadas } = await import('./notificaciones-cache');
+      await borrarNotificacionesGuardadas(session.usuarioId);
+    } catch (cause) {
+      console.warn('No se pudo borrar la bandeja guardada al cerrar sesión.', cause);
+    }
   }
 
   const vendedor =
