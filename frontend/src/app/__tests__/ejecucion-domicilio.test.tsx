@@ -43,6 +43,8 @@ jest.mock('expo-crypto', () => ({ randomUUID: jest.fn() }));
 jest.mock('../../lib/auth', () => ({
   clearSession: jest.fn(),
   getValidSession: jest.fn(),
+  getSessionGeneration: () => 0,
+  readSession: jest.fn().mockResolvedValue(null),
 }));
 jest.mock('../../lib/domicilios', () => ({
   ...jest.requireActual('../../lib/domicilios'),

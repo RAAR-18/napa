@@ -25,7 +25,7 @@ RF-50 ya implementa `GET /pedidos` para el vendedor y responde `403` a los demá
 Implementado: la rama del cliente en `GET /api/v1/pedidos`. El controlador elige el caso de uso por rol (`ROLE_CLIENTE` → `ListarPedidosClienteUseCase`). Comparte filtros y validaciones con el vendedor y cada fila trae `emprendimiento { id, nombre }`. Cambios respecto al plan:
 
 - El nombre del emprendimiento sale del mismo `JOIN` de la consulta del pedido, en lugar de un puerto en lote. El cliente ve sus pedidos aunque el emprendimiento ya no esté activo.
-- App: `mis-pedidos.tsx` con filtro por estado y paginación. Falta la caché SQLite sin conexión.
+- App: `mis-pedidos.tsx` con filtro por estado y paginación. La entrega offline añade la caché SQLite de páginas previamente consultadas. Prueba manual confirmada en Android: con el backend detenido, la cuenta cliente pudo consultar el listado guardado con su fecha original. Un filtro sin descargar mostró el aviso correspondiente.
 
 ## Actors
 
@@ -136,7 +136,9 @@ Un cliente sin pedidos recibe `200` con lista vacía.
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: la app guarda la primera página en SQLite y la muestra con "datos guardados" sin red. Los filtros solo funcionan en línea.
+**Alcance del MVP (#56).** Desde Mis pedidos, cada cliente puede leer las páginas guardadas de su cuenta, separadas por filtro de estado y página. SQLite conserva hasta 50 páginas durante 7 días desde la última descarga exitosa de cada una. La app muestra la fecha de descarga y avisa que el estado puede haber cambiado. Una página sin copia vigente muestra un aviso distinto del estado vacío. Al abrir un pedido se consulta su propia copia de detalle, con fecha independiente (RF-48).
+
+- **Tolerancia a mala conexión (RNF28)**. Cada página se recupera con el mismo filtro de estado usado al descargarla.
 - **Concurrencia (RNF08)**: no aplica; un cambio de estado se ve al refrescar (al volver a primer plano o con el gesto de arrastrar).
 - **Idempotencia (RNF27)**: no aplica a un `GET`.
 

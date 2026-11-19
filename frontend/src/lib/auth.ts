@@ -296,6 +296,12 @@ export async function logout(): Promise<void> {
     } catch (cause) {
       console.warn('No se pudo borrar el catálogo al cerrar sesión.', cause);
     }
+    try {
+      const { borrarPedidosGuardados } = await import('./pedidos-cliente-cache');
+      await borrarPedidosGuardados(session.usuarioId);
+    } catch (cause) {
+      console.warn('No se pudo borrar la caché de pedidos al cerrar sesión.', cause);
+    }
   }
   if (vendedor && session.usuarioId) {
     try {

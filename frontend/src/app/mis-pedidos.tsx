@@ -13,10 +13,10 @@ import {
   palette,
 } from '../components/AuthUI';
 import { ApiError } from '../lib/api';
-import { clearSession, getValidSession } from '../lib/auth';
+import { clearSession } from '../lib/auth';
+import { consultarListadoCliente } from '../lib/pedidos-cliente-consulta';
 import {
   estadoPedidoNombres,
-  listarPedidosCliente,
   modalidadPedidoNombres,
   type EstadoPedido,
   type PedidoClienteListadoItem,
@@ -65,6 +65,8 @@ function PedidoRow({ item }: { item: PedidoClienteListadoItem }) {
 
 export default function MisPedidosScreen() {
   const [data, setData] = useState<PedidosClientePagina | null>(null);
+  const [fechaCopia, setFechaCopia] = useState<number | null>(null);
+  const [paginasGuardadas, setPaginasGuardadas] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [page, setPage] = useState(0);
@@ -76,16 +78,21 @@ export default function MisPedidosScreen() {
     async function load() {
       setLoading(true);
       setError(null);
+      setData(null);
+      setFechaCopia(null);
+      setPaginasGuardadas([]);
       try {
-        const session = await getValidSession();
-        if (!active) return;
-        if (session.rol !== 'CLIENTE') {
-          setError('Solo las cuentas de cliente tienen pedidos realizados.');
+        const resultado = await consultarListadoCliente(estado ?? undefined, page, PAGE_SIZE, () => active);
+        if (!active || !resultado) return;
+        if (resultado.origen === 'sin-copia') {
+          setPaginasGuardadas(resultado.paginas);
+          setError('No hay datos descargados para esta consulta.');
           return;
         }
-        const response = await listarPedidosCliente({ estado: estado ?? undefined, page, size: PAGE_SIZE });
-        if (active) setData(response);
+        setData(resultado.data);
+        setFechaCopia(resultado.origen === 'copia' ? resultado.fecha : null);
       } catch (cause) {
+        if (!active) return;
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
@@ -103,6 +110,8 @@ export default function MisPedidosScreen() {
   }, [estado, page, loadAttempt]);
 
   const totalPages = data ? Math.ceil(data.totalElements / data.size) : 0;
+  const anterior = paginasGuardadas.filter((numero) => numero < page).at(-1);
+  const siguiente = paginasGuardadas.find((numero) => numero > page);
 
   return (
     <AuthPage>
@@ -126,10 +135,18 @@ export default function MisPedidosScreen() {
         ))}
       </View>
       <ErrorBanner message={error} />
+      {fechaCopia !== null ? (
+        <HelperText>
+          Datos guardados. Última descarga: {formatDate(new Date(fechaCopia).toISOString())}.
+          El estado de los pedidos puede haber cambiado. Solo se muestran las páginas descargadas.
+        </HelperText>
+      ) : null}
       {loading ? <ActivityIndicator accessibilityLabel="Cargando pedidos" color={palette.green} /> : null}
       {!loading && data?.content.length === 0 ? (
         <HelperText>
-          {estado ? 'No tienes pedidos con ese estado.' : 'Aún no has hecho pedidos. Explora los emprendimientos.'}
+          {fechaCopia !== null
+            ? 'No hay pedidos para este filtro en la página guardada.'
+            : estado ? 'No tienes pedidos con ese estado.' : 'Aún no has hecho pedidos. Explora los emprendimientos.'}
         </HelperText>
       ) : null}
       {!loading ? data?.content.map((item) => <PedidoRow key={item.id} item={item} />) : null}
@@ -145,6 +162,12 @@ export default function MisPedidosScreen() {
             onPress={() => setPage(page + 1)}
           />
         </View>
+      ) : null}
+      {!loading && !data && anterior !== undefined ? (
+        <TextButton title="Página guardada anterior" onPress={() => setPage(anterior)} />
+      ) : null}
+      {!loading && !data && siguiente !== undefined ? (
+        <TextButton title="Página guardada siguiente" onPress={() => setPage(siguiente)} />
       ) : null}
       <PrimaryButton title="Actualizar" disabled={loading} onPress={() => setLoadAttempt((a) => a + 1)} />
       <TextButton title="Explorar emprendimientos" onPress={() => router.push('/emprendimientos')} />

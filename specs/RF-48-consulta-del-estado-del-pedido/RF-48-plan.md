@@ -22,7 +22,7 @@ Vista del cliente sobre su pedido: estado actual, coherente con la modalidad, fe
 
 ## Implementación (Fase 3, 2026-11-13)
 
-Implementado: la rama del cliente en `GET /api/v1/pedidos/{id}` (`ConsultarPedidoClienteUseCase`; si el pedido es de otro, `404`). Trae el `emprendimiento`, los ítems, `pago`, la ubicación de entrega y el bloque `domicilio { id, estado, motivoCancelacion }`; `updatedAt` es el mayor entre el del pedido y el de su domicilio. App: `pedido-cliente.tsx` muestra la línea de estados por modalidad, el código del domicilio (RF-25), el aviso de pago pendiente y el enlace a la trazabilidad, y se refresca cada 30 s. Tras crear un pedido se llega con "Ver estado del pedido". Falta el refresco al recibir una notificación (Fase 7) y la caché sin conexión.
+Implementado: la rama del cliente en `GET /api/v1/pedidos/{id}` (`ConsultarPedidoClienteUseCase`; si el pedido es de otro, `404`). Trae el `emprendimiento`, los ítems, `pago`, la ubicación de entrega y el bloque `domicilio { id, estado, motivoCancelacion }`; `updatedAt` es el mayor entre el del pedido y el de su domicilio. App: `pedido-cliente.tsx` muestra la línea de estados por modalidad, el código del domicilio (RF-25), el aviso de pago pendiente y el enlace a la trazabilidad, y se refresca cada 30 s. Tras crear un pedido se llega con "Ver estado del pedido". La entrega offline añade la caché SQLite de detalles previamente consultados. Prueba manual confirmada en Android: con el backend detenido, el cliente abrió el detalle guardado en solo lectura y con su fecha de descarga. Un pedido cuyo detalle no se había consultado mostró el aviso de conexión requerida. Sigue pendiente el refresco al recibir una notificación (Fase 7).
 
 ## Actors
 
@@ -132,7 +132,11 @@ No cambia estados de pedido, domicilio, pago ni reporte (solo lectura).
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: la app guarda el último estado en SQLite y lo muestra con la hora de actualización; al reconectar refresca.
+**Alcance del MVP (#56).** SQLite conserva hasta 50 detalles por cuenta cliente durante 7 días desde su última descarga exitosa, con límite independiente del listado. Solo se guardan el emprendimiento, los productos y cantidades, los importes, la modalidad, la reserva y los últimos estados de pedido y pago. La vista muestra su fecha de descarga y permite solo lectura. Si falta una copia vigente, solicita conexión.
+
+El token vencido permite la lectura de copias vigentes de la misma cuenta cliente ante un fallo de red. El cierre de sesión elimina el listado y los detalles de la cuenta. Una sesión rechazada bloquea el acceso. Si el servidor confirma que el pedido ya no está disponible, se elimina su detalle y se quita de las páginas guardadas sin renovar la fecha de descarga.
+
+- **Tolerancia a mala conexión (RNF28)**. La copia excluye dirección, coordenadas y código de entrega. El sondeo y la actualización manual pueden recuperar el estado vigente cuando vuelve la conexión.
 - **Concurrencia (RNF08)**: no aplica (lectura); el servidor es la autoridad.
 - **Idempotencia (RNF27)**: no aplica.
 - **Refresco**: sondeo cada 30 s solo con la pantalla en primer plano, y refresco inmediato al recibir una notificación relacionada con el pedido.
