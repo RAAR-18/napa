@@ -58,7 +58,7 @@ export default function SessionScreen() {
       .catch(async (cause: unknown) => {
         if (!(cause instanceof NetworkError)) throw cause;
         const local = await readSession();
-        if (local?.rol === 'CLIENTE') return local;
+        if (local) return local;
         throw cause;
       })
       .then((validSession) => {

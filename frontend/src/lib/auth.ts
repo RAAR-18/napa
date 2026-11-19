@@ -287,6 +287,15 @@ export async function logout(): Promise<void> {
   });
   await clearSession();
 
+  if (session.usuarioId) {
+    try {
+      const { borrarPerfilGuardado } = await import('./perfil-cache');
+      await borrarPerfilGuardado(session.usuarioId);
+    } catch (cause) {
+      console.warn('No se pudo borrar el perfil guardado al cerrar sesión.', cause);
+    }
+  }
+
   const vendedor =
     session.rol === 'VENDEDOR_AMBULANTE' || session.rol === 'VENDEDOR_PUNTO_FIJO';
   if (session.rol === 'CLIENTE' && session.usuarioId) {
