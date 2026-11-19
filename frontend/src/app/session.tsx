@@ -11,11 +11,12 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
-import { ApiError } from '../lib/api';
+import { ApiError, NetworkError } from '../lib/api';
 import {
   clearSession,
   getValidSession,
   logout,
+  readSession,
   type StoredSession,
 } from '../lib/auth';
 import { useAccionesPendientes } from '../hooks/useOutbox';
@@ -54,6 +55,12 @@ export default function SessionScreen() {
   useEffect(() => {
     let active = true;
     getValidSession()
+      .catch(async (cause: unknown) => {
+        if (!(cause instanceof NetworkError)) throw cause;
+        const local = await readSession();
+        if (local?.rol === 'CLIENTE') return local;
+        throw cause;
+      })
       .then((validSession) => {
         if (active) {
           setSession(validSession);

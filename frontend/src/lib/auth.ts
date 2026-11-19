@@ -289,6 +289,14 @@ export async function logout(): Promise<void> {
 
   const vendedor =
     session.rol === 'VENDEDOR_AMBULANTE' || session.rol === 'VENDEDOR_PUNTO_FIJO';
+  if (session.rol === 'CLIENTE' && session.usuarioId) {
+    try {
+      const { borrarCatalogoGuardado } = await import('./catalogo-cache');
+      await borrarCatalogoGuardado(session.usuarioId);
+    } catch (cause) {
+      console.warn('No se pudo borrar el catálogo al cerrar sesión.', cause);
+    }
+  }
   if (vendedor && session.usuarioId) {
     try {
       const { borrarInventarioGuardado } = await import('./inventario-cache');

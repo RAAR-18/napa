@@ -8,6 +8,7 @@ import NuevoProductoScreen from '../nuevo-producto';
 import EditarProductoScreen from '../editar-producto';
 import { ApiError, NetworkError } from '../../lib/api';
 import { clearSession, getValidSession, readSession } from '../../lib/auth';
+import { borrarCatalogoGuardado, leerPaginaCatalogo, listarPaginasGuardadasCatalogo } from '../../lib/catalogo-cache';
 import { leerPaginaInventario } from '../../lib/inventario-cache';
 import { createProducto, deleteProducto, editProducto, getMiProducto, listCatalogo, listMisProductos, updateInventario, type Producto, type ProductosPage } from '../../lib/productos';
 
@@ -28,6 +29,12 @@ jest.mock('../../lib/auth', () => ({
   getValidSession: jest.fn(),
   readSession: jest.fn(),
   clearSession: jest.fn(),
+}));
+jest.mock('../../lib/catalogo-cache', () => ({
+  guardarPaginaCatalogo: jest.fn(),
+  leerPaginaCatalogo: jest.fn(),
+  listarPaginasGuardadasCatalogo: jest.fn(),
+  borrarCatalogoGuardado: jest.fn(),
 }));
 jest.mock('../../lib/inventario-cache', () => ({
   guardarPaginaInventario: jest.fn(),
@@ -303,3 +310,48 @@ it('shows saved inventory in read-only mode when token renewal fails offline', a
   expect(screen.queryByText('Agregar producto')).toBeNull();
   expect(leerPaginaInventario).toHaveBeenCalledWith('seller-id', 'nombre,asc', 0);
 });
+
+const clientOffline = { ...seller, rol: 'CLIENTE', usuarioId: 'client-id', expiresAt: 0 };
+
+it('shows saved catalog in read-only mode when token renewal fails offline', async () => {
+  jest.mocked(readSession).mockResolvedValueOnce(clientOffline).mockResolvedValueOnce(clientOffline);
+  jest.mocked(getValidSession).mockRejectedValueOnce(new NetworkError('Sin conexión'));
+  jest.mocked(leerPaginaCatalogo).mockResolvedValueOnce({
+    data: { ...page, content: [exhausted] },
+    updatedAt: Date.now(),
+  });
+
+  const view = await render(<CatalogoScreen />);
+
+  await waitFor(() => expect(view.getByText(/Datos guardados/)).toBeTruthy());
+  expect(view.getByText('Solo reserva')).toBeTruthy();
+  expect(view.queryByText('Arma tu pedido')).toBeNull();
+  expect(leerPaginaCatalogo).toHaveBeenCalledWith('client-id', 'business-id', 'nombre,asc', 0);
+}, 15000);
+
+it('offers a saved catalog page when the requested page is missing', async () => {
+  jest.mocked(readSession).mockResolvedValue(clientOffline);
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  jest.mocked(leerPaginaCatalogo).mockResolvedValueOnce(null).mockResolvedValueOnce({
+    data: { ...page, page: 1, totalElements: 21 },
+    updatedAt: Date.now(),
+  });
+  jest.mocked(listarPaginasGuardadasCatalogo).mockResolvedValueOnce([1]);
+
+  const view = await render(<CatalogoScreen />);
+  await waitFor(() => expect(view.getByText(/Esta página del catálogo no está descargada/)).toBeTruthy());
+  await fireEvent.press(view.getByText('Página guardada siguiente'));
+  await waitFor(() => expect(view.getByText(/Datos guardados/)).toBeTruthy());
+  expect(leerPaginaCatalogo).toHaveBeenLastCalledWith('client-id', 'business-id', 'nombre,asc', 1);
+}, 15000);
+
+it('invalidates the saved catalog of a business that the server no longer exposes', async () => {
+  jest.mocked(readSession).mockResolvedValueOnce(clientOffline);
+  jest.mocked(getValidSession).mockResolvedValueOnce(clientOffline);
+  jest.mocked(listCatalogo).mockRejectedValueOnce(new ApiError('Emprendimiento no disponible', 404, 'NOT_FOUND'));
+
+  const view = await render(<CatalogoScreen />);
+  await waitFor(() => expect(view.getByText('Emprendimiento no disponible')).toBeTruthy());
+  expect(borrarCatalogoGuardado).toHaveBeenCalledWith('client-id', 'business-id');
+  expect(leerPaginaCatalogo).not.toHaveBeenCalled();
+}, 15000);
