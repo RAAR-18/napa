@@ -15,9 +15,10 @@ import {
   palette,
 } from '../components/AuthUI';
 import FotoPerfil from '../components/FotoPerfil';
-import { ApiError } from '../lib/api';
-import { clearSession } from '../lib/auth';
+import { ApiError, NetworkError } from '../lib/api';
+import { clearSession, getSessionGeneration, readSession } from '../lib/auth';
 import { manejarError, mensajeDeCampo } from '../lib/errores';
+import { borrarPerfilGuardado, guardarPerfil, leerPerfilGuardado } from '../lib/perfil-cache';
 import {
   confirmarCambioCelular,
   describirPendientes,
@@ -32,32 +33,85 @@ import {
 /** RF-08: datos de la cuenta (nombre, ubicación y celular con código); RF-11: eliminar la cuenta. */
 export default function PerfilScreen() {
   const [perfil, setPerfil] = useState<PerfilUsuario | null>(null);
+  const [copia, setCopia] = useState<Awaited<ReturnType<typeof leerPerfilGuardado>>>(null);
+  const [intento, setIntento] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
+    let activa = true;
+    const generacion = getSessionGeneration();
+    const vigente = () => activa && generacion === getSessionGeneration();
+
     async function cargar() {
       setLoading(true);
       setError(null);
+      setAviso(null);
+      setPerfil(null);
+      setCopia(null);
+      let cuentaId: string | undefined;
+
       try {
-        setPerfil(await obtenerMiPerfil());
+        cuentaId = (await readSession())?.usuarioId;
+        if (!vigente()) return;
+        const resultado = await obtenerMiPerfil();
+        if (!vigente()) return;
+        if (cuentaId && resultado.id === cuentaId) {
+          await guardarPerfil(resultado, vigente)
+            .catch((cause: unknown) => console.warn('No se pudo guardar el perfil.', cause));
+        }
+        if (vigente()) setPerfil(resultado);
       } catch (cause) {
-        setError(await manejarError(cause, 'No se pudo cargar tu perfil.'));
+        if (!vigente()) return;
+        if (cuentaId && cause instanceof NetworkError) {
+          try {
+            const guardado = await leerPerfilGuardado(cuentaId);
+            if (!vigente()) return;
+            if (guardado) {
+              setCopia(guardado);
+            } else {
+              setError('No hay un perfil guardado vigente. Conéctate para consultar tu perfil.');
+            }
+            return;
+          } catch (cacheError) {
+            console.warn('No se pudo leer el perfil guardado.', cacheError);
+          }
+        }
+        if (cuentaId && cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+          await borrarPerfilGuardado(cuentaId)
+            .catch((error: unknown) => console.warn('No se pudo borrar el perfil guardado.', error));
+        }
+        if (!vigente()) return;
+        const mensaje = await manejarError(cause, 'No se pudo cargar tu perfil.');
+        if (activa) setError(mensaje);
       } finally {
-        setLoading(false);
+        if (activa) setLoading(false);
       }
     }
-    void cargar();
-  }, []);
 
+    void cargar();
+    return () => { activa = false; };
+  }, [intento]);
+
+  const datosVisibles = perfil ?? copia?.perfil;
   const esAdmin = perfil?.rol === 'ADMINISTRADOR';
 
   return (
     <AuthPage>
-      <PageHeading eyebrow="Mi cuenta" title={perfil?.nombre ?? 'Perfil'} description={perfil ? (rolNombres[perfil.rol] ?? perfil.rol) : ''} />
+      <PageHeading eyebrow="Mi cuenta" title={datosVisibles?.nombre ?? 'Perfil'} description={datosVisibles ? (rolNombres[datosVisibles.rol] ?? datosVisibles.rol) : ''} />
       {loading ? <ActivityIndicator accessibilityLabel="Cargando perfil" color={palette.green} /> : null}
       <ErrorBanner message={error} />
+      {copia ? (
+        <View style={styles.card}>
+          <HelperText>
+            Datos guardados. Última descarga: {new Date(copia.fecha).toLocaleString('es-CO')}.
+          </HelperText>
+          <Text style={styles.detail}>Celular: {copia.perfil.celular ?? 'Sin celular registrado'}</Text>
+          <Text style={styles.detail}>Correo: {copia.perfil.correo ?? 'Sin correo registrado'}</Text>
+          <Text style={styles.detail}>Dirección: {copia.perfil.direccion ?? 'Sin dirección registrada'}</Text>
+        </View>
+      ) : null}
       {aviso ? (
         <View accessibilityRole="alert" style={styles.ok}>
           <Text style={styles.okText}>{aviso}</Text>
@@ -77,8 +131,11 @@ export default function PerfilScreen() {
           {!esAdmin ? (
             <CambioCelular perfil={perfil} onCambiado={(p) => { setPerfil(p); setAviso('Tu celular se actualizó.'); }} />
           ) : null}
-          {!esAdmin ? <EliminarCuenta /> : null}
+          {!esAdmin ? <EliminarCuenta cuentaId={perfil.id} /> : null}
         </>
+      ) : null}
+      {!loading && (copia || error) ? (
+        <TextButton title="Actualizar perfil" onPress={() => setIntento((actual) => actual + 1)} />
       ) : null}
       <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
@@ -236,7 +293,7 @@ function CambioCelular({ perfil, onCambiado }: { perfil: PerfilUsuario; onCambia
   );
 }
 
-function EliminarCuenta() {
+function EliminarCuenta({ cuentaId }: { cuentaId: string }) {
   const [confirmando, setConfirmando] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -251,6 +308,8 @@ function EliminarCuenta() {
     try {
       await eliminarMiCuenta(key.current);
       await clearSession();
+      await borrarPerfilGuardado(cuentaId)
+        .catch((cause: unknown) => console.warn('No se pudo borrar el perfil guardado.', cause));
       router.replace('/');
     } catch (cause) {
       key.current = null;

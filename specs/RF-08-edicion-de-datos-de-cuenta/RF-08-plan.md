@@ -33,7 +33,7 @@ El usuario consulta y edita su perfil. `GET /usuarios/me` devuelve su perfil; `P
 
 Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
-- Cambios visibles en < 5 s (SC-001): la respuesta del `PATCH` ya trae el perfil nuevo y la app actualiza su caché local al recibirla.
+- Cambios visibles en < 5 s (SC-001): la respuesta del `PATCH` ya trae el perfil nuevo y la app actualiza la vista en línea al recibirla.
 - 100 % de datos inválidos rechazados (SC-002): validación de formato en el DTO y de reglas en el dominio, antes de tocar la base.
 - Cambio de celular: el número nuevo se guarda solo en Redis (`cambio-cel:{usuarioId}`, TTL 10 min) hasta confirmar; la tabla `usuario` no cambia antes.
 
@@ -66,7 +66,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | RNF23 Consistencia | ☑ | Celular y `celular_verificado_at` cambian en una sola transacción |
 | RNF24 Errores claros | ☑ | `details.campo` en cada `400` |
 | RNF27 Idempotencia | ☑ | `Idempotency-Key` en los dos `POST` del celular |
-| RNF28 Conectividad | ☑ | Perfil en caché local; las ediciones se reintentan, y el cambio de celular exige conexión |
+| RNF28 Conectividad | ☑ | Consulta del perfil guardado en solo lectura; editar requiere conexión |
 | RNF31 Gama baja | ☑ | La foto se reduce y comprime en el dispositivo antes de subirla |
 
 ## Entities Involved
@@ -179,7 +179,9 @@ No cambia estados: `Usuario.estado` no se toca. Solo edita una cuenta `ACTIVA`; 
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: la app guarda el perfil en SQLite y lo muestra sin red. Las ediciones de nombre y ubicación sin conexión quedan en la outbox local y se envían al volver la red (la última edición gana). La foto y el cambio de celular exigen conexión; la pantalla lo dice.
+- **Consulta del perfil sin conexión (RNF28, #56)**. SQLite guarda una copia por cuenta durante 7 días a partir de la última consulta exitosa. La copia contiene nombre, rol, celular, correo y dirección. La vista muestra la fecha de descarga y es de solo lectura; editar el perfil, la foto o el celular requiere conexión.
+- Ante un fallo de red, el token vencido permite consultar una copia vigente de la misma cuenta, incluso después de reiniciar. Un rechazo de sesión o permisos bloquea la copia. Cerrar sesión o eliminar la cuenta limpia su copia local.
+- **Evidencia manual en Android (2026-11-19, #56)**. Con el backend detenido y Metro activo, el usuario reabrió la app y consultó Mi perfil en solo lectura. Se mostraron nombre, rol, celular, correo y dirección con el aviso «Datos guardados» y la fecha original. Tras cerrar sesión con conexión, entrar con la misma cuenta y detener el backend antes de abrir Mi perfil, se mostró el aviso de que no había una copia vigente.
 - **Concurrencia (RNF08)**: dos dispositivos editando a la vez: gana la última escritura por campo. No hay valor financiero ni de inventario en juego. El cambio de celular guarda un solo pendiente por usuario: una solicitud nueva reemplaza la anterior.
 - **Idempotencia (RNF27)**: `Idempotency-Key` en los dos `POST` del celular; `PATCH` y `PUT` son idempotentes por naturaleza.
 
@@ -280,7 +282,7 @@ frontend/__tests__/perfil/
 - [ ] T023 [US1] `PATCH /usuarios/me` con un DTO que rechaza campos desconocidos
 - [ ] T024 [US1] `SubirFotoPerfilUseCase` y `PUT /usuarios/me/foto` (tipo real por contenido y tamaño)
 - [ ] T025 [US1] Adaptador `FotoPerfilStorageAdapter`
-- [ ] T032 [US1] `perfil.ts` con caché SQLite y reintento de las ediciones por la outbox en `frontend/src/services/`
+- [ ] T032 [US1] Verificar la consulta SQLite de solo lectura desde Mi perfil y la limpieza al cerrar sesión.
 - [ ] T033 [US1] Pantallas `perfil/index.tsx` y `perfil/editar.tsx` con `FormularioPerfil`
 - [ ] T034 [US1] `SelectorFoto` con `expo-image-picker` y `expo-image-manipulator` (JPEG, lado mayor 1024 px)
 
