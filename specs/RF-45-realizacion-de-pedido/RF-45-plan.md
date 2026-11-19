@@ -345,9 +345,9 @@ frontend/__tests__/pedidos/realizar.test.tsx
 
 ### Frontend (US1–US4)
 
-- [x] T033 [P] Test del flujo guiado de compra (carrito, modalidades, ubicación, reserva, resumen y conflicto `409`) en `frontend/src/app/__tests__/pedido-catalogo.test.tsx`
+- [x] T033 [P] Test del flujo guiado de compra (carrito, modalidades, solicitud y denegación de permiso de ubicación del dispositivo, reserva, resumen y conflicto `409`) en `frontend/src/app/__tests__/pedido-catalogo.test.tsx`
 - [x] T034 Servicios autenticados `cotizarPedido()` y `crearPedido()` en `frontend/src/lib/pedidos.ts`; conserva `Idempotency-Key` al reintentar el mismo cuerpo
-- [x] T035 Selector de productos, carrito en memoria y componentes de modalidad, ubicación, reserva, pago y resumen en `frontend/src/components/PedidoCatalogo.tsx`
+- [x] T035 Selector de productos, carrito en memoria y componentes de modalidad, solicitud de permiso y captura de ubicación del dispositivo, reserva, pago y resumen en `frontend/src/components/PedidoCatalogo.tsx`
 - [ ] T036 Borrador persistente y outbox de pedidos sin conexión en SQLite
 - [x] T037 Flujo guiado desde `frontend/src/app/catalogo.tsx`; tras `201` confirma `PENDIENTE` e identifica el pedido (la consulta y las transiciones corresponden a RF-48/RF-53)
 

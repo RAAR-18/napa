@@ -16,6 +16,7 @@ import {
 import { ProductoCard, ProductosPagination } from './ProductosUI';
 import { useResumenesCalificacion } from '../hooks/useResumenesCalificacion';
 import { ApiError } from '../lib/api';
+import { requestDeviceLocation } from '../lib/location';
 import {
   type CotizacionPedido,
   cotizarPedido,
@@ -328,23 +329,14 @@ export function PedidoCatalogo({
     setError(null);
     setLocationBusy(true);
     try {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (permission.status !== 'granted') {
-        setError(
-          'No se concedió permiso de ubicación. Puedes escribir las coordenadas manualmente.',
-        );
-        return;
-      }
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      setLatitude(String(location.coords.latitude));
-      setLongitude(String(location.coords.longitude));
+      const coords = await requestDeviceLocation();
+      setLatitude(String(coords.latitude));
+      setLongitude(String(coords.longitude));
       invalidateQuote();
     } catch (cause) {
       setError(
         cause instanceof Error
-          ? `No se pudo obtener tu ubicación: ${cause.message}`
+          ? cause.message
           : 'No se pudo obtener tu ubicación. Puedes ingresar las coordenadas manualmente.',
       );
     } finally {
@@ -458,8 +450,24 @@ export function PedidoCatalogo({
             <>
               <Text style={styles.subheading}>Ubicación de entrega</Text>
               <HelperText>
-                La ubicación solo se enviará al vendedor al cotizar una entrega.
+                La ubicación se enviará al vendedor para calcular la entrega y llevar tu pedido.
               </HelperText>
+              <PrimaryButton
+                title={
+                  latitude && longitude
+                    ? 'Actualizar mi ubicación actual'
+                    : 'Usar mi ubicación actual'
+                }
+                busy={locationBusy}
+                onPress={() => void locateDevice()}
+              />
+              {latitude && longitude ? (
+                <View style={styles.locationBadge}>
+                  <Text style={styles.locationBadgeText}>
+                    ✓ Ubicación del dispositivo obtenida ({Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)})
+                  </Text>
+                </View>
+              ) : null}
               <Field
                 label="Dirección de entrega"
                 maxLength={300}
@@ -470,11 +478,11 @@ export function PedidoCatalogo({
                 }}
               />
               <Field
-                label={modalidad === 'DOMICILIO' ? 'Barrio' : 'Barrio (opcional)'}
-                maxLength={100}
-                value={neighborhood}
+                label="Referencia (opcional)"
+                maxLength={300}
+                value={reference}
                 onChangeText={(value) => {
-                  setNeighborhood(value);
+                  setReference(value);
                   invalidateQuote();
                 }}
               />
@@ -502,20 +510,10 @@ export function PedidoCatalogo({
                   />
                 </View>
               </View>
-              <Field
-                label="Referencia (opcional)"
-                maxLength={300}
-                value={reference}
-                onChangeText={(value) => {
-                  setReference(value);
-                  invalidateQuote();
-                }}
-              />
-              <PrimaryButton
-                title="Usar mi ubicación actual"
-                busy={locationBusy}
-                onPress={() => void locateDevice()}
-              />
+              <HelperText>
+                Pulsa &quot;Usar mi ubicación actual&quot; para obtener las coordenadas de tu
+                dispositivo con tu permiso, o ingresa las coordenadas manualmente si tu GPS no está disponible.
+              </HelperText>
             </>
           ) : (
             <HelperText>No necesitas indicar una dirección para recoger.</HelperText>
@@ -736,5 +734,18 @@ const styles = StyleSheet.create({
     color: palette.dark,
     fontSize: 14,
     lineHeight: 21,
+  },
+  locationBadge: {
+    backgroundColor: '#E8F2EB',
+    borderColor: '#C2DEC9',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginVertical: 8,
+    padding: 10,
+  },
+  locationBadgeText: {
+    color: palette.green,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
