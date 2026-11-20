@@ -17,6 +17,7 @@ import ClienteDelPedido from '../components/ClienteDelPedido';
 import DomiciliarioAsignado from '../components/DomiciliarioAsignado';
 import PagoTarifaDomicilio from '../components/PagoTarifaDomicilio';
 import { EstadoConfirmacionDomicilio } from '../components/EstadoConfirmacionDomicilio';
+import { rutaConfirmarPagoPedido } from '../lib/pago-pedido-pendiente';
 import { cuerpoConfirmacionEntrega, rutaEntregaDirecta } from '../lib/entrega-directa-pendiente';
 import { useConfirmacionDomicilio, useConfirmacionPendiente } from '../hooks/useConfirmacionDomicilio';
 import { confirmacionReintentable } from '../lib/confirmacion-domicilio';
@@ -44,6 +45,7 @@ import {
   obtenerPedidoVendedor,
   rechazarPedido,
   type PedidoVendedorDetalle,
+  type PagoPedidoConfirmado,
   type PedidoEntregado,
 } from '../lib/pedidos';
 
@@ -140,6 +142,16 @@ export default function PedidoVendedorScreen() {
   const [detail, setDetail] = useState<PedidoVendedorDetalle | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [respuestaPago, setRespuestaPago] = useState<PagoPedidoConfirmado | null>(null);
+  const pago = useConfirmacionPendiente<PagoPedidoConfirmado>({
+    cuenta, ruta: pedidoId ? rutaConfirmarPagoPedido(pedidoId) : null,
+    tipo: 'confirmacion-pago-pedido', descripcion: 'Confirmación de pago del pedido',
+    actualizar: () => setLoadAttempt((intento) => intento + 1),
+  });
+  const confirmacionPago = pago.confirmada?.pedidoId === pedidoId ? pago.confirmada : respuestaPago;
+  const pagoConfirmado = confirmacionPago?.pedidoId === pedidoId &&
+    confirmacionPago?.pago?.estado === 'CONFIRMADO' ? confirmacionPago : null;
+
   const [respuestaEntrega, setRespuestaEntrega] = useState<PedidoEntregado | null>(null);
   const entrega = useConfirmacionPendiente<PedidoEntregado>({
     cuenta, ruta: pedidoId ? rutaEntregaDirecta(pedidoId) : null,
@@ -149,7 +161,11 @@ export default function PedidoVendedorScreen() {
   const entregaConfirmada = entrega.confirmada ?? (respuestaEntrega?.id === pedidoId ? respuestaEntrega : null);
   const entregaConfirmadaOffline = fechaGuardada !== null && detail?.estado === 'EN_CAMINO' && entregaConfirmada;
   const estadoPedido = entregaConfirmadaOffline ? entregaConfirmadaOffline.estado : detail?.estado;
-  const estadoPago = entregaConfirmadaOffline ? entregaConfirmadaOffline.pago.estado : detail?.pago?.estado;
+  const estadoPago = entregaConfirmadaOffline
+  ? entregaConfirmadaOffline.pago.estado
+  : fechaGuardada !== null && detail?.modalidad === 'DOMICILIO' && pagoConfirmado
+    ? pagoConfirmado.pago.estado
+    : detail?.pago?.estado;
   const [respuestaSalida, setRespuestaSalida] = useState<TransicionDomicilio | null>(null);
   const domicilioId = detail?.domicilio?.id;
   const salida = useConfirmacionDomicilio(cuenta, domicilioId, 'confirmar-salida',
@@ -165,12 +181,18 @@ export default function PedidoVendedorScreen() {
   const actionKey = useRef<{ action: ResponseAction; key: string } | null>(null);
   const activeDelivery =
     detail?.domicilio && detail.domicilio.estado !== 'CANCELADO' ? detail.domicilio : null;
+  const pagoDomicilioPendiente =
+    userRole === 'VENDEDOR_PUNTO_FIJO' && detail?.estado === 'ACEPTADO' &&
+    detail.modalidad === 'DOMICILIO' && estadoPago === 'PENDIENTE_CONFIRMACION';
+  const datosTransferencia = !!detail && Number.isFinite(detail.total) && detail.total >= 0 &&
+    detail.medioPago === 'CUENTA_BANCARIA';
+  const canConfirmPayment = pagoDomicilioPendiente && datosTransferencia && !pago.pendiente && !pagoConfirmado;
   const canPublishDelivery =
     userRole === 'VENDEDOR_PUNTO_FIJO' &&
     detail?.estado === 'ACEPTADO' &&
     detail.modalidad === 'DOMICILIO' &&
     detail.pago?.estado === 'CONFIRMADO' &&
-    !activeDelivery;
+    !activeDelivery && !pago.pendiente;
   const canConfirmDeparture =
     userRole === 'VENDEDOR_PUNTO_FIJO' && estadoDomicilio === 'RECOGIDO' && !salida.pendiente && !salidaConfirmada;
   const isStreetSeller = userRole === 'VENDEDOR_AMBULANTE';
@@ -315,7 +337,19 @@ export default function PedidoVendedorScreen() {
         await rechazarPedido(pedidoId, idempotencyKey);
         setNotice('Pedido rechazado.');
       } else if (action === 'confirmPayment') {
-        await confirmarPagoPedido(pedidoId, idempotencyKey);
+        if (detail?.id !== pedidoId || !canConfirmPayment) return;
+        if (await pago.yaEncolada()) {
+          limpiarConfirmacionGuardada();
+          return;
+        }
+        if (fechaGuardada !== null) {
+          await pago.encolar(idempotencyKey, false);
+          limpiarConfirmacionGuardada();
+          return;
+        }
+        const resultado = await confirmarPagoPedido(pedidoId, idempotencyKey);
+        setRespuestaPago(resultado);
+        await pago.registrar(resultado).catch(() => undefined);
         setNotice('Pago confirmado. Ya puedes publicar el domicilio.');
       } else if (action === 'startDelivery') {
         await iniciarEntregaDirecta(pedidoId, idempotencyKey);
@@ -368,10 +402,14 @@ export default function PedidoVendedorScreen() {
       setDetail(null);
       setLoadAttempt((attempt) => attempt + 1);
     } catch (cause) {
-      if ((action === 'confirmDeparture' || action === 'confirmDelivery') &&
-          cuenta && fechaGuardada === null && confirmacionReintentable(cause)) {
+      if (
+        (action === 'confirmDeparture' || action === 'confirmPayment' || action === 'confirmDelivery') &&
+        cuenta && fechaGuardada === null && confirmacionReintentable(cause)
+      ) {
         try {
-          const confirmacion = action === 'confirmDelivery' ? entrega : salida;
+          const confirmacion = action === 'confirmPayment' ? pago
+            : action === 'confirmDelivery' ? entrega
+            : salida;
           await confirmacion.encolar(idempotencyKey, true);
           limpiarConfirmacionGuardada();
           return;
@@ -456,6 +494,11 @@ export default function PedidoVendedorScreen() {
       {pedidoId ? (
         <TextButton title="Actualizar pedido" disabled={loading || busy} onPress={() => setLoadAttempt((a) => a + 1)} />
       ) : null}
+      <EstadoConfirmacionDomicilio paso="confirmar-pago" pendiente={pago.pendiente}
+        confirmada={pagoConfirmado ? { updatedAt: pagoConfirmado.pago.confirmadoAt } : null}
+        cerrarRevision={consultaServidor && !loading && pago.pendiente?.status === 'FALLIDA'
+          ? () => { void outbox.descartar(pago.pendiente!.id).catch((cause) =>
+            setError(actionError(cause, detail?.reserva, 'confirmPayment'))); } : undefined} />
       <EstadoConfirmacionDomicilio paso="confirmar-entrega-directa" pendiente={entrega.pendiente}
         confirmada={entregaConfirmada} cerrarRevision={consultaServidor && !loading && entrega.pendiente?.status === 'FALLIDA'
           ? () => { void outbox.descartar(entrega.pendiente!.id).catch((cause) =>
@@ -567,12 +610,10 @@ export default function PedidoVendedorScreen() {
               <TextButton title="Rechazar pedido" onPress={() => setPendingAction('reject')} />
             </>
           ) : null}
-          {userRole === 'VENDEDOR_PUNTO_FIJO' &&
-          detail.estado === 'ACEPTADO' &&
-          detail.modalidad === 'DOMICILIO' &&
-          detail.pago?.estado === 'PENDIENTE_CONFIRMACION' &&
-          consultaServidor && !decision && !pendingAction &&
-          !loading ? (
+          {pagoDomicilioPendiente && !datosTransferencia && !loading ? (
+            <HelperText>Conéctate para actualizar el total y el medio de pago antes de confirmar.</HelperText>
+          ) : null}
+          {canConfirmPayment && !decision && !pendingAction && !loading ? (
             <>
               <HelperText>
                 Confirma el pago solo después de verificar en tu banco que recibiste la transferencia por el total del pedido.
@@ -638,6 +679,7 @@ export default function PedidoVendedorScreen() {
             </>
           ) : null}
           {pendingAction && !decision && !loading && (pendingAction !== 'confirmDeparture' || canConfirmDeparture) &&
+            (pendingAction !== 'confirmPayment' || canConfirmPayment) &&
             (pendingAction !== 'confirmDelivery' || canConfirmDelivery) ? (
             <View style={styles.confirmation}>
               <Text style={styles.confirmationText}>
@@ -646,7 +688,7 @@ export default function PedidoVendedorScreen() {
                   : pendingAction === 'reject'
                     ? '¿Confirmas que no atenderás este pedido?'
                     : pendingAction === 'confirmPayment'
-                      ? `¿Confirmas que verificaste la transferencia por ${formatPrice(detail.total)}?`
+                      ? `¿Confirmas que verificaste la transferencia por ${formatPrice(detail.total)} en tu banco?`
                       : pendingAction === 'confirmDeparture'
                         ? '¿Confirmas que el domiciliario salió con el pedido? El cliente verá que va en camino.'
                         : pendingAction === 'startDelivery'

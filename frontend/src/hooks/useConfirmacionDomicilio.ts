@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { outbox } from '../database/outbox';
 import { guardarConsultaPedidos, leerConsultaPedidos } from '../lib/pedidos-cliente-cache';
 import { rutaConfirmacionDomicilio, type PasoDomicilio } from '../lib/confirmacion-domicilio';
-import type { PedidoEntregado } from '../lib/pedidos';
+import type { PagoPedidoConfirmado, PedidoEntregado } from '../lib/pedidos';
 import type { TransicionDomicilio } from '../lib/domicilios';
 import { useAccionesPendientes } from './useOutbox';
 
@@ -17,11 +17,13 @@ export function useConfirmacionDomicilio(
   });
 }
 
-export function useConfirmacionPendiente<T extends TransicionDomicilio | PedidoEntregado>({ cuenta, ruta, actualizar, tipo, descripcion, body }: {
+export function useConfirmacionPendiente<
+  T extends TransicionDomicilio | PagoPedidoConfirmado | PedidoEntregado
+>({ cuenta, ruta, actualizar, tipo, descripcion, body }: {
   cuenta: string | null;
   ruta: string | null;
   actualizar: () => void;
-  tipo: 'confirmacion-domicilio' | 'confirmacion-entrega-directa';
+  tipo: 'confirmacion-domicilio' | 'confirmacion-pago-pedido' | 'confirmacion-entrega-directa';
   descripcion: string;
   body?: unknown;
 }) {
@@ -48,16 +50,21 @@ export function useConfirmacionPendiente<T extends TransicionDomicilio | PedidoE
     return () => { active = false; };
   }, [cuenta, ruta, marca, tipo]);
 
-  async function encolar(clave: string, intentoPrevio: boolean) {
+   async function encolar(clave: string, intentoPrevio: boolean) {
     if (!cuenta || !ruta || cuenta !== await outbox.propietario()) {
       throw new Error('Vuelve a abrir el detalle con la cuenta que lo consultó.');
     }
+
     await outbox.encolar({
-      usuarioId: cuenta, method: 'POST', path: ruta, idempotencyKey: clave, intentoPrevio,
-      body, descripcion,
+      usuarioId: cuenta,
+      method: 'POST',
+      path: ruta,
+      idempotencyKey: clave,
+      intentoPrevio,
+      body,
+      descripcion,
     });
   }
-
   async function registrar(resultado: T) {
     if (cuenta && ruta) {
       await guardarConsultaPedidos(cuenta, tipo, ruta, resultado, () => true);

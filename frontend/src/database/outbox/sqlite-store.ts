@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
+import { pagoPedidoPendiente } from '../../lib/pago-pedido-pendiente';
 import { entregaDirectaPendiente } from '../../lib/entrega-directa-pendiente';
 import { confirmacionDomicilio } from '../../lib/confirmacion-domicilio';
 import { respuestaPedidoPendiente } from '../../lib/respuesta-pedido-pendiente';
@@ -105,9 +106,13 @@ export class SqliteOutboxStore implements OutboxStore {
           )
         `);
         await db.execAsync(`
+          CREATE UNIQUE INDEX IF NOT EXISTS outbox_confirmacion_pago_por_pedido
+          ON outbox_por_cuenta (usuario_id, path)
+          WHERE method = 'POST' AND path GLOB '/api/v1/pedidos/*/pago/confirmar';
+
           CREATE UNIQUE INDEX IF NOT EXISTS outbox_entrega_directa_por_pedido
           ON outbox_por_cuenta (usuario_id, path)
-          WHERE method = 'POST' AND path GLOB '/api/v1/pedidos/*/confirmar-entrega'
+          WHERE method = 'POST' AND path GLOB '/api/v1/pedidos/*/confirmar-entrega';
         `);
         return db;
       })();
@@ -138,6 +143,9 @@ export class SqliteOutboxStore implements OutboxStore {
     }
     if (resultado.changes === 0 && a.method === 'POST' && confirmacionDomicilio(a.path)) {
       throw new Error('Este domicilio ya tiene registrada esa confirmación pendiente.');
+    }
+    if (resultado.changes === 0 && a.method === 'POST' && pagoPedidoPendiente(a.path)) {
+      throw new Error('Este pedido ya tiene registrada una confirmación de pago.');
     }
     if (resultado.changes === 0 && a.method === 'POST' && entregaDirectaPendiente(a.path)) {
       throw new Error('Este pedido ya tiene una confirmación de entrega y cobro.');

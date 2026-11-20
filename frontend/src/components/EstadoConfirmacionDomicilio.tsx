@@ -1,35 +1,66 @@
 import { HelperText, TextButton } from './AuthUI';
 import type { AccionPendiente } from '../database/outbox/types';
-import type { TransicionDomicilio } from '../lib/domicilios';
 import type { PasoDomicilio } from '../lib/confirmacion-domicilio';
 
-export function EstadoConfirmacionDomicilio({ pendiente, confirmada, paso, cerrarRevision }: {
+type PasoConfirmacion = PasoDomicilio | 'confirmar-pago' | 'confirmar-entrega-directa';
+
+const mensajes: Record<PasoConfirmacion, { pendiente: string; confirmada: string }> = {
+  'confirmar-recogida': {
+    pendiente: 'Recogida pendiente de envío',
+    confirmada: 'Recogida confirmada',
+  },
+  'confirmar-salida': {
+    pendiente: 'Salida pendiente de envío',
+    confirmada: 'Salida confirmada',
+  },
+  'confirmar-pago': {
+    pendiente: 'Confirmación de pago pendiente de envío',
+    confirmada: 'Pago confirmado',
+  },
+  'confirmar-entrega-directa': {
+    pendiente: 'Entrega y cobro pendientes de envío',
+    confirmada: 'Entrega y cobro confirmados',
+  },
+};
+
+export function EstadoConfirmacionDomicilio({
+  pendiente,
+  confirmada,
+  paso,
+  cerrarRevision,
+}: {
   pendiente?: AccionPendiente;
-  confirmada?: TransicionDomicilio | null;
-  paso: PasoDomicilio | 'confirmar-entrega-directa';
+  confirmada?: { updatedAt: string } | null;
+  paso: PasoConfirmacion;
   cerrarRevision?: () => void;
 }) {
-  const etiqueta = paso === 'confirmar-recogida' ? 'Recogida'
-    : paso === 'confirmar-salida' ? 'Salida' : 'Entrega y cobro';
-  const entregaDirecta = paso === 'confirmar-entrega-directa';
+  const mensaje = mensajes[paso];
   const formato = (fecha: number | string) =>
-    new Date(fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+    new Date(fecha).toLocaleString('es-CO', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+
   if (pendiente) {
+    const fallida = pendiente.status === 'FALLIDA';
+
     return (
       <>
-        <HelperText>{pendiente.status === 'FALLIDA' ? 'Requiere revisión'
-          : `${etiqueta} ${entregaDirecta ? 'pendientes' : 'pendiente'} de envío`}</HelperText>
+        <HelperText>{fallida ? 'Requiere revisión' : mensaje.pendiente}</HelperText>
         <HelperText>Guardada en el dispositivo el {formato(pendiente.createdAt)}.</HelperText>
-        {pendiente.status === 'FALLIDA' ? (
+        {fallida ? (
           <>
             <HelperText>{pendiente.lastError ?? 'El servidor rechazó la confirmación.'}</HelperText>
-            {cerrarRevision ? <TextButton title="Cerrar revisión" onPress={cerrarRevision} /> : null}
+            {cerrarRevision ? (
+              <TextButton title="Cerrar revisión" onPress={cerrarRevision} />
+            ) : null}
           </>
         ) : null}
       </>
     );
   }
+
   return confirmada ? (
-    <HelperText>{etiqueta} {entregaDirecta ? 'confirmados' : 'confirmada'} por el servidor el {formato(confirmada.updatedAt)}.</HelperText>
+    <HelperText>{mensaje.confirmada} por el servidor el {formato(confirmada.updatedAt)}.</HelperText>
   ) : null;
 }

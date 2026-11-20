@@ -15,6 +15,7 @@ import {
 import { outbox, type AccionPendiente } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
 import { borrarCarritoEncolado, paramsRevisionPedido, pedidoPendiente } from '../lib/pedido-offline';
+import { pagoPedidoPendiente } from '../lib/pago-pedido-pendiente';
 import { entregaDirectaPendiente } from '../lib/entrega-directa-pendiente';
 import { confirmacionDomicilio } from '../lib/confirmacion-domicilio';
 import { respuestaPedidoPendiente } from '../lib/respuesta-pedido-pendiente';
@@ -87,7 +88,9 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
   const edicion = cambioPendienteProducto(accion);
   const pedido = pedidoPendiente(accion);
   const respuesta = respuestaPedidoPendiente(accion);
+  const pedidoPagoId = accion.method === 'POST' ? pagoPedidoPendiente(accion.path) : null;
   const entregaDirecta = accion.method === 'POST' ? entregaDirectaPendiente(accion.path) : null;
+  const pedidoVendedorId = respuesta?.pedidoId ?? pedidoPagoId ?? entregaDirecta;
   const confirmacion = accion.method === 'POST' ? confirmacionDomicilio(accion.path) : null;
   return (
     <View style={[styles.card, fallida && styles.failed]}>
@@ -102,9 +105,9 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
                 pathname: confirmacion.paso === 'confirmar-recogida' ? '/domicilio-domiciliario' : '/trazabilidad-domicilio',
                 params: { domicilioId: confirmacion.id },
               })} />
-            ) : respuesta || entregaDirecta ? (
+            ) : pedidoVendedorId ? (
               <TextButton title="Revisar estado del pedido" onPress={() => router.push({
-                pathname: '/pedido-vendedor', params: { pedidoId: respuesta?.pedidoId ?? entregaDirecta ?? '' },
+                pathname: '/pedido-vendedor', params: { pedidoId: pedidoVendedorId },
               })} />
             ) : pedido ? (
               <TextButton title="Revisar pedido" onPress={() => router.push({
@@ -127,7 +130,7 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
             ) : (
               <TextButton title="Reintentar" onPress={() => void outbox.reintentar(accion.id)} />
             )}
-            {!respuesta && !confirmacion && !entregaDirecta ? <TextButton title="Descartar" onPress={() => void outbox.descartar(accion.id).then(() => {
+            {!pedidoVendedorId && !confirmacion ? <TextButton title="Descartar" onPress={() => void outbox.descartar(accion.id).then(() => {
               if (pedido) return borrarCarritoEncolado(accion.usuarioId, accion.idempotencyKey);
             }).catch(() => undefined)} /> : null}
           </View>
@@ -137,8 +140,8 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
         <Text style={styles.detail}>
           {accion.attempts === 0 ? 'Pendiente de envío' : `Pendiente de envío · ${accion.attempts} intentos`}
         </Text>
-        {respuesta || entregaDirecta ? <TextButton title="Ver pedido" onPress={() => router.push({
-          pathname: '/pedido-vendedor', params: { pedidoId: respuesta?.pedidoId ?? entregaDirecta ?? '' },
+        {pedidoVendedorId ? <TextButton title="Ver pedido" onPress={() => router.push({
+          pathname: '/pedido-vendedor', params: { pedidoId: pedidoVendedorId },
         })} /> : null}
         </>
       )}
