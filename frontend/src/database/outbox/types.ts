@@ -28,6 +28,7 @@ export interface OutboxStore {
   /** Todas, de la más antigua a la más reciente. */
   listar(): Promise<AccionPendiente[]>;
   actualizar(accion: AccionPendiente): Promise<void>;
+  reemplazarFallida(accion: AccionPendiente, claveAnterior: string): Promise<boolean>;
   borrar(id: string): Promise<void>;
   borrarTodo(): Promise<void>;
 }

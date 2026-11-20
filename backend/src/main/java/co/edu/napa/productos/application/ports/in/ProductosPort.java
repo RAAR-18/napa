@@ -22,7 +22,7 @@ public interface ProductosPort {
                    Long versionEsperada) {}
 
     record Datos(String nombre, BigDecimal precio, UnidadProducto unidad, String descripcion,
-                 BigDecimal cantidadDisponible) {}
+                 BigDecimal cantidadDisponible, UUID emprendimientoId) {}
 
     record Consulta(int page, int size, String sort, EstadoProducto estado) {
         public Consulta {

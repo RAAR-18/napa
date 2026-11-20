@@ -14,6 +14,7 @@ import {
 } from '../components/AuthUI';
 import { outbox, type AccionPendiente } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
+import { productoPendiente } from '../lib/productos-pendientes';
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
@@ -86,7 +87,13 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
         <>
           <Text style={styles.error}>{accion.lastError ?? 'El servidor la rechazó.'}</Text>
           <View style={styles.actions}>
-            <TextButton title="Reintentar" onPress={() => void outbox.reintentar(accion.id)} />
+            {productoPendiente(accion) ? (
+              <TextButton title="Corregir y reenviar" onPress={() => router.push({
+                pathname: '/nuevo-producto', params: { pendienteId: accion.id },
+              })} />
+            ) : (
+              <TextButton title="Reintentar" onPress={() => void outbox.reintentar(accion.id)} />
+            )}
             <TextButton title="Descartar" onPress={() => void outbox.descartar(accion.id)} />
           </View>
         </>

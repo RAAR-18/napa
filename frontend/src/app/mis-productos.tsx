@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Text } from 'react-native';
 
@@ -20,6 +20,9 @@ import {
 import { useProductosPage } from '../hooks/useProductosPage';
 import { useResumenesCalificacion } from '../hooks/useResumenesCalificacion';
 import { CardGrid, GridCard } from '../components/NapaUI';
+import { outbox } from '../database/outbox';
+import { useAccionesPendientes } from '../hooks/useOutbox';
+import { productoPendiente } from '../lib/productos-pendientes';
 
 export default function MisProductosScreen() {
   const { data, busy, error, offlineUpdatedAt, sort, changeSort, refresh, setPage } =
@@ -31,6 +34,17 @@ export default function MisProductosScreen() {
     showingOffline ? [] : (data?.content.map((item) => item.id) ?? []),
   );
   const [notice, setNotice] = useState<string | null>(null);
+  const [errorPendiente, setErrorPendiente] = useState<string | null>(null);
+  const pendientes = useAccionesPendientes().flatMap((accion) => {
+    const producto = productoPendiente(accion);
+    return producto ? [{ accion, producto }] : [];
+  });
+  const cantidadAnterior = useRef(pendientes.length);
+  useEffect(() => {
+    const omitir = cantidadAnterior.current <= pendientes.length;
+    cantidadAnterior.current = pendientes.length;
+    if (!omitir) refresh();
+  }, [pendientes.length, refresh]);
   return (
     <AuthPage>
       <PageHeading
@@ -41,8 +55,10 @@ export default function MisProductosScreen() {
           'Publica lo que vendes y mantén al día las cantidades disponibles.'
         }
       />
-      {!showingOffline && data?.emprendimiento ? (
-        <PrimaryButton title="Agregar producto" onPress={() => router.push('/nuevo-producto')} />
+      {data?.emprendimiento ? (
+        <PrimaryButton title="Agregar producto" onPress={() => router.push({
+          pathname: '/nuevo-producto', params: { emprendimientoId: data.emprendimiento!.id },
+        })} />
       ) : null}
       {data && !data.emprendimiento ? (
         <>
@@ -56,6 +72,36 @@ export default function MisProductosScreen() {
       <OrdenProductosControl value={sort} onChange={changeSort} />
       {notice ? <Text aria-live="polite" style={productStyles.status}>{notice}</Text> : null}
       <ErrorBanner message={error} />
+      <ErrorBanner message={errorPendiente} />
+      {pendientes.length > 0 ? (
+        <CardGrid>
+          {pendientes.map(({ accion, producto }) => (
+            <GridCard key={accion.id}>
+              <Text style={productStyles.name}>{producto.nombre}</Text>
+              <Text style={productStyles.detail}>
+                {producto.precio.toLocaleString('es-CO')} COP por {producto.unidad} · Cantidad inicial: {producto.cantidadDisponible}
+              </Text>
+              <Text style={productStyles.status}>
+                {accion.status === 'FALLIDA' ? 'Requiere corrección' : 'Pendiente de sincronización'}
+              </Text>
+              {accion.status === 'FALLIDA' ? (
+                <>
+                  <HelperText>{accion.lastError ?? 'El servidor rechazó el registro.'}</HelperText>
+                  <TextButton title="Corregir y reenviar" onPress={() => router.push({
+                    pathname: '/nuevo-producto', params: { pendienteId: accion.id },
+                  })} />
+                  <TextButton title="Descartar" onPress={() => {
+                    setErrorPendiente(null);
+                    void outbox.descartar(accion.id).catch((cause: unknown) => {
+                      setErrorPendiente(cause instanceof Error ? cause.message : 'No se pudo descartar el registro.');
+                    });
+                  }} />
+                </>
+              ) : null}
+            </GridCard>
+          ))}
+        </CardGrid>
+      ) : null}
       {offlineUpdatedAt !== null ? (
         <HelperText>
           Datos guardados. Última actualización:{' '}

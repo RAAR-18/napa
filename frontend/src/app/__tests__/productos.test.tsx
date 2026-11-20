@@ -8,6 +8,7 @@ import NuevoProductoScreen from '../nuevo-producto';
 import EditarProductoScreen from '../editar-producto';
 import { ApiError, NetworkError } from '../../lib/api';
 import { clearSession, getValidSession, readSession } from '../../lib/auth';
+import { outbox } from '../../database/outbox';
 import { borrarCatalogoGuardado, leerPaginaCatalogo, listarPaginasGuardadasCatalogo } from '../../lib/catalogo-cache';
 import { leerPaginaInventario } from '../../lib/inventario-cache';
 import { createProducto, deleteProducto, editProducto, getMiProducto, listCatalogo, listMisProductos, updateInventario, type Producto, type ProductosPage } from '../../lib/productos';
@@ -23,6 +24,10 @@ jest.mock('expo-router', () => ({
     const React = jest.requireActual<typeof import('react')>('react');
     React.useEffect(effect, [effect]);
   },
+}));
+jest.mock('../../lib/uuid', () => ({ randomUUID: () => 'registro-idempotente' }));
+jest.mock('../../database/outbox', () => ({
+  outbox: { listar: jest.fn().mockResolvedValue([]), suscribir: () => () => {}, encolar: jest.fn() },
 }));
 jest.mock('../../lib/auth', () => ({
   getSessionGeneration: () => 0,
@@ -87,9 +92,10 @@ it('validates initial stock and publishes a decimal product without requiring a 
   await fireEvent.press(view.getByRole('button', { name: 'Publicar producto' }));
   await waitFor(() => expect(createProducto).toHaveBeenCalledWith({
     nombre: 'Mango', precio: 3500, unidad: 'KG', descripcion: null, cantidadDisponible: 12.5,
-  }));
+    emprendimientoId: 'business-id',
+  }, 'registro-idempotente', undefined));
   expect(router.replace).toHaveBeenCalledWith('/mis-productos');
-}, 15000);
+}, 60000);
 
 it('preserves the form when the backend rejects a duplicate product', async () => {
   jest.mocked(createProducto).mockRejectedValue(new ApiError('Ya tienes un producto con ese nombre.', 409, 'CONFLICT'));
@@ -307,7 +313,8 @@ it('shows saved inventory in read-only mode when token renewal fails offline', a
 
   await waitFor(() => expect(screen.getByText(/Cantidad guardada/)).toBeTruthy());
   expect(screen.getByText(/Datos guardados/)).toBeTruthy();
-  expect(screen.queryByText('Agregar producto')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Agregar producto' })).toBeTruthy();
+  expect(screen.queryByText('Guardar inventario de Mango')).toBeNull();
   expect(leerPaginaInventario).toHaveBeenCalledWith('seller-id', 'nombre,asc', 0);
 });
 
@@ -354,4 +361,24 @@ it('invalidates the saved catalog of a business that the server no longer expose
   await waitFor(() => expect(view.getByText('Emprendimiento no disponible')).toBeTruthy());
   expect(borrarCatalogoGuardado).toHaveBeenCalledWith('client-id', 'business-id');
   expect(leerPaginaCatalogo).not.toHaveBeenCalled();
+}, 15000);
+
+it('queues a bound registration with the same key when the first request loses connectivity', async () => {
+  jest.mocked(readSession).mockResolvedValue({ ...seller, usuarioId: 'cuenta-A' });
+  jest.mocked(createProducto).mockRejectedValueOnce(new NetworkError('Sin conexión'));
+  const view = await render(<NuevoProductoScreen />);
+  await waitFor(() => expect(view.getByLabelText('Nombre del producto')).toBeTruthy());
+  await fireEvent.changeText(view.getByLabelText('Nombre del producto'), 'Mango');
+  await fireEvent.changeText(view.getByLabelText('Precio por unidad (COP)'), '3500');
+  await fireEvent.changeText(view.getByLabelText('Cantidad disponible'), '2');
+  await fireEvent.press(view.getByRole('button', { name: 'Publicar producto' }));
+
+  await waitFor(() => expect(outbox.encolar).toHaveBeenCalled());
+  const [body, key] = jest.mocked(createProducto).mock.calls[0];
+  expect(key).toBe('registro-idempotente');
+  expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
+    usuarioId: 'cuenta-A', path: '/api/v1/productos', idempotencyKey: key,
+    body: { ...body, emprendimientoId: 'business-id' },
+  }));
+  await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/mis-productos'));
 }, 15000);

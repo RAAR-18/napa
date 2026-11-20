@@ -19,6 +19,7 @@ type Opciones = {
   enviar: EnviarAccion;
   ahora?: () => number;
   nuevoId: () => string;
+  conservarReintentosServidor?: (accion: AccionPendiente) => boolean;
 };
 
 /**
@@ -31,15 +32,17 @@ export class Outbox {
   private readonly enviar: EnviarAccion;
   private readonly ahora: () => number;
   private readonly nuevoId: () => string;
+  private readonly conservarReintentosServidor: (accion: AccionPendiente) => boolean;
   private enCurso: Promise<ResultadoProceso> | null = null;
   private readonly oyentes = new Set<() => void>();
 
-  constructor({ store, enviar, usuarioActual, ahora = Date.now, nuevoId }: Opciones) {
+  constructor({ store, enviar, usuarioActual, ahora = Date.now, nuevoId, conservarReintentosServidor = () => false }: Opciones) {
     this.store = store;
     this.usuarioActual = usuarioActual;
     this.enviar = enviar;
     this.ahora = ahora;
     this.nuevoId = nuevoId;
+    this.conservarReintentosServidor = conservarReintentosServidor;
   }
 
   /** Captura el propietario antes de iniciar una petición que puede fallar por red. */
@@ -107,6 +110,31 @@ export class Outbox {
     this.avisar();
   }
 
+  /** Una corrección sustituye un rechazo definitivo con un cuerpo y una clave nuevos. */
+  async corregirFallida(accion: AccionPendiente, input: {
+    body: unknown;
+    idempotencyKey: string;
+    descripcion: string;
+  }): Promise<void> {
+    if (accion.status !== 'FALLIDA' || accion.usuarioId !== await this.usuarioActual()) {
+      throw new Error('Este registro ya no está disponible para corregir.');
+    }
+    const fecha = this.ahora();
+    const modificada = await this.store.reemplazarFallida({
+      ...accion,
+      body: JSON.stringify(input.body),
+      descripcion: input.descripcion,
+      idempotencyKey: input.idempotencyKey,
+      status: 'PENDIENTE',
+      attempts: 0,
+      lastError: null,
+      nextAttemptAt: fecha,
+      createdAt: fecha,
+    }, accion.idempotencyKey);
+    if (!modificada) throw new Error('Este registro ya no está disponible para corregir.');
+    this.avisar();
+  }
+
   /** Notifica cambios en la cola (para contadores en pantalla). */
   suscribir(oyente: () => void): () => void {
     this.oyentes.add(oyente);
@@ -161,7 +189,7 @@ export class Outbox {
         cause instanceof ApiError &&
         ((cause.status === 409 && cause.code === 'IDEMPOTENCY_IN_PROGRESS') ||
           cause.status === 401 || cause.status === 408 || cause.status === 429 || cause.status >= 500);
-      if (reintentable && (cause.status < 500 || attempts < MAXIMO_REINTENTOS_SERVIDOR)) {
+      if (reintentable && (cause.status < 500 || attempts < MAXIMO_REINTENTOS_SERVIDOR || this.conservarReintentosServidor(accion))) {
         await this.store.actualizar({ ...accion, attempts, lastError: mensaje, nextAttemptAt: this.siguiente(attempts) });
         return 'reintentar';
       }

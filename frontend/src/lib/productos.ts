@@ -27,6 +27,7 @@ export type Producto = {
   version: number;
 };
 export type CrearProductoInput = {
+  emprendimientoId?: string;
   nombre: string;
   precio: number;
   unidad: UnidadProducto;
@@ -57,17 +58,21 @@ export function listCatalogo(id: string, page = 0, sort: OrdenProductos = 'nombr
   return list(`/api/v1/emprendimientos/${encodeURIComponent(id)}/productos`, page, sort);
 }
 
-function write(path: string, body: unknown): Promise<Producto> {
-  const idempotencyKey = randomUUID();
-  return withValidSession((session) => requestJson<Producto>(path, {
-    method: 'POST',
-    headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
-    body: JSON.stringify(body),
-  }));
+function write(path: string, body: unknown, idempotencyKey = randomUUID(), propietario?: string): Promise<Producto> {
+  return withValidSession((session) => {
+    if (propietario && session.usuarioId !== propietario) {
+      throw new Error('El registro pertenece a otra cuenta.');
+    }
+    return requestJson<Producto>(path, {
+      method: 'POST',
+      headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
+      body: JSON.stringify(body),
+    });
+  });
 }
 
-export function createProducto(input: CrearProductoInput) {
-  return write('/api/v1/productos', input);
+export function createProducto(input: CrearProductoInput, idempotencyKey?: string, propietario?: string) {
+  return write('/api/v1/productos', input, idempotencyKey, propietario);
 }
 
 export function updateInventario(id: string, cantidadDisponible: number) {
