@@ -5,6 +5,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'rea
 import {
   AuthPage,
   ErrorBanner,
+  HelperText,
   OptionButton,
   PageHeading,
   TextButton,
@@ -21,8 +22,9 @@ import {
   useContentWidth,
 } from '../components/NapaUI';
 import { art, fonts } from '../components/theme';
-import { ApiError } from '../lib/api';
-import { clearSession, getValidSession } from '../lib/auth';
+import { guardarConsultaPedidos, leerConsultaPedidos } from '../lib/pedidos-cliente-cache';
+import { ApiError, NetworkError } from '../lib/api';
+import { clearSession, getValidSession, readSession } from '../lib/auth';
 import {
   listarPedidosVendedor,
   type EstadoPedido,
@@ -135,6 +137,7 @@ function PedidoRow({ item }: { item: PedidoVendedorListadoItem }) {
 
 export default function PedidosVendedorScreen() {
   const [data, setData] = useState<PedidosVendedorPagina | null>(null);
+  const [fechaGuardada, setFechaGuardada] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [page, setPage] = useState(0);
@@ -149,7 +152,11 @@ export default function PedidosVendedorScreen() {
       setLoading(true);
       setData(null);
       setError(null);
+      setFechaGuardada(null);
+      const clave = JSON.stringify([page, estado, modalidad, reserva]);
+      let local: Awaited<ReturnType<typeof readSession>> = null;
       try {
+        local = typeof readSession === 'function' ? await readSession() : null;
         const session = await getValidSession();
         if (!active) return;
         if (!sellerRoles.includes(session.rol)) {
@@ -164,8 +171,27 @@ export default function PedidosVendedorScreen() {
           ...(reserva ? { reserva: reserva === 'true' } : {}),
         };
         const pageData = await listarPedidosVendedor(filters);
-        if (active) setData(pageData);
+        if (!active) return;
+        setData(pageData);
+        if (session.usuarioId) {
+          void guardarConsultaPedidos(session.usuarioId, 'listado-vendedor', clave, pageData, () => active)
+            .catch(() => undefined);
+        }
       } catch (cause) {
+        if (cause instanceof NetworkError && local?.usuarioId && sellerRoles.includes(local.rol)) {
+          const copia = await leerConsultaPedidos<PedidosVendedorPagina>(
+            local.usuarioId, 'listado-vendedor', clave,
+          ).catch(() => null);
+          const vigente = await readSession();
+          if (!active || vigente?.usuarioId !== local.usuarioId) return;
+          if (copia) {
+            setData(copia.data);
+            setFechaGuardada(copia.fecha);
+          } else {
+            setError('No hay una página de pedidos guardada con estos filtros.');
+          }
+          return;
+        }
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
@@ -242,6 +268,9 @@ export default function PedidosVendedorScreen() {
         </FilterRow>
       </FilterPanel>
       <ErrorBanner message={error} />
+      {fechaGuardada !== null ? (
+        <HelperText>Datos guardados. Última actualización {formatDate(new Date(fechaGuardada).toISOString())}.</HelperText>
+      ) : null}
       {loading ? (
         <ActivityIndicator accessibilityLabel="Cargando pedidos" color={palette.green} />
       ) : null}

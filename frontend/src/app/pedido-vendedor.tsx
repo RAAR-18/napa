@@ -16,8 +16,12 @@ import {
 import ClienteDelPedido from '../components/ClienteDelPedido';
 import DomiciliarioAsignado from '../components/DomiciliarioAsignado';
 import PagoTarifaDomicilio from '../components/PagoTarifaDomicilio';
-import { ApiError } from '../lib/api';
-import { clearSession, getValidSession } from '../lib/auth';
+import { useAccionesPendientes } from '../hooks/useOutbox';
+import { outbox } from '../database/outbox';
+import { guardarConsultaPedidos, leerConsultaPedidos, quitarDetalleVendedorGuardado } from '../lib/pedidos-cliente-cache';
+import { respuestaPedidoPendiente, rutaRespuestaPedido } from '../lib/respuesta-pedido-pendiente';
+import { ApiError, NetworkError } from '../lib/api';
+import { clearSession, getValidSession, readSession } from '../lib/auth';
 import {
   confirmarSalida,
   estadoDomicilioNombres,
@@ -117,6 +121,16 @@ function actionError(cause: unknown, reserva: string | null | undefined, action:
 export default function PedidoVendedorScreen() {
   const { pedidoId: rawPedidoId } = useLocalSearchParams<{ pedidoId?: string | string[] }>();
   const pedidoId = Array.isArray(rawPedidoId) ? rawPedidoId[0] : rawPedidoId;
+  const acciones = useAccionesPendientes();
+  const [cuenta, setCuenta] = useState<string | null>(null);
+  const [fechaGuardada, setFechaGuardada] = useState<number | null>(null);
+  const [consultaServidor, setConsultaServidor] = useState(false);
+  const decision = acciones.find((a) =>
+    cuenta && a.usuarioId === cuenta && respuestaPedidoPendiente(a)?.pedidoId === pedidoId,
+  );
+  const estadoDecision = decision ? `${decision.id}:${decision.status}` : null;
+  const decisionAnterior = useRef<string | null>(null);
+  const enviando = useRef(false);
   const [detail, setDetail] = useState<PedidoVendedorDetalle | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -150,6 +164,13 @@ export default function PedidoVendedorScreen() {
     detail?.modalidad === 'ENTREGA_DIRECTA' &&
     (detail.estado === 'ACEPTADO' || detail.estado === 'EN_CAMINO') &&
     Boolean(detail.ubicacionEntrega);
+  useEffect(() => {
+    if (decisionAnterior.current && decisionAnterior.current !== estadoDecision) {
+      setLoadAttempt((intento) => intento + 1);
+    }
+    decisionAnterior.current = estadoDecision;
+  }, [estadoDecision]);
+
   const acceptanceConfirmation = detail?.reserva
     ? '¿Confirmas la aceptación? Las reservas no validan ni descuentan inventario.'
     : '¿Confirmas la aceptación? El inventario se descontará al aceptar.';
@@ -159,22 +180,54 @@ export default function PedidoVendedorScreen() {
     async function load() {
       setLoading(true);
       setError(null);
+      setConsultaServidor(false);
+      setFechaGuardada(null);
+      setDetail(null);
       if (!pedidoId) {
         setError('No se indicó el pedido que quieres consultar.');
         setLoading(false);
         return;
       }
+      let local: Awaited<ReturnType<typeof readSession>> = null;
       try {
+        local = typeof readSession === 'function' ? await readSession() : null;
         const session = await getValidSession();
         if (!active) return;
         setUserRole(session.rol);
+        setCuenta(session.usuarioId ?? null);
         if (!sellerRoles.includes(session.rol)) {
           setError('Solo las cuentas de vendedor pueden consultar el detalle del pedido.');
           return;
         }
         const response = await obtenerPedidoVendedor(pedidoId);
-        if (active) setDetail(response);
+        if (!active) return;
+        setDetail(response);
+        setConsultaServidor(true);
+        if (session.usuarioId && response.id === pedidoId) {
+          void guardarConsultaPedidos(session.usuarioId, 'detalle-vendedor', pedidoId, {
+            ...response, ubicacionEntrega: null, domicilio: null,
+          }, () => active).catch(() => undefined);
+        }
       } catch (cause) {
+        if (cause instanceof NetworkError && local?.usuarioId && sellerRoles.includes(local.rol)) {
+          const copia = await leerConsultaPedidos<PedidoVendedorDetalle>(
+            local.usuarioId, 'detalle-vendedor', pedidoId,
+          ).catch(() => null);
+          const vigente = await readSession();
+          if (!active || vigente?.usuarioId !== local.usuarioId) return;
+          setCuenta(local.usuarioId);
+          if (copia?.data.id === pedidoId) {
+            setUserRole(local.rol);
+            setDetail(copia.data);
+            setFechaGuardada(copia.fecha);
+            return;
+          }
+          setError('No hay un detalle guardado para este pedido. Conéctate para consultarlo.');
+          return;
+        }
+        if (cause instanceof ApiError && [401, 403, 404].includes(cause.status) && local?.usuarioId) {
+          await quitarDetalleVendedorGuardado(local.usuarioId, pedidoId).catch(() => undefined);
+        }
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
@@ -200,7 +253,7 @@ export default function PedidoVendedorScreen() {
   }
 
   async function respond() {
-    if (!pedidoId || !pendingAction || busy) return;
+    if (!pedidoId || !pendingAction || busy || enviando.current) return;
     setError(null);
     setNotice(null);
     const action = pendingAction;
@@ -208,8 +261,23 @@ export default function PedidoVendedorScreen() {
       actionKey.current = { action, key: randomUUID() };
     }
     const idempotencyKey = actionKey.current.key;
+    const respuesta = action === 'accept' || action === 'reject' ? action : null;
+    enviando.current = true;
     setBusy(true);
     try {
+      if (respuesta && (detail?.id !== pedidoId || detail.estado !== 'PENDIENTE' || decision)) return;
+      if (respuesta && cuenta) {
+        if (cuenta !== await outbox.propietario()) throw new Error('La sesión cambió. Abre nuevamente el pedido.');
+        const pendientes = await outbox.listar();
+        if (pendientes.some((a) => respuestaPedidoPendiente(a)?.pedidoId === pedidoId)) {
+          setPendingAction(null);
+          return;
+        }
+      }
+      if (respuesta && fechaGuardada !== null) {
+        await guardarDecision(pedidoId, respuesta, idempotencyKey, false);
+        return;
+      }
       if (action === 'accept') {
         await aceptarPedido(pedidoId, idempotencyKey);
         setNotice('Pedido aceptado. El pago quedó pendiente de confirmación.');
@@ -239,16 +307,52 @@ export default function PedidoVendedorScreen() {
         await publicarDomicilio(pedidoId, idempotencyKey);
         setNotice('Domicilio publicado. Los domiciliarios ya pueden verlo y aceptarlo.');
       }
+      if (respuesta && cuenta) {
+        await quitarDetalleVendedorGuardado(cuenta, pedidoId).catch(() => undefined);
+      }
       actionKey.current = null;
       setPendingAction(null);
       setDetail(null);
       setLoadAttempt((attempt) => attempt + 1);
     } catch (cause) {
+      if (respuesta && cuenta && (cause instanceof NetworkError || (cause instanceof ApiError &&
+        (cause.status >= 500 || cause.status === 408 || cause.status === 429 ||
+          (cause.status === 409 && cause.code === 'IDEMPOTENCY_IN_PROGRESS'))))) {
+        try {
+          await guardarDecision(pedidoId, respuesta, idempotencyKey, true);
+          return;
+        } catch (fallo) {
+          setError(actionError(fallo, detail?.reserva, action));
+          return;
+        }
+      }
       if (cause instanceof ApiError) actionKey.current = null;
       setError(actionError(cause, detail?.reserva, action));
     } finally {
+      enviando.current = false;
       setBusy(false);
     }
+  }
+
+  async function guardarDecision(id: string, respuesta: 'accept' | 'reject', clave: string, intentoPrevio: boolean) {
+    if (!cuenta || cuenta !== await outbox.propietario()) {
+      throw new Error('La sesión cambió. Abre nuevamente el pedido.');
+    }
+    await outbox.encolar({
+      usuarioId: cuenta, method: 'POST', path: rutaRespuestaPedido(id, respuesta),
+      idempotencyKey: clave, intentoPrevio,
+      descripcion: respuesta === 'accept' ? 'Aceptación de pedido' : 'Rechazo de pedido',
+    });
+    actionKey.current = null;
+    setPendingAction(null);
+    setNotice(null);
+  }
+
+  function descartarDecision() {
+    if (!decision) return;
+    void outbox.descartar(decision.id).catch((cause) => {
+      setError(cause instanceof Error ? cause.message : 'No se pudo descartar la decisión.');
+    });
   }
 
   return (
@@ -262,6 +366,25 @@ export default function PedidoVendedorScreen() {
         <ActivityIndicator accessibilityLabel="Cargando pedido" color={palette.green} />
       ) : null}
       <ErrorBanner message={error} />
+      {fechaGuardada !== null ? (
+        <HelperText>Datos guardados. Última actualización {formatDate(new Date(fechaGuardada).toISOString())}.</HelperText>
+      ) : null}
+      {decision ? (
+        <>
+          <HelperText>{decision.status === 'FALLIDA' ? 'Requiere revisión'
+            : respuestaPedidoPendiente(decision)?.decision === 'accept'
+              ? 'Aceptación pendiente de envío' : 'Rechazo pendiente de envío'}</HelperText>
+          {decision.status === 'FALLIDA' && decision.lastError ? <HelperText>{decision.lastError}</HelperText> : null}
+          {(decision.status === 'PENDIENTE' && decision.attempts === 0) ||
+           (decision.status === 'FALLIDA' && consultaServidor && !loading) ? (
+            <TextButton title={decision.status === 'FALLIDA' ? 'Cerrar revisión' : 'Descartar decisión'}
+              onPress={descartarDecision} />
+          ) : null}
+        </>
+      ) : null}
+      {pedidoId ? (
+        <TextButton title="Actualizar pedido" disabled={loading || busy} onPress={() => setLoadAttempt((a) => a + 1)} />
+      ) : null}
       {detail ? (
         <>
           <View style={styles.card}>
@@ -272,7 +395,7 @@ export default function PedidoVendedorScreen() {
               <Text style={styles.reservation}>Reserva: {formatDate(detail.reserva)}</Text>
             ) : null}
           </View>
-          <ClienteDelPedido pedidoId={detail.id} estado={detail.estado} />
+          {consultaServidor ? <ClienteDelPedido pedidoId={detail.id} estado={detail.estado} /> : null}
           <Text accessibilityRole="header" style={styles.sectionTitle}>Productos</Text>
           {detail.items.map((item) => (
             <View key={item.productoId} style={styles.card}>
@@ -304,7 +427,7 @@ export default function PedidoVendedorScreen() {
             ) : (
               <Text style={styles.detailText}>No requiere ubicación de entrega.</Text>
             )}
-            {canSeeCustomerOnMap ? (
+            {canSeeCustomerOnMap && consultaServidor ? (
               <TextButton
                 title="Ver ubicación en el mapa"
                 onPress={() => router.push({ pathname: '/ubicacion-entrega', params: { pedidoId: detail.id } })}
@@ -362,9 +485,9 @@ export default function PedidoVendedorScreen() {
             <PagoTarifaDomicilio domicilioId={detail.domicilio.id} rol="VENDEDOR" />
           ) : null}
           {notice ? <Text aria-live="polite" style={styles.notice}>{notice}</Text> : null}
-          {detail.estado === 'PENDIENTE' && !pendingAction && !loading ? (
+          {detail.estado === 'PENDIENTE' && !decision && !pendingAction && !loading ? (
             <>
-              <HelperText>Responder requiere conexión a internet.</HelperText>
+              {fechaGuardada !== null ? <HelperText>La decisión se enviará al recuperar conexión.</HelperText> : null}
               <PrimaryButton title="Aceptar pedido" onPress={() => setPendingAction('accept')} />
               <TextButton title="Rechazar pedido" onPress={() => setPendingAction('reject')} />
             </>
@@ -373,7 +496,7 @@ export default function PedidoVendedorScreen() {
           detail.estado === 'ACEPTADO' &&
           detail.modalidad === 'DOMICILIO' &&
           detail.pago?.estado === 'PENDIENTE_CONFIRMACION' &&
-          !pendingAction &&
+          consultaServidor && !decision && !pendingAction &&
           !loading ? (
             <>
               <HelperText>
@@ -385,7 +508,7 @@ export default function PedidoVendedorScreen() {
               />
             </>
           ) : null}
-          {canPublishDelivery && !pendingAction && !loading ? (
+          {canPublishDelivery && consultaServidor && !decision && !pendingAction && !loading ? (
             <>
               <HelperText>
                 Publica el domicilio cuando el pedido esté listo o casi listo. Una vez publicado no se puede editar.
@@ -396,10 +519,10 @@ export default function PedidoVendedorScreen() {
               />
             </>
           ) : null}
-          {canConfirmDeparture && !pendingAction && !loading ? (
+          {canConfirmDeparture && consultaServidor && !decision && !pendingAction && !loading ? (
             <PrimaryButton title="Confirmar salida" onPress={() => setPendingAction('confirmDeparture')} />
           ) : null}
-          {canStartDelivery && !pendingAction && !loading ? (
+          {canStartDelivery && consultaServidor && !decision && !pendingAction && !loading ? (
             <>
               {detail.reserva ? (
                 <HelperText>Podrás iniciar la entrega desde 15 minutos antes de la hora acordada.</HelperText>
@@ -407,7 +530,7 @@ export default function PedidoVendedorScreen() {
               <PrimaryButton title="Iniciar entrega" onPress={() => setPendingAction('startDelivery')} />
             </>
           ) : null}
-          {canConfirmDelivery && !pendingAction && !loading ? (
+          {canConfirmDelivery && consultaServidor && !decision && !pendingAction && !loading ? (
             <>
               <HelperText>
                 Confirma solo cuando el cliente tenga todo el pedido y hayas recibido el pago. Si no lo encuentras o no
@@ -416,7 +539,7 @@ export default function PedidoVendedorScreen() {
               <PrimaryButton title="Confirmar entrega y cobro" onPress={() => setPendingAction('confirmDelivery')} />
             </>
           ) : null}
-          {canMarkReady && !pendingAction && !loading ? (
+          {canMarkReady && consultaServidor && !decision && !pendingAction && !loading ? (
             <>
               {detail.reserva ? (
                 <HelperText>Podrás marcarlo como listo desde 15 minutos antes de la hora acordada.</HelperText>
@@ -424,7 +547,7 @@ export default function PedidoVendedorScreen() {
               <PrimaryButton title="Marcar listo para recoger" onPress={() => setPendingAction('markReady')} />
             </>
           ) : null}
-          {canConfirmPickup && !pendingAction && !loading ? (
+          {canConfirmPickup && consultaServidor && !decision && !pendingAction && !loading ? (
             <>
               <HelperText>
                 Confirma cuando el cliente retire todo el pedido y hayas recibido el pago.
@@ -432,7 +555,7 @@ export default function PedidoVendedorScreen() {
               <PrimaryButton title="Confirmar retiro y cobro" onPress={() => setPendingAction('confirmPickup')} />
             </>
           ) : null}
-          {pendingAction ? (
+          {pendingAction && !decision && !loading ? (
             <View style={styles.confirmation}>
               <Text style={styles.confirmationText}>
                 {pendingAction === 'accept'

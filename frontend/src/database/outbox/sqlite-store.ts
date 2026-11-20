@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
+import { respuestaPedidoPendiente } from '../../lib/respuesta-pedido-pendiente';
 import type { AccionPendiente, OutboxStore } from './types';
 
 const DATABASE_NAME = 'napa.db';
@@ -86,6 +87,13 @@ export class SqliteOutboxStore implements OutboxStore {
           ON outbox_por_cuenta (usuario_id, json_extract(body, '$.base.emprendimientoId'))
           WHERE method = 'PATCH' AND path = '/api/v1/emprendimientos/me' AND json_valid(body)
         `);
+        await db.execAsync(`
+          CREATE UNIQUE INDEX IF NOT EXISTS outbox_respuesta_por_pedido
+          ON outbox_por_cuenta (usuario_id, substr(path, 1, length(path) - CASE WHEN path GLOB '*/aceptar' THEN 8 ELSE 9 END))
+          WHERE method = 'POST' AND (
+            path GLOB '/api/v1/pedidos/*/aceptar' OR path GLOB '/api/v1/pedidos/*/rechazar'
+          )
+        `);
         return db;
       })();
     }
@@ -109,6 +117,9 @@ export class SqliteOutboxStore implements OutboxStore {
     );
     if (resultado.changes === 0 && a.method === 'PATCH' && a.path === '/api/v1/emprendimientos/me') {
       throw new Error('Ya hay una edición pendiente para este emprendimiento.');
+    }
+    if (resultado.changes === 0 && respuestaPedidoPendiente(a)) {
+      throw new Error('Este pedido ya tiene una decisión pendiente o por revisar.');
     }
     if (a.ifMatch && resultado.changes === 0) {
       throw new Error('Este producto ya tiene un cambio pendiente.');
@@ -138,6 +149,23 @@ export class SqliteOutboxStore implements OutboxStore {
        WHERE id = ? AND usuario_id = ? AND status = 'FALLIDA' AND idempotency_key = ?`,
       a.body, a.idempotencyKey, a.descripcion, a.status, a.attempts, a.lastError,
       a.nextAttemptAt, a.createdAt, a.ifMatch ?? null, a.id, a.usuarioId, claveAnterior,
+    );
+    return result.changes === 1;
+  }
+
+  async iniciarPrimerIntento(id: string): Promise<boolean> {
+    const db = await this.db();
+    const result = await db.runAsync(
+      "UPDATE outbox_por_cuenta SET attempts = 1 WHERE id = ? AND status = 'PENDIENTE' AND attempts = 0", id,
+    );
+    return result.changes === 1;
+  }
+
+  async borrarSinIntentos(id: string, usuarioId: string): Promise<boolean> {
+    const db = await this.db();
+    const result = await db.runAsync(
+      "DELETE FROM outbox_por_cuenta WHERE id = ? AND usuario_id = ? AND status = 'PENDIENTE' AND attempts = 0",
+      id, usuarioId,
     );
     return result.changes === 1;
   }

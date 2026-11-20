@@ -18,7 +18,7 @@ El vendedor acepta o rechaza únicamente pedidos `PENDIENTE` de su emprendimient
 
 ## Estado actual del código
 
-Backend RF-45 aporta `Pedido` y su persistencia; RF-57 aporta `DescontarInventarioPort`, y RF-63 aporta `ConsultarMediosPagoPort`. RF-53 ya implementa V12, el dominio y persistencia de `Pago`, la respuesta transaccional del vendedor, el descuento atómico de inventario para pedidos inmediatos y los eventos E02/E03. Las integraciones HTTP en `ProductosIntegrationTest` verifican modalidades, pagos, reservas, rechazos, permisos, concurrencia y rollback con PostgreSQL/Redis de Testcontainers. El listado y detalle de pedidos (RF-50/RF-51), las acciones del vendedor en frontend y el outbox de acciones offline siguen pendientes; esta interfaz de acciones requiere primero esos recorridos.
+Backend RF-45 aporta `Pedido` y su persistencia; RF-57 aporta `DescontarInventarioPort`, y RF-63 aporta `ConsultarMediosPagoPort`. RF-53 ya implementa V12, el dominio y persistencia de `Pago`, la respuesta transaccional del vendedor, el descuento atómico de inventario para pedidos inmediatos y los eventos E02/E03. Las integraciones HTTP en `ProductosIntegrationTest` verifican modalidades, pagos, reservas, rechazos, permisos, concurrencia y rollback con PostgreSQL/Redis de Testcontainers. RF-50 y RF-51 aportan el listado y el detalle del vendedor. F041 aporta la cola persistente por cuenta.
 
 ## Actors
 
@@ -152,7 +152,10 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: aceptar y rechazar van por el outbox con su `Idempotency-Key` ("pendiente de envío"); al sincronizar, si el servidor responde `OUT_OF_STOCK`, `INVALID_STATE` o `BANK_ACCOUNT_REQUIRED`, la app muestra el motivo y actualiza el pedido desde el servidor.
+- **Tolerancia a mala conexión (RNF28)**. Desde un detalle propio previamente guardado como `PENDIENTE` el vendedor puede guardar una aceptación o un rechazo. Se reutilizan los endpoints POST vigentes, ambos sin cuerpo. El estado confirmado se mantiene mientras la decisión está pendiente de envío.
+- Solo puede existir una decisión pendiente o por revisar por cuenta y pedido. Se puede descartar antes del primer intento. SQLite registra el inicio del envío y verifica que aún no se haya intentado al descartar.
+- Los errores temporales conservan la clave original. Ante un rechazo definitivo, la app muestra «Requiere revisión» y consulta el estado vigente. Una consulta exitosa permite cerrar la revisión. Los pasos que requieren aceptación se habilitan con el estado confirmado del servidor.
+- La copia del listado y del detalle del vendedor caduca a los siete días y se limpia al cerrar sesión. La dirección, las coordenadas de entrega y los datos del domicilio se consultan en línea.
 - **Concurrencia (RNF08)**: bloqueo del pedido con `SELECT ... FOR UPDATE`: dos respuestas simultáneas se serializan y la segunda recibe `INVALID_STATE`. El descuento usa `UPDATE ... WHERE cantidad_disponible >= :x` en orden por id (RF-57); si falla, se revierte toda la transacción y el pedido sigue `PENDIENTE`.
 - **Idempotencia (RNF27)**: Redis `idem:{userId}:{key}` + único de `Pago` por pedido como garantía final.
 

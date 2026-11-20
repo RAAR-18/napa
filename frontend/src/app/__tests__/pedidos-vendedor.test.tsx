@@ -4,8 +4,10 @@ import * as Crypto from 'expo-crypto';
 
 import PedidoVendedorScreen from '../pedido-vendedor';
 import PedidosVendedorScreen from '../pedidos-vendedor';
-import { ApiError } from '../../lib/api';
-import { clearSession, getValidSession } from '../../lib/auth';
+import { outbox } from '../../database/outbox';
+import { leerConsultaPedidos } from '../../lib/pedidos-cliente-cache';
+import { ApiError, NetworkError } from '../../lib/api';
+import { clearSession, getValidSession, readSession } from '../../lib/auth';
 import {
   aceptarPedido,
   confirmarPagoPedido,
@@ -22,6 +24,17 @@ jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'response-key') }));
 jest.mock('../../lib/auth', () => ({
   clearSession: jest.fn(),
   getValidSession: jest.fn(),
+  readSession: jest.fn().mockResolvedValue(null),
+}));
+jest.mock('../../database/outbox', () => ({
+  outbox: {
+    listar: jest.fn().mockResolvedValue([]), suscribir: () => () => {},
+    encolar: jest.fn().mockResolvedValue(undefined), propietario: jest.fn().mockResolvedValue('seller-id'),
+  },
+}));
+jest.mock('../../lib/pedidos-cliente-cache', () => ({
+  leerConsultaPedidos: jest.fn(), guardarConsultaPedidos: jest.fn().mockResolvedValue(undefined),
+  quitarDetalleVendedorGuardado: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../../lib/pedidos', () => ({
   MARGEN_RESERVA_MS: jest.requireActual('../../lib/pedidos').MARGEN_RESERVA_MS,
@@ -115,13 +128,13 @@ it('shows seller orders, filters by reservation, and opens the selected order', 
 
   await waitFor(() => expect(view.getByText('Ana Pérez')).toBeTruthy());
   expect(view.getByText('Recogida')).toBeTruthy();
-  fireEvent.press(view.getByRole('radio', { name: 'Reservas' }));
+  await fireEvent.press(view.getByRole('radio', { name: 'Reservas' }));
   await waitFor(() => expect(listarPedidosVendedor).toHaveBeenLastCalledWith({
     page: 0,
     size: 20,
     reserva: true,
   }));
-  fireEvent.press(view.getByRole('button', { name: 'Abrir pedido de Ana Pérez, Pendiente' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Abrir pedido de Ana Pérez, Pendiente' }));
   expect(router.push).toHaveBeenCalledWith({
     pathname: '/pedido-vendedor',
     params: { pedidoId: 'order-id' },
@@ -139,7 +152,7 @@ it('shows an empty state and does not request the list for a client', async () =
 
   jest.mocked(getValidSession).mockResolvedValue(seller);
   jest.mocked(listarPedidosVendedor).mockResolvedValue({ ...page, content: [], totalElements: 0 });
-  fireEvent.press(view.getByRole('button', { name: 'Actualizar pedidos' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Actualizar pedidos' }));
   await waitFor(() => expect(view.getByText(
     'No hay pedidos que coincidan con estos filtros.',
   )).toBeTruthy());
@@ -162,12 +175,12 @@ it('requires confirmation, reuses the idempotency key after a network failure, a
   const view = await render(<PedidoVendedorScreen />);
 
   await waitFor(() => expect(view.getByText('Carrera 7 # 10-20')).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Aceptar pedido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Aceptar pedido' }));
   expect(aceptarPedido).not.toHaveBeenCalled();
   await waitFor(() => expect(view.getByRole('button', { name: 'Confirmar aceptación' })).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Confirmar aceptación' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Confirmar aceptación' }));
   await waitFor(() => expect(view.getByText('No se pudo conectar con la API.')).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Confirmar aceptación' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Confirmar aceptación' }));
 
   await waitFor(() => expect(aceptarPedido).toHaveBeenLastCalledWith('order-id', 'response-key'));
   expect(Crypto.randomUUID).toHaveBeenCalledTimes(1);
@@ -182,13 +195,13 @@ it('explains bank-account conflicts and provides a link to payment settings', as
   const view = await render(<PedidoVendedorScreen />);
 
   await waitFor(() => expect(view.getByText('Carrera 7 # 10-20')).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Aceptar pedido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Aceptar pedido' }));
   await waitFor(() => expect(view.getByRole('button', { name: 'Confirmar aceptación' })).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Confirmar aceptación' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Confirmar aceptación' }));
   await waitFor(() => expect(view.getByText(
     'Registra una cuenta bancaria antes de aceptar un pedido a domicilio.',
   )).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Configurar métodos de pago' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Configurar métodos de pago' }));
   expect(router.push).toHaveBeenCalledWith('/configuracion-pagos');
 });
 
@@ -196,10 +209,10 @@ it('rejects only after explicit confirmation', async () => {
   const view = await render(<PedidoVendedorScreen />);
 
   await waitFor(() => expect(view.getByText('Carrera 7 # 10-20')).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Rechazar pedido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Rechazar pedido' }));
   expect(rechazarPedido).not.toHaveBeenCalled();
   await waitFor(() => expect(view.getByRole('button', { name: 'Confirmar rechazo' })).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Confirmar rechazo' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Confirmar rechazo' }));
 
   await waitFor(() => expect(rechazarPedido).toHaveBeenCalledWith('order-id', 'response-key'));
 });
@@ -218,10 +231,10 @@ it('confirms a home-delivery payment only after an explicit seller confirmation'
   const view = await render(<PedidoVendedorScreen />);
 
   await waitFor(() => expect(view.getByText('Estado del pago: PENDIENTE_CONFIRMACION')).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Confirmar pago recibido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Confirmar pago recibido' }));
   expect(confirmarPagoPedido).not.toHaveBeenCalled();
   await waitFor(() => expect(view.getByText(/verificaste la transferencia por \$9\.450 COP/)).toBeTruthy());
-  fireEvent.press(view.getByRole('button', { name: 'Confirmar pago recibido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Confirmar pago recibido' }));
 
   await waitFor(() => expect(confirmarPagoPedido).toHaveBeenCalledWith('order-id', 'response-key'));
   expect(Crypto.randomUUID).toHaveBeenCalledTimes(1);
@@ -234,4 +247,25 @@ it('clears and redirects when authentication has expired', async () => {
   await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
   expect(clearSession).toHaveBeenCalled();
   expect(view.queryByRole('button', { name: 'Aceptar pedido' })).toBeNull();
+});
+
+it('queues a decision from an offline copy without advancing the order', async () => {
+  const session = { ...seller, usuarioId: 'seller-id' };
+  jest.mocked(readSession).mockResolvedValue(session);
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  jest.mocked(leerConsultaPedidos).mockResolvedValue({ data: pendingOrder, fecha: Date.now() });
+  try {
+    const view = await render(<PedidoVendedorScreen />);
+    await view.findByText(/Datos guardados/);
+    await fireEvent.press(view.getByRole('button', { name: 'Rechazar pedido' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Confirmar rechazo' }));
+    await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
+      usuarioId: 'seller-id', method: 'POST', path: '/api/v1/pedidos/order-id/rechazar',
+      idempotencyKey: 'response-key', intentoPrevio: false,
+    })));
+    expect(rechazarPedido).not.toHaveBeenCalled();
+    expect(view.queryByRole('button', { name: 'Marcar listo para recoger' })).toBeNull();
+  } finally {
+    jest.mocked(readSession).mockResolvedValue(null);
+  }
 });
