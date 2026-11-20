@@ -315,3 +315,22 @@ it('allows discarding a seller decision only before the first send begins', asyn
     status: 'FALLIDA', lastError: 'El pedido fue cancelado.',
   })]);
 });
+it('retries a delivery confirmation with the original key and leaves a state conflict for review', async () => {
+  const accion = await outbox.encolar({
+    usuarioId: 'cuenta-A', method: 'POST', path: '/api/v1/domicilios/delivery-id/confirmar-salida',
+    idempotencyKey: 'salida-original', descripcion: 'Salida de domicilio',
+  });
+  enviar.mockRejectedValueOnce(new NetworkError('Sin conexión'));
+  await outbox.procesar();
+  expect(await outbox.listar()).toEqual([expect.objectContaining({ status: 'PENDIENTE', attempts: 1 })]);
+
+  enviar.mockRejectedValueOnce(new ApiError('El domicilio cambió de estado.', 409, 'INVALID_STATE'));
+  await outbox.procesar({ forzar: true });
+  expect(enviar.mock.calls.map(([intento]) => intento.idempotencyKey)).toEqual(['salida-original', 'salida-original']);
+  await outbox.reintentar(accion.id);
+  await outbox.procesar({ forzar: true });
+  expect(enviar).toHaveBeenCalledTimes(2);
+  expect(await outbox.listar()).toEqual([expect.objectContaining({
+    status: 'FALLIDA', lastError: 'El domicilio cambió de estado.',
+  })]);
+});

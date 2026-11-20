@@ -12,17 +12,20 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
-import { ApiError } from '../lib/api';
-import { clearSession, getValidSession } from '../lib/auth';
+import { guardarConsultaPedidos, leerConsultaPedidos } from '../lib/pedidos-cliente-cache';
+import { ApiError, NetworkError } from '../lib/api';
+import { clearSession, getValidSession, readSession } from '../lib/auth';
 import {
   MAXIMO_DOMICILIOS_EN_CURSO,
   estadoDomicilioNombres,
   listarDomiciliosEnCurso,
   type DomicilioEnCurso,
+  type DomicilioEnCursoGuardado,
 } from '../lib/domicilios';
 
 export default function DomiciliosEnCursoScreen() {
-  const [items, setItems] = useState<DomicilioEnCurso[] | null>(null);
+  const [items, setItems] = useState<(DomicilioEnCurso | DomicilioEnCursoGuardado)[] | null>(null);
+  const [fechaGuardada, setFechaGuardada] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +35,11 @@ export default function DomiciliosEnCursoScreen() {
     async function load() {
       setLoading(true);
       setError(null);
+      setItems(null);
+      setFechaGuardada(null);
+      let local: Awaited<ReturnType<typeof readSession>> = null;
       try {
+        local = typeof readSession === 'function' ? await readSession() : null;
         const session = await getValidSession();
         if (!active) return;
         if (session.rol !== 'DOMICILIARIO') {
@@ -40,8 +47,28 @@ export default function DomiciliosEnCursoScreen() {
           return;
         }
         const response = await listarDomiciliosEnCurso();
-        if (active) setItems(response);
+        if (!active) return;
+        setItems(response);
+        if (session.usuarioId) {
+          const copia = response.map(({ id, estado, ganancia, asignadoAt }) => ({ id, estado, ganancia, asignadoAt }));
+          void guardarConsultaPedidos(session.usuarioId, 'listado-domiciliario', 'en-curso', copia, () => active)
+            .catch(() => undefined);
+        }
       } catch (cause) {
+        if (cause instanceof NetworkError && local?.rol === 'DOMICILIARIO' && local.usuarioId) {
+          const copia = await leerConsultaPedidos<DomicilioEnCursoGuardado[]>(
+            local.usuarioId, 'listado-domiciliario', 'en-curso',
+          ).catch(() => null);
+          const vigente = await readSession();
+          if (!active || vigente?.usuarioId !== local.usuarioId) return;
+          if (copia) {
+            setItems(copia.data);
+            setFechaGuardada(copia.fecha);
+          } else {
+            setError('Conéctate para descargar tus domicilios en curso.');
+          }
+          return;
+        }
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
@@ -67,6 +94,7 @@ export default function DomiciliosEnCursoScreen() {
       />
       {loading ? <ActivityIndicator accessibilityLabel="Cargando domicilios" color={palette.green} /> : null}
       <ErrorBanner message={error} />
+      {fechaGuardada !== null ? <HelperText>Datos guardados. Última actualización {new Date(fechaGuardada).toLocaleString('es-CO')}.</HelperText> : null}
       {!loading && items?.length === 0 ? <HelperText>No tienes domicilios en curso.</HelperText> : null}
       {items && items.length > 0 ? (
         <HelperText>{items.length} de {MAXIMO_DOMICILIOS_EN_CURSO} domicilios en curso.</HelperText>
@@ -76,13 +104,15 @@ export default function DomiciliosEnCursoScreen() {
             <Pressable
               key={item.id}
               accessibilityRole="button"
-              accessibilityLabel={`Abrir domicilio ${estadoDomicilioNombres[item.estado]} hacia ${item.destino.direccion ?? 'el cliente'}`}
+              accessibilityLabel={`Abrir domicilio ${estadoDomicilioNombres[item.estado]} hacia ${('destino' in item ? item.destino.direccion : null) ?? 'el cliente'}`}
               onPress={() => router.push({ pathname: '/domicilio-domiciliario', params: { domicilioId: item.id } })}
               style={({ pressed }) => [styles.card, pressed && styles.pressed]}
             >
               <Text style={styles.status}>{estadoDomicilioNombres[item.estado]}</Text>
+              {'origen' in item ? <>
               <Text style={styles.details}>Recoge en: {item.origen.direccion ?? 'Punto del vendedor'}</Text>
               <Text style={styles.details}>Entrega en: {item.destino.direccion ?? 'Ubicación del cliente'}</Text>
+              </> : null}
               <Text style={styles.gain}>${item.ganancia.toLocaleString('es-CO')} COP</Text>
             </Pressable>
           ))

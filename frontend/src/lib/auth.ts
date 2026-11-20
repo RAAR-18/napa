@@ -320,13 +320,15 @@ export async function logout(): Promise<void> {
       console.warn('No se pudo borrar la caché de pedidos al cerrar sesión.', cause);
     }
   }
-  if (vendedor && session.usuarioId) {
+  if ((vendedor || session.rol === 'DOMICILIARIO') && session.usuarioId) {
     try {
       const { borrarPedidosGuardados } = await import('./pedidos-cliente-cache');
       await borrarPedidosGuardados(session.usuarioId);
     } catch (cause) {
-      console.warn('No se pudo borrar el detalle guardado de pedidos al cerrar sesión.', cause);
+      console.warn('No se pudieron borrar los pedidos y domicilios guardados al cerrar sesión.', cause);
     }
+  }
+  if (vendedor && session.usuarioId) {
     try {
       const { borrarInventarioGuardado } = await import('./inventario-cache');
       await borrarInventarioGuardado(session.usuarioId);
