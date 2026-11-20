@@ -6,17 +6,19 @@ import type { PasoDomicilio } from '../lib/confirmacion-domicilio';
 export function EstadoConfirmacionDomicilio({ pendiente, confirmada, paso, cerrarRevision }: {
   pendiente?: AccionPendiente;
   confirmada?: TransicionDomicilio | null;
-  paso: PasoDomicilio;
+  paso: PasoDomicilio | 'confirmar-entrega-directa';
   cerrarRevision?: () => void;
 }) {
-  const recogida = paso === 'confirmar-recogida';
+  const etiqueta = paso === 'confirmar-recogida' ? 'Recogida'
+    : paso === 'confirmar-salida' ? 'Salida' : 'Entrega y cobro';
+  const entregaDirecta = paso === 'confirmar-entrega-directa';
   const formato = (fecha: number | string) =>
     new Date(fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
   if (pendiente) {
     return (
       <>
         <HelperText>{pendiente.status === 'FALLIDA' ? 'Requiere revisión'
-          : recogida ? 'Recogida pendiente de envío' : 'Salida pendiente de envío'}</HelperText>
+          : `${etiqueta} ${entregaDirecta ? 'pendientes' : 'pendiente'} de envío`}</HelperText>
         <HelperText>Guardada en el dispositivo el {formato(pendiente.createdAt)}.</HelperText>
         {pendiente.status === 'FALLIDA' ? (
           <>
@@ -28,6 +30,6 @@ export function EstadoConfirmacionDomicilio({ pendiente, confirmada, paso, cerra
     );
   }
   return confirmada ? (
-    <HelperText>{recogida ? 'Recogida' : 'Salida'} confirmada por el servidor el {formato(confirmada.updatedAt)}.</HelperText>
+    <HelperText>{etiqueta} {entregaDirecta ? 'confirmados' : 'confirmada'} por el servidor el {formato(confirmada.updatedAt)}.</HelperText>
   ) : null;
 }

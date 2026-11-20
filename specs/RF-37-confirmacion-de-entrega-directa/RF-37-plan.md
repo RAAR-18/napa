@@ -135,7 +135,10 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: es el caso crítico del ambulante en la calle. La acción se escribe en el outbox con su `Idempotency-Key` y la pantalla muestra "pendiente de envío". Al reconectar se envía; si el servidor responde `INVALID_STATE` (por ejemplo porque ya se había confirmado), la app actualiza el detalle y lo explica.
+- **Tolerancia a mala conexión (RNF28)**. El vendedor ambulante puede guardar una sola confirmación por cuenta y pedido propio de entrega directa descargado como `EN_CAMINO`. La app muestra el total y el medio de pago guardados y pide confirmar que recibió el pago y entregó el pedido completo. Si faltan esos datos, se requiere una consulta en línea.
+- La cola conserva el POST existente con `{ "cobroConfirmado": true }` y una clave de idempotencia estable. La app indica «Entrega y cobro pendientes de envío» y muestra la hora de captura sin adelantar el estado del pedido ni del pago.
+- El servidor registra ambos cambios en la misma transacción. La app solo da por completado el envío cuando recibe `ENTREGADO` y pago `CONFIRMADO` en la misma respuesta, y muestra la hora oficial. Un rechazo definitivo se presenta como «Requiere revisión» y solicita el estado vigente.
+- Se reutiliza el detalle del vendedor de RF-53 por cuenta, con una vigencia de siete días. Al reabrir la app, la copia y el pendiente se pueden consultar con la misma cuenta.
 - **Concurrencia (RNF08)**: el caso de uso bloquea el pedido y luego el pago; dos solicitudes simultáneas: una confirma y la otra recibe `INVALID_STATE` con `ENTREGADO`.
 - **Idempotencia (RNF27)**: Redis `idem:{userId}:{key}`; el único de `Pago` por pedido es la garantía final.
 
@@ -272,7 +275,7 @@ frontend/__tests__/entregas/confirmar-entrega.test.tsx
 - [ ] Eventos emitidos documentados en `eventos.md`; ningún listener planificado en este plan
 - [ ] Actores (comprador, vendedor, domiciliario, administrador) identificados
 - [ ] Errores y casos borde tienen comportamiento definido
-- [ ] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
+- [x] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
 - [ ] Dependencias y librerías identificadas
 - [ ] Cada tarea es granular y nombra el archivo que toca
 - [ ] No se agregó comportamiento que no esté en la spec
