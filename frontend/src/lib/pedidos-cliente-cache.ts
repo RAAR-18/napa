@@ -1,9 +1,25 @@
 import * as SQLite from 'expo-sqlite';
 
 import type { DomicilioGuardado, DomicilioEnCursoGuardado, TransicionDomicilio } from './domicilios';
-import type { PagoPedidoConfirmado, PedidoClienteDetalle, PedidoVendedorDetalle, PedidosClientePagina, PedidosVendedorPagina } from './pedidos';
+import type {
+  PagoPedidoConfirmado,
+  PedidoClienteDetalle,
+  PedidoEntregado,
+  PedidoVendedorDetalle,
+  PedidosClientePagina,
+  PedidosVendedorPagina,
+} from './pedidos';
 
-type TipoConsulta = 'listado' | 'detalle' | 'detalle-vendedor' | 'listado-vendedor' | 'detalle-domiciliario' | 'listado-domiciliario' | 'confirmacion-domicilio' | 'confirmacion-pago-pedido';
+type TipoConsulta =
+  | 'listado'
+  | 'detalle'
+  | 'detalle-vendedor'
+  | 'listado-vendedor'
+  | 'detalle-domiciliario'
+  | 'listado-domiciliario'
+  | 'confirmacion-domicilio'
+  | 'confirmacion-pago-pedido'
+  | 'confirmacion-entrega-directa';
 export type DetallePedidoGuardado = Pick<PedidoClienteDetalle,
   'id' | 'estado' | 'modalidad' | 'reserva' | 'updatedAt' | 'emprendimiento' | 'total' | 'tarifaDomicilio' | 'pago'
 > & { items: Pick<PedidoClienteDetalle['items'][number], 'productoId' | 'nombre' | 'unidad' | 'cantidad' | 'subtotal'>[] };
@@ -45,7 +61,7 @@ export function guardarConsultaPedidos(
   tipo: TipoConsulta,
   clave: string,
   contenido: DetallePedidoGuardado | PedidosClientePagina | PedidoVendedorDetalle | PedidosVendedorPagina
-    | DomicilioGuardado | DomicilioEnCursoGuardado[] | TransicionDomicilio | PagoPedidoConfirmado,
+    | DomicilioGuardado | DomicilioEnCursoGuardado[] | TransicionDomicilio | PagoPedidoConfirmado | PedidoEntregado,
   vigente: () => boolean,
 ) {
   const fecha = Date.now();

@@ -1,5 +1,6 @@
 import { jsonHeaders, requestJson } from './api';
 import { rutaConfirmarPagoPedido } from './pago-pedido-pendiente';
+import { cuerpoConfirmacionEntrega } from './entrega-directa-pendiente';
 import { withValidSession } from './auth';
 import type { EstadoDomicilio, MotivoCancelacionDomicilio } from './domicilios';
 
@@ -268,7 +269,7 @@ export function iniciarEntregaDirecta(pedidoId: string, idempotencyKey: string) 
 
 /** RF-37: entrega y cobro por el medio que eligió el cliente. */
 export function confirmarEntregaDirecta(pedidoId: string, idempotencyKey: string) {
-  return accionPedido<PedidoEntregado>(pedidoId, 'confirmar-entrega', idempotencyKey, { cobroConfirmado: true });
+  return accionPedido<PedidoEntregado>(pedidoId, 'confirmar-entrega', idempotencyKey, cuerpoConfirmacionEntrega);
 }
 
 /** RF-64: el pedido de recogida ya se puede retirar en el punto fijo. */

@@ -2,34 +2,65 @@ import { HelperText, TextButton } from './AuthUI';
 import type { AccionPendiente } from '../database/outbox/types';
 import type { PasoDomicilio } from '../lib/confirmacion-domicilio';
 
-export function EstadoConfirmacionDomicilio({ pendiente, confirmada, paso, cerrarRevision }: {
+type PasoConfirmacion = PasoDomicilio | 'confirmar-pago' | 'confirmar-entrega-directa';
+
+const mensajes: Record<PasoConfirmacion, { pendiente: string; confirmada: string }> = {
+  'confirmar-recogida': {
+    pendiente: 'Recogida pendiente de envío',
+    confirmada: 'Recogida confirmada',
+  },
+  'confirmar-salida': {
+    pendiente: 'Salida pendiente de envío',
+    confirmada: 'Salida confirmada',
+  },
+  'confirmar-pago': {
+    pendiente: 'Confirmación de pago pendiente de envío',
+    confirmada: 'Pago confirmado',
+  },
+  'confirmar-entrega-directa': {
+    pendiente: 'Entrega y cobro pendientes de envío',
+    confirmada: 'Entrega y cobro confirmados',
+  },
+};
+
+export function EstadoConfirmacionDomicilio({
+  pendiente,
+  confirmada,
+  paso,
+  cerrarRevision,
+}: {
   pendiente?: AccionPendiente;
   confirmada?: { updatedAt: string } | null;
-  paso: PasoDomicilio | 'confirmar-pago';
+  paso: PasoConfirmacion;
   cerrarRevision?: () => void;
 }) {
-  const pendienteTexto = paso === 'confirmar-pago' ? 'Confirmación de pago pendiente de envío'
-    : paso === 'confirmar-recogida' ? 'Recogida pendiente de envío' : 'Salida pendiente de envío';
-  const confirmadaTexto = paso === 'confirmar-pago' ? 'Pago confirmado'
-    : paso === 'confirmar-recogida' ? 'Recogida confirmada' : 'Salida confirmada';
+  const mensaje = mensajes[paso];
   const formato = (fecha: number | string) =>
-    new Date(fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+    new Date(fecha).toLocaleString('es-CO', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+
   if (pendiente) {
+    const fallida = pendiente.status === 'FALLIDA';
+
     return (
       <>
-        <HelperText>{pendiente.status === 'FALLIDA' ? 'Requiere revisión'
-          : pendienteTexto}</HelperText>
+        <HelperText>{fallida ? 'Requiere revisión' : mensaje.pendiente}</HelperText>
         <HelperText>Guardada en el dispositivo el {formato(pendiente.createdAt)}.</HelperText>
-        {pendiente.status === 'FALLIDA' ? (
+        {fallida ? (
           <>
             <HelperText>{pendiente.lastError ?? 'El servidor rechazó la confirmación.'}</HelperText>
-            {cerrarRevision ? <TextButton title="Cerrar revisión" onPress={cerrarRevision} /> : null}
+            {cerrarRevision ? (
+              <TextButton title="Cerrar revisión" onPress={cerrarRevision} />
+            ) : null}
           </>
         ) : null}
       </>
     );
   }
+
   return confirmada ? (
-    <HelperText>{confirmadaTexto} por el servidor el {formato(confirmada.updatedAt)}.</HelperText>
+    <HelperText>{mensaje.confirmada} por el servidor el {formato(confirmada.updatedAt)}.</HelperText>
   ) : null;
 }

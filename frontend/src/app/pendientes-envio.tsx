@@ -16,6 +16,7 @@ import { outbox, type AccionPendiente } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
 import { borrarCarritoEncolado, paramsRevisionPedido, pedidoPendiente } from '../lib/pedido-offline';
 import { pagoPedidoPendiente } from '../lib/pago-pedido-pendiente';
+import { entregaDirectaPendiente } from '../lib/entrega-directa-pendiente';
 import { confirmacionDomicilio } from '../lib/confirmacion-domicilio';
 import { respuestaPedidoPendiente } from '../lib/respuesta-pedido-pendiente';
 import { edicionEmprendimientoPendiente } from '../lib/emprendimiento-pendiente';
@@ -88,7 +89,8 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
   const pedido = pedidoPendiente(accion);
   const respuesta = respuestaPedidoPendiente(accion);
   const pedidoPagoId = accion.method === 'POST' ? pagoPedidoPendiente(accion.path) : null;
-  const pedidoVendedorId = respuesta?.pedidoId ?? pedidoPagoId;
+  const entregaDirecta = accion.method === 'POST' ? entregaDirectaPendiente(accion.path) : null;
+  const pedidoVendedorId = respuesta?.pedidoId ?? pedidoPagoId ?? entregaDirecta;
   const confirmacion = accion.method === 'POST' ? confirmacionDomicilio(accion.path) : null;
   return (
     <View style={[styles.card, fallida && styles.failed]}>

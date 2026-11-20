@@ -1,5 +1,6 @@
 import { ApiError, NetworkError } from '../../lib/api';
 import { pagoPedidoPendiente } from '../../lib/pago-pedido-pendiente';
+import { entregaDirectaPendiente } from '../../lib/entrega-directa-pendiente';
 import { confirmacionDomicilio } from '../../lib/confirmacion-domicilio';
 import { respuestaPedidoPendiente } from '../../lib/respuesta-pedido-pendiente';
 import type { AccionPendiente, MetodoEnvio, OutboxStore } from './types';
@@ -112,7 +113,14 @@ export class Outbox {
   /** Descarte explícito solo de los pendientes de la cuenta activa; no usar al cerrar sesión. */
   async vaciar(): Promise<void> {
     for (const accion of await this.listar()) {
-      if (!respuestaPedidoPendiente(accion) && !confirmacionDomicilio(accion.path) && !pagoPedidoPendiente(accion.path)) await this.store.borrar(accion.id);
+      if (
+        !respuestaPedidoPendiente(accion) &&
+        !confirmacionDomicilio(accion.path) &&
+        !pagoPedidoPendiente(accion.path) &&
+        !entregaDirectaPendiente(accion.path)
+      ) {
+        await this.store.borrar(accion.id);
+      }
     }
     this.avisar();
   }
@@ -120,7 +128,15 @@ export class Outbox {
   /** Vuelve a poner una acción fallida en la cola para intentarla ya. */
   async reintentar(id: string): Promise<void> {
     const accion = (await this.listar()).find((a) => a.id === id);
-    if (!accion || respuestaPedidoPendiente(accion) || confirmacionDomicilio(accion.path) || pagoPedidoPendiente(accion.path)) return;
+    if (
+      !accion ||
+      respuestaPedidoPendiente(accion) ||
+      confirmacionDomicilio(accion.path) ||
+      pagoPedidoPendiente(accion.path) ||
+      entregaDirectaPendiente(accion.path)
+    ) {
+      return;
+    }
     await this.store.actualizar({ ...accion, status: 'PENDIENTE', lastError: null, nextAttemptAt: this.ahora() });
     this.avisar();
   }
