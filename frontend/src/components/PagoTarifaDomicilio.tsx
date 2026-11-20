@@ -1,5 +1,6 @@
+import { fonts } from './theme';
 import { useEffect, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiError } from '../lib/api';
@@ -71,7 +72,7 @@ export default function PagoTarifaDomicilio({ domicilioId, rol }: Props) {
     setBusy(true);
     setError(null);
     // La misma clave en los reintentos por red: el servidor no registra dos veces.
-    actionKey.current ??= Crypto.randomUUID();
+    actionKey.current ??= randomUUID();
     try {
       const response =
         rol === 'VENDEDOR'
@@ -161,11 +162,11 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  sectionTitle: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  amount: { color: palette.green, fontSize: 20, fontWeight: '800', marginTop: 6 },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  amount: { color: palette.green, fontFamily: fonts.sans, fontSize: 20, fontWeight: '800', marginTop: 6 },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
   account: { marginTop: 4 },
-  accountNumber: { color: palette.dark, fontSize: 16, fontWeight: '700', marginTop: 6 },
+  accountNumber: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '700', marginTop: 6 },
   confirmation: {
     backgroundColor: '#FFF8E8',
     borderColor: '#E8D8AE',

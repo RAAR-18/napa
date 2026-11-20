@@ -25,3 +25,6 @@ Thumbs.db
 
 # Fotos de perfil guardadas en local (RF-08)
 backend/data/
+
+# Procesos y logs del entorno local de demostracion
+.local/

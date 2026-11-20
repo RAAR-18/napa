@@ -63,6 +63,10 @@ Backend: Java 21, Spring Boot 4.1.x, Spring Security, JPA + Hibernate Spatial, P
 
 ## Desarrollo local
 
+Para abrir la app con cuentas y datos ficticios de los cinco perfiles, consulta
+la [guia del entorno de demostracion](DESARROLLO_LOCAL.md). Usa una base separada
+(`napa_preview`) y conserva las cuentas de las bases existentes.
+
 Requisitos: JDK 21, Node.js 24 o compatible con Expo SDK 58 y Docker Compose.
 
 ```powershell

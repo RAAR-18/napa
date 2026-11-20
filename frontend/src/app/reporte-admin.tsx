@@ -1,5 +1,6 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -102,7 +103,7 @@ export default function ReporteAdminScreen() {
     if (!reporteId) return;
     setBusy(true);
     setError(null);
-    key.current ??= Crypto.randomUUID();
+    key.current ??= randomUUID();
     try {
       await resolverReporte(reporteId, nota, key.current);
       setIntento((i) => i + 1);
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  label: { color: palette.muted, fontSize: 13, fontWeight: '700' },
-  body: { color: palette.dark, fontSize: 15, lineHeight: 22, marginTop: 4 },
-  detail: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  label: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, fontWeight: '700' },
+  body: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, lineHeight: 22, marginTop: 4 },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
 });

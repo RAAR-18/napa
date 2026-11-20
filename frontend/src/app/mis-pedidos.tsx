@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,13 +9,13 @@ import {
   HelperText,
   OptionButton,
   PageHeading,
-  PrimaryButton,
   TextButton,
   palette,
 } from '../components/AuthUI';
 import { ApiError } from '../lib/api';
 import { clearSession } from '../lib/auth';
 import { consultarListadoCliente } from '../lib/pedidos-cliente-consulta';
+import { FilterPanel, FilterRow, Icon, RefreshButton, StatusBadge } from '../components/NapaUI';
 import {
   estadoPedidoNombres,
   modalidadPedidoNombres,
@@ -52,13 +53,30 @@ function PedidoRow({ item }: { item: PedidoClienteListadoItem }) {
     >
       <View style={styles.row}>
         <Text style={styles.name}>{item.emprendimiento.nombre}</Text>
-        <Text style={styles.status}>{estadoPedidoNombres[item.estado]}</Text>
+        <StatusBadge
+          label={estadoPedidoNombres[item.estado]}
+          tone={
+            item.estado === 'PENDIENTE'
+              ? 'peach'
+              : item.estado === 'RECHAZADO' || item.estado === 'CANCELADO'
+                ? 'muted'
+                : 'sage'
+          }
+        />
       </View>
       <Text style={styles.details}>
         {modalidadPedidoNombres[item.modalidad]} · {formatDate(item.createdAt)}
       </Text>
-      {item.reserva ? <Text style={styles.reservation}>Reserva: {formatDate(item.reserva)}</Text> : null}
-      <Text style={styles.total}>{formatPrice(item.total)}</Text>
+      {item.reserva ? (
+        <Text style={styles.reservation}>Reserva: {formatDate(item.reserva)}</Text>
+      ) : null}
+      <View style={styles.orderFooter}>
+        <Text style={styles.total}>{formatPrice(item.total)}</Text>
+        <View style={styles.orderLink}>
+          <Text style={styles.orderLinkText}>Ver pedido</Text>
+          <Icon name="arrow-right" color={palette.coralDark} size={19} />
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -82,7 +100,12 @@ export default function MisPedidosScreen() {
       setFechaCopia(null);
       setPaginasGuardadas([]);
       try {
-        const resultado = await consultarListadoCliente(estado ?? undefined, page, PAGE_SIZE, () => active);
+        const resultado = await consultarListadoCliente(
+          estado ?? undefined,
+          page,
+          PAGE_SIZE,
+          () => active,
+        );
         if (!active || !resultado) return;
         if (resultado.origen === 'sin-copia') {
           setPaginasGuardadas(resultado.paginas);
@@ -98,7 +121,8 @@ export default function MisPedidosScreen() {
           router.replace('/login');
           return;
         }
-        if (active) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar tus pedidos.');
+        if (active)
+          setError(cause instanceof Error ? cause.message : 'No se pudieron cargar tus pedidos.');
       } finally {
         if (active) setLoading(false);
       }
@@ -119,40 +143,50 @@ export default function MisPedidosScreen() {
         eyebrow="Cliente"
         title="Mis pedidos"
         description="Del más reciente al más antiguo. Toca uno para ver su estado."
+        action={<RefreshButton disabled={loading} onPress={() => setLoadAttempt((a) => a + 1)} />}
       />
-      <Text style={styles.filterTitle}>Estado</Text>
-      <View style={styles.options}>
-        {filtrosEstado.map((option) => (
-          <OptionButton
-            key={option.label}
-            label={option.label}
-            selected={estado === option.value}
-            onPress={() => {
-              setPage(0);
-              setEstado(option.value);
-            }}
-          />
-        ))}
-      </View>
+      <FilterPanel>
+        <FilterRow label="Estado">
+          {filtrosEstado.map((option) => (
+            <OptionButton
+              key={option.label}
+              label={option.label}
+              selected={estado === option.value}
+              onPress={() => {
+                setPage(0);
+                setEstado(option.value);
+              }}
+            />
+          ))}
+        </FilterRow>
+      </FilterPanel>
       <ErrorBanner message={error} />
       {fechaCopia !== null ? (
         <HelperText>
-          Datos guardados. Última descarga: {formatDate(new Date(fechaCopia).toISOString())}.
-          El estado de los pedidos puede haber cambiado. Solo se muestran las páginas descargadas.
+          Datos guardados. Última descarga: {formatDate(new Date(fechaCopia).toISOString())}. El
+          estado de los pedidos puede haber cambiado. Solo se muestran las páginas descargadas.
         </HelperText>
       ) : null}
-      {loading ? <ActivityIndicator accessibilityLabel="Cargando pedidos" color={palette.green} /> : null}
+      {loading ? (
+        <ActivityIndicator accessibilityLabel="Cargando pedidos" color={palette.green} />
+      ) : null}
       {!loading && data?.content.length === 0 ? (
         <HelperText>
           {fechaCopia !== null
             ? 'No hay pedidos para este filtro en la página guardada.'
-            : estado ? 'No tienes pedidos con ese estado.' : 'Aún no has hecho pedidos. Explora los emprendimientos.'}
+            : estado
+              ? 'No tienes pedidos con ese estado.'
+              : 'Aún no has hecho pedidos. Explora los emprendimientos.'}
         </HelperText>
       ) : null}
       {!loading ? data?.content.map((item) => <PedidoRow key={item.id} item={item} />) : null}
       {data && totalPages > 1 ? (
         <View style={styles.pagination}>
-          <TextButton title="Página anterior" disabled={page === 0} onPress={() => setPage(page - 1)} />
+          <TextButton
+            title="Página anterior"
+            disabled={page === 0}
+            onPress={() => setPage(page - 1)}
+          />
           <Text style={styles.pageText}>
             {page + 1} de {totalPages}
           </Text>
@@ -169,15 +203,23 @@ export default function MisPedidosScreen() {
       {!loading && !data && siguiente !== undefined ? (
         <TextButton title="Página guardada siguiente" onPress={() => setPage(siguiente)} />
       ) : null}
-      <PrimaryButton title="Actualizar" disabled={loading} onPress={() => setLoadAttempt((a) => a + 1)} />
-      <TextButton title="Explorar emprendimientos" onPress={() => router.push('/emprendimientos')} />
+      <TextButton
+        title="Explorar emprendimientos"
+        onPress={() => router.push('/emprendimientos')}
+      />
       <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }
 
 const styles = StyleSheet.create({
-  filterTitle: { color: palette.dark, fontSize: 14, fontWeight: '800', marginTop: 4 },
+  filterTitle: {
+    color: palette.dark,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 4,
+  },
   options: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
   card: {
     backgroundColor: palette.white,
@@ -188,17 +230,49 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   pressed: { opacity: 0.72 },
+  orderFooter: {
+    flexWrap: 'wrap',
+    gap: 10,
+    borderTopWidth: 1,
+    borderColor: palette.border,
+    paddingTop: 14,
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  orderLink: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  orderLinkText: {
+    fontFamily: fonts.sans,
+    color: palette.coralDark,
+    fontWeight: '700',
+    fontSize: 13,
+  },
   row: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
-  name: { color: palette.dark, flex: 1, fontSize: 16, fontWeight: '800' },
+  name: {
+    color: palette.dark,
+    flex: 1,
+    fontFamily: fonts.display,
+    fontSize: 24,
+    fontWeight: '700',
+  },
   status: { color: palette.green, fontWeight: '700', marginLeft: 8 },
-  details: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 5 },
-  reservation: { color: palette.dark, fontSize: 14, marginTop: 5 },
+  details: {
+    color: palette.muted,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 5,
+  },
+  reservation: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, marginTop: 5 },
   total: { color: palette.dark, fontWeight: '800', marginTop: 8 },
   pagination: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  pageText: { color: palette.muted, fontSize: 14 },
+  pageText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14 },
 });

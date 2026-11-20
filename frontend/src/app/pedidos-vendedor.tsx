@@ -1,17 +1,26 @@
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
   ErrorBanner,
-  HelperText,
   OptionButton,
   PageHeading,
-  PrimaryButton,
   TextButton,
   palette,
 } from '../components/AuthUI';
+import {
+  DetailLine,
+  EmptyState,
+  FilterPanel,
+  FilterRow,
+  Icon,
+  RefreshButton,
+  StatusBadge,
+  useContentWidth,
+} from '../components/NapaUI';
+import { art, fonts } from '../components/theme';
 import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
 import {
@@ -68,24 +77,58 @@ function formatDate(value: string) {
 }
 
 function PedidoRow({ item }: { item: PedidoVendedorListadoItem }) {
+  const wide = useContentWidth() >= 950;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Abrir pedido de ${item.cliente.nombre}, ${statusNames[item.estado]}`}
       onPress={() => router.push({ pathname: '/pedido-vendedor', params: { pedidoId: item.id } })}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+        styles.card,
+        wide && styles.cardWide,
+        hovered && { borderColor: '#BCA08F' },
+        pressed && styles.pressed,
+      ]}
     >
-      <View style={styles.row}>
-        <Text style={styles.customer}>{item.cliente.nombre}</Text>
-        <Text style={styles.total}>${item.total.toLocaleString('es-CO')} COP</Text>
+      <View style={[styles.personBlock, wide && { flex: 1.1 }]}>
+        <Image
+          source={item.modalidad === 'DOMICILIO' ? art.paquete : art.comida}
+          resizeMode="cover"
+          accessible={false}
+          style={styles.orderArt}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.customer}>{item.cliente.nombre}</Text>
+          <StatusBadge
+            label={statusNames[item.estado]}
+            tone={
+              item.estado === 'PENDIENTE'
+                ? 'peach'
+                : item.estado === 'RECHAZADO' || item.estado === 'CANCELADO'
+                  ? 'muted'
+                  : 'sage'
+            }
+          />
+        </View>
       </View>
-      <Text style={styles.details}>
-        {statusNames[item.estado]} · {modalityNames[item.modalidad]}
-      </Text>
-      <Text style={styles.details}>Recibido: {formatDate(item.createdAt)}</Text>
-      {item.reserva ? (
-        <Text style={styles.reservation}>Reserva: {formatDate(item.reserva)}</Text>
-      ) : null}
+      <View style={[styles.orderDetails, wide && styles.orderDetailsWide]}>
+        <DetailLine icon="map-pin">
+          {modalityNames[item.modalidad]} · {item.reserva ? 'Reserva' : 'Inmediato'}
+        </DetailLine>
+        <DetailLine icon="calendar">Recibido: {formatDate(item.createdAt)}</DetailLine>
+        {item.reserva ? (
+          <DetailLine icon="clock">Reserva: {formatDate(item.reserva)}</DetailLine>
+        ) : null}
+      </View>
+      <View
+        style={[styles.orderAction, wide && { flexDirection: 'column', alignItems: 'flex-end' }]}
+      >
+        <Text style={styles.total}>${item.total.toLocaleString('es-CO')} COP</Text>
+        <View style={styles.viewOrder}>
+          <Text style={styles.viewOrderText}>Ver pedido</Text>
+          <Icon name="arrow-right" color="#FFFFFF" size={19} />
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -158,46 +201,56 @@ export default function PedidosVendedorScreen() {
         eyebrow="Tu negocio"
         title="Pedidos recibidos"
         description="Consulta el estado, la modalidad y la fecha acordada de cada pedido."
+        action={
+          <RefreshButton
+            label="Actualizar pedidos"
+            disabled={loading}
+            onPress={() => setLoadAttempt((attempt) => attempt + 1)}
+          />
+        }
       />
-      <Text style={styles.filterTitle}>Estado</Text>
-      <View style={styles.options}>
-        {statuses.map((item) => (
-          <OptionButton
-            key={item.value}
-            label={item.label}
-            selected={estado === item.value}
-            onPress={() => changeFilter(() => setEstado(item.value))}
-          />
-        ))}
-      </View>
-      <Text style={styles.filterTitle}>Modalidad</Text>
-      <View style={styles.options}>
-        {modalities.map((item) => (
-          <OptionButton
-            key={item.value}
-            label={item.label}
-            selected={modalidad === item.value}
-            onPress={() => changeFilter(() => setModalidad(item.value))}
-          />
-        ))}
-      </View>
-      <Text style={styles.filterTitle}>Tipo de pedido</Text>
-      <View style={styles.options}>
-        {reservationOptions.map((item) => (
-          <OptionButton
-            key={item.value}
-            label={item.label}
-            selected={reserva === item.value}
-            onPress={() => changeFilter(() => setReserva(item.value))}
-          />
-        ))}
-      </View>
+      <FilterPanel>
+        <FilterRow label="Estado">
+          {statuses.map((item) => (
+            <OptionButton
+              key={item.value}
+              label={item.label}
+              selected={estado === item.value}
+              onPress={() => changeFilter(() => setEstado(item.value))}
+            />
+          ))}
+        </FilterRow>
+        <FilterRow label="Modalidad">
+          {modalities.map((item) => (
+            <OptionButton
+              key={item.value}
+              label={item.label}
+              selected={modalidad === item.value}
+              onPress={() => changeFilter(() => setModalidad(item.value))}
+            />
+          ))}
+        </FilterRow>
+        <FilterRow label="Tipo de pedido">
+          {reservationOptions.map((item) => (
+            <OptionButton
+              key={item.value}
+              label={item.label}
+              selected={reserva === item.value}
+              onPress={() => changeFilter(() => setReserva(item.value))}
+            />
+          ))}
+        </FilterRow>
+      </FilterPanel>
       <ErrorBanner message={error} />
       {loading ? (
         <ActivityIndicator accessibilityLabel="Cargando pedidos" color={palette.green} />
       ) : null}
       {!loading && data?.content.length === 0 ? (
-        <HelperText>No hay pedidos que coincidan con estos filtros.</HelperText>
+        <EmptyState
+          title="No hay pedidos que coincidan con estos filtros."
+          description="Cuando llegue un nuevo pedido, podrás gestionarlo desde aquí."
+          icon="shopping-bag"
+        />
       ) : null}
       {!loading ? data?.content.map((item) => <PedidoRow key={item.id} item={item} />) : null}
       {data && data.totalElements > 0 ? (
@@ -217,11 +270,6 @@ export default function PedidosVendedorScreen() {
           />
         </View>
       ) : null}
-      <PrimaryButton
-        title="Actualizar pedidos"
-        disabled={loading}
-        onPress={() => setLoadAttempt((attempt) => attempt + 1)}
-      />
       <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
@@ -236,17 +284,53 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginVertical: 7,
-    padding: 16,
+    padding: 18,
+    gap: 15,
   },
+  cardWide: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15 },
+  personBlock: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+  orderArt: { width: 74, height: 78, borderRadius: 12, backgroundColor: palette.peach },
+  orderDetails: { paddingVertical: 3 },
+  orderDetailsWide: {
+    flex: 1.15,
+    borderLeftWidth: 1,
+    borderColor: palette.border,
+    paddingLeft: 20,
+  },
+  orderAction: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  viewOrder: {
+    borderRadius: 13,
+    backgroundColor: palette.coral,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  viewOrderText: { fontFamily: fonts.sans, color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   pressed: { opacity: 0.72 },
   row: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
-  customer: { color: palette.dark, flex: 1, fontSize: 17, fontWeight: '800' },
-  total: { color: palette.green, fontWeight: '800', marginLeft: 8 },
+  customer: {
+    color: palette.dark,
+    fontFamily: fonts.display,
+    fontSize: 23,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  total: { color: palette.dark, fontFamily: fonts.display, fontSize: 21, fontWeight: '700' },
   details: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 5 },
   reservation: { color: '#86510F', fontSize: 14, fontWeight: '700', marginTop: 5 },
   pagination: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     marginTop: 10,
   },

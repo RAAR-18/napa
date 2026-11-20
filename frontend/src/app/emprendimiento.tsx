@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -358,7 +359,7 @@ export default function EmprendimientoScreen() {
 const styles = StyleSheet.create({
   label: {
     color: palette.dark,
-    fontSize: 14,
+    fontFamily: fonts.sans, fontSize: 14,
     fontWeight: '700',
     marginBottom: 8,
   },
@@ -375,7 +376,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   successCard: {
-    backgroundColor: '#E8F2EB',
+    backgroundColor: '#F3E8DD',
     borderColor: palette.border,
     borderRadius: 16,
     borderWidth: 1,
@@ -383,13 +384,13 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     color: palette.green,
-    fontSize: 18,
+    fontFamily: fonts.sans, fontSize: 18,
     fontWeight: '800',
     marginBottom: 8,
   },
   successText: {
     color: palette.dark,
-    fontSize: 14,
+    fontFamily: fonts.sans, fontSize: 14,
     lineHeight: 21,
   },
   locationBadge: {

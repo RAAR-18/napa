@@ -1,5 +1,6 @@
+import { fonts } from '../components/theme';
 import { useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -77,7 +78,7 @@ export default function ReportarScreen() {
     }
     setBusy(true);
     setError(null);
-    key.current ??= Crypto.randomUUID();
+    key.current ??= randomUUID();
     const datos = { motivo, descripcion, ...entidad };
     let usuarioId: string | null = null;
     try {
@@ -182,7 +183,7 @@ export default function ReportarScreen() {
 }
 
 const styles = StyleSheet.create({
-  label: { color: palette.dark, fontSize: 14, fontWeight: '700', marginBottom: 6 },
+  label: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginBottom: 6 },
   options: { gap: 8, marginBottom: 12 },
   card: {
     backgroundColor: palette.white,
@@ -192,6 +193,6 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  title: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  detail: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  title: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
 });

@@ -1,5 +1,6 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -186,7 +187,7 @@ export default function MiEmprendimientoScreen() {
 
   async function remove() {
     setError(null);
-    deleteKey.current ??= Crypto.randomUUID();
+    deleteKey.current ??= randomUUID();
     setBusy(true);
     try {
       await eliminarMiEmprendimiento(deleteKey.current);
@@ -299,8 +300,8 @@ export default function MiEmprendimientoScreen() {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
-  section: { color: palette.dark, fontSize: 17, fontWeight: '800', marginTop: 14 },
-  notice: { color: palette.green, fontSize: 14, fontWeight: '700', marginVertical: 8 },
+  section: { color: palette.dark, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800', marginTop: 14 },
+  notice: { color: palette.green, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginVertical: 8 },
   danger: {
     backgroundColor: '#FFF6F4',
     borderColor: '#F0D2CB',
@@ -309,5 +310,5 @@ const styles = StyleSheet.create({
     marginTop: 18,
     padding: 14,
   },
-  confirm: { color: palette.dark, fontSize: 15, lineHeight: 22, marginVertical: 8 },
+  confirm: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, lineHeight: 22, marginVertical: 8 },
 });

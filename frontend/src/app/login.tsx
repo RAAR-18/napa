@@ -12,6 +12,7 @@ import {
   TextButton,
 } from '../components/AuthUI';
 import { login } from '../lib/auth';
+import { homeForRole } from '../components/AppShell';
 
 export default function LoginScreen() {
   const params = useLocalSearchParams<{ passwordReset?: string }>();
@@ -24,8 +25,8 @@ export default function LoginScreen() {
     setError(null);
     setBusy(true);
     try {
-      await login(identificador.trim(), password);
-      router.replace('/session');
+      const session = await login(identificador.trim(), password);
+      router.replace(homeForRole(session.rol));
     } catch (cause) {
       setError(
         cause instanceof Error

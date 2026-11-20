@@ -1,4 +1,4 @@
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from './uuid';
 
 import { ApiError, jsonHeaders, requestJson, requestVoid } from './api';
 import { clearSession, withValidSession } from './auth';
@@ -58,7 +58,7 @@ export function listCatalogo(id: string, page = 0, sort: OrdenProductos = 'nombr
 }
 
 function write(path: string, body: unknown): Promise<Producto> {
-  const idempotencyKey = Crypto.randomUUID();
+  const idempotencyKey = randomUUID();
   return withValidSession((session) => requestJson<Producto>(path, {
     method: 'POST',
     headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
@@ -91,7 +91,7 @@ export function editProducto(id: string, input: EditarProductoInput, version: nu
 }
 
 export function deleteProducto(id: string): Promise<void> {
-  const idempotencyKey = Crypto.randomUUID();
+  const idempotencyKey = randomUUID();
   return withValidSession((session) => requestVoid(`/api/v1/productos/${encodeURIComponent(id)}/eliminar`, {
     method: 'POST', headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),
     body: JSON.stringify({ confirmar: true }),

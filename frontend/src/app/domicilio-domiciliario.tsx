@@ -1,6 +1,7 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -141,7 +142,7 @@ export default function DomicilioDomiciliarioScreen() {
     if (!domicilioId || !pendingAction || busy) return;
     const action = pendingAction;
     if (actionKey.current?.action !== action) {
-      actionKey.current = { action, key: Crypto.randomUUID() };
+      actionKey.current = { action, key: randomUUID() };
     }
     setBusy(true);
     setError(null);
@@ -171,7 +172,7 @@ export default function DomicilioDomiciliarioScreen() {
 
   async function pickUp() {
     if (!domicilioId || busy) return;
-    pickupKey.current ??= Crypto.randomUUID();
+    pickupKey.current ??= randomUUID();
     setBusy(true);
     setError(null);
     try {
@@ -197,7 +198,7 @@ export default function DomicilioDomiciliarioScreen() {
     setError(null);
     try {
       // Una clave por intento: con la misma clave el servidor repetiría la respuesta anterior.
-      await confirmarEntrega(domicilioId, codigo, Crypto.randomUUID());
+      await confirmarEntrega(domicilioId, codigo, randomUUID());
       void borrarRuta(domicilioId).catch(() => undefined);
       setCodigo('');
       setNotice('¡Entrega confirmada! El vendedor debe pagarte la tarifa.');
@@ -352,10 +353,10 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  gain: { color: palette.green, fontSize: 18, fontWeight: '800' },
-  notice: { color: palette.green, fontSize: 14, fontWeight: '700', marginVertical: 10 },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
-  sectionTitle: { color: palette.dark, fontSize: 16, fontWeight: '800' },
+  gain: { color: palette.green, fontFamily: fonts.sans, fontSize: 18, fontWeight: '800' },
+  notice: { color: palette.green, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginVertical: 10 },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
   confirmation: {
     backgroundColor: '#FFF8E8',
     borderColor: '#E8D8AE',
@@ -364,5 +365,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
     padding: 14,
   },
-  confirmationText: { color: palette.dark, fontSize: 15, lineHeight: 22 },
+  confirmationText: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, lineHeight: 22 },
 });

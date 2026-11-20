@@ -1,4 +1,4 @@
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../../lib/uuid';
 
 import { ApiError, jsonHeaders, requestVoid } from '../../lib/api';
 import { readSession, withValidSession } from '../../lib/auth';
@@ -28,5 +28,5 @@ export const outbox = new Outbox({
   store: new SqliteOutboxStore(),
   usuarioActual: async () => (await readSession())?.usuarioId ?? null,
   enviar: enviarConSesion,
-  nuevoId: () => Crypto.randomUUID(),
+  nuevoId: () => randomUUID(),
 });

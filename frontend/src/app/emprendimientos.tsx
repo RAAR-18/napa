@@ -1,34 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
   ErrorBanner,
   OptionButton,
   PageHeading,
-  PrimaryButton,
   TextButton,
   palette,
 } from '../components/AuthUI';
+import {
+  ActionLink,
+  CardGrid,
+  DetailLine,
+  EmptyState,
+  FilterPanel,
+  FilterRow,
+  GridCard,
+  Icon,
+  Illustration,
+  StatusBadge,
+} from '../components/NapaUI';
+import { categoryArt, fonts } from '../components/theme';
 import { ApiError, NetworkError } from '../lib/api';
-import {
-  clearSession,
-  getValidSession,
-  readSession,
-  type StoredSession,
-} from '../lib/auth';
-import {
-  readEmprendimientosPage,
-  saveEmprendimientosPage,
-} from '../lib/emprendimientos-cache';
+import { clearSession, getValidSession, readSession, type StoredSession } from '../lib/auth';
+import { readEmprendimientosPage, saveEmprendimientosPage } from '../lib/emprendimientos-cache';
 import {
   listEmprendimientos,
   type EmprendimientosFilter,
@@ -54,9 +52,7 @@ export default function EmprendimientosScreen() {
   const [tipoVendedor, setTipoVendedor] = useState<TipoVendedor | undefined>();
   const [radioMetros, setRadioMetros] = useState<number | undefined>();
   const [nearby, setNearby] = useState(false);
-  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(
-    null,
-  );
+  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationBusy, setLocationBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,9 +65,7 @@ export default function EmprendimientosScreen() {
       size: PAGE_SIZE,
       tipoVendedor,
       radioMetros: nearby ? radioMetros : undefined,
-      ...(nearby && position
-        ? { lat: position.lat, lng: position.lng, cercania: true }
-        : {}),
+      ...(nearby && position ? { lat: position.lat, lng: position.lng, cercania: true } : {}),
     }),
     [nearby, pageNumber, position, radioMetros, tipoVendedor],
   );
@@ -106,11 +100,7 @@ export default function EmprendimientosScreen() {
           setLoading(false);
           return;
         }
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : 'No se pudo recuperar la sesión.',
-        );
+        setError(cause instanceof Error ? cause.message : 'No se pudo recuperar la sesión.');
         setLoading(false);
       });
     return () => {
@@ -138,8 +128,7 @@ export default function EmprendimientosScreen() {
           await saveEmprendimientosPage(filter, result);
         } catch (cause) {
           if (active) {
-            const detail =
-              cause instanceof Error ? ` ${cause.message}` : '';
+            const detail = cause instanceof Error ? ` ${cause.message}` : '';
             setNotice(
               `El listado está actualizado, pero no se pudo guardar para usarlo sin conexión.${detail}`,
             );
@@ -164,9 +153,7 @@ export default function EmprendimientosScreen() {
         } catch (cacheCause) {
           setError(
             `${cause instanceof Error ? cause.message : 'No se pudo conectar con el servicio.'} No se pudo leer el listado sin conexión: ${
-              cacheCause instanceof Error
-                ? cacheCause.message
-                : 'error de almacenamiento.'
+              cacheCause instanceof Error ? cacheCause.message : 'error de almacenamiento.'
             }`,
           );
           return;
@@ -276,36 +263,47 @@ export default function EmprendimientosScreen() {
     <AuthPage>
       <PageHeading
         eyebrow="Explorar"
-        title="Emprendimientos"
-        description="Encuentra vendedores activos y conoce lo que ofrecen."
+        title="Explorar emprendimientos"
+        description="Personas de aquí. Productos para ti."
       />
-      <Text style={styles.sectionLabel}>Tipo de vendedor</Text>
-      <View style={styles.filters}>
-        <OptionButton
-          label="Todos"
-          selected={!tipoVendedor}
-          onPress={() => setSellerFilter(undefined)}
-        />
-        <OptionButton
-          label="Ambulantes"
-          selected={tipoVendedor === 'AMBULANTE'}
-          onPress={() => setSellerFilter('AMBULANTE')}
-        />
-        <OptionButton
-          label="Punto fijo"
-          selected={tipoVendedor === 'PUNTO_FIJO'}
-          onPress={() => setSellerFilter('PUNTO_FIJO')}
-        />
-      </View>
-      <PrimaryButton
-        busy={locationBusy}
-        title={nearby ? 'Quitar orden por cercanía' : 'Ordenar por cercanía'}
-        onPress={() => void toggleNearby()}
-      />
-      {nearby ? (
-        <>
-          <Text style={styles.sectionLabel}>Distancia máxima</Text>
-          <View style={styles.filters}>
+      <FilterPanel>
+        <FilterRow label="Tipo de vendedor">
+          <OptionButton
+            label="Todos"
+            selected={!tipoVendedor}
+            onPress={() => setSellerFilter(undefined)}
+          />
+          <OptionButton
+            label="Ambulantes"
+            selected={tipoVendedor === 'AMBULANTE'}
+            onPress={() => setSellerFilter('AMBULANTE')}
+          />
+          <OptionButton
+            label="Punto fijo"
+            selected={tipoVendedor === 'PUNTO_FIJO'}
+            onPress={() => setSellerFilter('PUNTO_FIJO')}
+          />
+        </FilterRow>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={nearby ? 'Quitar orden por cercanía' : 'Ordenar por cercanía'}
+          accessibilityState={{ disabled: locationBusy, selected: nearby }}
+          disabled={locationBusy}
+          onPress={() => void toggleNearby()}
+          style={styles.proximity}
+        >
+          {locationBusy ? (
+            <ActivityIndicator color={palette.coral} size="small" />
+          ) : (
+            <Icon name="map-pin" size={19} />
+          )}
+          <Text style={styles.proximityText}>Orden por cercanía</Text>
+          <View style={[styles.toggle, nearby && { backgroundColor: palette.coral }]}>
+            <View style={[styles.toggleThumb, nearby && { alignSelf: 'flex-end' }]} />
+          </View>
+        </Pressable>
+        {nearby ? (
+          <FilterRow label="Distancia máxima">
             <OptionButton
               label="Cualquier distancia"
               selected={radioMetros === undefined}
@@ -326,13 +324,14 @@ export default function EmprendimientosScreen() {
               selected={radioMetros === 5000}
               onPress={() => setRadiusFilter(5000)}
             />
-          </View>
-        </>
-      ) : null}
+          </FilterRow>
+        ) : null}
+      </FilterPanel>
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
       {offlineUpdatedAt ? (
         <Text style={styles.timestamp}>
-          Última actualización: {new Date(offlineUpdatedAt).toLocaleTimeString([], {
+          Última actualización:{' '}
+          {new Date(offlineUpdatedAt).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
           })}
@@ -347,46 +346,74 @@ export default function EmprendimientosScreen() {
         />
       ) : null}
       {!loading && page?.content.length === 0 ? (
-        <Text style={styles.empty}>No hay emprendimientos disponibles.</Text>
+        <EmptyState
+          title="No hay emprendimientos disponibles."
+          description="Prueba con otro tipo de vendedor o amplía la distancia de búsqueda."
+          icon="compass"
+        />
       ) : null}
-      {!loading
-        ? page?.content.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <Text accessibilityRole="header" style={styles.businessName}>
-                {item.nombre}
-              </Text>
-              <Text style={styles.detail}>
-                {categoryNames[item.categoria] ?? item.categoria} ·{' '}
-                {item.tipoVendedor === 'AMBULANTE' ? 'Ambulante' : 'Punto fijo'}
-              </Text>
-              <Text style={styles.detail}>
-                {item.ubicacion.direccion ?? 'Ubicación aproximada'}
-              </Text>
-              <Text style={styles.detail}>
-                {item.abierto ? 'Abierto ahora' : 'Cerrado'} ·{' '}
-                {item.horaApertura}–{item.horaCierre}
-              </Text>
-              {item.distanciaMetros !== null ? (
-                <Text style={styles.distance}>
-                  A {Math.round(item.distanciaMetros)} m
-                </Text>
-              ) : null}
-              <TextButton
-                title={`Ver detalle de ${item.nombre}`}
-                onPress={() =>
-                  router.push({ pathname: '/emprendimiento-detalle', params: { emprendimientoId: item.id } })
-                }
-              />
-              <TextButton title={`Ver productos de ${item.nombre}`} onPress={() => router.push({
-                pathname: '/catalogo',
-                params: {
-                  emprendimientoId: item.id,
-                  tipoVendedor: item.tipoVendedor,
-                },
-              })} />
-            </View>
-          ))
-        : null}
+      <CardGrid>
+        {!loading
+          ? page?.content.map((item) => (
+              <GridCard key={item.id}>
+                <View style={styles.card}>
+                  <View>
+                    <Illustration source={categoryArt(item.categoria)} />
+                    <View style={styles.openBadge}>
+                      <StatusBadge
+                        label={item.abierto ? 'Abierto ahora' : 'Cerrado'}
+                        tone={item.abierto ? 'sage' : 'muted'}
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.cardBody}>
+                    <Text accessibilityRole="header" style={styles.businessName}>
+                      {item.nombre}
+                    </Text>
+                    <Text style={styles.detail}>
+                      {categoryNames[item.categoria] ?? item.categoria} ·{' '}
+                      {item.tipoVendedor === 'AMBULANTE' ? 'Ambulante' : 'Punto fijo'}
+                    </Text>
+                    <DetailLine icon="map-pin">
+                      {item.ubicacion.direccion ?? 'Ubicación aproximada'}
+                    </DetailLine>
+                    <DetailLine icon="clock">
+                      {item.horaApertura}–{item.horaCierre}
+                    </DetailLine>
+                    {item.distanciaMetros !== null ? (
+                      <DetailLine icon="navigation">
+                        A {Math.round(item.distanciaMetros)} m
+                      </DetailLine>
+                    ) : null}
+                    <ActionLink
+                      label="Ver productos"
+                      accessibilityLabel={`Ver productos de ${item.nombre}`}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/catalogo',
+                          params: { emprendimientoId: item.id, tipoVendedor: item.tipoVendedor },
+                        })
+                      }
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ver detalle de ${item.nombre}`}
+                      style={styles.detailButton}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/emprendimiento-detalle',
+                          params: { emprendimientoId: item.id },
+                        })
+                      }
+                    >
+                      <Text style={styles.detailButtonText}>Ver detalle</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </GridCard>
+            ))
+          : null}
+      </CardGrid>
       {page && page.totalElements > 0 ? (
         <View style={styles.pagination}>
           <Pressable
@@ -459,17 +486,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: palette.white,
     borderColor: palette.border,
     borderRadius: 14,
     borderWidth: 1,
-    marginTop: 12,
-    padding: 16,
+    flex: 1,
+    overflow: 'hidden',
   },
+  cardBody: { padding: 18, flex: 1 },
+  openBadge: { position: 'absolute', top: 12, right: 12 },
+  detailButton: { minHeight: 35, alignItems: 'center', justifyContent: 'center', marginTop: 5 },
+  detailButtonText: {
+    fontFamily: fonts.sans,
+    color: palette.dark,
+    fontSize: 13,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  proximity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
+  },
+  proximityText: { fontFamily: fonts.sans, color: palette.dark, fontSize: 13, fontWeight: '600' },
+  toggle: { width: 44, height: 25, borderRadius: 15, padding: 3, backgroundColor: '#D6C7BD' },
+  toggleThumb: { width: 19, height: 19, borderRadius: 10, backgroundColor: '#FFFFFF' },
   businessName: {
     color: palette.dark,
-    fontSize: 18,
-    fontWeight: '800',
+    fontFamily: fonts.display,
+    fontSize: 25,
+    lineHeight: 30,
+    fontWeight: '700',
   },
   detail: {
     color: palette.muted,
@@ -486,6 +535,8 @@ const styles = StyleSheet.create({
   pagination: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     marginTop: 18,
   },

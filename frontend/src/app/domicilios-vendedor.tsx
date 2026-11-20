@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -240,7 +241,7 @@ export default function DomiciliosVendedorScreen() {
 }
 
 const styles = StyleSheet.create({
-  filterTitle: { color: palette.dark, fontSize: 14, fontWeight: '800', marginTop: 4 },
+  filterTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, fontWeight: '800', marginTop: 4 },
   options: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
   card: {
     backgroundColor: palette.white,
@@ -252,15 +253,17 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.72 },
   row: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
-  status: { color: palette.dark, flex: 1, fontSize: 17, fontWeight: '800' },
+  status: { color: palette.dark, flex: 1, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800' },
   fee: { color: palette.green, fontWeight: '800', marginLeft: 8 },
-  details: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 5 },
-  cancelled: { color: '#86510F', fontSize: 14, fontWeight: '700', marginTop: 5 },
+  details: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 5 },
+  cancelled: { color: '#86510F', fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginTop: 5 },
   pagination: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  pageText: { color: palette.muted, fontSize: 14 },
+  pageText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14 },
 });

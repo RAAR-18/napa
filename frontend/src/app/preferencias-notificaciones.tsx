@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
@@ -132,5 +133,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  label: { color: palette.dark, flex: 1, fontSize: 15, marginRight: 10 },
+  label: { color: palette.dark, flex: 1, fontFamily: fonts.sans, fontSize: 15, marginRight: 10 },
 });
