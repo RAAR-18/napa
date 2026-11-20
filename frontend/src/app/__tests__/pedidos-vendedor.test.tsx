@@ -11,6 +11,7 @@ import { clearSession, getValidSession, readSession } from '../../lib/auth';
 import {
   aceptarPedido,
   confirmarPagoPedido,
+  confirmarEntregaDirecta,
   listarPedidosVendedor,
   obtenerPedidoVendedor,
   rechazarPedido,
@@ -40,6 +41,7 @@ jest.mock('../../lib/pedidos', () => ({
   MARGEN_RESERVA_MS: jest.requireActual('../../lib/pedidos').MARGEN_RESERVA_MS,
   aceptarPedido: jest.fn(),
   confirmarPagoPedido: jest.fn(),
+  confirmarEntregaDirecta: jest.fn(),
   listarPedidosVendedor: jest.fn(),
   obtenerPedidoVendedor: jest.fn(),
   rechazarPedido: jest.fn(),
@@ -267,5 +269,34 @@ it('queues a decision from an offline copy without advancing the order', async (
     expect(view.queryByRole('button', { name: 'Marcar listo para recoger' })).toBeNull();
   } finally {
     jest.mocked(readSession).mockResolvedValue(null);
+  }
+});
+it('queues a single delivery and payment confirmation from the saved order', async () => {
+  const local = { ...seller, rol: 'VENDEDOR_AMBULANTE', usuarioId: 'seller-id' };
+  jest.mocked(readSession).mockResolvedValue(local);
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  jest.mocked(leerConsultaPedidos).mockImplementation(async (_cuenta, tipo) =>
+    tipo === 'detalle-vendedor' ? {
+      data: { ...pendingOrder, estado: 'EN_CAMINO', pago: { estado: 'PENDIENTE_CONFIRMACION' } } as never,
+      fecha: Date.now(),
+    } : null,
+  );
+  try {
+    const view = await render(<PedidoVendedorScreen />);
+    await view.findByText(/Datos guardados/);
+    await fireEvent.press(view.getByRole('button', { name: 'Confirmar entrega y cobro' }));
+    expect(view.getByText(/recibiste .* en efectivo/)).toBeTruthy();
+    expect(outbox.encolar).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByRole('button', { name: 'Sí, entregado y cobrado' }));
+    await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
+      usuarioId: 'seller-id', method: 'POST', path: '/api/v1/pedidos/order-id/confirmar-entrega',
+      body: { cobroConfirmado: true }, idempotencyKey: 'response-key', intentoPrevio: false,
+    })));
+    expect(confirmarEntregaDirecta).not.toHaveBeenCalled();
+    expect(view.getByText('En camino')).toBeTruthy();
+    expect(view.getByText(/Estado del pago: PENDIENTE_CONFIRMACION/)).toBeTruthy();
+  } finally {
+    jest.mocked(readSession).mockResolvedValue(null);
+    jest.mocked(leerConsultaPedidos).mockResolvedValue(null);
   }
 });
