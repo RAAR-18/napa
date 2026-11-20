@@ -1,5 +1,5 @@
 import { art, fonts } from './theme';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -14,6 +14,10 @@ import {
 } from './AuthUI';
 import { textoPromedio, type ResumenCalificaciones } from '../lib/calificaciones';
 import { Illustration, StatusBadge } from './NapaUI';
+import { outbox } from '../database/outbox';
+import { getSessionGeneration, readSession } from '../lib/auth';
+import { rutaAjusteInventario } from '../lib/productos-pendientes';
+import { randomUUID } from '../lib/uuid';
 import {
   deleteProducto,
   parseCantidad,
@@ -29,16 +33,19 @@ export function ProductoCard({
   producto,
   inventory = false,
   edicionBloqueada = false,
+  offline = false,
   onUpdated,
   resumen,
 }: {
   producto: Producto;
   inventory?: boolean;
   edicionBloqueada?: boolean;
+  offline?: boolean;
   onUpdated?: () => void;
   /** RF-02: promedio del producto; ausente si aún no se cargó. */
   resumen?: ResumenCalificaciones;
 }) {
+  const ajustando = useRef(false);
   const [quantity, setQuantity] = useState(String(producto.cantidadDisponible).replace('.', ','));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,16 +54,31 @@ export function ProductoCard({
     unidadesProducto.find((item) => item.value === producto.unidad)?.label ?? producto.unidad;
 
   async function update(exhausted = false) {
-    if (busy) return;
+    if (busy || ajustando.current || edicionBloqueada) return;
+    ajustando.current = true;
+    const generation = getSessionGeneration();
     setError(null);
     try {
       const value = exhausted ? 0 : parseCantidad(quantity);
       setBusy(true);
-      await updateInventario(producto.id, value);
-      onUpdated?.();
+      const session = await readSession();
+      if (generation !== getSessionGeneration()) return;
+      if (session?.usuarioId) {
+        await outbox.encolar({
+          usuarioId: session.usuarioId, method: 'POST', path: rutaAjusteInventario(producto.id),
+          body: { cantidadDisponible: value }, ifMatch: `"${producto.version}"`,
+          idempotencyKey: randomUUID(), descripcion: `Ajustar inventario: ${producto.nombre}`,
+        });
+        void outbox.procesar().catch(() => undefined);
+      } else {
+        if (offline) throw new Error('Inicia sesión para guardar un ajuste sin conexión.');
+        await updateInventario(producto.id, value);
+        onUpdated?.();
+      }
     } catch (cause) {
       setError(await productErrorMessage(cause));
     } finally {
+      ajustando.current = false;
       setBusy(false);
     }
   }
@@ -100,7 +122,7 @@ export function ProductoCard({
           <Text style={productStyles.detail}>{producto.descripcion}</Text>
         ) : null}
         <Text style={productStyles.detail}>
-          Cantidad disponible: {producto.cantidadDisponible.toLocaleString('es-CO')} · {unit}
+          {offline ? 'Cantidad guardada' : 'Cantidad disponible'}: {producto.cantidadDisponible.toLocaleString('es-CO')} · {unit}
         </Text>
         <View style={{ marginBottom: 14 }}>
           <StatusBadge
@@ -180,29 +202,32 @@ export function ProductoCard({
                   value={quantity}
                   onChangeText={setQuantity}
                   keyboardType="decimal-pad"
-                  editable={!busy}
+                  editable={!busy && !edicionBloqueada}
                   maxLength={12}
                 />
                 <PrimaryButton
                   title={`Guardar inventario de ${producto.nombre}`}
                   busy={busy}
+                  disabled={edicionBloqueada}
                   onPress={() => void update()}
                 />
                 {!producto.soloReserva ? (
                   <TextButton
                     title={`Marcar ${producto.nombre} como agotado`}
-                    disabled={busy}
+                    disabled={busy || edicionBloqueada}
                     onPress={() => void update(true)}
                   />
                 ) : null}
-                <TextButton
-                  title={`Eliminar ${producto.nombre}`}
-                  disabled={busy}
-                  onPress={() => {
-                    setConfirmingDelete(true);
-                    setError(null);
-                  }}
-                />
+                {!offline ? (
+                  <TextButton
+                    title={`Eliminar ${producto.nombre}`}
+                    disabled={busy}
+                    onPress={() => {
+                      setConfirmingDelete(true);
+                      setError(null);
+                    }}
+                  />
+                ) : null}
               </>
             )}
           </>

@@ -119,6 +119,33 @@ class GestionProductoIntegrationTest {
     }
 
     @Test
+    void inventoryReplayDoesNotRestoreQuantityChangedAfterFirstRequest() throws Exception {
+        Actor seller = seller();
+        String id = create(seller.token(), "Mango");
+        String productPath = "/productos/" + id;
+        String path = productPath + "/inventario";
+        String originalVersion = etag(ok("GET", productPath, seller.token(), null, null));
+        String operation = key();
+        var input = Map.of("cantidadDisponible", 25);
+        var first = request("POST", path, seller.token(), input, operation, originalVersion);
+        assertEquals(200, first.statusCode(), first.body());
+
+        var current = ok("GET", productPath, seller.token(), null, null);
+        var next = request("POST", path, seller.token(), Map.of("cantidadDisponible", 17), key(), etag(current));
+        assertEquals(200, next.statusCode(), next.body());
+
+        var replay = request("POST", path, seller.token(), input, operation, originalVersion);
+        assertEquals(200, replay.statusCode(), replay.body());
+        assertEquals(body(first), body(replay));
+        var stale = request("POST", path, seller.token(), input, key(), originalVersion);
+        assertEquals(409, stale.statusCode(), stale.body());
+        var reused = request("POST", path, seller.token(), input, operation, etag(current));
+        assertEquals(422, reused.statusCode(), reused.body());
+        var finalProduct = body(ok("GET", productPath, seller.token(), null, null));
+        assertEquals(17, ((Number) finalProduct.get("cantidadDisponible")).intValue());
+    }
+
+    @Test
     void keyedEditReplaysOriginalResultAndRejectsDifferentPrecondition() throws Exception {
         Actor seller = seller();
         String id = create(seller.token(), "Mango");

@@ -14,7 +14,7 @@ import {
 } from '../components/AuthUI';
 import { outbox, type AccionPendiente } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
-import { edicionDescartableSinRevision, edicionPendiente, productoPendiente } from '../lib/productos-pendientes';
+import { edicionDescartableSinRevision, cambioPendienteProducto, productoPendiente } from '../lib/productos-pendientes';
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
@@ -79,7 +79,7 @@ export default function PendientesEnvioScreen() {
 
 function Tarjeta({ accion }: { accion: AccionPendiente }) {
   const fallida = accion.status === 'FALLIDA';
-  const edicion = edicionPendiente(accion);
+  const edicion = cambioPendienteProducto(accion);
   return (
     <View style={[styles.card, fallida && styles.failed]}>
       <Text style={styles.title}>{accion.descripcion}</Text>
@@ -94,7 +94,7 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
               })} />
             ) : edicion ? (
               !edicionDescartableSinRevision(accion) ? (
-                <TextButton title="Revisar edición" onPress={() => router.push({
+                <TextButton title={edicion.inventario ? 'Revisar ajuste' : 'Revisar edición'} onPress={() => router.push({
                   pathname: '/editar-producto', params: { productoId: edicion.productoId, pendienteId: accion.id },
                 })} />
               ) : null

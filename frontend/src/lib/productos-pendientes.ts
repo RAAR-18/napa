@@ -7,12 +7,21 @@ export function rutaEdicionProducto(id: string): string {
   return `${RUTA_REGISTRO_PRODUCTO}/${encodeURIComponent(id)}`;
 }
 
-export function edicionPendiente(accion: AccionPendiente) {
-  if (accion.method !== 'PATCH' || !accion.ifMatch || !accion.body) return null;
-  const coincidencia = /^\/api\/v1\/productos\/([^/]+)$/.exec(accion.path);
+export function rutaAjusteInventario(id: string): string {
+  return `${rutaEdicionProducto(id)}/inventario`;
+}
+
+export function cambioPendienteProducto(accion: AccionPendiente) {
+  if (!accion.ifMatch || !accion.body) return null;
+  const coincidencia = /^\/api\/v1\/productos\/([^/]+)(\/inventario)?$/.exec(accion.path);
   if (!coincidencia) return null;
+  const inventario = Boolean(coincidencia[2]);
+  if (accion.method !== (inventario ? 'POST' : 'PATCH')) return null;
   try {
-    return { productoId: decodeURIComponent(coincidencia[1]), cambios: JSON.parse(accion.body) as EditarProductoInput };
+    return {
+      productoId: decodeURIComponent(coincidencia[1]), inventario,
+      cambios: JSON.parse(accion.body) as EditarProductoInput & { cantidadDisponible?: number },
+    };
   } catch {
     return null;
   }

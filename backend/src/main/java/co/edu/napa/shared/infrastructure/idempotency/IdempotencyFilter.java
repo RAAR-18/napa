@@ -433,8 +433,11 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         digest.update((byte) 0);
         digest.update(Objects.toString(request.getQueryString(), "").getBytes(StandardCharsets.UTF_8));
         digest.update((byte) 0);
-        if ("PATCH".equalsIgnoreCase(request.getMethod())
-                && request.getRequestURI().matches("/api/v1/productos/[^/]+")) {
+        boolean inventoryUpdateWithVersion = "POST".equalsIgnoreCase(request.getMethod())
+                && request.getRequestURI().matches("/api/v1/productos/[^/]+/inventario")
+                && request.getHeader("If-Match") != null;
+        if (inventoryUpdateWithVersion || ("PATCH".equalsIgnoreCase(request.getMethod())
+                && request.getRequestURI().matches("/api/v1/productos/[^/]+"))) {
             digest.update(Objects.toString(request.getHeader("If-Match"), "").getBytes(StandardCharsets.UTF_8));
             digest.update((byte) 0);
         }

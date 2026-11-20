@@ -7,9 +7,9 @@ import { ApiError } from '../lib/api';
 import { outbox, type AccionPendiente } from '../database/outbox';
 import { getSessionGeneration, getValidSession, readSession } from '../lib/auth';
 import { leerProductoInventario } from '../lib/inventario-cache';
-import { edicionDescartableSinRevision, edicionPendiente, rutaEdicionProducto } from '../lib/productos-pendientes';
+import { edicionDescartableSinRevision, cambioPendienteProducto, rutaEdicionProducto } from '../lib/productos-pendientes';
 import { randomUUID } from '../lib/uuid';
-import { editProducto, getMiProducto, parsePrecio, productErrorMessage, unidadesProducto, type Producto } from '../lib/productos';
+import { editProducto, getMiProducto, parseCantidad, parsePrecio, productErrorMessage, unidadesProducto, type Producto } from '../lib/productos';
 
 export default function EditarProductoScreen() {
   const params = useLocalSearchParams<{ productoId?: string | string[]; pendienteId?: string }>();
@@ -30,6 +30,8 @@ function ProductoEditor({ id, pendienteId }: { id?: string; pendienteId?: string
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [cantidad, setCantidad] = useState('');
+  const revisandoInventario = rechazada ? cambioPendienteProducto(rechazada)?.inventario === true : false;
 
   useEffect(() => {
     let active = true;
@@ -44,7 +46,7 @@ function ProductoEditor({ id, pendienteId }: { id?: string; pendienteId?: string
           throw new Error('Solo los vendedores pueden editar productos.');
         }
         const acciones = session.usuarioId ? await outbox.listar() : [];
-        const existente = acciones.find((accion) => edicionPendiente(accion)?.productoId === id);
+        const existente = acciones.find((accion) => cambioPendienteProducto(accion)?.productoId === id);
         if (pendienteId && (!existente || existente.id !== pendienteId || existente.status !== 'FALLIDA'
             || edicionDescartableSinRevision(existente))) {
           throw new Error('Esta edición ya no está disponible para revisar.');
@@ -57,12 +59,13 @@ function ProductoEditor({ id, pendienteId }: { id?: string; pendienteId?: string
           : null;
         const current = cached ?? await getMiProducto(id);
         if (!vigente()) return;
-        const cambios = existente ? edicionPendiente(existente)?.cambios : undefined;
+        const cambios = existente ? cambioPendienteProducto(existente)?.cambios : undefined;
         sesionEditor.current = { generacion: generation, cuenta: session.usuarioId };
         setRechazada(existente ?? null);
         setProducto(current);
         setNombre(cambios?.nombre ?? current.nombre);
         setPrecio(String(cambios?.precio ?? current.precio));
+        setCantidad(String(cambios?.cantidadDisponible ?? current.cantidadDisponible).replace('.', ','));
         setDescripcion((cambios?.descripcion === undefined ? current.descripcion : cambios.descripcion) ?? '');
       } catch (cause) {
         if (vigente()) {
@@ -92,15 +95,23 @@ function ProductoEditor({ id, pendienteId }: { id?: string; pendienteId?: string
     const generation = getSessionGeneration();
     setError(null);
     try {
-      if (!nombre.trim()) throw new Error('Escribe el nombre del producto.');
-      const amount = parsePrecio(precio);
       setBusy(true);
-      const valores = { nombre: nombre.trim(), precio: amount, descripcion: descripcion.trim() || null };
       const cuenta = (await readSession())?.usuarioId;
       if (getSessionGeneration() !== generation) return;
       if (sesionEditor.current?.generacion !== generation || sesionEditor.current.cuenta !== cuenta) {
         throw new Error('La cuenta activa cambió. Abre el producto de nuevo.');
       }
+      if (revisandoInventario && rechazada) {
+        await outbox.corregirFallida(rechazada, {
+          body: { cantidadDisponible: parseCantidad(cantidad) },
+          ifMatch: `"${producto.version}"`, idempotencyKey: randomUUID(), descripcion: rechazada.descripcion,
+        });
+        void outbox.procesar().catch(() => undefined);
+        if (getSessionGeneration() === generation) router.replace('/mis-productos');
+        return;
+      }
+      if (!nombre.trim()) throw new Error('Escribe el nombre del producto.');
+      const valores = { nombre: nombre.trim(), precio: parsePrecio(precio), descripcion: descripcion.trim() || null };
       if (cuenta) {
         const cambios = {
           ...(valores.nombre !== producto.nombre ? { nombre: valores.nombre } : {}),
@@ -133,10 +144,18 @@ function ProductoEditor({ id, pendienteId }: { id?: string; pendienteId?: string
 
   return (
     <AuthPage>
-      <PageHeading eyebrow="Tu catálogo" title="Editar producto" description="Actualiza el nombre, el precio o la descripción que verán tus clientes." />
+      <PageHeading eyebrow="Tu catálogo" title={revisandoInventario ? 'Revisar inventario' : 'Editar producto'}
+        description={revisandoInventario ? 'Compara la cantidad actual con tu propuesta.' : 'Actualiza el nombre, el precio o la descripción que verán tus clientes.'} />
       <ErrorBanner message={error} />
       {loading ? <ActivityIndicator accessibilityLabel="Cargando producto" color={palette.green} /> : null}
-      {producto ? (
+      {producto && revisandoInventario ? (
+        <>
+          <HelperText>Cantidad actual del servidor: {producto.cantidadDisponible.toLocaleString('es-CO')}</HelperText>
+          <Field label="Cantidad propuesta" value={cantidad} onChangeText={setCantidad} editable={!busy}
+            keyboardType="decimal-pad" maxLength={12} />
+          <PrimaryButton title="Confirmar nuevo ajuste" busy={busy} onPress={() => void save()} />
+        </>
+      ) : producto ? (
         <>
           {rechazada ? (
             <HelperText>

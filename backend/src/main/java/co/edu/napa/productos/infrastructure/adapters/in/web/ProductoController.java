@@ -74,10 +74,11 @@ public class ProductoController {
     @PostMapping("/api/v1/productos/{id}/inventario")
     @PreAuthorize("hasAnyAuthority('ROLE_VENDEDOR_AMBULANTE', 'ROLE_VENDEDOR_PUNTO_FIJO')")
     public ResponseEntity<ProductoResponse> inventario(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id,
-            @Valid @RequestBody InventarioRequest body, HttpServletRequest request) {
+            @Valid @RequestBody InventarioRequest body,
+            @RequestHeader(value = "If-Match", required = false) String version, HttpServletRequest request) {
         noQuery(request);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ProductoResponse.from(
-                productos.actualizarInventario(UUID.fromString(jwt.getSubject()), id, body.cantidadDisponible())));
+                productos.actualizarInventario(UUID.fromString(jwt.getSubject()), id, body.cantidadDisponible(), expectedVersion(version))));
     }
 
     @GetMapping("/api/v1/productos/{id}")
