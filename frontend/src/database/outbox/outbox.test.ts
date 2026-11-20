@@ -16,6 +16,12 @@ class MemoryStore implements OutboxStore {
   async actualizar(a: AccionPendiente) {
     this.filas = this.filas.map((f) => (f.id === a.id ? { ...a } : f));
   }
+  async reemplazarFallida(a: AccionPendiente, claveAnterior: string) {
+    const anterior = this.filas.find((fila) => fila.id === a.id && fila.usuarioId === a.usuarioId);
+    if (anterior?.status !== 'FALLIDA' || anterior.idempotencyKey !== claveAnterior) return false;
+    await this.actualizar(a);
+    return true;
+  }
   async borrar(id: string) {
     this.filas = this.filas.filter((f) => f.id !== id);
   }
@@ -253,4 +259,19 @@ it('retries an in-progress duplicate with the original key and body after backof
   expect(await outbox.procesar()).toEqual({ enviadas: 1, pendientes: 0, fallidas: 0 });
   expect(enviar.mock.calls.map(([a]) => a.idempotencyKey)).toEqual(['in-progress', 'in-progress']);
   expect(enviar.mock.calls[1][0].body).toBe(enviar.mock.calls[0][0].body);
+});
+
+it('replaces a rejected registration once with the corrected body and a fresh key', async () => {
+  enviar.mockRejectedValueOnce(new ApiError('Nombre duplicado', 409, 'CONFLICT'));
+  await encolar('original');
+  await outbox.procesar();
+  const [rechazada] = await outbox.listar();
+  expect(rechazada.status).toBe('FALLIDA');
+
+  const corregida = { body: { nombre: 'Papaya' }, idempotencyKey: 'corregida', descripcion: 'Registrar Papaya' };
+  await outbox.corregirFallida(rechazada, corregida);
+  await expect(outbox.corregirFallida(rechazada, corregida)).rejects.toThrow(/ya no está disponible/);
+  expect(await outbox.listar()).toEqual([expect.objectContaining({
+    status: 'PENDIENTE', body: JSON.stringify(corregida.body), idempotencyKey: 'corregida', attempts: 0,
+  })]);
 });

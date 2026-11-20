@@ -53,7 +53,8 @@ public class ProductoController {
             @Valid @RequestBody CrearRequest body, HttpServletRequest request) {
         noQuery(request);
         Producto value = productos.crear(UUID.fromString(jwt.getSubject()), new ProductosPort.Datos(
-                body.nombre(), body.precio(), body.unidad(), body.descripcion(), body.cantidadDisponible()));
+                body.nombre(), body.precio(), body.unidad(), body.descripcion(), body.cantidadDisponible(),
+                body.emprendimientoId()));
         return ResponseEntity.created(URI.create("/api/v1/productos/" + value.id()))
                 .cacheControl(CacheControl.noStore()).body(ProductoResponse.from(value));
     }
@@ -187,7 +188,8 @@ public class ProductoController {
     public record CrearRequest(@NotBlank @Size(max = 100) String nombre,
             @NotNull @DecimalMin("1") @DecimalMax("9007199254740991") @Digits(integer = 16, fraction = 0) BigDecimal precio,
             @NotNull UnidadProducto unidad, @Size(max = 500) String descripcion,
-            @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 8, fraction = 2) BigDecimal cantidadDisponible) {}
+            @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 8, fraction = 2) BigDecimal cantidadDisponible,
+            UUID emprendimientoId) {}
 
     public record InventarioRequest(@NotNull @DecimalMin("0") @Digits(integer = 8, fraction = 2) BigDecimal cantidadDisponible) {}
 

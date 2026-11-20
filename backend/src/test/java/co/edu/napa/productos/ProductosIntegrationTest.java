@@ -105,6 +105,34 @@ class ProductosIntegrationTest {
     }
 
     @Test
+    void offlineRegistrationCannotPublishToAnotherBusinessAndReplaysTheOriginalResult() throws Exception {
+        String seller = account("VENDEDOR_PUNTO_FIJO");
+        String activeBusiness = business(seller);
+        String foreignSeller = account("VENDEDOR_AMBULANTE");
+        String foreignBusiness = business(foreignSeller);
+        var input = product("Aguacate", "4");
+        var wrongTarget = new java.util.HashMap<>(input);
+        wrongTarget.put("emprendimientoId", foreignBusiness);
+
+        var rejected = request("POST", "/productos", seller, wrongTarget, key());
+        assertEquals(409, rejected.statusCode(), rejected.body());
+        assertEquals("INVALID_STATE", body(rejected).get("code"));
+        assertTrue(items(ok("GET", "/productos", seller, null)).isEmpty());
+
+        var intendedTarget = new java.util.HashMap<>(input);
+        intendedTarget.put("emprendimientoId", activeBusiness);
+        String idempotencyKey = key();
+        var first = request("POST", "/productos", seller, intendedTarget, idempotencyKey);
+        var replay = request("POST", "/productos", seller, intendedTarget, idempotencyKey);
+
+        assertEquals(201, first.statusCode(), first.body());
+        assertEquals(201, replay.statusCode(), replay.body());
+        assertEquals(activeBusiness, body(first).get("emprendimientoId"));
+        assertEquals(body(first).get("id"), body(replay).get("id"));
+        assertEquals(1, items(ok("GET", "/productos", seller, null)).size());
+    }
+
+    @Test
     void availabilityLookupReturnsCurrentStockForPublishedProductsOfOnlyRequestedBusiness() throws Exception {
         String seller = account("VENDEDOR_PUNTO_FIJO");
         String business = business(seller);

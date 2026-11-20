@@ -98,6 +98,19 @@ export class SqliteOutboxStore implements OutboxStore {
     );
   }
 
+  async reemplazarFallida(a: AccionPendiente, claveAnterior: string): Promise<boolean> {
+    const db = await this.db();
+    const result = await db.runAsync(
+      `UPDATE outbox_por_cuenta
+       SET body = ?, idempotency_key = ?, descripcion = ?, status = ?, attempts = ?,
+           last_error = ?, next_attempt_at = ?, created_at = ?
+       WHERE id = ? AND usuario_id = ? AND status = 'FALLIDA' AND idempotency_key = ?`,
+      a.body, a.idempotencyKey, a.descripcion, a.status, a.attempts, a.lastError,
+      a.nextAttemptAt, a.createdAt, a.id, a.usuarioId, claveAnterior,
+    );
+    return result.changes === 1;
+  }
+
   async borrar(id: string): Promise<void> {
     const db = await this.db();
     await db.runAsync('DELETE FROM outbox_por_cuenta WHERE id = ?', id);

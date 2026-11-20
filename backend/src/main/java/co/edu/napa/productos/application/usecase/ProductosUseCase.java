@@ -35,6 +35,9 @@ public class ProductosUseCase implements ProductosPort {
     public Producto crear(UUID vendedorId, Datos datos) {
         var emprendimiento = emprendimientos.activoDelVendedor(vendedorId)
                 .orElseThrow(() -> new DomainException("BUSINESS_RULE", "Primero crea tu emprendimiento."));
+        if (datos.emprendimientoId() != null && !datos.emprendimientoId().equals(emprendimiento.id())) {
+            throw new DomainException("INVALID_STATE", "El emprendimiento original ya no está activo para esta cuenta.");
+        }
         return productos.insertar(Producto.crear(emprendimiento.id(), datos.nombre(), datos.precio(),
                 datos.unidad(), datos.descripcion(), datos.cantidadDisponible(), Instant.now(clock)));
     }
