@@ -150,7 +150,6 @@ export class SqliteOutboxStore implements OutboxStore {
     if (resultado.changes === 0 && a.method === 'POST' && entregaDirectaPendiente(a.path)) {
       throw new Error('Este pedido ya tiene una confirmación de entrega y cobro.');
     }
-    }
     if (a.ifMatch && resultado.changes === 0) {
       throw new Error('Este producto ya tiene un cambio pendiente.');
     }
