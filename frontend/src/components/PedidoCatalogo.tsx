@@ -1,5 +1,7 @@
+import { fonts } from './theme';
+import { CardGrid, GridCard } from './NapaUI';
 import { useMemo, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -136,15 +138,17 @@ export function PedidoCatalogo({
   onPage,
 }: Props) {
   // RF-02: el promedio de cada producto de la página, en una sola petición.
-  const resumenes = useResumenesCalificacion('PRODUCTO', productos.map((producto) => producto.id));
+  const resumenes = useResumenesCalificacion(
+    'PRODUCTO',
+    productos.map((producto) => producto.id),
+  );
   const [cart, setCart] = useState<CartItem[]>([]);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'cart' | 'delivery' | 'summary'>('cart');
   const [modalidad, setModalidad] = useState<ModalidadPedido>(
     tipoVendedor === 'AMBULANTE' ? 'ENTREGA_DIRECTA' : 'RECOGIDA',
   );
-  const [availableModalities, setAvailableModalities] =
-    useState<ModalidadPedido[] | null>(null);
+  const [availableModalities, setAvailableModalities] = useState<ModalidadPedido[] | null>(null);
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
@@ -153,9 +157,7 @@ export function PedidoCatalogo({
   const [reserve, setReserve] = useState(false);
   const [reservationDate, setReservationDate] = useState('');
   const [quote, setQuote] = useState<CotizacionPedido | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<MedioPagoPedido | null>(
-    null,
-  );
+  const [paymentMethod, setPaymentMethod] = useState<MedioPagoPedido | null>(null);
   const [created, setCreated] = useState<PedidoCreado | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -165,9 +167,7 @@ export function PedidoCatalogo({
 
   const modalities = useMemo(() => {
     const options: ModalidadPedido[] =
-      tipoVendedor === 'AMBULANTE'
-        ? ['ENTREGA_DIRECTA']
-        : ['RECOGIDA', 'DOMICILIO'];
+      tipoVendedor === 'AMBULANTE' ? ['ENTREGA_DIRECTA'] : ['RECOGIDA', 'DOMICILIO'];
     return availableModalities
       ? options.filter((option) => availableModalities.includes(option))
       : options;
@@ -194,9 +194,7 @@ export function PedidoCatalogo({
       }
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : 'Indica una cantidad válida para el producto.',
+        cause instanceof Error ? cause.message : 'Indica una cantidad válida para el producto.',
       );
       return;
     }
@@ -214,9 +212,7 @@ export function PedidoCatalogo({
   }
 
   function removeProduct(productId: string) {
-    setCart((current) =>
-      current.filter((item) => item.producto.id !== productId),
-    );
+    setCart((current) => current.filter((item) => item.producto.id !== productId));
     invalidateQuote();
   }
 
@@ -272,10 +268,7 @@ export function PedidoCatalogo({
       );
       setStep('summary');
     } catch (cause) {
-      if (
-        cause instanceof ApiError &&
-        cause.code === 'BANK_ACCOUNT_REQUIRED'
-      ) {
+      if (cause instanceof ApiError && cause.code === 'BANK_ACCOUNT_REQUIRED') {
         setAvailableModalities(['RECOGIDA']);
         setModalidad('RECOGIDA');
       }
@@ -307,7 +300,7 @@ export function PedidoCatalogo({
       const input = createInput();
       const body = JSON.stringify(input);
       if (!pendingRequest.current || pendingRequest.current.body !== body) {
-        pendingRequest.current = { body, key: Crypto.randomUUID() };
+        pendingRequest.current = { body, key: randomUUID() };
       }
       const order = await crearPedido(input, pendingRequest.current.key);
       pendingRequest.current = null;
@@ -361,12 +354,12 @@ export function PedidoCatalogo({
           Pedido enviado
         </Text>
         <Text style={styles.detail}>Estado: {created.estado}</Text>
-        <Text style={styles.total}>
-          Total: ${created.total.toLocaleString('es-CO')} COP
-        </Text>
+        <Text style={styles.total}>Total: ${created.total.toLocaleString('es-CO')} COP</Text>
         <PrimaryButton
           title="Ver estado del pedido"
-          onPress={() => router.push({ pathname: '/pedido-cliente', params: { pedidoId: created.id } })}
+          onPress={() =>
+            router.push({ pathname: '/pedido-cliente', params: { pedidoId: created.id } })
+          }
         />
       </View>
     );
@@ -380,35 +373,35 @@ export function PedidoCatalogo({
       {step === 'cart' ? (
         <>
           <HelperText>
-            Puedes agregar hasta 20 productos. Las cantidades y la disponibilidad
-            se validarán nuevamente antes de confirmar.
+            Puedes agregar hasta 20 productos. Las cantidades y la disponibilidad se validarán
+            nuevamente antes de confirmar.
           </HelperText>
-          {productos.map((producto) => (
-            <View key={producto.id} style={styles.product}>
-              <ProductoCard producto={producto} resumen={resumenes[producto.id]} />
-              <Field
-                label={`Cantidad de ${producto.nombre}`}
-                keyboardType="decimal-pad"
-                value={quantities[producto.id] ?? '1'}
-                onChangeText={(value) =>
-                  setQuantities((current) => ({
-                    ...current,
-                    [producto.id]: value,
-                  }))
-                }
-              />
-              <TextButton
-                title={`Agregar ${producto.nombre} al pedido`}
-                onPress={() => addProduct(producto)}
-              />
-            </View>
-          ))}
+          <CardGrid>
+            {productos.map((producto) => (
+              <GridCard key={producto.id}>
+                <View style={styles.product}>
+                  <ProductoCard producto={producto} resumen={resumenes[producto.id]} />
+                  <Field
+                    label={`Cantidad de ${producto.nombre}`}
+                    keyboardType="decimal-pad"
+                    value={quantities[producto.id] ?? '1'}
+                    onChangeText={(value) =>
+                      setQuantities((current) => ({
+                        ...current,
+                        [producto.id]: value,
+                      }))
+                    }
+                  />
+                  <TextButton
+                    title={`Agregar ${producto.nombre} al pedido`}
+                    onPress={() => addProduct(producto)}
+                  />
+                </View>
+              </GridCard>
+            ))}
+          </CardGrid>
           {pageData ? (
-            <ProductosPagination
-              data={pageData}
-              busy={pageBusy}
-              onPage={onPage}
-            />
+            <ProductosPagination data={pageData} busy={pageBusy} onPage={onPage} />
           ) : null}
           {cart.length > 0 ? (
             <View style={styles.card}>
@@ -431,10 +424,7 @@ export function PedidoCatalogo({
           ) : (
             <HelperText>Aún no has agregado productos.</HelperText>
           )}
-          <PrimaryButton
-            title="Continuar con la entrega"
-            onPress={continueToDelivery}
-          />
+          <PrimaryButton title="Continuar con la entrega" onPress={continueToDelivery} />
         </>
       ) : null}
 
@@ -552,17 +542,13 @@ export function PedidoCatalogo({
                 }}
               />
               <HelperText>
-                Los productos agotados solo se aceptan en reservas; el vendedor
-                confirmará si puede cumplirla.
+                Los productos agotados solo se aceptan en reservas; el vendedor confirmará si puede
+                cumplirla.
               </HelperText>
             </>
           ) : null}
           <ErrorBanner message={error} />
-          <PrimaryButton
-            title="Cotizar pedido"
-            busy={quoting}
-            onPress={() => void reviewQuote()}
-          />
+          <PrimaryButton title="Cotizar pedido" busy={quoting} onPress={() => void reviewQuote()} />
           <TextButton
             title="Volver a los productos"
             onPress={() => {
@@ -581,14 +567,10 @@ export function PedidoCatalogo({
               <Text style={styles.detail}>
                 {item.cantidad.toLocaleString('es-CO')} · {item.nombre}
               </Text>
-              <Text style={styles.detail}>
-                ${item.subtotal.toLocaleString('es-CO')} COP
-              </Text>
+              <Text style={styles.detail}>${item.subtotal.toLocaleString('es-CO')} COP</Text>
             </View>
           ))}
-          <Text style={styles.detail}>
-            Modalidad: {modalityNames[modalidad]}
-          </Text>
+          <Text style={styles.detail}>Modalidad: {modalityNames[modalidad]}</Text>
           <Text style={styles.detail}>
             Productos: ${quote.subtotal.toLocaleString('es-CO')} COP
           </Text>
@@ -597,9 +579,7 @@ export function PedidoCatalogo({
               Domicilio: ${quote.tarifaDomicilio.toLocaleString('es-CO')} COP
             </Text>
           ) : null}
-          <Text style={styles.total}>
-            Total: ${quote.total.toLocaleString('es-CO')} COP
-          </Text>
+          <Text style={styles.total}>Total: ${quote.total.toLocaleString('es-CO')} COP</Text>
           <Text style={styles.subheading}>Medio de pago</Text>
           {quote.mediosPagoDisponibles.length > 0 ? (
             <View style={styles.options}>
@@ -613,16 +593,14 @@ export function PedidoCatalogo({
               ))}
             </View>
           ) : (
-            <HelperText>
-              Este vendedor aún no ha habilitado un medio de pago.
-            </HelperText>
+            <HelperText>Este vendedor aún no ha habilitado un medio de pago.</HelperText>
           )}
           {quote.pagoDomicilio ? (
             <View style={styles.notice}>
               <Text style={styles.noticeText}>
                 El domicilio se paga por transferencia por el total de $
-                {quote.pagoDomicilio.total.toLocaleString('es-CO')} COP cuando el
-                vendedor acepte el pedido.
+                {quote.pagoDomicilio.total.toLocaleString('es-CO')} COP cuando el vendedor acepte el
+                pedido.
               </Text>
             </View>
           ) : null}
@@ -666,12 +644,14 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: palette.dark,
+    fontFamily: fonts.sans,
     fontSize: 23,
     fontWeight: '800',
     marginBottom: 16,
   },
   subheading: {
     color: palette.dark,
+    fontFamily: fonts.sans,
     fontSize: 16,
     fontWeight: '800',
     marginBottom: 8,
@@ -702,12 +682,14 @@ const styles = StyleSheet.create({
   },
   detail: {
     color: palette.dark,
+    fontFamily: fonts.sans,
     fontSize: 14,
     lineHeight: 21,
     marginBottom: 8,
   },
   total: {
     color: palette.green,
+    fontFamily: fonts.sans,
     fontSize: 17,
     fontWeight: '800',
     marginTop: 12,
@@ -725,7 +707,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notice: {
-    backgroundColor: '#E8F2EB',
+    backgroundColor: '#F3E8DD',
     borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,
@@ -734,6 +716,7 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     color: palette.dark,
+    fontFamily: fonts.sans,
     fontSize: 14,
     lineHeight: 21,
   },

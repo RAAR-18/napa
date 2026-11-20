@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -23,6 +24,7 @@ import { useAccionesPendientes } from '../hooks/useOutbox';
 import { contarNoLeidas } from '../lib/notificaciones';
 import { darDeBajaPush, registrarPush } from '../lib/push';
 import { borrarTodasLasRutas } from '../lib/ruta-cache';
+import { CardGrid, ShortcutCard, StatusBadge, type IconName } from '../components/NapaUI';
 
 const roleNames: Record<string, string> = {
   CLIENTE: 'Cliente',
@@ -45,11 +47,7 @@ export default function SessionScreen() {
       router.replace('/login');
       return;
     }
-    setError(
-      cause instanceof Error
-        ? cause.message
-        : 'No se pudo recuperar la sesión.',
-    );
+    setError(cause instanceof Error ? cause.message : 'No se pudo recuperar la sesión.');
   }, []);
 
   useEffect(() => {
@@ -117,11 +115,7 @@ export default function SessionScreen() {
         router.replace('/login');
         return;
       }
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : 'No se pudo cerrar la sesión.',
-      );
+      setError(cause instanceof Error ? cause.message : 'No se pudo cerrar la sesión.');
     } finally {
       setBusy(false);
     }
@@ -140,102 +134,147 @@ export default function SessionScreen() {
     );
   }
 
+  const shortcuts: { title: string; description: string; icon: IconName; route: string }[] = [];
+  const add = (title: string, description: string, icon: IconName, route: string) =>
+    shortcuts.push({ title, description, icon, route });
+  if (session?.rol.startsWith('VENDEDOR')) {
+    add(
+      'Pedidos recibidos',
+      'Recibe, organiza y acompaña cada venta.',
+      'shopping-bag',
+      '/pedidos-vendedor',
+    );
+    add('Mis productos', 'Tu oferta, tus precios y tu inventario.', 'box', '/mis-productos');
+    add(
+      'Mi emprendimiento',
+      'Comparte la historia y los datos de tu negocio.',
+      'home',
+      '/mi-emprendimiento',
+    );
+    add(
+      'Configurar métodos de pago',
+      'Elige cómo recibir el pago de tus pedidos.',
+      'credit-card',
+      '/configuracion-pagos',
+    );
+    if (session.rol === 'VENDEDOR_PUNTO_FIJO')
+      add(
+        'Mis domicilios',
+        'Sigue las entregas de tu emprendimiento.',
+        'truck',
+        '/domicilios-vendedor',
+      );
+  } else if (session?.rol === 'CLIENTE') {
+    add(
+      'Explorar emprendimientos',
+      'Encuentra lo mejor de las personas de tu barrio.',
+      'compass',
+      '/emprendimientos',
+    );
+    add('Mis pedidos', 'Consulta tus compras, reservas y entregas.', 'package', '/mis-pedidos');
+  } else if (session?.rol === 'DOMICILIARIO') {
+    add(
+      'Domicilios disponibles',
+      'Elige tu próxima entrega cerca de ti.',
+      'navigation',
+      '/domicilios-disponibles',
+    );
+    add(
+      'Mis domicilios en curso',
+      'Cada entrega, acompañada de principio a fin.',
+      'package',
+      '/domicilios-en-curso',
+    );
+    add(
+      'Mi cuenta para cobrar',
+      'Mantén al día la cuenta donde recibes tus pagos.',
+      'credit-card',
+      '/cuenta-domiciliario',
+    );
+  } else if (session?.rol === 'ADMINISTRADOR') {
+    add(
+      'Supervisar domicilios',
+      'Una mirada completa a las entregas del barrio.',
+      'truck',
+      '/domicilios-admin',
+    );
+    add(
+      'Reportes',
+      'Escucha a la comunidad y resuelve sus inquietudes.',
+      'bar-chart-2',
+      '/reportes-admin',
+    );
+    add(
+      'Usuarios',
+      'Consulta y administra las cuentas de la comunidad.',
+      'users',
+      '/usuarios-admin',
+    );
+    add(
+      'Calificaciones y comentarios',
+      'Cuida las conversaciones y la confianza.',
+      'star',
+      '/moderacion-admin',
+    );
+  }
+  if (session) {
+    add(
+      noLeidas ? `Notificaciones (${noLeidas} sin leer)` : 'Notificaciones',
+      'Lo que pasa con tus pedidos y tu comunidad.',
+      'bell',
+      '/notificaciones',
+    );
+    add(
+      session.rol === 'ADMINISTRADOR' ? 'Historial general de pagos' : 'Historial de pagos',
+      'Consulta el registro de tus cobros y pagos.',
+      'layers',
+      '/historial-pagos',
+    );
+    if (session.rol !== 'ADMINISTRADOR')
+      add(
+        'Mis reportes',
+        'Encuentra ayuda y consulta tus solicitudes.',
+        'message-circle',
+        '/mis-reportes',
+      );
+  }
   return (
     <AuthPage>
       <PageHeading
-        eyebrow="Sesión activa"
+        eyebrow="Mi cuenta"
         title="¡Bienvenido a Ñapa!"
-        description="Tu cuenta ya está conectada con el servicio."
+        description="Un lugar para tu negocio, tus compras y todo lo que compartes con tu barrio."
       />
       {session ? (
-        <>
-          <View style={styles.card}>
-            <Text style={styles.label}>Perfil</Text>
-            <Text style={styles.role}>
-              {roleNames[session.rol] ?? session.rol}
-            </Text>
-            <Text style={styles.note}>
-              {session.rol === 'VENDEDOR_AMBULANTE' ||
-              session.rol === 'VENDEDOR_PUNTO_FIJO'
-                ? 'Publica tu negocio para que los clientes puedan encontrarte.'
-                : 'Tu cuenta ya está conectada con el servicio.'}
-            </Text>
+        <View style={styles.card}>
+          <View>
+            <Text style={styles.label}>TU ESPACIO EN LA COMUNIDAD</Text>
+            <Text style={styles.role}>{roleNames[session.rol] ?? session.rol}</Text>
           </View>
-          {session.rol === 'VENDEDOR_AMBULANTE' ||
-          session.rol === 'VENDEDOR_PUNTO_FIJO' ? (
-            <>
-              <PrimaryButton title="Pedidos recibidos" onPress={() => router.push('/pedidos-vendedor')} />
-              {session.rol === 'VENDEDOR_PUNTO_FIJO' ? (
-                <PrimaryButton title="Mis domicilios" onPress={() => router.push('/domicilios-vendedor')} />
-              ) : null}
-              <PrimaryButton title="Mis productos" onPress={() => router.push('/mis-productos')} />
-              <TextButton
-                title="Configurar métodos de pago"
-                onPress={() => router.push('/configuracion-pagos')}
-              />
-              <TextButton title="Mi emprendimiento" onPress={() => router.push('/mi-emprendimiento')} />
-            </>
-          ) : null}
-          {session.rol === 'DOMICILIARIO' ? (
-            <>
-              <PrimaryButton
-                title="Domicilios disponibles"
-                onPress={() => router.push('/domicilios-disponibles')}
-              />
-              <TextButton
-                title="Mis domicilios en curso"
-                onPress={() => router.push('/domicilios-en-curso')}
-              />
-              <TextButton
-                title="Mi cuenta para cobrar"
-                onPress={() => router.push('/cuenta-domiciliario')}
-              />
-            </>
-          ) : null}
-          {session.rol === 'CLIENTE' ? (
-            <>
-              <PrimaryButton
-                title="Explorar emprendimientos"
-                onPress={() => router.push('/emprendimientos')}
-              />
-              <TextButton title="Mis pedidos" onPress={() => router.push('/mis-pedidos')} />
-            </>
-          ) : null}
-          {pendientesEnvio.length > 0 ? (
-            <PrimaryButton
-              title={`Pendientes de envío (${pendientesEnvio.length})`}
-              onPress={() => router.push('/pendientes-envio')}
-            />
-          ) : null}
-          <PrimaryButton
-            title={noLeidas ? `Notificaciones (${noLeidas} sin leer)` : 'Notificaciones'}
-            onPress={() => router.push('/notificaciones')}
-          />
-          {session.rol === 'ADMINISTRADOR' ? (
-            <>
-              <PrimaryButton title="Supervisar domicilios" onPress={() => router.push('/domicilios-admin')} />
-              <PrimaryButton title="Reportes" onPress={() => router.push('/reportes-admin')} />
-              <TextButton title="Usuarios" onPress={() => router.push('/usuarios-admin')} />
-              <TextButton title="Calificaciones y comentarios" onPress={() => router.push('/moderacion-admin')} />
-            </>
-          ) : (
-            <TextButton title="Mis reportes" onPress={() => router.push('/mis-reportes')} />
-          )}
-          <TextButton
-            title={session.rol === 'ADMINISTRADOR' ? 'Historial general de pagos' : 'Historial de pagos'}
-            onPress={() => router.push('/historial-pagos')}
-          />
-        </>
+          <StatusBadge label="Sesión activa" />
+        </View>
       ) : null}
+      {pendientesEnvio.length > 0 ? (
+        <PrimaryButton
+          title={`Pendientes de envío (${pendientesEnvio.length})`}
+          onPress={() => router.push('/pendientes-envio')}
+        />
+      ) : null}
+      <CardGrid>
+        {shortcuts.map((item) => (
+          <ShortcutCard
+            key={item.route}
+            {...item}
+            onPress={() => router.push(item.route as never)}
+          />
+        ))}
+      </CardGrid>
       <ErrorBanner message={error} />
-      {error ? (
-        <PrimaryButton busy={busy} title="Reintentar" onPress={() => void retry()} />
-      ) : null}
-      <TextButton title="Mi perfil" onPress={() => router.push('/perfil')} />
-      <TextButton
-        title="Cambiar contraseña"
-        onPress={() => router.push('/change-password')}
-      />
+      {error ? <PrimaryButton busy={busy} title="Reintentar" onPress={() => void retry()} /> : null}
+      <View style={styles.accountActions}>
+        <TextButton title="Mi perfil" onPress={() => router.push('/perfil')} />
+        <TextButton title="Cambiar contraseña" onPress={() => router.push('/change-password')} />
+      </View>
       <FormFooter>
         <TextButton
           disabled={busy}
@@ -250,25 +289,43 @@ export default function SessionScreen() {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#D9E2DC',
+    borderColor: '#DBC9BD',
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 20,
-    padding: 20,
+    padding: 22,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  accountActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 16,
+    borderTopWidth: 1,
+    borderColor: palette.border,
+    marginTop: 30,
+    paddingTop: 18,
   },
   label: {
     color: palette.muted,
+    fontFamily: fonts.sans,
     fontSize: 13,
     fontWeight: '700',
   },
   role: {
     color: palette.dark,
-    fontSize: 22,
+    fontFamily: fonts.display,
+    fontSize: 27,
     fontWeight: '800',
     marginTop: 5,
   },
   note: {
     color: palette.muted,
+    fontFamily: fonts.sans,
     fontSize: 14,
     lineHeight: 21,
     marginTop: 12,

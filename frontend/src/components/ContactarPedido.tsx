@@ -1,5 +1,6 @@
+import { fonts } from './theme';
 import { useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { ErrorBanner, TextButton, palette } from './AuthUI';
@@ -24,7 +25,7 @@ export default function ContactarPedido({
     setBusy(tipo);
     setError(null);
     try {
-      const canal = await contactarDesdePedido(pedidoId, destinatario, tipo, Crypto.randomUUID());
+      const canal = await contactarDesdePedido(pedidoId, destinatario, tipo, randomUUID());
       await Linking.openURL(canal.enlace);
     } catch (cause) {
       setError(
@@ -51,6 +52,6 @@ export default function ContactarPedido({
 
 const styles = StyleSheet.create({
   box: { marginTop: 8 },
-  label: { color: palette.muted, fontSize: 13, fontWeight: '700' },
+  label: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, fontWeight: '700' },
   row: { flexDirection: 'row', gap: 16 },
 });

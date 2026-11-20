@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -236,9 +237,9 @@ const styles = StyleSheet.create({
   cardDelayed: { backgroundColor: '#FFF8E8', borderColor: '#E8C77A' },
   row: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   personRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  sectionTitle: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  amount: { color: palette.green, fontSize: 18, fontWeight: '800' },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 5 },
-  warning: { color: '#86510F', fontSize: 14, fontWeight: '800', marginTop: 5 },
-  success: { color: palette.green, fontSize: 14, fontWeight: '700', marginVertical: 10 },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  amount: { color: palette.green, fontFamily: fonts.sans, fontSize: 18, fontWeight: '800' },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 5 },
+  warning: { color: '#86510F', fontFamily: fonts.sans, fontSize: 14, fontWeight: '800', marginTop: 5 },
+  success: { color: palette.green, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginVertical: 10 },
 });

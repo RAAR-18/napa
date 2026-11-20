@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
@@ -176,14 +177,14 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  status: { color: palette.green, fontSize: 17, fontWeight: '800' },
+  status: { color: palette.green, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800' },
   closed: { color: palette.muted },
-  title: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  address: { color: palette.dark, fontSize: 15, fontWeight: '700', marginTop: 6 },
-  text: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  title: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  address: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, fontWeight: '700', marginTop: 6 },
+  text: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
   seller: { alignItems: 'center', flexDirection: 'row' },
   sellerText: { flex: 1, marginLeft: 12 },
   photo: { borderRadius: 28, height: 56, width: 56 },
   initials: { alignItems: 'center', backgroundColor: '#E3F0E8', justifyContent: 'center' },
-  initialsText: { color: palette.green, fontSize: 22, fontWeight: '800' },
+  initialsText: { color: palette.green, fontFamily: fonts.sans, fontSize: 22, fontWeight: '800' },
 });

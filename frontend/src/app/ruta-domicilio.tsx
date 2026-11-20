@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -190,6 +191,6 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
-  sectionTitle: { color: palette.dark, fontSize: 16, fontWeight: '800' },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
 });

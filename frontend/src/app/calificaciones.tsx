@@ -1,5 +1,6 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -142,7 +143,7 @@ function TarjetaCalificacion({ item, onCambio }: { item: CalificacionPublica; on
   async function borrar() {
     setBusy(true);
     setError(null);
-    deleteKey.current ??= Crypto.randomUUID();
+    deleteKey.current ??= randomUUID();
     try {
       await eliminarCalificacion(item.id, deleteKey.current);
       onCambio();
@@ -213,8 +214,8 @@ const styles = StyleSheet.create({
   },
   mine: { borderColor: palette.green },
   header: { flexDirection: 'row', justifyContent: 'space-between' },
-  author: { color: palette.dark, fontSize: 15, fontWeight: '700' },
-  date: { color: palette.muted, fontSize: 13 },
-  comment: { color: palette.dark, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  author: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, fontWeight: '700' },
+  date: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13 },
+  comment: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
   actions: { flexDirection: 'row', gap: 12 },
 });

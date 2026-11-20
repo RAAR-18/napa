@@ -1,5 +1,6 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -236,7 +237,7 @@ function CambioCelular({ perfil, onCambiado }: { perfil: PerfilUsuario; onCambia
   async function solicitar() {
     setBusy(true);
     setError(null);
-    requestKey.current ??= Crypto.randomUUID();
+    requestKey.current ??= randomUUID();
     try {
       await solicitarCambioCelular(celular, requestKey.current);
       setEnviado(true);
@@ -255,7 +256,7 @@ function CambioCelular({ perfil, onCambiado }: { perfil: PerfilUsuario; onCambia
   async function confirmar() {
     setBusy(true);
     setError(null);
-    confirmKey.current ??= Crypto.randomUUID();
+    confirmKey.current ??= randomUUID();
     try {
       onCambiado(await confirmarCambioCelular(codigo, confirmKey.current));
       setEnviado(false);
@@ -304,7 +305,7 @@ function EliminarCuenta({ cuentaId }: { cuentaId: string }) {
     setBusy(true);
     setError(null);
     setPendientes([]);
-    key.current ??= Crypto.randomUUID();
+    key.current ??= randomUUID();
     try {
       await eliminarMiCuenta(key.current);
       await clearSession();
@@ -356,9 +357,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   danger: { borderColor: palette.error },
-  section: { color: palette.dark, fontSize: 16, fontWeight: '800', marginBottom: 6 },
+  section: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800', marginBottom: 6 },
   spaced: { marginTop: 12 },
-  detail: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
   ok: { backgroundColor: '#EAF4EE', borderRadius: 12, marginBottom: 8, padding: 12 },
   okText: { color: palette.green, fontWeight: '700' },
 });

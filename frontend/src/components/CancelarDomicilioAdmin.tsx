@@ -1,5 +1,6 @@
+import { fonts } from './theme';
 import { useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiError } from '../lib/api';
@@ -54,7 +55,7 @@ export default function CancelarDomicilioAdmin({ domicilioId, estado, conPagoTar
     setBusy(true);
     setError(null);
     // La misma clave en los reintentos por red: el servidor no cancela dos veces.
-    actionKey.current ??= Crypto.randomUUID();
+    actionKey.current ??= randomUUID();
     try {
       await cancelarDomicilioAdmin(domicilioId, limpio, actionKey.current);
       actionKey.current = null;
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 12,
   },
-  title: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  text: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
-  warning: { color: '#86510F', fontSize: 14, fontWeight: '700', lineHeight: 21, marginTop: 6 },
+  title: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  text: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  warning: { color: '#86510F', fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', lineHeight: 21, marginTop: 6 },
 });

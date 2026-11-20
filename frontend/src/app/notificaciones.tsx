@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -249,12 +250,12 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     padding: 14,
   },
-  unread: { backgroundColor: '#EEF6F1', borderColor: '#B9D9C6' },
+  unread: { backgroundColor: '#F7EBDD', borderColor: '#B9D9C6' },
   row: { alignItems: 'center', flexDirection: 'row' },
   dot: { backgroundColor: palette.green, borderRadius: 5, height: 10, marginRight: 8, width: 10 },
-  title: { color: palette.dark, flex: 1, fontSize: 15, fontWeight: '600' },
+  title: { color: palette.dark, flex: 1, fontFamily: fonts.sans, fontSize: 15, fontWeight: '600' },
   titleUnread: { fontWeight: '800' },
-  date: { color: palette.muted, fontSize: 13, marginTop: 4 },
-  body: { color: palette.dark, fontSize: 14, lineHeight: 21, marginTop: 8 },
+  date: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, marginTop: 4 },
+  body: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 8 },
   pager: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginVertical: 8 },
 });

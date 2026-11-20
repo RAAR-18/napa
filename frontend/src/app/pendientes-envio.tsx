@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
@@ -99,7 +100,7 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
 }
 
 const styles = StyleSheet.create({
-  section: { color: palette.dark, fontSize: 16, fontWeight: '800', marginTop: 12 },
+  section: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800', marginTop: 12 },
   card: {
     backgroundColor: palette.white,
     borderColor: palette.border,
@@ -109,8 +110,8 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   failed: { borderColor: palette.error },
-  title: { color: palette.dark, fontSize: 15, fontWeight: '800' },
-  detail: { color: palette.muted, fontSize: 13, marginTop: 4 },
-  error: { color: palette.error, fontSize: 13, marginTop: 4 },
+  title: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, fontWeight: '800' },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, marginTop: 4 },
+  error: { color: palette.error, fontFamily: fonts.sans, fontSize: 13, marginTop: 4 },
   actions: { flexDirection: 'row', gap: 12 },
 });

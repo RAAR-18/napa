@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -199,9 +200,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   row: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  sectionTitle: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  amount: { color: palette.green, fontSize: 16, fontWeight: '800' },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  amount: { color: palette.green, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 6 },
   pager: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginVertical: 8 },
 });

@@ -1,3 +1,4 @@
+import { fonts } from './theme';
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Image, Platform, StyleSheet, Text, View } from 'react-native';
@@ -108,6 +109,6 @@ const styles = StyleSheet.create({
   box: { alignItems: 'center', marginBottom: 8 },
   photo: { borderRadius: 48, height: 96, width: 96 },
   initials: { alignItems: 'center', backgroundColor: palette.green, justifyContent: 'center' },
-  initialsText: { color: palette.white, fontSize: 36, fontWeight: '800' },
+  initialsText: { color: palette.white, fontFamily: fonts.sans, fontSize: 36, fontWeight: '800' },
   row: { flexDirection: 'row', gap: 16 },
 });

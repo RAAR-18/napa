@@ -1,5 +1,6 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -109,7 +110,7 @@ function TarjetaModeracion({ item, onCambio }: { item: CalificacionSupervisada; 
       if (accion === 'EDITAR') {
         await moderarTexto(item.id, texto, motivo);
       } else {
-        key.current ??= Crypto.randomUUID();
+        key.current ??= randomUUID();
         await eliminarPorModeracion(item.id, motivo, key.current);
       }
       setAccion(null);
@@ -173,9 +174,9 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     padding: 14,
   },
-  caption: { color: palette.muted, fontSize: 13, fontWeight: '700' },
-  body: { color: palette.dark, fontSize: 14, lineHeight: 21, marginTop: 4 },
-  detail: { color: palette.muted, fontSize: 13, marginTop: 4 },
+  caption: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, fontWeight: '700' },
+  body: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, marginTop: 4 },
   actions: { flexDirection: 'row', gap: 12 },
   pager: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
 });

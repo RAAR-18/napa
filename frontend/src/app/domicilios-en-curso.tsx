@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   pressed: { opacity: 0.72 },
-  status: { color: palette.dark, fontSize: 17, fontWeight: '800' },
-  details: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 5 },
+  status: { color: palette.dark, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800' },
+  details: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 5 },
   gain: { color: palette.green, fontWeight: '800', marginTop: 8 },
 });
