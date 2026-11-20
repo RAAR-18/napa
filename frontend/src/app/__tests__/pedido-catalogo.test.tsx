@@ -287,6 +287,8 @@ it('requests device location on demand for delivery and quotes the order', async
   await fireEvent.press(view.getByRole('radio', { name: 'Domicilio' }));
   await fireEvent.changeText(view.getByLabelText('Dirección de entrega'), 'Carrera 7 # 10-20');
 
+  await fireEvent.changeText(view.getByLabelText('Barrio'), 'Centro');
+
   // Trigger device location request
   await fireEvent.press(view.getByRole('button', { name: 'Usar mi ubicación actual' }));
 
@@ -309,6 +311,7 @@ it('requests device location on demand for delivery and quotes the order', async
           longitud: -74.0721,
           direccion: 'Carrera 7 # 10-20',
           referencia: null,
+          barrio: 'Centro',
         },
       }),
     );

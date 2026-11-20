@@ -3,7 +3,6 @@ import { CardGrid, GridCard } from './NapaUI';
 import { useMemo, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
 import { router } from 'expo-router';
-import * as Location from 'expo-location';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -464,6 +463,15 @@ export function PedidoCatalogo({
                 value={address}
                 onChangeText={(value) => {
                   setAddress(value);
+                  invalidateQuote();
+                }}
+              />
+              <Field
+                label={modalidad === 'DOMICILIO' ? 'Barrio' : 'Barrio (opcional)'}
+                maxLength={100}
+                value={neighborhood}
+                onChangeText={(value) => {
+                  setNeighborhood(value);
                   invalidateQuote();
                 }}
               />
