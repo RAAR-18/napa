@@ -44,7 +44,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | FR-001 | Editar ubicación, apertura, cierre y descripción | `PATCH /emprendimientos/me` (parcial) | T010, T020, T021 |
 | FR-002 | Validar los datos antes de guardar | Bean Validation y reglas de `Emprendimiento` | T011, T012, T022 |
 | FR-003 | Reflejar los cambios en la vista pública de inmediato | RF-31 y RF-32 leen la misma fila | T013 |
-| FR-004 | El ambulante actualiza su ubicación en cada cambio de zona | Mismo endpoint, solo `ubicacion`; botón "Estoy aquí" con el GPS y cola local sin red | T014, T032, T033 |
+| FR-004 | El ambulante actualiza su ubicación en cada cambio de zona | Mismo endpoint, solo `ubicacion`; botón "Estoy aquí" con el GPS y guardado en línea | T014, T032, T033 |
 | SC-001 | Cambios visibles en < 3 s | Sin caché intermedia | T013 |
 | SC-002 | 100 % de ediciones inválidas rechazadas | Pruebas parametrizadas | T011, T012 |
 | US1-E1 | Edición exitosa de un campo | `200` con el emprendimiento actualizado | T010 |
@@ -63,7 +63,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 | RNF13 Arquitectura | ☑ | El módulo `emprendimientos` usa el puerto de ubicación compartido |
 | RNF23 Consistencia | ☑ | Emprendimiento y ubicación se actualizan en la misma transacción |
 | RNF24 Errores claros | ☑ | `details.campo` en cada `400` |
-| RNF28 Conectividad | ☑ | La ubicación del ambulante se encola en la outbox y se envía al volver la red |
+| RNF28 Conectividad | ☑ | Descripción y horario se guardan en la cola local; cambiar la ubicación requiere conexión |
 | RNF31 Gama baja | ☑ | El GPS se pide una vez por toque |
 
 ## Entities Involved
@@ -112,7 +112,7 @@ No cambia estados: el emprendimiento sigue `ACTIVO`. Solo se edita el emprendimi
 | Authorization | ✅ | `Bearer <JWT>` |
 | Content-Type | ✅ | `application/json` |
 
-`PATCH` no exige `Idempotency-Key` (spec-general). Repetir el mismo cuerpo deja el mismo resultado.
+El `PATCH` acepta `Idempotency-Key`. Las solicitudes con `base` deben tener clave e incluir el ID del emprendimiento y los valores originales de descripción, apertura y cierre. Los clientes del flujo en línea pueden seguir enviando el cuerpo tradicional.
 
 - **Respuestas exitosas**: `200` con el emprendimiento completo (mismo cuerpo del `GET`) y `X-Request-Id`.
 - **Errores**:
@@ -136,9 +136,12 @@ No cambia estados: el emprendimiento sigue `ACTIVO`. Solo se edita el emprendimi
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: el ambulante cambia de zona con poca señal. La app guarda la ubicación en la outbox local con una sola entrada por emprendimiento (una posterior reemplaza a la anterior) y la envía al recuperar la red; mientras tanto muestra "Ubicación pendiente de enviar". Las demás ediciones también se encolan.
+- **Edición offline del MVP (#44)**. Mi emprendimiento conserva por cuenta la última copia confirmada durante 7 días. Se permite guardar descripción y horario en una sola propuesta por emprendimiento. La vista pública solo refleja datos confirmados. La ubicación sigue en el flujo en línea.
+- El servidor compara la descripción si se editó y compara apertura y cierre juntos si se cambió el horario. La comparación y la escritura se realizan bajo el mismo bloqueo. Si algún dato difiere, se conserva la propuesta completa para revisar con los valores vigentes. Un emprendimiento original inaccesible solo admite descarte.
+- Se conserva el cuerpo completo y la clave durante los reintentos. Confirmar una propuesta revisada genera una clave nueva.
+- **Evidencia manual en Android (#44)**. Con el backend detenido, el vendedor guardó una propuesta desde Mi emprendimiento y verificó que la ubicación requería conexión. Tras reactivar el backend, se aplicó la propuesta. En otra prueba se guardó un cambio de cierre, se cerró la app y se modificó la apertura desde otra sesión. Al reabrir y sincronizar, la app mostró «Requiere revisión» y permitió comparar la propuesta con el horario vigente antes de decidir.
 - **Concurrencia (RNF08)**: dos sesiones del mismo vendedor: se aplica cada campo recibido y gana la última; una colisión real en la misma fila se detecta con la versión y la app reintenta una vez.
-- **Idempotencia (RNF27)**: `PATCH` es idempotente por naturaleza.
+- **Idempotencia (RNF27)**. El filtro devuelve el resultado original si ya aplicó esa solicitud con la misma clave.
 
 ## Error Handling
 
@@ -149,7 +152,7 @@ No cambia estados: el emprendimiento sigue `ACTIVO`. Solo se edita el emprendimi
 | Sin emprendimiento activo o eliminado | `404` | Edge 3 |
 | Choque de escrituras | `409 CONFLICT`; la app reintenta | Edge 2 |
 | Punto fijo cambia la ubicación con pedidos pendientes | `409 HAS_PENDING_ORDERS`; el resto de campos del mismo cuerpo no se aplica (todo o nada) | Edge 1 |
-| Sin red | Se encola la última ubicación | RNF28 |
+| Sin red | Se guardan las propuestas de descripción y horario cuando hay una copia local vigente | RNF28 |
 
 ## Testing Strategy
 
@@ -160,7 +163,7 @@ No cambia estados: el emprendimiento sigue `ACTIVO`. Solo se edita el emprendimi
 | Integración | Lo editado aparece de inmediato en `GET /emprendimientos` y `GET /emprendimientos/{id}` (RF-31, RF-32), incluida la distancia nueva | FR-003, SC-001 |
 | Integración | Punto fijo con pedidos pendientes: la ubicación no cambia (`409`), pero la descripción y el horario sí; el ambulante cambia de ubicación con pedidos pendientes | Edge 1 |
 | Integración | Dos `PATCH` simultáneos | Edge 2 |
-| Frontend | Jest: formulario, botón "Estoy aquí", cola local con una sola entrada pendiente | FR-004 |
+| Frontend | Jest: formulario, botón "Estoy aquí" y propuesta de horario con los valores originales | FR-001, FR-004 |
 
 **Cobertura mínima**: todos los escenarios Given/When/Then tienen al menos un test.
 
@@ -193,7 +196,8 @@ frontend/src/app/(vendedor)/emprendimiento/editar.tsx                 # formular
 frontend/src/components/emprendimientos/FormularioEmprendimiento.tsx  # compartido con RF-28
 frontend/src/components/emprendimientos/BotonEstoyAqui.tsx            # GPS y envío de la ubicación (ambulante)
 frontend/src/services/emprendimientos.ts                              # obtenerMiEmprendimiento(), editar()
-frontend/src/database/outbox/ubicacion_emprendimiento.ts              # una entrada pendiente por emprendimiento
+frontend/src/lib/emprendimiento-propio-cache.ts                        # datos propios guardados
+frontend/src/lib/emprendimiento-pendiente.ts                          # propuesta de descripción y horario
 frontend/__tests__/emprendimientos/
 ```
 
@@ -230,7 +234,7 @@ frontend/__tests__/emprendimientos/
 - [ ] T016 [P] [US1] Test de dos `PATCH` simultáneos (`409 CONFLICT` en el choque, sin pérdida de campos distintos) en `.../emprendimientos/EditarEmprendimientoConcurrenciaIT.java`
 - [ ] T017 [P] [US1] Test de sin emprendimiento, eliminado, rol distinto y sin sesión en `.../emprendimientos/EditarEmprendimientoAutorizacionIT.java`
 - [ ] T030 [P] [US1] Test del formulario de edición precargado y de su validación en `frontend/__tests__/emprendimientos/editar-emprendimiento.test.tsx`
-- [ ] T031 [P] [US1] Test de `BotonEstoyAqui` y de la cola local con una sola entrada pendiente en `frontend/__tests__/emprendimientos/estoy-aqui.test.tsx`
+- [ ] T031 [P] [US1] Verificar el flujo GPS en línea y las propuestas de descripción y horario en `frontend/src/app/__tests__/mi-emprendimiento.test.tsx`.
 
 ### Implementation
 
@@ -240,7 +244,7 @@ frontend/__tests__/emprendimientos/
 - [ ] T023 [US1] Reintento único ante `409 CONFLICT` en el caso de uso y mapeo del error
 - [ ] T024 [US1] Regla en `EditarEmprendimientoUseCase`: si el vendedor es de punto fijo y el cuerpo trae `ubicacion`, consulta `PedidosPendientesPort` y responde `409 HAS_PENDING_ORDERS` sin aplicar nada
 - [ ] T032 [US1] `FormularioEmprendimiento` compartido con RF-28 y pantalla `emprendimiento/editar.tsx`
-- [ ] T033 [US1] `BotonEstoyAqui` (GPS), `services/emprendimientos.ts` y la cola `ubicacion_emprendimiento` con envío al recuperar la red
+- [ ] T033 [US1] Mantener «Estoy aquí» en línea y verificar en Android el guardado y la revisión de propuestas de descripción y horario.
 
 **Checkpoint**: el vendedor edita su emprendimiento y los clientes lo ven.
 
@@ -293,7 +297,7 @@ frontend/__tests__/emprendimientos/
 ## Notas de implementación (F9, 2026-11-13)
 
 - `GET` y `PATCH /emprendimientos/me` en `MiEmprendimientoController` (`GestionarEmprendimientoPort`). El cuerpo se lee como mapa para rechazar `nombre`, `categoria`, `estado` o cualquier campo desconocido.
-- `PATCH /emprendimientos/me` queda exento de `Idempotency-Key` en `IdempotencyFilter`, como la edición de productos.
+- Las ediciones con `base` se procesan con `Idempotency-Key`; las llamadas en línea existentes sin `base` conservan su contrato.
 - La ubicación se actualiza en su misma fila (`ubicacion.id` se conserva). Los pedidos sin cerrar se cuentan con `ConsultarPedidosSinCerrarPort` del módulo `pedidos` (`PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER`, `EN_CAMINO`).
 - Sin control de versión: la última escritura gana; no hay `409 CONFLICT` por edición simultánea.
 - App: pantalla `mi-emprendimiento` con botón «Estoy aquí» (expo-location) y envío solo de los campos que cambiaron.

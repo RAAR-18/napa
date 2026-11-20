@@ -2,6 +2,7 @@ import { randomUUID } from '../../lib/uuid';
 
 import { ApiError, jsonHeaders, requestVoid } from '../../lib/api';
 import { readSession, withValidSession } from '../../lib/auth';
+import { RUTA_EDICION_EMPRENDIMIENTO } from '../../lib/emprendimiento-pendiente';
 import { RUTA_REGISTRO_PRODUCTO } from '../../lib/productos-pendientes';
 import { Outbox } from './outbox';
 import { SqliteOutboxStore } from './sqlite-store';
@@ -32,6 +33,8 @@ export const outbox = new Outbox({
   store: new SqliteOutboxStore(),
   usuarioActual: async () => (await readSession())?.usuarioId ?? null,
   enviar: enviarConSesion,
-  conservarReintentosServidor: (accion) => Boolean(accion.ifMatch) || (accion.method === 'POST' && accion.path === RUTA_REGISTRO_PRODUCTO),
+  conservarReintentosServidor: (accion) => Boolean(accion.ifMatch)
+    || (accion.method === 'POST' && accion.path === RUTA_REGISTRO_PRODUCTO)
+    || (accion.method === 'PATCH' && accion.path === RUTA_EDICION_EMPRENDIMIENTO),
   nuevoId: () => randomUUID(),
 });

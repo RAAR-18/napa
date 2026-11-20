@@ -2,6 +2,7 @@ package co.edu.napa.emprendimientos.infrastructure.adapters.in.web;
 
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import co.edu.napa.emprendimientos.application.ports.in.GestionarEmprendimientoPort;
+import co.edu.napa.emprendimientos.application.ports.in.GestionarEmprendimientoPort.BaseEdicion;
 import co.edu.napa.emprendimientos.application.ports.in.GestionarEmprendimientoPort.Edicion;
 import co.edu.napa.emprendimientos.application.ports.in.GestionarEmprendimientoPort.NuevaUbicacion;
 import co.edu.napa.emprendimientos.infrastructure.adapters.in.web.EmprendimientoController.EmprendimientoResponse;
@@ -28,7 +29,7 @@ import java.util.UUID;
 @RestController
 public class MiEmprendimientoController {
     private static final String VENDEDORES = "hasAnyAuthority('ROLE_VENDEDOR_AMBULANTE', 'ROLE_VENDEDOR_PUNTO_FIJO')";
-    private static final Set<String> CAMPOS_EDITABLES = Set.of("descripcion", "horaApertura", "horaCierre", "ubicacion");
+    private static final Set<String> CAMPOS_EDITABLES = Set.of("descripcion", "horaApertura", "horaCierre", "ubicacion", "base");
     private static final Set<String> CAMPOS_UBICACION = Set.of("latitud", "longitud", "direccion", "referencia");
 
     private final GestionarEmprendimientoPort gestion;
@@ -52,7 +53,12 @@ public class MiEmprendimientoController {
             HttpServletRequest request
     ) {
         sinQuery(request);
-        return ok(EmprendimientoResponse.from(gestion.editar(usuario(jwt), rol(jwt), edicion(body))));
+        Edicion cambios = edicion(body);
+        if (cambios.base() != null && (request.getHeader("Idempotency-Key") == null
+                || request.getHeader("Idempotency-Key").isBlank())) {
+            throw validation("Idempotency-Key", "La edición con datos originales requiere una clave de idempotencia.");
+        }
+        return ok(EmprendimientoResponse.from(gestion.editar(usuario(jwt), rol(jwt), cambios)));
     }
 
     @PostMapping("/api/v1/emprendimientos/me/eliminar")
@@ -95,8 +101,33 @@ public class MiEmprendimientoController {
                     texto(datos.get("direccion"), "ubicacion.direccion"),
                     texto(datos.get("referencia"), "ubicacion.referencia"));
         }
+        BaseEdicion base = body.containsKey("base") ? base(body.get("base")) : null;
+        if (base != null && body.containsKey("ubicacion")) {
+            throw validation("ubicacion", "Los cambios de ubicación requieren el flujo en línea.");
+        }
         return new Edicion(texto(body.get("descripcion"), "descripcion"), hora(body.get("horaApertura"), "horaApertura"),
-                hora(body.get("horaCierre"), "horaCierre"), ubicacion);
+                hora(body.get("horaCierre"), "horaCierre"), ubicacion, base);
+    }
+
+    private static BaseEdicion base(Object value) {
+        if (!(value instanceof Map<?, ?> datos)
+                || !datos.keySet().equals(Set.of("emprendimientoId", "descripcion", "horaApertura", "horaCierre"))
+                || !(datos.get("emprendimientoId") instanceof String id)) {
+            throw validation("base", "Indica el emprendimiento y los valores originales.");
+        }
+        UUID emprendimientoId;
+        try {
+            emprendimientoId = UUID.fromString(id);
+        } catch (IllegalArgumentException exception) {
+            throw validation("base.emprendimientoId", "El identificador no es válido.");
+        }
+        String descripcion = texto(datos.get("descripcion"), "base.descripcion");
+        LocalTime apertura = hora(datos.get("horaApertura"), "base.horaApertura");
+        LocalTime cierre = hora(datos.get("horaCierre"), "base.horaCierre");
+        if (descripcion == null || apertura == null || cierre == null) {
+            throw validation("base", "Indica la descripción y el horario originales.");
+        }
+        return new BaseEdicion(emprendimientoId, descripcion, apertura, cierre);
     }
 
     private static Double numero(Object value, String field) {
