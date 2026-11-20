@@ -28,6 +28,8 @@ jest.mock('expo-notifications', () => ({
   requestPermissionsAsync: jest.fn(),
   getDevicePushTokenAsync: jest.fn(),
   setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn(),
+  AndroidImportance: { DEFAULT: 3 },
 }));
 jest.mock('../../lib/auth', () => ({
   clearSession: jest.fn(), getValidSession: jest.fn(), getSessionGeneration: () => 0,

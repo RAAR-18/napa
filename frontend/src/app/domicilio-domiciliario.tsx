@@ -223,7 +223,7 @@ export default function DomicilioDomiciliarioScreen() {
       />
       {loading ? <ActivityIndicator accessibilityLabel="Cargando domicilio" color={palette.green} /> : null}
       <ErrorBanner message={error} />
-      {notice ? <Text accessibilityRole="status" style={styles.notice}>{notice}</Text> : null}
+      {notice ? <Text aria-live="polite" style={styles.notice}>{notice}</Text> : null}
       {detail && !unavailable ? (
         <>
           <View style={styles.card}>
