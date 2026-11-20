@@ -1,4 +1,5 @@
 import { jsonHeaders, requestJson } from './api';
+import { rutaConfirmarPagoPedido } from './pago-pedido-pendiente';
 import { withValidSession } from './auth';
 import type { EstadoDomicilio, MotivoCancelacionDomicilio } from './domicilios';
 
@@ -222,7 +223,7 @@ export function rechazarPedido(pedidoId: string, idempotencyKey: string) {
 export function confirmarPagoPedido(pedidoId: string, idempotencyKey: string) {
   return withValidSession((session) =>
     requestJson<PagoPedidoConfirmado>(
-      `/api/v1/pedidos/${encodeURIComponent(pedidoId)}/pago/confirmar`,
+      rutaConfirmarPagoPedido(pedidoId),
       {
         method: 'POST',
         headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey }),

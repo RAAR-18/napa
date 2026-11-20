@@ -1,22 +1,24 @@
 import { HelperText, TextButton } from './AuthUI';
 import type { AccionPendiente } from '../database/outbox/types';
-import type { TransicionDomicilio } from '../lib/domicilios';
 import type { PasoDomicilio } from '../lib/confirmacion-domicilio';
 
 export function EstadoConfirmacionDomicilio({ pendiente, confirmada, paso, cerrarRevision }: {
   pendiente?: AccionPendiente;
-  confirmada?: TransicionDomicilio | null;
-  paso: PasoDomicilio;
+  confirmada?: { updatedAt: string } | null;
+  paso: PasoDomicilio | 'confirmar-pago';
   cerrarRevision?: () => void;
 }) {
-  const recogida = paso === 'confirmar-recogida';
+  const pendienteTexto = paso === 'confirmar-pago' ? 'Confirmación de pago pendiente de envío'
+    : paso === 'confirmar-recogida' ? 'Recogida pendiente de envío' : 'Salida pendiente de envío';
+  const confirmadaTexto = paso === 'confirmar-pago' ? 'Pago confirmado'
+    : paso === 'confirmar-recogida' ? 'Recogida confirmada' : 'Salida confirmada';
   const formato = (fecha: number | string) =>
     new Date(fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
   if (pendiente) {
     return (
       <>
         <HelperText>{pendiente.status === 'FALLIDA' ? 'Requiere revisión'
-          : recogida ? 'Recogida pendiente de envío' : 'Salida pendiente de envío'}</HelperText>
+          : pendienteTexto}</HelperText>
         <HelperText>Guardada en el dispositivo el {formato(pendiente.createdAt)}.</HelperText>
         {pendiente.status === 'FALLIDA' ? (
           <>
@@ -28,6 +30,6 @@ export function EstadoConfirmacionDomicilio({ pendiente, confirmada, paso, cerra
     );
   }
   return confirmada ? (
-    <HelperText>{recogida ? 'Recogida' : 'Salida'} confirmada por el servidor el {formato(confirmada.updatedAt)}.</HelperText>
+    <HelperText>{confirmadaTexto} por el servidor el {formato(confirmada.updatedAt)}.</HelperText>
   ) : null;
 }

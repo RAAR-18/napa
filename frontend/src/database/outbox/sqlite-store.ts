@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
+import { pagoPedidoPendiente } from '../../lib/pago-pedido-pendiente';
 import { confirmacionDomicilio } from '../../lib/confirmacion-domicilio';
 import { respuestaPedidoPendiente } from '../../lib/respuesta-pedido-pendiente';
 import type { AccionPendiente, OutboxStore } from './types';
@@ -103,6 +104,11 @@ export class SqliteOutboxStore implements OutboxStore {
             OR path GLOB '/api/v1/domicilios/*/confirmar-salida'
           )
         `);
+        await db.execAsync(`
+          CREATE UNIQUE INDEX IF NOT EXISTS outbox_confirmacion_pago_por_pedido
+          ON outbox_por_cuenta (usuario_id, path)
+          WHERE method = 'POST' AND path GLOB '/api/v1/pedidos/*/pago/confirmar'
+        `);
         return db;
       })();
     }
@@ -132,6 +138,9 @@ export class SqliteOutboxStore implements OutboxStore {
     }
     if (resultado.changes === 0 && a.method === 'POST' && confirmacionDomicilio(a.path)) {
       throw new Error('Este domicilio ya tiene registrada esa confirmación pendiente.');
+    }
+    if (resultado.changes === 0 && a.method === 'POST' && pagoPedidoPendiente(a.path)) {
+      throw new Error('Este pedido ya tiene registrada una confirmación de pago.');
     }
     if (a.ifMatch && resultado.changes === 0) {
       throw new Error('Este producto ya tiene un cambio pendiente.');
