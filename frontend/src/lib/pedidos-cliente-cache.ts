@@ -1,8 +1,9 @@
 import * as SQLite from 'expo-sqlite';
 
+import type { DomicilioGuardado, DomicilioEnCursoGuardado, TransicionDomicilio } from './domicilios';
 import type { PedidoClienteDetalle, PedidoVendedorDetalle, PedidosClientePagina, PedidosVendedorPagina } from './pedidos';
 
-type TipoConsulta = 'listado' | 'detalle' | 'detalle-vendedor' | 'listado-vendedor';
+type TipoConsulta = 'listado' | 'detalle' | 'detalle-vendedor' | 'listado-vendedor' | 'detalle-domiciliario' | 'listado-domiciliario' | 'confirmacion-domicilio';
 export type DetallePedidoGuardado = Pick<PedidoClienteDetalle,
   'id' | 'estado' | 'modalidad' | 'reserva' | 'updatedAt' | 'emprendimiento' | 'total' | 'tarifaDomicilio' | 'pago'
 > & { items: Pick<PedidoClienteDetalle['items'][number], 'productoId' | 'nombre' | 'unidad' | 'cantidad' | 'subtotal'>[] };
@@ -43,7 +44,8 @@ export function guardarConsultaPedidos(
   cuenta: string,
   tipo: TipoConsulta,
   clave: string,
-  contenido: DetallePedidoGuardado | PedidosClientePagina | PedidoVendedorDetalle | PedidosVendedorPagina,
+  contenido: DetallePedidoGuardado | PedidosClientePagina | PedidoVendedorDetalle | PedidosVendedorPagina
+    | DomicilioGuardado | DomicilioEnCursoGuardado[] | TransicionDomicilio,
   vigente: () => boolean,
 ) {
   const fecha = Date.now();
@@ -102,14 +104,18 @@ export function borrarPedidosGuardados(cuenta: string) {
   });
 }
 
-export function quitarDetalleVendedorGuardado(cuenta: string, pedidoId: string) {
+export function quitarDetalleGuardado(cuenta: string, tipo: 'detalle-vendedor' | 'detalle-domiciliario', id: string) {
   return escribir(async () => {
     const db = await database();
     await db.runAsync(
-      "DELETE FROM cache_pedidos_cliente WHERE cuenta = ? AND tipo = 'detalle-vendedor' AND clave = ?",
-      cuenta, pedidoId,
+      'DELETE FROM cache_pedidos_cliente WHERE cuenta = ? AND tipo = ? AND clave = ?',
+      cuenta, tipo, id,
     );
   });
+}
+
+export function quitarDetalleVendedorGuardado(cuenta: string, pedidoId: string) {
+  return quitarDetalleGuardado(cuenta, 'detalle-vendedor', pedidoId);
 }
 
 export function quitarPedidoGuardado(cuenta: string, pedidoId: string) {

@@ -139,6 +139,12 @@ export type DomicilioDomiciliarioDetalle = {
   asignadoAt: string | null;
 };
 
+export type DomicilioGuardado = Pick<DomicilioDomiciliarioDetalle,
+  'id' | 'estado' | 'ganancia' | 'asignadoAMi' | 'distanciaMetros' | 'resumenItems' | 'asignadoAt'
+>;
+
+export type DomicilioEnCursoGuardado = Pick<DomicilioEnCurso, 'id' | 'estado' | 'ganancia' | 'asignadoAt'>;
+
 export type DomicilioAceptado = {
   id: string;
   estado: 'ASIGNADO';

@@ -14,8 +14,13 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
-import { ApiError } from '../lib/api';
-import { clearSession, getValidSession } from '../lib/auth';
+import { EstadoConfirmacionDomicilio } from '../components/EstadoConfirmacionDomicilio';
+import { outbox } from '../database/outbox';
+import { useConfirmacionDomicilio } from '../hooks/useConfirmacionDomicilio';
+import { confirmacionReintentable } from '../lib/confirmacion-domicilio';
+import { guardarConsultaPedidos, leerConsultaPedidos, quitarDetalleGuardado } from '../lib/pedidos-cliente-cache';
+import { ApiError, NetworkError } from '../lib/api';
+import { clearSession, getValidSession, readSession } from '../lib/auth';
 import {
   INTENTOS_CODIGO_ENTREGA,
   aceptarDomicilio,
@@ -27,6 +32,8 @@ import {
   rechazarDomicilio,
   type DomicilioDomiciliarioDetalle,
   type PuntoDomiciliario,
+  type DomicilioGuardado,
+  type TransicionDomicilio,
 } from '../lib/domicilios';
 import { borrarRuta } from '../lib/ruta-cache';
 import PagoTarifaDomicilio from '../components/PagoTarifaDomicilio';
@@ -85,7 +92,7 @@ function Punto({ title, punto }: { title: string; punto: PuntoDomiciliario }) {
 export default function DomicilioDomiciliarioScreen() {
   const { domicilioId: rawId } = useLocalSearchParams<{ domicilioId?: string | string[] }>();
   const domicilioId = Array.isArray(rawId) ? rawId[0] : rawId;
-  const [detail, setDetail] = useState<DomicilioDomiciliarioDetalle | null>(null);
+  const [detail, setDetail] = useState<DomicilioDomiciliarioDetalle | DomicilioGuardado | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -95,6 +102,16 @@ export default function DomicilioDomiciliarioScreen() {
   const [unavailable, setUnavailable] = useState(false);
   const actionKey = useRef<{ action: Action; key: string } | null>(null);
   const pickupKey = useRef<string | null>(null);
+  const guardandoRecogida = useRef(false);
+  const [cuenta, setCuenta] = useState<string | null>(null);
+  const [fechaGuardada, setFechaGuardada] = useState<number | null>(null);
+  const [enLinea, setEnLinea] = useState(false);
+  const [respuestaDirecta, setRespuestaDirecta] = useState<TransicionDomicilio | null>(null);
+  const recogida = useConfirmacionDomicilio(cuenta, domicilioId, 'confirmar-recogida',
+    () => setLoadAttempt((intento) => intento + 1));
+  const confirmada = recogida.confirmada ?? (respuestaDirecta?.id === domicilioId ? respuestaDirecta : null);
+  const estado = fechaGuardada !== null && detail?.estado === 'ASIGNADO' && confirmada
+    ? confirmada.estado : detail?.estado;
   const [codigo, setCodigo] = useState('');
 
   useEffect(() => {
@@ -102,21 +119,58 @@ export default function DomicilioDomiciliarioScreen() {
     async function load() {
       setLoading(true);
       setError(null);
+      setDetail(null);
+      setEnLinea(false);
+      setFechaGuardada(null);
+      setUnavailable(false);
       if (!domicilioId) {
         setError('No se indicó el domicilio que quieres consultar.');
         setLoading(false);
         return;
       }
+      let local: Awaited<ReturnType<typeof readSession>> = null;
       try {
+        local = typeof readSession === 'function' ? await readSession() : null;
         const session = await getValidSession();
         if (!active) return;
         if (session.rol !== 'DOMICILIARIO') {
           setError('Solo las cuentas de domiciliario pueden consultar domicilios.');
           return;
         }
+        setCuenta(session.usuarioId ?? null);
         const response = await obtenerDomicilioDomiciliario(domicilioId);
-        if (active) setDetail(response);
+        if (!active) return;
+        setDetail(response);
+        setEnLinea(true);
+        if (session.usuarioId) {
+          if (response.asignadoAMi && response.id === domicilioId) {
+            const { id, estado, ganancia, asignadoAMi, distanciaMetros, resumenItems, asignadoAt } = response;
+            void guardarConsultaPedidos(session.usuarioId, 'detalle-domiciliario', domicilioId,
+              { id, estado, ganancia, asignadoAMi, distanciaMetros, resumenItems, asignadoAt },
+              () => active).catch(() => undefined);
+          } else {
+            void quitarDetalleGuardado(session.usuarioId, 'detalle-domiciliario', domicilioId).catch(() => undefined);
+          }
+        }
       } catch (cause) {
+        if (cause instanceof NetworkError && local?.rol === 'DOMICILIARIO' && local.usuarioId) {
+          const copia = await leerConsultaPedidos<DomicilioGuardado>(
+            local.usuarioId, 'detalle-domiciliario', domicilioId,
+          ).catch(() => null);
+          const vigente = await readSession();
+          if (!active || vigente?.usuarioId !== local.usuarioId) return;
+          setCuenta(local.usuarioId);
+          if (copia?.data.asignadoAMi && copia.data.id === domicilioId) {
+            setDetail(copia.data);
+            setFechaGuardada(copia.fecha);
+          } else {
+            setError('Conéctate para descargar el detalle de este domicilio.');
+          }
+          return;
+        }
+        if (cause instanceof ApiError && [401, 403, 404].includes(cause.status) && local?.usuarioId) {
+          await quitarDetalleGuardado(local.usuarioId, 'detalle-domiciliario', domicilioId).catch(() => undefined);
+        }
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
@@ -171,19 +225,42 @@ export default function DomicilioDomiciliarioScreen() {
   }
 
   async function pickUp() {
-    if (!domicilioId || busy) return;
+    if (!domicilioId || busy || guardandoRecogida.current || !detail?.asignadoAMi ||
+        detail.id !== domicilioId || estado !== 'ASIGNADO' || recogida.pendiente || confirmada) return;
+    guardandoRecogida.current = true;
     pickupKey.current ??= randomUUID();
     setBusy(true);
     setError(null);
     try {
-      await confirmarRecogida(domicilioId, pickupKey.current);
+      if (await recogida.yaEncolada()) return;
+      if (fechaGuardada !== null) {
+        await recogida.encolar(pickupKey.current, false);
+        pickupKey.current = null;
+        setNotice(null);
+        return;
+      }
+      const resultado = await confirmarRecogida(domicilioId, pickupKey.current);
+      setRespuestaDirecta(resultado);
+      await recogida.registrar(resultado).catch(() => undefined);
       pickupKey.current = null;
       setNotice('Recogida confirmada. Cuando el vendedor confirme tu salida podrás entregar.');
       setLoadAttempt((attempt) => attempt + 1);
     } catch (cause) {
+      if (cuenta && fechaGuardada === null && pickupKey.current && confirmacionReintentable(cause)) {
+        try {
+          await recogida.encolar(pickupKey.current, true);
+          pickupKey.current = null;
+          setNotice(null);
+          return;
+        } catch (error) {
+          setError(actionError(error));
+          return;
+        }
+      }
       if (cause instanceof ApiError) pickupKey.current = null;
       setError(actionError(cause));
     } finally {
+      guardandoRecogida.current = false;
       setBusy(false);
     }
   }
@@ -210,10 +287,10 @@ export default function DomicilioDomiciliarioScreen() {
     }
   }
 
-  const canDecide = detail?.estado === 'DISPONIBLE' && !detail.asignadoAMi && !unavailable;
+  const canDecide = enLinea && detail?.estado === 'DISPONIBLE' && !detail.asignadoAMi && !unavailable;
   const mine = Boolean(detail?.asignadoAMi) && !unavailable;
   // RF-26: el cliente ve dónde va el pedido mientras está en camino.
-  const compartir = useCompartirUbicacion(detail?.id, mine && detail?.estado === 'EN_CAMINO');
+  const compartir = useCompartirUbicacion(detail?.id, enLinea && mine && detail?.estado === 'EN_CAMINO');
 
   return (
     <AuthPage>
@@ -224,18 +301,28 @@ export default function DomicilioDomiciliarioScreen() {
       />
       {loading ? <ActivityIndicator accessibilityLabel="Cargando domicilio" color={palette.green} /> : null}
       <ErrorBanner message={error} />
+      {fechaGuardada !== null ? (
+        <HelperText>Datos guardados. Última actualización {new Date(fechaGuardada).toLocaleString('es-CO')}.</HelperText>
+      ) : null}
+      <EstadoConfirmacionDomicilio paso="confirmar-recogida" pendiente={recogida.pendiente} confirmada={confirmada}
+        cerrarRevision={enLinea && recogida.pendiente?.status === 'FALLIDA' ? () => {
+          void outbox.descartar(recogida.pendiente!.id).catch((cause) => setError(actionError(cause)));
+        } : undefined} />
+      {domicilioId ? <TextButton title="Actualizar domicilio" disabled={loading || busy}
+        onPress={() => setLoadAttempt((intento) => intento + 1)} /> : null}
       {notice ? <Text aria-live="polite" style={styles.notice}>{notice}</Text> : null}
       {detail && !unavailable ? (
         <>
           <View style={styles.card}>
             <Text style={styles.gain}>Ganancia: {formatPrice(detail.ganancia)}</Text>
-            <Text style={styles.detailText}>Estado: {estadoDomicilioNombres[detail.estado]}</Text>
+            <Text style={styles.detailText}>Estado: {estadoDomicilioNombres[estado ?? detail.estado]}</Text>
             <Text style={styles.detailText}>Distancia de A a B: {formatearDistancia(detail.distanciaMetros)}</Text>
             <Text style={styles.detailText}>
               Pedido de {detail.resumenItems.cantidadItems}{' '}
               {detail.resumenItems.cantidadItems === 1 ? 'producto' : 'productos'}
             </Text>
           </View>
+          {enLinea && 'origen' in detail ? <>
           <Punto title="Origen (A)" punto={detail.origen} />
           <Punto title="Destino (B)" punto={detail.destino} />
           <View style={styles.card}>
@@ -245,6 +332,7 @@ export default function DomicilioDomiciliarioScreen() {
               <Text style={styles.detailText}>Celular: {detail.receptor.celular}</Text>
             ) : null}
           </View>
+          </> : null}
         </>
       ) : null}
       {canDecide && !pendingAction && !loading ? (
@@ -276,22 +364,22 @@ export default function DomicilioDomiciliarioScreen() {
           />
         </View>
       ) : null}
-      {mine && detail?.rutaDisponible && !loading ? (
+      {enLinea && mine && detail && 'rutaDisponible' in detail && detail.rutaDisponible && !loading ? (
         <PrimaryButton
           title="Ver ruta en el mapa"
           onPress={() => router.push({ pathname: '/ruta-domicilio', params: { domicilioId: detail.id } })}
         />
       ) : null}
-      {mine && detail?.estado === 'ASIGNADO' && !loading ? (
+      {mine && estado === 'ASIGNADO' && !recogida.pendiente && !confirmada && !loading ? (
         <>
           <HelperText>Cuando tengas el pedido en tus manos, confirma la recogida.</HelperText>
           <PrimaryButton title="Confirmar recogida" busy={busy} onPress={() => void pickUp()} />
         </>
       ) : null}
-      {mine && detail?.estado === 'RECOGIDO' && !loading ? (
+      {mine && estado === 'RECOGIDO' && !loading ? (
         <HelperText>Espera a que el vendedor confirme tu salida para iniciar el trayecto.</HelperText>
       ) : null}
-      {mine && detail?.estado === 'EN_CAMINO' && !loading ? (
+      {enLinea && mine && detail?.estado === 'EN_CAMINO' && !loading ? (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Confirmar entrega</Text>
           <Text style={styles.detailText}>Pídele al cliente su código de 6 dígitos.</Text>
@@ -306,7 +394,7 @@ export default function DomicilioDomiciliarioScreen() {
           <PrimaryButton title="Confirmar entrega" busy={busy} onPress={() => void deliver()} />
         </View>
       ) : null}
-      {mine && detail?.estado === 'EN_CAMINO' ? (
+      {enLinea && mine && detail?.estado === 'EN_CAMINO' ? (
         <HelperText>
           {compartir === 'compartiendo'
             ? 'Compartiendo tu ubicación aproximada con el cliente mientras vas en camino.'
@@ -317,7 +405,7 @@ export default function DomicilioDomiciliarioScreen() {
                 : 'Preparando el envío de tu ubicación…'}
         </HelperText>
       ) : null}
-      {mine && detail?.estado === 'ENTREGADO' && !loading ? (
+      {enLinea && mine && detail?.estado === 'ENTREGADO' && !loading ? (
         <>
           <HelperText>Este domicilio ya fue entregado.</HelperText>
           <PagoTarifaDomicilio domicilioId={detail.id} rol="DOMICILIARIO" />

@@ -148,7 +148,10 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: la recogida del domiciliario y la salida del vendedor se escriben en el outbox con su `Idempotency-Key` y se muestran como "pendiente de envío"; al reconectar, un `INVALID_STATE` se explica y se refresca el domicilio.
+- **Tolerancia a mala conexión (RNF28)**. El domiciliario asignado puede encolar la recogida cuando el estado descargado es `ASIGNADO`. El vendedor propietario puede encolar la salida cuando es `RECOGIDO`. Una recogida en la cola no habilita la salida.
+- Se guarda una sola confirmación por cuenta, acción y domicilio. Los reintentos técnicos usan la misma solicitud POST sin cuerpo y la misma clave de idempotencia. Los rechazos definitivos muestran «Requiere revisión» y provocan una consulta del estado vigente.
+- La app muestra el último estado confirmado, la fecha de descarga y la hora en que se guardó la confirmación. El resultado de sincronización conserva la hora oficial `updatedAt` devuelta por el servidor.
+- El listado y el detalle descargados se pueden consultar tras reabrir la app. La copia caduca a los siete días y se limpia al cerrar sesión. Para el domiciliario, la copia contiene el resumen del domicilio asignado, sin direcciones ni datos de contacto. Las confirmaciones pendientes se conservan separadas por cuenta.
 - **Concurrencia (RNF08)**: la actualización condicional `WHERE estado = ...` garantiza que dos solicitudes iguales produzcan una sola transición y un solo evento.
 - **Idempotencia (RNF27)**: Redis `idem:{userId}:{key}`.
 
@@ -297,7 +300,7 @@ frontend/__tests__/domicilios/recogida-salida.test.tsx
 - [ ] Eventos emitidos documentados en `eventos.md`; ningún listener planificado en este plan
 - [ ] Actores (comprador, vendedor, domiciliario, administrador) identificados
 - [ ] Errores y casos borde tienen comportamiento definido
-- [ ] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
+- [x] Estrategia de conectividad y concurrencia definida cuando aplica (RNF28, RNF08)
 - [ ] Dependencias y librerías identificadas
 - [ ] Cada tarea es granular y nombra el archivo que toca
 - [ ] No se agregó comportamiento que no esté en la spec

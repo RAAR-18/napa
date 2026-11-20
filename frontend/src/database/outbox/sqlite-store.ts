@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
+import { confirmacionDomicilio } from '../../lib/confirmacion-domicilio';
 import { respuestaPedidoPendiente } from '../../lib/respuesta-pedido-pendiente';
 import type { AccionPendiente, OutboxStore } from './types';
 
@@ -94,6 +95,14 @@ export class SqliteOutboxStore implements OutboxStore {
             path GLOB '/api/v1/pedidos/*/aceptar' OR path GLOB '/api/v1/pedidos/*/rechazar'
           )
         `);
+        await db.execAsync(`
+          CREATE UNIQUE INDEX IF NOT EXISTS outbox_confirmacion_por_domicilio
+          ON outbox_por_cuenta (usuario_id, path)
+          WHERE method = 'POST' AND (
+            path GLOB '/api/v1/domicilios/*/confirmar-recogida'
+            OR path GLOB '/api/v1/domicilios/*/confirmar-salida'
+          )
+        `);
         return db;
       })();
     }
@@ -120,6 +129,9 @@ export class SqliteOutboxStore implements OutboxStore {
     }
     if (resultado.changes === 0 && respuestaPedidoPendiente(a)) {
       throw new Error('Este pedido ya tiene una decisión pendiente o por revisar.');
+    }
+    if (resultado.changes === 0 && a.method === 'POST' && confirmacionDomicilio(a.path)) {
+      throw new Error('Este domicilio ya tiene registrada esa confirmación pendiente.');
     }
     if (a.ifMatch && resultado.changes === 0) {
       throw new Error('Este producto ya tiene un cambio pendiente.');

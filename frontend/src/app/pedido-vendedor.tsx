@@ -16,6 +16,9 @@ import {
 import ClienteDelPedido from '../components/ClienteDelPedido';
 import DomiciliarioAsignado from '../components/DomiciliarioAsignado';
 import PagoTarifaDomicilio from '../components/PagoTarifaDomicilio';
+import { EstadoConfirmacionDomicilio } from '../components/EstadoConfirmacionDomicilio';
+import { useConfirmacionDomicilio } from '../hooks/useConfirmacionDomicilio';
+import { confirmacionReintentable } from '../lib/confirmacion-domicilio';
 import { useAccionesPendientes } from '../hooks/useOutbox';
 import { outbox } from '../database/outbox';
 import { guardarConsultaPedidos, leerConsultaPedidos, quitarDetalleVendedorGuardado } from '../lib/pedidos-cliente-cache';
@@ -24,6 +27,7 @@ import { ApiError, NetworkError } from '../lib/api';
 import { clearSession, getValidSession, readSession } from '../lib/auth';
 import {
   confirmarSalida,
+  type TransicionDomicilio,
   estadoDomicilioNombres,
   motivoCancelacionNombres,
   publicarDomicilio,
@@ -134,6 +138,13 @@ export default function PedidoVendedorScreen() {
   const [detail, setDetail] = useState<PedidoVendedorDetalle | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [respuestaSalida, setRespuestaSalida] = useState<TransicionDomicilio | null>(null);
+  const domicilioId = detail?.domicilio?.id;
+  const salida = useConfirmacionDomicilio(cuenta, domicilioId, 'confirmar-salida',
+    () => setLoadAttempt((intento) => intento + 1));
+  const salidaConfirmada = salida.confirmada ?? (respuestaSalida?.id === domicilioId ? respuestaSalida : null);
+  const estadoDomicilio = fechaGuardada !== null && detail?.domicilio?.estado === 'RECOGIDO' && salidaConfirmada
+    ? salidaConfirmada.estado : detail?.domicilio?.estado;
   const [busy, setBusy] = useState(false);
   const [pendingAction, setPendingAction] = useState<ResponseAction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -149,7 +160,7 @@ export default function PedidoVendedorScreen() {
     detail.pago?.estado === 'CONFIRMADO' &&
     !activeDelivery;
   const canConfirmDeparture =
-    userRole === 'VENDEDOR_PUNTO_FIJO' && detail?.domicilio?.estado === 'RECOGIDO';
+    userRole === 'VENDEDOR_PUNTO_FIJO' && estadoDomicilio === 'RECOGIDO' && !salida.pendiente && !salidaConfirmada;
   const isStreetSeller = userRole === 'VENDEDOR_AMBULANTE';
   const isFixedSeller = userRole === 'VENDEDOR_PUNTO_FIJO';
   const canStartDelivery =
@@ -205,7 +216,11 @@ export default function PedidoVendedorScreen() {
         setConsultaServidor(true);
         if (session.usuarioId && response.id === pedidoId) {
           void guardarConsultaPedidos(session.usuarioId, 'detalle-vendedor', pedidoId, {
-            ...response, ubicacionEntrega: null, domicilio: null,
+            ...response, ubicacionEntrega: null,
+            domicilio: response.domicilio ? {
+              id: response.domicilio.id, estado: response.domicilio.estado,
+              motivoCancelacion: response.domicilio.motivoCancelacion,
+            } : null,
           }, () => active).catch(() => undefined);
         }
       } catch (cause) {
@@ -300,8 +315,19 @@ export default function PedidoVendedorScreen() {
         await confirmarRetiro(pedidoId, idempotencyKey);
         setNotice('Retiro confirmado y pago registrado.');
       } else if (action === 'confirmDeparture') {
-        if (!detail?.domicilio) return;
-        await confirmarSalida(detail.domicilio.id, idempotencyKey);
+        if (!domicilioId || !canConfirmDeparture) return;
+        if (await salida.yaEncolada()) {
+          cancelarSalidaGuardada();
+          return;
+        }
+        if (fechaGuardada !== null) {
+          await salida.encolar(idempotencyKey, false);
+          cancelarSalidaGuardada();
+          return;
+        }
+        const resultado = await confirmarSalida(domicilioId, idempotencyKey);
+        setRespuestaSalida(resultado);
+        await salida.registrar(resultado).catch(() => undefined);
         setNotice('Salida confirmada. El pedido va en camino al cliente.');
       } else {
         await publicarDomicilio(pedidoId, idempotencyKey);
@@ -315,6 +341,16 @@ export default function PedidoVendedorScreen() {
       setDetail(null);
       setLoadAttempt((attempt) => attempt + 1);
     } catch (cause) {
+      if (action === 'confirmDeparture' && cuenta && fechaGuardada === null && confirmacionReintentable(cause)) {
+        try {
+          await salida.encolar(idempotencyKey, true);
+          cancelarSalidaGuardada();
+          return;
+        } catch (fallo) {
+          setError(actionError(fallo, detail?.reserva, action));
+          return;
+        }
+      }
       if (respuesta && cuenta && (cause instanceof NetworkError || (cause instanceof ApiError &&
         (cause.status >= 500 || cause.status === 408 || cause.status === 429 ||
           (cause.status === 409 && cause.code === 'IDEMPOTENCY_IN_PROGRESS'))))) {
@@ -332,6 +368,12 @@ export default function PedidoVendedorScreen() {
       enviando.current = false;
       setBusy(false);
     }
+  }
+
+  function cancelarSalidaGuardada() {
+    actionKey.current = null;
+    setPendingAction(null);
+    setNotice(null);
   }
 
   async function guardarDecision(id: string, respuesta: 'accept' | 'reject', clave: string, intentoPrevio: boolean) {
@@ -446,8 +488,8 @@ export default function PedidoVendedorScreen() {
           {detail.domicilio ? (
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Domicilio</Text>
-              <Text style={styles.status}>{estadoDomicilioNombres[detail.domicilio.estado]}</Text>
-              {detail.domicilio.estado !== 'CANCELADO' ? (
+              <Text style={styles.status}>{estadoDomicilioNombres[estadoDomicilio ?? detail.domicilio.estado]}</Text>
+              {consultaServidor && detail.domicilio.estado !== 'CANCELADO' ? (
                 <DomiciliarioAsignado pedidoId={detail.id} estadoDomicilio={detail.domicilio.estado} />
               ) : null}
               {detail.domicilio.motivoCancelacion ? (
@@ -465,7 +507,7 @@ export default function PedidoVendedorScreen() {
                   Un domiciliario aceptó el domicilio y viene a recoger el pedido.
                 </Text>
               ) : null}
-              {detail.domicilio.estado === 'RECOGIDO' ? (
+              {estadoDomicilio === 'RECOGIDO' ? (
                 <Text style={styles.detailText}>
                   El domiciliario confirmó la recogida. Confirma su salida cuando se vaya con el pedido.
                 </Text>
@@ -481,7 +523,7 @@ export default function PedidoVendedorScreen() {
               />
             </View>
           ) : null}
-          {detail.domicilio?.estado === 'ENTREGADO' && userRole === 'VENDEDOR_PUNTO_FIJO' ? (
+          {consultaServidor && detail.domicilio?.estado === 'ENTREGADO' && userRole === 'VENDEDOR_PUNTO_FIJO' ? (
             <PagoTarifaDomicilio domicilioId={detail.domicilio.id} rol="VENDEDOR" />
           ) : null}
           {notice ? <Text aria-live="polite" style={styles.notice}>{notice}</Text> : null}
@@ -519,7 +561,11 @@ export default function PedidoVendedorScreen() {
               />
             </>
           ) : null}
-          {canConfirmDeparture && consultaServidor && !decision && !pendingAction && !loading ? (
+          <EstadoConfirmacionDomicilio paso="confirmar-salida" pendiente={salida.pendiente}
+            confirmada={salidaConfirmada} cerrarRevision={consultaServidor && !loading && salida.pendiente?.status === 'FALLIDA'
+              ? () => { void outbox.descartar(salida.pendiente!.id).catch((cause) =>
+                setError(actionError(cause, detail.reserva, 'confirmDeparture'))); } : undefined} />
+          {canConfirmDeparture && !decision && !pendingAction && !loading ? (
             <PrimaryButton title="Confirmar salida" onPress={() => setPendingAction('confirmDeparture')} />
           ) : null}
           {canStartDelivery && consultaServidor && !decision && !pendingAction && !loading ? (
@@ -555,7 +601,7 @@ export default function PedidoVendedorScreen() {
               <PrimaryButton title="Confirmar retiro y cobro" onPress={() => setPendingAction('confirmPickup')} />
             </>
           ) : null}
-          {pendingAction && !decision && !loading ? (
+          {pendingAction && !decision && !loading && (pendingAction !== 'confirmDeparture' || canConfirmDeparture) ? (
             <View style={styles.confirmation}>
               <Text style={styles.confirmationText}>
                 {pendingAction === 'accept'

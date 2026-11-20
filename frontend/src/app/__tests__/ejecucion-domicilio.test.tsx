@@ -7,8 +7,10 @@ import MisPedidosScreen from '../mis-pedidos';
 import PedidoClienteScreen from '../pedido-cliente';
 import PedidoVendedorScreen from '../pedido-vendedor';
 import TrazabilidadDomicilioScreen from '../trazabilidad-domicilio';
-import { ApiError } from '../../lib/api';
-import { getValidSession } from '../../lib/auth';
+import { outbox } from '../../database/outbox';
+import { leerConsultaPedidos } from '../../lib/pedidos-cliente-cache';
+import { ApiError, NetworkError } from '../../lib/api';
+import { getValidSession, readSession } from '../../lib/auth';
 import {
   confirmarEntrega,
   confirmarRecogida,
@@ -45,6 +47,16 @@ jest.mock('../../lib/auth', () => ({
   getValidSession: jest.fn(),
   getSessionGeneration: () => 0,
   readSession: jest.fn().mockResolvedValue(null),
+}));
+jest.mock('../../database/outbox', () => ({
+  outbox: {
+    listar: jest.fn().mockResolvedValue([]), suscribir: () => () => {},
+    encolar: jest.fn().mockResolvedValue(undefined), propietario: jest.fn().mockResolvedValue('offline-account'),
+  },
+}));
+jest.mock('../../lib/pedidos-cliente-cache', () => ({
+  ...jest.requireActual('../../lib/pedidos-cliente-cache'),
+  leerConsultaPedidos: jest.fn().mockResolvedValue(null),
 }));
 jest.mock('../../lib/domicilios', () => ({
   ...jest.requireActual('../../lib/domicilios'),
@@ -346,4 +358,62 @@ describe('cliente', () => {
     expect(view.getAllByText('En camino').length).toBe(2);
     expect(view.getByText('Sin ubicación reciente del domiciliario.')).toBeTruthy();
   });
+});
+
+it('queues pickup from the courier snapshot and keeps the last confirmed state', async () => {
+  jest.clearAllMocks();
+  jest.mocked(Crypto.randomUUID).mockReturnValue('offline-key');
+  const local = { ...session('DOMICILIARIO'), usuarioId: 'offline-account' };
+  jest.mocked(readSession).mockResolvedValue(local);
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  jest.mocked(leerConsultaPedidos).mockImplementation(async (_cuenta, tipo) =>
+    tipo === 'detalle-domiciliario' ? { data: mine as never, fecha: Date.now() } : null,
+  );
+  try {
+    const view = await render(<DomicilioDomiciliarioScreen />);
+    await view.findByText(/Datos guardados/);
+    await fireEvent.press(view.getByRole('button', { name: 'Confirmar recogida' }));
+    await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
+      usuarioId: 'offline-account', path: '/api/v1/domicilios/delivery-id/confirmar-recogida',
+      method: 'POST', idempotencyKey: 'offline-key', intentoPrevio: false,
+    })));
+    expect(confirmarRecogida).not.toHaveBeenCalled();
+    expect(view.getByText('Estado: Asignado')).toBeTruthy();
+    expect(view.queryByRole('button', { name: 'Confirmar entrega' })).toBeNull();
+  } finally {
+    jest.mocked(readSession).mockResolvedValue(null);
+    jest.mocked(leerConsultaPedidos).mockResolvedValue(null);
+  }
+});
+
+it('requires a server-confirmed pickup snapshot before queuing departure as the seller', async () => {
+  jest.clearAllMocks();
+  jest.mocked(Crypto.randomUUID).mockReturnValue('offline-key');
+  const local = { ...session('VENDEDOR_PUNTO_FIJO'), usuarioId: 'offline-account' };
+  jest.mocked(readSession).mockResolvedValue(local);
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  let estado: 'ASIGNADO' | 'RECOGIDO' = 'ASIGNADO';
+  jest.mocked(leerConsultaPedidos).mockImplementation(async (_cuenta, tipo) =>
+    tipo === 'detalle-vendedor' ? {
+      data: { ...vendorOrder, domicilio: { id: 'delivery-id', estado, motivoCancelacion: null } } as never,
+      fecha: Date.now(),
+    } : null,
+  );
+  try {
+    const view = await render(<PedidoVendedorScreen />);
+    await view.findByText(/Datos guardados/);
+    expect(view.queryByRole('button', { name: 'Confirmar salida' })).toBeNull();
+    estado = 'RECOGIDO';
+    await fireEvent.press(view.getByRole('button', { name: 'Actualizar pedido' }));
+    await fireEvent.press(await view.findByRole('button', { name: 'Confirmar salida' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Sí, ya salió' }));
+    await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
+      usuarioId: 'offline-account', path: '/api/v1/domicilios/delivery-id/confirmar-salida',
+      method: 'POST', idempotencyKey: 'offline-key', intentoPrevio: false,
+    })));
+    expect(confirmarSalida).not.toHaveBeenCalled();
+  } finally {
+    jest.mocked(readSession).mockResolvedValue(null);
+    jest.mocked(leerConsultaPedidos).mockResolvedValue(null);
+  }
 });
