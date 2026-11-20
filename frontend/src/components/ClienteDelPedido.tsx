@@ -1,3 +1,4 @@
+import { fonts } from './theme';
 import { useEffect, useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 
@@ -57,8 +58,8 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  label: { color: palette.muted, fontSize: 13, fontWeight: '700' },
-  name: { color: palette.dark, fontSize: 17, fontWeight: '800', marginTop: 2 },
-  detail: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  label: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, fontWeight: '700' },
+  name: { color: palette.dark, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800', marginTop: 2 },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
   row: { flexDirection: 'row', gap: 16 },
 });

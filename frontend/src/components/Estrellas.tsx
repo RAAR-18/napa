@@ -1,3 +1,4 @@
+import { fonts } from './theme';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { palette } from './AuthUI';
@@ -42,8 +43,8 @@ export default function Estrellas({
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', marginVertical: 6 },
   star: { paddingHorizontal: 4, paddingVertical: 2 },
-  starText: { fontSize: 32 },
+  starText: { fontFamily: fonts.sans, fontSize: 32 },
   filled: { color: '#E8A317' },
   empty: { color: palette.border },
-  static: { color: '#E8A317', fontSize: 16 },
+  static: { color: '#E8A317', fontFamily: fonts.sans, fontSize: 16 },
 });

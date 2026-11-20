@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
@@ -153,7 +154,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   label: {
     color: palette.dark,
-    fontSize: 14,
+    fontFamily: fonts.sans, fontSize: 14,
     fontWeight: '700',
     marginBottom: 8,
   },

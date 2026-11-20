@@ -3,11 +3,14 @@ import { router } from 'expo-router';
 
 import EmprendimientoScreen from '../emprendimiento';
 import { getValidSession } from '../../lib/auth';
-import {
-  createEmprendimiento,
-  type Emprendimiento,
-} from '../../lib/emprendimientos';
+import { createEmprendimiento } from '../../lib/emprendimientos';
+import type { Emprendimiento } from '../../lib/emprendimientos';
 import { ApiError } from '../../lib/api';
+import {
+  LocationPermissionDeniedError,
+  LocationUnavailableError,
+  requestDeviceLocation,
+} from '../../lib/location';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn() },
@@ -20,6 +23,26 @@ jest.mock('../../lib/auth', () => ({
 
 jest.mock('../../lib/emprendimientos', () => ({
   createEmprendimiento: jest.fn(),
+}));
+
+jest.mock('../../lib/location', () => ({
+  LocationPermissionDeniedError: class LocationPermissionDeniedError extends Error {
+    constructor(
+      message = 'No se concedió permiso de ubicación. Puedes escribir las coordenadas manualmente.',
+    ) {
+      super(message);
+      this.name = 'LocationPermissionDeniedError';
+    }
+  },
+  LocationUnavailableError: class LocationUnavailableError extends Error {
+    constructor(
+      message = 'No se pudo obtener la ubicación del dispositivo.',
+    ) {
+      super(message);
+      this.name = 'LocationUnavailableError';
+    }
+  },
+  requestDeviceLocation: jest.fn(),
 }));
 
 const session = {
@@ -125,5 +148,124 @@ describe('EmprendimientoScreen', () => {
       expect(getByText('Ya tienes un emprendimiento activo.')).toBeTruthy(),
     );
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('requests device location permission and populates coordinates automatically', async () => {
+    jest.mocked(requestDeviceLocation).mockResolvedValue({
+      latitude: 4.711,
+      longitude: -74.0721,
+    });
+    const created: Emprendimiento = {
+      id: 'business-id-2',
+      nombre: 'Frutas Frescas',
+      categoria: 'FRUTAS_VERDURAS',
+      descripcion: 'Frutas recién cosechadas.',
+      horaApertura: '08:00',
+      horaCierre: '18:00',
+      tipoVendedor: 'VENDEDOR_PUNTO_FIJO',
+      estado: 'ACTIVO',
+      ubicacion: {
+        latitud: 4.711,
+        longitud: -74.0721,
+        direccion: 'Carrera 7 # 10-20',
+        referencia: null,
+      },
+    };
+    jest.mocked(createEmprendimiento).mockResolvedValue(created);
+
+    const { getByLabelText, getByRole, getByText } = await render(
+      <EmprendimientoScreen />,
+    );
+
+    await waitFor(() => expect(getByLabelText('Nombre del emprendimiento')).toBeTruthy());
+
+    await fireEvent.changeText(
+      getByLabelText('Nombre del emprendimiento'),
+      'Frutas Frescas',
+    );
+    await fireEvent.press(getByRole('radio', { name: 'Frutas y verduras' }));
+    await fireEvent.changeText(
+      getByLabelText('Descripción'),
+      'Frutas recién cosechadas.',
+    );
+    await fireEvent.changeText(getByLabelText('Hora de apertura'), '08:00');
+    await fireEvent.changeText(getByLabelText('Hora de cierre'), '18:00');
+    await fireEvent.changeText(
+      getByLabelText('Dirección del punto (obligatoria)'),
+      'Carrera 7 # 10-20',
+    );
+
+    await fireEvent.press(getByRole('button', { name: 'Usar mi ubicación actual' }));
+
+    await waitFor(() => {
+      expect(requestDeviceLocation).toHaveBeenCalledTimes(1);
+      expect(getByLabelText('Latitud').props.value).toBe('4.711');
+      expect(getByLabelText('Longitud').props.value).toBe('-74.0721');
+    });
+
+    await fireEvent.press(getByRole('button', { name: 'Publicar emprendimiento' }));
+
+    await waitFor(() => {
+      expect(createEmprendimiento).toHaveBeenCalledWith({
+        nombre: 'Frutas Frescas',
+        categoria: 'FRUTAS_VERDURAS',
+        descripcion: 'Frutas recién cosechadas.',
+        horaApertura: '08:00',
+        horaCierre: '18:00',
+        ubicacion: {
+          latitud: 4.711,
+          longitud: -74.0721,
+          direccion: 'Carrera 7 # 10-20',
+          referencia: null,
+        },
+      });
+      expect(getByText('Creación exitosa')).toBeTruthy();
+    });
+  });
+
+  it('displays a friendly error when device location permission is denied', async () => {
+    jest
+      .mocked(requestDeviceLocation)
+      .mockRejectedValue(new LocationPermissionDeniedError());
+
+    const { getByLabelText, getByRole, getByText } = await render(
+      <EmprendimientoScreen />,
+    );
+
+    await waitFor(() => expect(getByLabelText('Nombre del emprendimiento')).toBeTruthy());
+
+    await fireEvent.press(getByRole('button', { name: 'Usar mi ubicación actual' }));
+
+    await waitFor(() => {
+      expect(
+        getByText(
+          'No se concedió permiso de ubicación. Puedes escribir las coordenadas manualmente.',
+        ),
+      ).toBeTruthy();
+    });
+  });
+
+  it('displays error banner when obtaining device coordinates fails', async () => {
+    jest
+      .mocked(requestDeviceLocation)
+      .mockRejectedValue(
+        new LocationUnavailableError(
+          'No se pudo obtener la ubicación del dispositivo: GPS timeout.',
+        ),
+      );
+
+    const { getByLabelText, getByRole, getByText } = await render(
+      <EmprendimientoScreen />,
+    );
+
+    await waitFor(() => expect(getByLabelText('Nombre del emprendimiento')).toBeTruthy());
+
+    await fireEvent.press(getByRole('button', { name: 'Usar mi ubicación actual' }));
+
+    await waitFor(() => {
+      expect(
+        getByText('No se pudo obtener la ubicación del dispositivo: GPS timeout.'),
+      ).toBeTruthy();
+    });
   });
 });

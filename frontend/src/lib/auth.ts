@@ -1,4 +1,4 @@
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from './uuid';
 
 import { ApiError, jsonHeaders, requestJson, requestVoid } from './api';
 import * as authStorage from './auth-storage';
@@ -90,7 +90,7 @@ async function deviceId(): Promise<string> {
   if (currentId) {
     return currentId;
   }
-  const newId = Crypto.randomUUID();
+  const newId = randomUUID();
   await authStorage.setItemAsync(DEVICE_ID_KEY, newId);
   return newId;
 }
@@ -139,7 +139,7 @@ export async function register(input: RegistrationInput): Promise<void> {
     method: 'POST',
     headers: jsonHeaders({
       deviceId: await deviceId(),
-      idempotencyKey: Crypto.randomUUID(),
+      idempotencyKey: randomUUID(),
     }),
     body: JSON.stringify({
       ...registration,
@@ -199,7 +199,7 @@ export async function resetPassword(
     method: 'POST',
     headers: jsonHeaders({
       deviceId: await deviceId(),
-      idempotencyKey: Crypto.randomUUID(),
+      idempotencyKey: randomUUID(),
     }),
     body: JSON.stringify({ celular, codigo, passwordNueva: contrasenaNueva }),
   });
@@ -332,7 +332,7 @@ export async function changePassword(
   contrasenaActual: string,
   contrasenaNueva: string,
 ): Promise<StoredSession> {
-  const idempotencyKey = Crypto.randomUUID();
+  const idempotencyKey = randomUUID();
   const response = await withValidSession((session) =>
     requestJson<AuthResponse>(`${AUTH_PATH}/password/change`, {
       method: 'POST',

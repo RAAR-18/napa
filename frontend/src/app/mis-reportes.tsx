@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -82,8 +83,8 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     padding: 14,
   },
-  title: { color: palette.dark, fontSize: 15, fontWeight: '800' },
-  badge: { color: '#9A6700', fontSize: 13, fontWeight: '700', marginTop: 4 },
+  title: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, fontWeight: '800' },
+  badge: { color: '#9A6700', fontFamily: fonts.sans, fontSize: 13, fontWeight: '700', marginTop: 4 },
   resolved: { color: palette.green },
-  detail: { color: palette.muted, fontSize: 13, marginTop: 4 },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, marginTop: 4 },
 });

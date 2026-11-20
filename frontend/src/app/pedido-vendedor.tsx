@@ -1,6 +1,7 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -204,7 +205,7 @@ export default function PedidoVendedorScreen() {
     setNotice(null);
     const action = pendingAction;
     if (actionKey.current?.action !== action) {
-      actionKey.current = { action, key: Crypto.randomUUID() };
+      actionKey.current = { action, key: randomUUID() };
     }
     const idempotencyKey = actionKey.current.key;
     setBusy(true);
@@ -525,14 +526,14 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  status: { color: palette.green, fontSize: 17, fontWeight: '800' },
-  notice: { color: palette.green, fontSize: 14, fontWeight: '700', marginVertical: 10 },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
-  reservation: { color: '#86510F', fontSize: 14, fontWeight: '700', marginTop: 6 },
-  sectionTitle: { color: palette.dark, fontSize: 18, fontWeight: '800', marginTop: 12 },
-  itemName: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  itemSubtotal: { color: palette.dark, fontSize: 14, fontWeight: '700', marginTop: 6 },
-  total: { color: palette.green, fontSize: 17, fontWeight: '800', marginTop: 10 },
+  status: { color: palette.green, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800' },
+  notice: { color: palette.green, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginVertical: 10 },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  reservation: { color: '#86510F', fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginTop: 6 },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 18, fontWeight: '800', marginTop: 12 },
+  itemName: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  itemSubtotal: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginTop: 6 },
+  total: { color: palette.green, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800', marginTop: 10 },
   confirmation: {
     backgroundColor: '#FFF8E8',
     borderColor: '#E8D8AE',
@@ -541,5 +542,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
     padding: 14,
   },
-  confirmationText: { color: palette.dark, fontSize: 15, lineHeight: 22 },
+  confirmationText: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, lineHeight: 22 },
 });

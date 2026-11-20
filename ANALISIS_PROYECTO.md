@@ -34,7 +34,7 @@ Las decisiones principales están suficientemente explícitas para guiar el desa
 - La entrega del domicilio se confirma mediante el código del cliente.
 - La predicción de demanda queda fuera del MVP.
 
-La investigación y el mapa de empatía insisten en tareas cortas, conectividad irregular y teléfonos modestos. Eso debe guiar las siguientes funcionalidades: hoy el formulario de emprendimiento requiere escribir latitud y longitud manualmente, una fricción significativa para el público descrito. Conviene validar ese formulario con vendedores y ofrecer una selección de ubicación comprensible.
+La investigación y el mapa de empatía insisten en tareas cortas, conectividad irregular y teléfonos modestos. Eso debe guiar las siguientes funcionalidades: el formulario de emprendimiento ahora solicita permiso para acceder a la ubicación del dispositivo y completa las coordenadas automáticamente (manteniendo el fallback de edición manual para resiliencia), reduciendo drásticamente la fricción inicial para los vendedores. Conviene continuar validando ese formulario con vendedores y ofrecer una selección visual sobre mapa interactivo en iteraciones futuras.
 
 El alcance de 66 RF para un proyecto académico de cuatro meses es considerable. No resulta útil convertir el número de archivos o de casillas marcadas en un porcentaje de avance: hay funcionalidades de esfuerzos muy distintos y varios planes desactualizados. Conviene medir avance con recorridos completos del usuario.
 

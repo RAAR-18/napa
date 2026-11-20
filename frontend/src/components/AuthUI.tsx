@@ -1,78 +1,85 @@
-import type { PropsWithChildren } from 'react';
+import { useState, type PropsWithChildren, type ReactNode } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
   type TextInputProps,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-export const palette = {
-  green: '#1D5A46',
-  dark: '#17372E',
-  muted: '#66756F',
-  border: '#D9E2DC',
-  background: '#F4F7F4',
-  white: '#FFFFFF',
-  error: '#A32D2D',
-  errorBackground: '#FFF0EE',
-};
+import { AppShell, Brand, useNapaNavigation } from './AppShell';
+import { Hero, Icon, SectionHeading, heroContent } from './NapaUI';
+import { fonts, palette } from './theme';
+
+export { palette } from './theme';
 
 export function AuthPage({ children }: PropsWithChildren) {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}
-      >
-        <ScrollView
-          contentContainerStyle={styles.page}
-          keyboardShouldPersistTaps="handled"
-        >
-          {children}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+  return <AppShell>{children}</AppShell>;
 }
 
 export function PageHeading({
   eyebrow,
   title,
   description,
+  action,
 }: {
   eyebrow: string;
   title: string;
   description: string;
+  action?: ReactNode;
 }) {
+  const { path } = useNapaNavigation();
+  const hero = heroContent[path];
+  if (hero)
+    return (
+      <>
+        <Hero content={hero} />
+        <SectionHeading title={title} description={description} action={action} />
+      </>
+    );
   return (
     <View style={styles.heading}>
-      <Text style={styles.brand}>Ñapa</Text>
+      {!path || ['/', '/login', '/register', '/verify', '/recover'].includes(path) ? (
+        <View style={styles.brand}>
+          <Brand />
+        </View>
+      ) : null}
       <Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text>
-      <Text accessibilityRole="header" style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
+      <Text accessibilityRole="header" style={styles.title}>
+        {title}
+      </Text>
+      {description ? <Text style={styles.description}>{description}</Text> : null}
+      {action ? <View style={{ alignSelf: 'flex-start', marginTop: 14 }}>{action}</View> : null}
     </View>
   );
 }
 
 export function Field({
   label,
+  style,
+  onFocus,
+  onBlur,
   ...props
 }: TextInputProps & { label: string }) {
+  const [focused, setFocused] = useState(false);
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
-        placeholderTextColor="#8A9991"
-        style={styles.input}
+        placeholderTextColor="#A29289"
         {...props}
+        onFocus={(event) => {
+          setFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          onBlur?.(event);
+        }}
+        style={[styles.input, focused && styles.inputFocused, style]}
       />
     </View>
   );
@@ -96,13 +103,15 @@ export function PrimaryButton({
       accessibilityState={{ disabled: disabled || busy, busy }}
       disabled={disabled || busy}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
         styles.primaryButton,
-        (pressed || disabled || busy) && styles.primaryButtonMuted,
+        hovered && styles.primaryButtonHover,
+        pressed && { opacity: 0.8 },
+        (disabled || busy) && styles.primaryButtonMuted,
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={palette.white} />
+        <ActivityIndicator color="#FFFFFF" />
       ) : (
         <Text style={styles.primaryButtonText}>{title}</Text>
       )}
@@ -123,23 +132,24 @@ export function TextButton({
     <Pressable
       accessibilityLabel={title}
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={styles.textButton}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+        styles.textButton,
+        hovered && { backgroundColor: '#F2E7DE' },
+      ]}
     >
-      <Text style={[styles.textButtonLabel, disabled && styles.disabledText]}>
-        {title}
-      </Text>
+      <Text style={[styles.textButtonLabel, disabled && styles.disabledText]}>{title}</Text>
     </Pressable>
   );
 }
 
 export function ErrorBanner({ message }: { message: string | null }) {
-  if (!message) {
-    return null;
-  }
+  if (!message) return null;
   return (
     <View accessibilityRole="alert" style={styles.errorBanner}>
+      <Icon name="alert-circle" color={palette.error} size={19} />
       <Text style={styles.errorText}>{message}</Text>
     </View>
   );
@@ -164,11 +174,13 @@ export function OptionButton({
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
       onPress={onPress}
-      style={[styles.option, selected && styles.optionSelected]}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+        styles.option,
+        hovered && styles.optionHover,
+        selected && styles.optionSelected,
+      ]}
     >
-      <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-        {label}
-      </Text>
+      <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{label}</Text>
     </Pressable>
   );
 }
@@ -178,56 +190,39 @@ export function FormFooter({ children }: PropsWithChildren) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: palette.background,
-    flex: 1,
-  },
-  flex: {
-    flex: 1,
-  },
-  page: {
-    alignSelf: 'center',
-    maxWidth: 520,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    width: '100%',
-  },
-  heading: {
-    marginBottom: 28,
-  },
-  brand: {
-    color: palette.green,
-    fontSize: 24,
-    fontWeight: '800',
-    marginBottom: 24,
-  },
+  heading: { marginBottom: 27, marginTop: 22 },
+  brand: { marginBottom: 30 },
   eyebrow: {
-    color: palette.green,
-    fontSize: 12,
+    color: palette.coralDark,
+    fontFamily: fonts.sans,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.5,
-    marginBottom: 8,
+    letterSpacing: 2,
+    marginBottom: 10,
   },
   title: {
     color: palette.dark,
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: -0.6,
+    fontFamily: fonts.display,
+    fontSize: 35,
+    lineHeight: 42,
+    fontWeight: '700',
+    letterSpacing: -0.8,
   },
   description: {
     color: palette.muted,
+    fontFamily: fonts.sans,
     fontSize: 15,
-    lineHeight: 23,
-    marginTop: 8,
+    lineHeight: 24,
+    marginTop: 10,
+    maxWidth: 750,
   },
-  field: {
-    marginBottom: 16,
-  },
+  field: { marginBottom: 18, flexShrink: 1 },
   label: {
     color: palette.dark,
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 13,
     fontWeight: '700',
-    marginBottom: 7,
+    marginBottom: 8,
   },
   input: {
     backgroundColor: palette.white,
@@ -235,89 +230,96 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     color: palette.dark,
-    fontSize: 16,
-    minHeight: 52,
-    paddingHorizontal: 15,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    minHeight: 50,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
+  inputFocused: { borderColor: palette.coral, backgroundColor: '#FFFFFF' },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: palette.green,
-    borderRadius: 13,
+    backgroundColor: palette.coral,
+    borderRadius: 15,
     justifyContent: 'center',
-    marginTop: 8,
-    minHeight: 54,
+    marginTop: 9,
+    minHeight: 48,
+    maxWidth: '100%',
+    paddingHorizontal: 22,
+    paddingVertical: 12,
   },
-  primaryButtonMuted: {
-    opacity: 0.65,
-  },
+  primaryButtonHover: { backgroundColor: palette.coralDark },
+  primaryButtonMuted: { opacity: 0.47 },
   primaryButtonText: {
-    color: palette.white,
-    fontSize: 16,
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+    flexShrink: 1,
   },
   textButton: {
     alignItems: 'center',
     alignSelf: 'center',
-    minHeight: 44,
+    maxWidth: '100%',
+    flexShrink: 1,
+    minHeight: 42,
     justifyContent: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 13,
+    borderRadius: 10,
+    marginTop: 4,
   },
   textButtonLabel: {
-    color: palette.green,
-    fontSize: 15,
+    color: palette.dark,
+    fontFamily: fonts.sans,
+    fontSize: 13,
     fontWeight: '700',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
   },
-  disabledText: {
-    opacity: 0.5,
-  },
+  disabledText: { opacity: 0.35 },
   errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
     backgroundColor: palette.errorBackground,
-    borderColor: '#F0C6C0',
-    borderRadius: 10,
+    borderColor: '#F0C4B4',
+    borderRadius: 13,
     borderWidth: 1,
-    marginBottom: 16,
-    padding: 12,
+    marginVertical: 12,
+    padding: 14,
   },
   errorText: {
+    flex: 1,
     color: palette.error,
-    fontSize: 14,
-    lineHeight: 20,
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 21,
   },
   helperText: {
     color: palette.muted,
+    fontFamily: fonts.sans,
     fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 16,
-    marginTop: -6,
+    lineHeight: 21,
+    marginBottom: 12,
+    marginTop: 5,
   },
   option: {
     alignItems: 'center',
-    backgroundColor: palette.white,
-    borderColor: palette.border,
-    borderRadius: 10,
+    backgroundColor: 'transparent',
+    borderColor: '#CDB5A6',
+    borderRadius: 12,
     borderWidth: 1,
-    flexGrow: 1,
     justifyContent: 'center',
-    marginBottom: 8,
-    marginRight: 8,
-    minHeight: 42,
-    paddingHorizontal: 12,
+    marginBottom: 4,
+    marginRight: 6,
+    minHeight: 36,
+    paddingHorizontal: 18,
+    paddingVertical: 6,
   },
-  optionSelected: {
-    backgroundColor: '#E8F2EB',
-    borderColor: palette.green,
-  },
-  optionText: {
-    color: palette.dark,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  optionTextSelected: {
-    color: palette.green,
-    fontWeight: '800',
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: 18,
-  },
+  optionHover: { backgroundColor: '#F1E7DF' },
+  optionSelected: { backgroundColor: '#50364E', borderColor: '#50364E' },
+  optionText: { color: palette.dark, fontFamily: fonts.sans, fontSize: 13, fontWeight: '500' },
+  optionTextSelected: { color: '#FFFFFF', fontWeight: '700' },
+  footer: { alignItems: 'center', marginTop: 21, gap: 4 },
 });

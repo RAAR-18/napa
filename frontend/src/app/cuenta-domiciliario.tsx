@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -159,9 +160,9 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  sectionTitle: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
-  label: { color: palette.dark, fontSize: 14, fontWeight: '700', marginTop: 12 },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  label: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginTop: 12 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 8 },
-  success: { color: palette.green, fontSize: 14, fontWeight: '700', marginVertical: 10 },
+  success: { color: palette.green, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginVertical: 10 },
 });

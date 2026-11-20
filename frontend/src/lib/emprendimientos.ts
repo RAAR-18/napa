@@ -1,4 +1,4 @@
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from './uuid';
 
 import { jsonHeaders, requestJson, requestVoid } from './api';
 import { withValidSession } from './auth';
@@ -69,7 +69,7 @@ export type EmprendimientosFilter = {
 export async function createEmprendimiento(
   input: CrearEmprendimientoInput,
 ): Promise<Emprendimiento> {
-  const idempotencyKey = Crypto.randomUUID();
+  const idempotencyKey = randomUUID();
   return withValidSession((session) =>
     requestJson<Emprendimiento>('/api/v1/emprendimientos', {
       method: 'POST',

@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -161,9 +162,9 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  status: { color: palette.dark, fontSize: 18, fontWeight: '800' },
-  sectionTitle: { color: palette.dark, fontSize: 16, fontWeight: '800', marginTop: 12 },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  status: { color: palette.dark, fontFamily: fonts.sans, fontSize: 18, fontWeight: '800' },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800', marginTop: 12 },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
   step: { alignItems: 'flex-start', flexDirection: 'row', marginTop: 10 },
   dot: {
     backgroundColor: palette.border,
@@ -175,5 +176,5 @@ const styles = StyleSheet.create({
   },
   dotCurrent: { backgroundColor: palette.green },
   stepText: { flex: 1 },
-  stepTitle: { color: palette.dark, fontSize: 15, fontWeight: '700' },
+  stepTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, fontWeight: '700' },
 });

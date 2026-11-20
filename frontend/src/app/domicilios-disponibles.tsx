@@ -13,6 +13,18 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
+import {
+  CardGrid,
+  DetailLine,
+  EmptyState,
+  FilterPanel,
+  FilterRow,
+  GridCard,
+  Icon,
+  Illustration,
+  RefreshButton,
+} from '../components/NapaUI';
+import { art, fonts } from '../components/theme';
 import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
 import {
@@ -40,21 +52,55 @@ function DisponibleRow({ item }: { item: DomicilioDisponible }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Ver domicilio con ganancia de ${formatPrice(item.ganancia)}`}
-      onPress={() => router.push({ pathname: '/domicilio-domiciliario', params: { domicilioId: item.id } })}
+      onPress={() =>
+        router.push({ pathname: '/domicilio-domiciliario', params: { domicilioId: item.id } })
+      }
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View style={styles.row}>
+      <Illustration source={art.paquete} style={{ height: 125 }} />
+      <View style={styles.cardBody}>
         <Text style={styles.gain}>{formatPrice(item.ganancia)}</Text>
-        <Text style={styles.distance}>{formatearDistancia(item.distanciaMetros)}</Text>
+        <View style={styles.gainChip}>
+          <Text style={styles.gainLabel}>Tu ganancia</Text>
+        </View>
+        <DetailLine icon="map-pin">
+          Recorrido: {formatearDistancia(item.distanciaMetros)}
+        </DetailLine>
+        <View style={styles.divider} />
+        <View style={styles.destinationRow}>
+          <View style={[styles.pointBadge, { backgroundColor: palette.peach }]}>
+            <Text style={styles.pointText}>A</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.destinationLabel}>Recoge en</Text>
+            <Text style={styles.destinationText}>
+              {item.origen.direccion ?? 'Punto del vendedor'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.destinationRow}>
+          <View style={[styles.pointBadge, { backgroundColor: palette.sage }]}>
+            <Text style={styles.pointText}>B</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.destinationLabel}>Entrega en</Text>
+            <Text style={styles.destinationText}>
+              {item.destino.barrio ? `barrio ${item.destino.barrio}` : 'zona aproximada'}
+            </Text>
+            <Text style={styles.privacyNote}>Dirección exacta al aceptar</Text>
+          </View>
+        </View>
+        <View style={styles.divider} />
+        {item.distanciaAlOrigenMetros !== null ? (
+          <DetailLine icon="navigation">
+            Estás a {formatearDistancia(item.distanciaAlOrigenMetros)} del origen
+          </DetailLine>
+        ) : null}
+        <View style={styles.viewDelivery}>
+          <Text style={styles.viewDeliveryText}>Ver domicilio</Text>
+          <Icon name="arrow-right" color="#FFFFFF" size={22} />
+        </View>
       </View>
-      <Text style={styles.details}>Recoge en: {item.origen.direccion ?? 'Punto del vendedor'}</Text>
-      <Text style={styles.details}>
-        Entrega: {item.destino.barrio ? `barrio ${item.destino.barrio}` : 'zona aproximada'} (verás la dirección al
-        aceptar)
-      </Text>
-      {item.distanciaAlOrigenMetros !== null ? (
-        <Text style={styles.details}>Estás a {formatearDistancia(item.distanciaAlOrigenMetros)} del origen</Text>
-      ) : null}
     </Pressable>
   );
 }
@@ -84,7 +130,9 @@ export default function DomiciliosDisponiblesScreen() {
           }
           return;
         }
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
         if (active) setPosicion({ lat: location.coords.latitude, lng: location.coords.longitude });
       } catch {
         if (active) {
@@ -115,7 +163,12 @@ export default function DomiciliosDisponiblesScreen() {
           setError('Solo las cuentas de domiciliario pueden ver los domicilios disponibles.');
           return;
         }
-        const pageData = await listarDomiciliosDisponibles({ orden, posicion: here, page, size: 20 });
+        const pageData = await listarDomiciliosDisponibles({
+          orden,
+          posicion: here,
+          page,
+          size: 20,
+        });
         if (active) setData(pageData);
       } catch (cause) {
         if (cause instanceof ApiError && cause.status === 401) {
@@ -124,7 +177,9 @@ export default function DomiciliosDisponiblesScreen() {
           return;
         }
         if (active && !silent) {
-          setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los domicilios.');
+          setError(
+            cause instanceof Error ? cause.message : 'No se pudieron cargar los domicilios.',
+          );
         }
       } finally {
         if (active && !silent) setLoading(false);
@@ -155,36 +210,64 @@ export default function DomiciliosDisponiblesScreen() {
         eyebrow="Domiciliario"
         title="Domicilios disponibles"
         description="Elige un domicilio para ver su información y decidir si lo tomas."
-      />
-      <Text style={styles.filterTitle}>Ordenar por</Text>
-      <View style={styles.options}>
-        {ordenes.map((item) => (
-          <OptionButton
-            key={item.value}
-            label={item.label}
-            selected={orden === item.value}
-            onPress={() => changeOrden(item.value)}
+        action={
+          <RefreshButton
+            disabled={loading || !posicion}
+            onPress={() => setLoadAttempt((attempt) => attempt + 1)}
           />
-        ))}
-      </View>
+        }
+      />
+      <FilterPanel>
+        <FilterRow label="Ordenar por">
+          {ordenes.map((item) => (
+            <OptionButton
+              key={item.value}
+              label={item.label}
+              selected={orden === item.value}
+              onPress={() => changeOrden(item.value)}
+            />
+          ))}
+        </FilterRow>
+      </FilterPanel>
       {notice ? <HelperText>{notice}</HelperText> : null}
       {notice && !posicion ? (
-        <PrimaryButton title="Usar mi ubicación" onPress={() => setLocationAttempt((attempt) => attempt + 1)} />
+        <PrimaryButton
+          title="Usar mi ubicación"
+          onPress={() => setLocationAttempt((attempt) => attempt + 1)}
+        />
       ) : null}
       {data ? (
-        <HelperText>Domicilios que se recogen a {formatearDistancia(data.radioMetros)} o menos de ti.</HelperText>
+        <HelperText>
+          Domicilios que se recogen a {formatearDistancia(data.radioMetros)} o menos de ti.
+        </HelperText>
       ) : null}
       <ErrorBanner message={error} />
       {loading ? (
         <ActivityIndicator accessibilityLabel="Cargando domicilios" color={palette.green} />
       ) : null}
       {!loading && data?.content.length === 0 ? (
-        <HelperText>No hay domicilios disponibles cerca de ti en este momento.</HelperText>
+        <EmptyState
+          title="No hay domicilios disponibles cerca de ti en este momento."
+          description="Vuelve a actualizar en unos minutos. Tu próxima entrega puede estar muy cerca."
+          icon="navigation"
+        />
       ) : null}
-      {!loading ? data?.content.map((item) => <DisponibleRow key={item.id} item={item} />) : null}
+      <CardGrid>
+        {!loading
+          ? data?.content.map((item) => (
+              <GridCard key={item.id}>
+                <DisponibleRow item={item} />
+              </GridCard>
+            ))
+          : null}
+      </CardGrid>
       {data && data.totalElements > data.size ? (
         <View style={styles.pagination}>
-          <TextButton title="Página anterior" disabled={page === 0} onPress={() => changePage(page - 1)} />
+          <TextButton
+            title="Página anterior"
+            disabled={page === 0}
+            onPress={() => changePage(page - 1)}
+          />
           <Text style={styles.pageText}>
             {page + 1} de {Math.ceil(data.totalElements / data.size)}
           </Text>
@@ -195,12 +278,10 @@ export default function DomiciliosDisponiblesScreen() {
           />
         </View>
       ) : null}
-      <PrimaryButton
-        title="Actualizar"
-        disabled={loading || !posicion}
-        onPress={() => setLoadAttempt((attempt) => attempt + 1)}
+      <TextButton
+        title="Mis domicilios en curso"
+        onPress={() => router.push('/domicilios-en-curso')}
       />
-      <TextButton title="Mis domicilios en curso" onPress={() => router.push('/domicilios-en-curso')} />
       <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
@@ -214,17 +295,77 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     borderRadius: 16,
     borderWidth: 1,
-    marginVertical: 7,
-    padding: 16,
+    overflow: 'hidden',
+    flex: 1,
   },
+  cardBody: { padding: 18 },
+  gainChip: {
+    backgroundColor: palette.sage,
+    paddingHorizontal: 13,
+    paddingVertical: 4,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  gainLabel: { color: palette.dark, fontFamily: fonts.sans, fontSize: 12, fontWeight: '700' },
+  divider: { height: 1, backgroundColor: palette.border, marginVertical: 12 },
+  destinationRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
+  pointBadge: {
+    height: 30,
+    width: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 15,
+  },
+  pointText: { color: palette.dark, fontFamily: fonts.sans, fontWeight: '800', fontSize: 14 },
+  destinationLabel: {
+    fontFamily: fonts.sans,
+    color: palette.dark,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  destinationText: {
+    fontFamily: fonts.sans,
+    color: palette.dark,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 2,
+  },
+  privacyNote: {
+    fontFamily: fonts.sans,
+    color: palette.muted,
+    fontSize: 11,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  viewDelivery: {
+    backgroundColor: palette.coral,
+    borderRadius: 15,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 18,
+  },
+  viewDeliveryText: { color: '#FFFFFF', fontFamily: fonts.sans, fontWeight: '700', fontSize: 15 },
   pressed: { opacity: 0.72 },
   row: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
-  gain: { color: palette.green, flex: 1, fontSize: 18, fontWeight: '800' },
+  gain: {
+    color: palette.dark,
+    fontFamily: fonts.display,
+    fontSize: 30,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
   distance: { color: palette.dark, fontWeight: '700', marginLeft: 8 },
   details: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 5 },
   pagination: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     marginTop: 10,
   },

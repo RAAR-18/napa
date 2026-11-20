@@ -1,5 +1,6 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -154,7 +155,7 @@ function FormularioCalificacion({
     }
     setBusy(true);
     setError(null);
-    key.current ??= Crypto.randomUUID();
+    key.current ??= randomUUID();
     const datos = { pedidoId, tipoEntidad: opcion.tipoEntidad, entidadId: opcion.entidadId, puntaje, comentario };
     let usuarioId: string | null = null;
     try {
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  caption: { color: palette.muted, fontSize: 13, fontWeight: '700' },
-  title: { color: palette.dark, fontSize: 17, fontWeight: '800', marginTop: 2 },
-  detail: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  caption: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, fontWeight: '700' },
+  title: { color: palette.dark, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800', marginTop: 2 },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
 });

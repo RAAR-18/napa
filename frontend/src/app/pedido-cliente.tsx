@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -318,22 +319,22 @@ const styles = StyleSheet.create({
   },
   codeCard: {
     alignItems: 'center',
-    backgroundColor: '#EEF7F1',
+    backgroundColor: '#F7EBDD',
     borderColor: palette.green,
     borderRadius: 16,
     borderWidth: 1,
     marginVertical: 7,
     padding: 16,
   },
-  code: { color: palette.dark, fontSize: 34, fontWeight: '800', letterSpacing: 8, marginVertical: 8 },
-  status: { color: palette.dark, fontSize: 18, fontWeight: '800' },
-  sectionTitle: { color: palette.dark, fontSize: 16, fontWeight: '800' },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 5 },
+  code: { color: palette.dark, fontFamily: fonts.sans, fontSize: 34, fontWeight: '800', letterSpacing: 8, marginVertical: 8 },
+  status: { color: palette.dark, fontFamily: fonts.sans, fontSize: 18, fontWeight: '800' },
+  sectionTitle: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800' },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 5 },
   total: { color: palette.dark, fontWeight: '800', marginTop: 8 },
   line: { marginTop: 12 },
   lineStep: { alignItems: 'center', flexDirection: 'row', marginTop: 6 },
   dot: { backgroundColor: palette.border, borderRadius: 5, height: 10, marginRight: 10, width: 10 },
   dotDone: { backgroundColor: palette.green },
-  lineText: { color: palette.muted, fontSize: 14 },
+  lineText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14 },
   lineTextCurrent: { color: palette.dark, fontWeight: '800' },
 });

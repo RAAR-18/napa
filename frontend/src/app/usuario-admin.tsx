@@ -1,5 +1,6 @@
+import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
-import * as Crypto from 'expo-crypto';
+import { randomUUID } from '../lib/uuid';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -190,7 +191,7 @@ function EliminarUsuario({ usuario, onEliminado }: { usuario: PerfilUsuario; onE
   async function eliminar(forzar: boolean) {
     setBusy(true);
     setError(null);
-    key.current = Crypto.randomUUID();
+    key.current = randomUUID();
     try {
       await eliminarUsuario(usuario.id, forzar, key.current);
       onEliminado();
@@ -243,8 +244,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   danger: { borderColor: palette.error },
-  section: { color: palette.dark, fontSize: 16, fontWeight: '800', marginBottom: 6 },
-  label: { color: palette.dark, fontSize: 14, fontWeight: '700', marginTop: 6 },
+  section: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800', marginBottom: 6 },
+  label: { color: palette.dark, fontFamily: fonts.sans, fontSize: 14, fontWeight: '700', marginTop: 6 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 8 },
-  detail: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
 });

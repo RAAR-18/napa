@@ -228,7 +228,7 @@ frontend/__tests__/emprendimientos/crear.test.tsx
 - [x] T011 [P] [US1] Pruebas de validación del DTO, coordenadas y dirección por rol en `backend/src/test/java/co/edu/napa/emprendimientos/infrastructure/adapters/in/web/EmprendimientoControllerTest.java` y `backend/src/test/java/co/edu/napa/emprendimientos/application/usecase/CrearEmprendimientoUseCaseTest.java`
 - [x] T012 [P] [US1] Pruebas de segundo emprendimiento activo y carrera concurrente en `backend/src/test/java/co/edu/napa/emprendimientos/infrastructure/persistence/EmprendimientoPersistenceIntegrationTest.java`
 - [x] T017 [P] [US1] Test unitario de reglas de `Emprendimiento` (horario que cruza medianoche y rechazo de horas iguales) en `backend/src/test/java/co/edu/napa/emprendimientos/domain/model/EmprendimientoTest.java`
-- [x] T019 [P] [US1] Pruebas del formulario (campos obligatorios y error 409) y del servicio (envío con `Idempotency-Key`) en `frontend/src/app/__tests__/emprendimiento.test.tsx` y `frontend/src/lib/emprendimientos.test.ts`
+- [x] T019 [P] [US1] Pruebas del formulario (campos obligatorios, error 409, solicitud y denegación de permiso de ubicación del dispositivo) y del servicio (envío con `Idempotency-Key`) en `frontend/src/app/__tests__/emprendimiento.test.tsx`, `frontend/src/lib/location.test.ts` y `frontend/src/lib/emprendimientos.test.ts`
 
 ### Implementation
 
@@ -238,7 +238,7 @@ frontend/__tests__/emprendimientos/crear.test.tsx
 - [x] T016 [US1] Adaptador de persistencia y traducción de la violación del índice único a `CONFLICT` en `emprendimientos/infrastructure/adapters/out/persistence/`
 - [x] T018 [US1] Guardar `Ubicacion` con la columna `geography` derivada de latitud y longitud
 - [x] T020 [US1] Servicio `createEmprendimiento()` autenticado y con `Idempotency-Key` en `frontend/src/lib/emprendimientos.ts`
-- [x] T021 [US1] Formulario accesible con validación de campos, categoría, horario y ubicación manual en `frontend/src/app/emprendimiento.tsx`
+- [x] T021 [US1] Formulario accesible con validación de campos, categoría, horario, solicitud de permiso de ubicación del dispositivo (con fallback manual) en `frontend/src/app/emprendimiento.tsx` y servicio reutilizable en `frontend/src/lib/location.ts`
 - [x] T022 [US1] Pantalla de creación de emprendimiento y acceso desde la sesión del vendedor; presenta el resultado `201` y permite volver al panel en `frontend/src/app/emprendimiento.tsx` y `frontend/src/app/session.tsx`
 
 **Checkpoint**: US1 funcional y probable por separado.

@@ -1,3 +1,4 @@
+import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -22,6 +23,7 @@ import {
   type Emprendimiento,
 } from '../lib/emprendimientos';
 import { clearSession, getValidSession, type StoredSession } from '../lib/auth';
+import { requestDeviceLocation } from '../lib/location';
 
 const categories: { value: CategoriaEmprendimiento; label: string }[] = [
   { value: 'FRUTAS_VERDURAS', label: 'Frutas y verduras' },
@@ -45,6 +47,7 @@ export default function EmprendimientoScreen() {
   const [longitud, setLongitud] = useState('');
   const [direccion, setDireccion] = useState('');
   const [referencia, setReferencia] = useState('');
+  const [locationBusy, setLocationBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Emprendimiento | null>(null);
@@ -165,6 +168,24 @@ export default function EmprendimientoScreen() {
     }
   }
 
+  async function locateDevice() {
+    setError(null);
+    setLocationBusy(true);
+    try {
+      const coords = await requestDeviceLocation();
+      setLatitud(String(coords.latitude));
+      setLongitud(String(coords.longitude));
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'No se pudo obtener tu ubicación. Puedes ingresar las coordenadas manualmente.',
+      );
+    } finally {
+      setLocationBusy(false);
+    }
+  }
+
   if (loading) {
     return (
       <AuthPage>
@@ -259,23 +280,45 @@ export default function EmprendimientoScreen() {
       </View>
       <HelperText>Usa el formato de 24 horas HH:mm.</HelperText>
       <Text style={styles.label}>Ubicación</Text>
-      <Field
-        keyboardType="decimal-pad"
-        label="Latitud"
-        onChangeText={setLatitud}
-        placeholder="Ej. 4.7110"
-        value={latitud}
+      <PrimaryButton
+        busy={locationBusy}
+        title={
+          latitud && longitud
+            ? 'Actualizar mi ubicación actual'
+            : 'Usar mi ubicación actual'
+        }
+        onPress={() => void locateDevice()}
       />
-      <Field
-        keyboardType="decimal-pad"
-        label="Longitud"
-        onChangeText={setLongitud}
-        placeholder="Ej. -74.0721"
-        value={longitud}
-      />
+      {latitud && longitud ? (
+        <View style={styles.locationBadge}>
+          <Text style={styles.locationBadgeText}>
+            ✓ Ubicación del dispositivo obtenida ({Number(latitud).toFixed(4)}, {Number(longitud).toFixed(4)})
+          </Text>
+        </View>
+      ) : null}
+      <View style={styles.row}>
+        <View style={styles.column}>
+          <Field
+            keyboardType="decimal-pad"
+            label="Latitud"
+            onChangeText={setLatitud}
+            placeholder="Ej. 4.7110"
+            value={latitud}
+          />
+        </View>
+        <View style={styles.column}>
+          <Field
+            keyboardType="decimal-pad"
+            label="Longitud"
+            onChangeText={setLongitud}
+            placeholder="Ej. -74.0721"
+            value={longitud}
+          />
+        </View>
+      </View>
       <HelperText>
-        Ingresa las coordenadas del lugar. La latitud va de -90 a 90 y la
-        longitud de -180 a 180.
+        Pulsa &quot;Usar mi ubicación actual&quot; para obtener las coordenadas de tu
+        dispositivo con tu permiso, o ingresa las coordenadas manualmente.
       </HelperText>
       <Field
         label={isFixedVendor ? 'Dirección del punto (obligatoria)' : 'Dirección (opcional)'}
@@ -316,7 +359,7 @@ export default function EmprendimientoScreen() {
 const styles = StyleSheet.create({
   label: {
     color: palette.dark,
-    fontSize: 14,
+    fontFamily: fonts.sans, fontSize: 14,
     fontWeight: '700',
     marginBottom: 8,
   },
@@ -333,7 +376,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   successCard: {
-    backgroundColor: '#E8F2EB',
+    backgroundColor: '#F3E8DD',
     borderColor: palette.border,
     borderRadius: 16,
     borderWidth: 1,
@@ -341,13 +384,26 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     color: palette.green,
-    fontSize: 18,
+    fontFamily: fonts.sans, fontSize: 18,
     fontWeight: '800',
     marginBottom: 8,
   },
   successText: {
     color: palette.dark,
-    fontSize: 14,
+    fontFamily: fonts.sans, fontSize: 14,
     lineHeight: 21,
+  },
+  locationBadge: {
+    backgroundColor: '#E8F2EB',
+    borderColor: '#C2DEC9',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginVertical: 8,
+    padding: 10,
+  },
+  locationBadgeText: {
+    color: palette.green,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

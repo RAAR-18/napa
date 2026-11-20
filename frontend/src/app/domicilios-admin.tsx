@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -13,6 +13,16 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
+import {
+  DetailLine,
+  FilterPanel,
+  FilterRow,
+  Icon,
+  RefreshButton,
+  StatusBadge,
+  useContentWidth,
+} from '../components/NapaUI';
+import { art, fonts } from '../components/theme';
 import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
 import {
@@ -52,42 +62,90 @@ function validDate(value: string) {
 }
 
 function FilaDomicilio({ item }: { item: DomicilioAdminFila }) {
+  const wide = useContentWidth() >= 850;
   const estado = estadoDomicilioNombres[item.estado];
-  const demorado = item.minutosSinTomar !== null && item.minutosSinTomar >= MINUTOS_SIN_TOMAR_RESALTE;
+  const demorado =
+    item.minutosSinTomar !== null && item.minutosSinTomar >= MINUTOS_SIN_TOMAR_RESALTE;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Ver domicilio ${estado} de ${item.vendedor.nombre ?? 'vendedor'}`}
-      onPress={() => router.push({ pathname: '/domicilio-admin', params: { domicilioId: item.id } })}
-      style={({ pressed }) => [styles.card, demorado && styles.cardDelayed, pressed && styles.pressed]}
+      onPress={() =>
+        router.push({ pathname: '/domicilio-admin', params: { domicilioId: item.id } })
+      }
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+        styles.card,
+        wide && styles.cardWide,
+        demorado && styles.cardDelayed,
+        hovered && { borderColor: '#BDA28F' },
+        pressed && styles.pressed,
+      ]}
     >
-      <View style={styles.row}>
-        <Text style={styles.status}>{estado}</Text>
-        <Text style={styles.fee}>${item.tarifa.toLocaleString('es-CO')} COP</Text>
+      {wide ? (
+        <Image
+          source={item.estado === 'EN_CAMINO' ? art.domiciliario : art.paquete}
+          resizeMode="contain"
+          accessible={false}
+          style={styles.deliveryArt}
+        />
+      ) : null}
+      <View style={{ flex: 1 }}>
+        <View style={styles.row}>
+          <StatusBadge
+            label={estado}
+            tone={
+              item.estado === 'CANCELADO'
+                ? 'muted'
+                : item.estado === 'ASIGNADO'
+                  ? 'lavender'
+                  : 'sage'
+            }
+          />
+          {demorado ? (
+            <View style={styles.delayedBadge}>
+              <Icon name="alert-triangle" color={palette.coralDark} size={16} />
+              <Text style={styles.delayed}>{textoSinTomar(item.minutosSinTomar!)}</Text>
+            </View>
+          ) : null}
+          <Text style={styles.fee}>${item.tarifa.toLocaleString('es-CO')} COP</Text>
+        </View>
+        {item.minutosSinTomar !== null && !demorado ? (
+          <Text style={styles.details}>{textoSinTomar(item.minutosSinTomar)}</Text>
+        ) : null}
+        <View style={[styles.deliveryInfo, wide && { flexDirection: 'row' }]}>
+          <View style={{ flex: 1 }}>
+            <DetailLine icon="map-pin">De: {item.origen.direccion ?? 'Sin dirección'}</DetailLine>
+            <DetailLine icon="navigation">
+              A: {item.destino.direccion ?? 'Sin dirección'}
+              {item.destino.barrio ? ` (${item.destino.barrio})` : ''}
+            </DetailLine>
+          </View>
+          <View style={[styles.people, wide && styles.peopleWide]}>
+            <Text style={styles.details}>Vendedor: {item.vendedor.nombre ?? '—'}</Text>
+            <Text style={styles.details}>Cliente: {item.cliente.nombre ?? '—'}</Text>
+            {item.domiciliario ? (
+              <Text style={styles.details}>Domiciliario: {item.domiciliario.nombre ?? '—'}</Text>
+            ) : null}
+            {item.motivoCancelacion ? (
+              <Text style={styles.cancelled}>
+                {motivoCancelacionNombres[item.motivoCancelacion]}
+              </Text>
+            ) : null}
+            <Text style={styles.details}>Publicado: {formatDate(item.createdAt)}</Text>
+          </View>
+        </View>
+        <View style={styles.viewDelivery}>
+          <Text style={styles.viewDeliveryText}>Ver domicilio</Text>
+          <Icon name="arrow-right" color="#FFFFFF" size={20} />
+        </View>
       </View>
-      {item.minutosSinTomar !== null ? (
-        <Text style={demorado ? styles.delayed : styles.details}>{textoSinTomar(item.minutosSinTomar)}</Text>
-      ) : null}
-      <Text style={styles.details}>De: {item.origen.direccion ?? 'Sin dirección'}</Text>
-      <Text style={styles.details}>
-        A: {item.destino.direccion ?? 'Sin dirección'}
-        {item.destino.barrio ? ` (${item.destino.barrio})` : ''}
-      </Text>
-      <Text style={styles.details}>Vendedor: {item.vendedor.nombre ?? '—'}</Text>
-      <Text style={styles.details}>Cliente: {item.cliente.nombre ?? '—'}</Text>
-      {item.domiciliario ? (
-        <Text style={styles.details}>Domiciliario: {item.domiciliario.nombre ?? '—'}</Text>
-      ) : null}
-      {item.motivoCancelacion ? (
-        <Text style={styles.cancelled}>{motivoCancelacionNombres[item.motivoCancelacion]}</Text>
-      ) : null}
-      <Text style={styles.details}>Publicado: {formatDate(item.createdAt)}</Text>
     </Pressable>
   );
 }
 
 /** RF-12: el administrador supervisa todos los domicilios de la plataforma. Exige conexión. */
 export default function DomiciliosAdminScreen() {
+  const wide = useContentWidth() > 750;
   const params = useLocalSearchParams<{
     vendedorId?: string | string[];
     domiciliarioId?: string | string[];
@@ -139,7 +197,10 @@ export default function DomiciliosAdminScreen() {
           router.replace('/login');
           return;
         }
-        if (active) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los domicilios.');
+        if (active)
+          setError(
+            cause instanceof Error ? cause.message : 'No se pudieron cargar los domicilios.',
+          );
       } finally {
         if (active) setLoading(false);
       }
@@ -185,13 +246,18 @@ export default function DomiciliosAdminScreen() {
     <AuthPage>
       <PageHeading
         eyebrow="Administración"
-        title="Domicilios"
+        title="Supervisar domicilios"
         description="Todos los domicilios de la plataforma, en cualquier estado."
+        action={
+          <RefreshButton disabled={loading} onPress={() => setAttempt((value) => value + 1)} />
+        }
       />
       {vendedorId || domiciliarioId ? (
         <View style={styles.personFilter}>
           <Text style={styles.details}>
-            {vendedorId ? 'Solo los domicilios del vendedor' : 'Solo los domicilios del domiciliario'}
+            {vendedorId
+              ? 'Solo los domicilios del vendedor'
+              : 'Solo los domicilios del domiciliario'}
             {persona ? ` ${persona}` : ''}.
           </Text>
           <TextButton
@@ -204,39 +270,54 @@ export default function DomiciliosAdminScreen() {
           />
         </View>
       ) : null}
-      <Text style={styles.filterTitle}>Estado</Text>
-      <View style={styles.options}>
-        {statuses.map((item) => (
-          <OptionButton
-            key={item.value}
-            label={item.label}
-            selected={estado === item.value}
-            onPress={() => {
-              setPage(0);
-              setEstado(item.value);
-            }}
-          />
-        ))}
-      </View>
-      <Field
-        label="Desde (AAAA-MM-DD)"
-        value={desdeInput}
-        onChangeText={setDesdeInput}
-        placeholder="2026-11-01"
-        autoCapitalize="none"
-      />
-      <Field
-        label="Hasta (AAAA-MM-DD)"
-        value={hastaInput}
-        onChangeText={setHastaInput}
-        placeholder="2026-11-30"
-        autoCapitalize="none"
-      />
-      <ErrorBanner message={dateError} />
-      <TextButton title="Aplicar fechas" disabled={loading} onPress={applyDates} />
+      <FilterPanel>
+        <FilterRow label="Estado">
+          {statuses.map((item) => (
+            <OptionButton
+              key={item.value}
+              label={item.label}
+              selected={estado === item.value}
+              onPress={() => {
+                setPage(0);
+                setEstado(item.value);
+              }}
+            />
+          ))}
+        </FilterRow>
+        <View
+          style={[styles.dateFilters, wide && { flexDirection: 'row', alignItems: 'flex-end' }]}
+        >
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Desde (AAAA-MM-DD)"
+              value={desdeInput}
+              onChangeText={setDesdeInput}
+              placeholder="AAAA-MM-DD"
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Hasta (AAAA-MM-DD)"
+              value={hastaInput}
+              onChangeText={setHastaInput}
+              placeholder="AAAA-MM-DD"
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={{ marginBottom: 18 }}>
+            <PrimaryButton title="Aplicar fechas" disabled={loading} onPress={applyDates} />
+          </View>
+        </View>
+        <ErrorBanner message={dateError} />
+      </FilterPanel>
       <ErrorBanner message={error} />
-      {error ? <PrimaryButton title="Reintentar" onPress={() => setAttempt((value) => value + 1)} /> : null}
-      {loading ? <ActivityIndicator accessibilityLabel="Cargando domicilios" color={palette.green} /> : null}
+      {error ? (
+        <PrimaryButton title="Reintentar" onPress={() => setAttempt((value) => value + 1)} />
+      ) : null}
+      {loading ? (
+        <ActivityIndicator accessibilityLabel="Cargando domicilios" color={palette.green} />
+      ) : null}
       {!loading && data?.content.length === 0 ? (
         filtered ? (
           <>
@@ -247,18 +328,25 @@ export default function DomiciliosAdminScreen() {
           <HelperText>No hay domicilios registrados.</HelperText>
         )
       ) : null}
-      {data?.content.map((item) => <FilaDomicilio key={item.id} item={item} />)}
+      {data?.content.map((item) => (
+        <FilaDomicilio key={item.id} item={item} />
+      ))}
       {data && data.totalElements > PAGE_SIZE ? (
         <View style={styles.pagination}>
-          <TextButton title="Anterior" disabled={loading || page === 0} onPress={() => setPage(page - 1)} />
+          <TextButton
+            title="Anterior"
+            disabled={loading || page === 0}
+            onPress={() => setPage(page - 1)}
+          />
           <Text style={styles.pageText}>
             Página {page + 1} de {lastPage + 1}
           </Text>
-          <TextButton title="Siguiente" disabled={loading || page >= lastPage} onPress={() => setPage(page + 1)} />
+          <TextButton
+            title="Siguiente"
+            disabled={loading || page >= lastPage}
+            onPress={() => setPage(page + 1)}
+          />
         </View>
-      ) : null}
-      {data ? (
-        <TextButton title="Actualizar" disabled={loading} onPress={() => setAttempt((value) => value + 1)} />
       ) : null}
       <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
@@ -269,7 +357,7 @@ const styles = StyleSheet.create({
   filterTitle: { color: palette.dark, fontSize: 14, fontWeight: '800', marginTop: 4 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
   personFilter: {
-    backgroundColor: '#EEF6F1',
+    backgroundColor: '#F7EBDD',
     borderRadius: 12,
     marginBottom: 8,
     padding: 12,
@@ -280,16 +368,66 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginVertical: 7,
-    padding: 16,
+    padding: 21,
+    gap: 20,
   },
-  cardDelayed: { backgroundColor: '#FFF8E8', borderColor: '#E8C77A' },
+  cardWide: { flexDirection: 'row', alignItems: 'center' },
+  deliveryArt: { width: 135, height: 140 },
+  deliveryInfo: { gap: 16, marginTop: 11 },
+  people: { flex: 1 },
+  peopleWide: { borderLeftWidth: 1, borderLeftColor: palette.border, paddingLeft: 24 },
+  dateFilters: { gap: 18, paddingTop: 10, borderTopWidth: 1, borderColor: palette.border },
+  delayedBadge: {
+    backgroundColor: '#FFDCC5',
+    borderRadius: 20,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  viewDelivery: {
+    alignSelf: 'flex-end',
+    backgroundColor: palette.coral,
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 16,
+  },
+  viewDeliveryText: { fontFamily: fonts.sans, color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  cardDelayed: {
+    backgroundColor: '#FFF0E3',
+    borderColor: '#F2BFA0',
+    borderLeftWidth: 7,
+    borderLeftColor: palette.coral,
+  },
   pressed: { opacity: 0.72 },
-  row: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
+  row: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   status: { color: palette.dark, flex: 1, fontSize: 17, fontWeight: '800' },
-  fee: { color: palette.green, fontWeight: '800', marginLeft: 8 },
+  fee: {
+    color: palette.dark,
+    fontFamily: fonts.display,
+    fontSize: 22,
+    fontWeight: '700',
+    marginLeft: 'auto',
+    backgroundColor: '#F7E4D2',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
   details: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 5 },
-  delayed: { color: '#86510F', fontSize: 14, fontWeight: '800', marginTop: 5 },
+  delayed: { color: palette.coralDark, fontFamily: fonts.sans, fontSize: 12, fontWeight: '700' },
   cancelled: { color: '#86510F', fontSize: 14, fontWeight: '700', marginTop: 5 },
-  pagination: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  pagination: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
   pageText: { color: palette.muted, fontSize: 14 },
 });

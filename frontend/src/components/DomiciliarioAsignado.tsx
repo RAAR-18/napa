@@ -1,3 +1,4 @@
+import { fonts } from './theme';
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
@@ -76,8 +77,8 @@ const styles = StyleSheet.create({
   row: { alignItems: 'center', flexDirection: 'row', marginTop: 10 },
   photo: { borderRadius: 24, height: 48, width: 48 },
   initial: { alignItems: 'center', backgroundColor: palette.border, justifyContent: 'center' },
-  initialText: { color: palette.dark, fontSize: 18, fontWeight: '800' },
+  initialText: { color: palette.dark, fontFamily: fonts.sans, fontSize: 18, fontWeight: '800' },
   info: { flex: 1, marginLeft: 12 },
-  name: { color: palette.dark, fontSize: 15, fontWeight: '700' },
-  detailText: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  name: { color: palette.dark, fontFamily: fonts.sans, fontSize: 15, fontWeight: '700' },
+  detailText: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
 });
