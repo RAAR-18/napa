@@ -12,6 +12,8 @@ export type AccionPendiente = {
   body: string | null;
   /** La misma clave en cada reintento: el servidor no aplica la acción dos veces (RNF27). */
   idempotencyKey: string;
+  ifMatch?: string;
+  errorStatus?: number;
   /** Texto para el usuario, por ejemplo "Calificación de Frutas Ana". */
   descripcion: string;
   status: EstadoEnvio;

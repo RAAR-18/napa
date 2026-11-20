@@ -58,6 +58,7 @@ export class Outbox {
     method: MetodoEnvio;
     path: string;
     body?: unknown;
+    ifMatch?: string;
     idempotencyKey: string;
     descripcion: string;
   }): Promise<AccionPendiente> {
@@ -69,6 +70,7 @@ export class Outbox {
       method: input.method,
       path: input.path,
       body: input.body === undefined ? null : JSON.stringify(input.body),
+      ...(input.ifMatch ? { ifMatch: input.ifMatch } : {}),
       idempotencyKey: input.idempotencyKey,
       descripcion: input.descripcion,
       status: 'PENDIENTE',
@@ -113,6 +115,7 @@ export class Outbox {
   /** Una corrección sustituye un rechazo definitivo con un cuerpo y una clave nuevos. */
   async corregirFallida(accion: AccionPendiente, input: {
     body: unknown;
+    ifMatch?: string;
     idempotencyKey: string;
     descripcion: string;
   }): Promise<void> {
@@ -123,6 +126,7 @@ export class Outbox {
     const modificada = await this.store.reemplazarFallida({
       ...accion,
       body: JSON.stringify(input.body),
+      ...(input.ifMatch ? { ifMatch: input.ifMatch, errorStatus: undefined } : {}),
       descripcion: input.descripcion,
       idempotencyKey: input.idempotencyKey,
       status: 'PENDIENTE',
@@ -194,7 +198,8 @@ export class Outbox {
         return 'reintentar';
       }
       // El servidor la rechazó por sus datos o su estado: reenviarla daría el mismo resultado.
-      await this.store.actualizar({ ...accion, attempts, status: 'FALLIDA', lastError: mensaje });
+      await this.store.actualizar({ ...accion, attempts, status: 'FALLIDA', lastError: mensaje,
+        ...(cause instanceof ApiError && accion.ifMatch ? { errorStatus: cause.details.estadoActual === 'ELIMINADO' ? 410 : cause.status } : {}) });
       return 'fallida';
     }
   }

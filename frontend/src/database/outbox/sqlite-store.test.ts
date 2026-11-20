@@ -4,7 +4,7 @@ import type { AccionPendiente } from './types';
 const mockDatabase = {
   execAsync: jest.fn().mockResolvedValue(undefined),
   runAsync: jest.fn().mockResolvedValue({ changes: 1, lastInsertRowId: 1 }),
-  getAllAsync: jest.fn(),
+  getAllAsync: jest.fn().mockResolvedValue([]),
 };
 
 jest.mock('expo-sqlite', () => ({
@@ -33,11 +33,11 @@ it('creates the outbox table once with a unique idempotency key and ignores repe
   await store.insertar(accion);
   await store.insertar(accion);
 
-  expect(mockDatabase.execAsync).toHaveBeenCalledTimes(1);
+  expect(mockDatabase.execAsync.mock.calls.filter(([sql]) => sql.includes('CREATE TABLE'))).toHaveLength(1);
   expect(mockDatabase.execAsync.mock.calls[0][0]).toContain('UNIQUE (usuario_id, idempotency_key)');
   expect(mockDatabase.runAsync.mock.calls[0][0]).toContain('INSERT OR IGNORE INTO outbox');
   expect(mockDatabase.runAsync.mock.calls[0].slice(1)).toEqual([
-    'id-1', 'cuenta-A', 'POST', '/api/v1/reportes', '{"motivo":"OTRO"}', 'key-1', 'Reporte: Otro', 'PENDIENTE', 0, null, 10, 10,
+    'id-1', 'cuenta-A', 'POST', '/api/v1/reportes', '{"motivo":"OTRO"}', 'key-1', 'Reporte: Otro', 'PENDIENTE', 0, null, 10, 10, null,
   ]);
 });
 

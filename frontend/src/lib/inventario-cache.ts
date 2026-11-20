@@ -136,6 +136,19 @@ export async function leerPaginaInventario(
     : null;
 }
 
+export async function leerProductoInventario(cuentaId: string, productoId: string) {
+  const db = await database();
+  const fila = await db.getFirstAsync<{ contenido: string }>(
+    `SELECT producto.value AS contenido
+     FROM cache_inventario AS cache, json_each(cache.contenido, '$.content') AS producto
+     WHERE cache.cuenta_id = ? AND cache.actualizado_en > ?
+       AND json_extract(producto.value, '$.id') = ?
+     ORDER BY cache.actualizado_en DESC, cache.rowid DESC LIMIT 1`,
+    cuentaId, Date.now() - VIGENCIA_MS, productoId,
+  );
+  return fila ? JSON.parse(fila.contenido) as ProductosPage['content'][number] : null;
+}
+
 export async function borrarInventarioGuardado(
   cuentaId: string,
 ): Promise<void> {
