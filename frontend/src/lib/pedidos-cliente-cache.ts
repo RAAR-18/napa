@@ -1,8 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 
-import type { PedidoClienteDetalle, PedidosClientePagina } from './pedidos';
+import type { PedidoClienteDetalle, PedidoVendedorDetalle, PedidosClientePagina, PedidosVendedorPagina } from './pedidos';
 
-type TipoConsulta = 'listado' | 'detalle';
+type TipoConsulta = 'listado' | 'detalle' | 'detalle-vendedor' | 'listado-vendedor';
 export type DetallePedidoGuardado = Pick<PedidoClienteDetalle,
   'id' | 'estado' | 'modalidad' | 'reserva' | 'updatedAt' | 'emprendimiento' | 'total' | 'tarifaDomicilio' | 'pago'
 > & { items: Pick<PedidoClienteDetalle['items'][number], 'productoId' | 'nombre' | 'unidad' | 'cantidad' | 'subtotal'>[] };
@@ -43,7 +43,7 @@ export function guardarConsultaPedidos(
   cuenta: string,
   tipo: TipoConsulta,
   clave: string,
-  contenido: DetallePedidoGuardado | PedidosClientePagina,
+  contenido: DetallePedidoGuardado | PedidosClientePagina | PedidoVendedorDetalle | PedidosVendedorPagina,
   vigente: () => boolean,
 ) {
   const fecha = Date.now();
@@ -99,6 +99,16 @@ export function borrarPedidosGuardados(cuenta: string) {
   return escribir(async () => {
     const db = await database();
     await db.runAsync('DELETE FROM cache_pedidos_cliente WHERE cuenta = ?', cuenta);
+  });
+}
+
+export function quitarDetalleVendedorGuardado(cuenta: string, pedidoId: string) {
+  return escribir(async () => {
+    const db = await database();
+    await db.runAsync(
+      "DELETE FROM cache_pedidos_cliente WHERE cuenta = ? AND tipo = 'detalle-vendedor' AND clave = ?",
+      cuenta, pedidoId,
+    );
   });
 }
 

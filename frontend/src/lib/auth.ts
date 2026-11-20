@@ -322,6 +322,12 @@ export async function logout(): Promise<void> {
   }
   if (vendedor && session.usuarioId) {
     try {
+      const { borrarPedidosGuardados } = await import('./pedidos-cliente-cache');
+      await borrarPedidosGuardados(session.usuarioId);
+    } catch (cause) {
+      console.warn('No se pudo borrar el detalle guardado de pedidos al cerrar sesión.', cause);
+    }
+    try {
       const { borrarInventarioGuardado } = await import('./inventario-cache');
       await borrarInventarioGuardado(session.usuarioId);
     } catch (cause) {

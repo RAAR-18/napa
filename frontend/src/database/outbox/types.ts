@@ -32,5 +32,7 @@ export interface OutboxStore {
   actualizar(accion: AccionPendiente): Promise<void>;
   reemplazarFallida(accion: AccionPendiente, claveAnterior: string): Promise<boolean>;
   borrar(id: string): Promise<void>;
+  iniciarPrimerIntento?(id: string): Promise<boolean>;
+  borrarSinIntentos?(id: string, usuarioId: string): Promise<boolean>;
   borrarTodo(): Promise<void>;
 }

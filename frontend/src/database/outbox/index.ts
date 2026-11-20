@@ -5,6 +5,8 @@ import { readSession, withValidSession } from '../../lib/auth';
 import { RUTA_EDICION_EMPRENDIMIENTO } from '../../lib/emprendimiento-pendiente';
 import { RUTA_REGISTRO_PRODUCTO } from '../../lib/productos-pendientes';
 import { borrarCarritoEncolado, RUTA_CREACION_PEDIDO } from '../../lib/pedido-offline';
+import { respuestaPedidoPendiente } from '../../lib/respuesta-pedido-pendiente';
+import { quitarDetalleVendedorGuardado } from '../../lib/pedidos-cliente-cache';
 import type { PedidoCreado } from '../../lib/pedidos';
 import { Outbox } from './outbox';
 import { SqliteOutboxStore } from './sqlite-store';
@@ -42,6 +44,14 @@ async function enviarConSesion(accion: AccionPendiente): Promise<void> {
       throw new ApiError('El servidor no devolvió el identificador del pedido.', 502);
     }
     await requestVoid(accion.path, solicitud);
+    const respuesta = respuestaPedidoPendiente(accion);
+    if (respuesta) {
+      try {
+        await quitarDetalleVendedorGuardado(accion.usuarioId, respuesta.pedidoId);
+      } catch {
+        throw new ApiError('No se pudo actualizar el detalle guardado.', 503);
+      }
+    }
   });
 }
 
@@ -50,7 +60,7 @@ export const outbox = new Outbox({
   store: new SqliteOutboxStore(),
   usuarioActual: async () => (await readSession())?.usuarioId ?? null,
   enviar: enviarConSesion,
-  conservarReintentosServidor: (accion) => Boolean(accion.ifMatch)
+  conservarReintentosServidor: (accion) => Boolean(accion.ifMatch || respuestaPedidoPendiente(accion))
     || (accion.method === 'POST' && accion.path === RUTA_CREACION_PEDIDO)
     || (accion.method === 'POST' && accion.path === RUTA_REGISTRO_PRODUCTO)
     || (accion.method === 'PATCH' && accion.path === RUTA_EDICION_EMPRENDIMIENTO),

@@ -22,6 +22,19 @@ class MemoryStore implements OutboxStore {
     await this.actualizar(a);
     return true;
   }
+  async iniciarPrimerIntento(id: string) {
+    const fila = this.filas.find((f) => f.id === id && f.attempts === 0 && f.status === 'PENDIENTE');
+    if (!fila) return false;
+    fila.attempts = 1;
+    return true;
+  }
+  async borrarSinIntentos(id: string, usuarioId: string) {
+    const fila = this.filas.find((f) => f.id === id && f.usuarioId === usuarioId &&
+      f.status === 'PENDIENTE' && f.attempts === 0);
+    if (!fila) return false;
+    await this.borrar(id);
+    return true;
+  }
   async borrar(id: string) {
     this.filas = this.filas.filter((f) => f.id !== id);
   }
@@ -273,5 +286,32 @@ it('replaces a rejected registration once with the corrected body and a fresh ke
   await expect(outbox.corregirFallida(rechazada, corregida)).rejects.toThrow(/ya no está disponible/);
   expect(await outbox.listar()).toEqual([expect.objectContaining({
     status: 'PENDIENTE', body: JSON.stringify(corregida.body), idempotencyKey: 'corregida', attempts: 0,
+  })]);
+});
+
+it('allows discarding a seller decision only before the first send begins', async () => {
+  const input = {
+    usuarioId: 'cuenta-A', method: 'POST' as const, path: '/api/v1/pedidos/order-id/aceptar',
+    idempotencyKey: 'aceptacion-original', descripcion: 'Aceptación de pedido',
+  };
+  const descartable = await outbox.encolar(input);
+  await outbox.descartar(descartable.id);
+  expect(await outbox.listar()).toEqual([]);
+
+  const pendiente = await outbox.encolar(input);
+  enviar.mockImplementationOnce(async () => {
+    await expect(outbox.descartar(pendiente.id)).rejects.toThrow('El envío ya se intentó');
+    throw new NetworkError('Respuesta perdida');
+  });
+  await outbox.procesar();
+  expect(await outbox.listar()).toEqual([expect.objectContaining({ attempts: 1, status: 'PENDIENTE' })]);
+
+  enviar.mockRejectedValueOnce(new ApiError('El pedido fue cancelado.', 409, 'INVALID_STATE'));
+  await outbox.procesar({ forzar: true });
+  expect(enviar.mock.calls.map(([accion]) => accion.idempotencyKey)).toEqual([
+    'aceptacion-original', 'aceptacion-original',
+  ]);
+  expect(await outbox.listar()).toEqual([expect.objectContaining({
+    status: 'FALLIDA', lastError: 'El pedido fue cancelado.',
   })]);
 });

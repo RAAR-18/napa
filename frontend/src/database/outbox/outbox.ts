@@ -1,4 +1,5 @@
 import { ApiError, NetworkError } from '../../lib/api';
+import { respuestaPedidoPendiente } from '../../lib/respuesta-pedido-pendiente';
 import type { AccionPendiente, MetodoEnvio, OutboxStore } from './types';
 
 /** Envía una acción con su clave; resuelve si el servidor la aceptó y lanza el error tal cual si no. */
@@ -61,6 +62,7 @@ export class Outbox {
     ifMatch?: string;
     idempotencyKey: string;
     descripcion: string;
+    intentoPrevio?: boolean;
   }): Promise<AccionPendiente> {
     const usuarioId = input.usuarioId;
     if (!usuarioId) throw new Error('La acción debe tener propietario.');
@@ -74,7 +76,7 @@ export class Outbox {
       idempotencyKey: input.idempotencyKey,
       descripcion: input.descripcion,
       status: 'PENDIENTE',
-      attempts: 0,
+      attempts: input.intentoPrevio ? 1 : 0,
       lastError: null,
       nextAttemptAt: this.ahora(),
       createdAt: this.ahora(),
@@ -93,21 +95,30 @@ export class Outbox {
   }
 
   async descartar(id: string): Promise<void> {
-    if (!(await this.listar()).some((a) => a.id === id)) return;
-    await this.store.borrar(id);
+    const accion = (await this.listar()).find((a) => a.id === id);
+    if (!accion) return;
+    if (respuestaPedidoPendiente(accion) && accion.status === 'PENDIENTE') {
+      if (!await this.store.borrarSinIntentos?.(id, accion.usuarioId)) {
+        throw new Error('El envío ya se intentó. Consulta el estado del pedido antes de decidir de nuevo.');
+      }
+    } else {
+      await this.store.borrar(id);
+    }
     this.avisar();
   }
 
   /** Descarte explícito solo de los pendientes de la cuenta activa; no usar al cerrar sesión. */
   async vaciar(): Promise<void> {
-    for (const accion of await this.listar()) await this.store.borrar(accion.id);
+    for (const accion of await this.listar()) {
+      if (!respuestaPedidoPendiente(accion)) await this.store.borrar(accion.id);
+    }
     this.avisar();
   }
 
   /** Vuelve a poner una acción fallida en la cola para intentarla ya. */
   async reintentar(id: string): Promise<void> {
     const accion = (await this.listar()).find((a) => a.id === id);
-    if (!accion) return;
+    if (!accion || respuestaPedidoPendiente(accion)) return;
     await this.store.actualizar({ ...accion, status: 'PENDIENTE', lastError: null, nextAttemptAt: this.ahora() });
     this.avisar();
   }
@@ -160,6 +171,10 @@ export class Outbox {
       if (accion.usuarioId !== await this.usuarioActual()) break;
       if (accion.status !== 'PENDIENTE') continue;
       if (!forzar && accion.nextAttemptAt > this.ahora()) continue;
+      if (respuestaPedidoPendiente(accion) && accion.attempts === 0 && this.store.iniciarPrimerIntento) {
+        if (!await this.store.iniciarPrimerIntento(accion.id)) continue;
+        this.avisar();
+      }
       const resultado = await this.intentar(accion);
       if (resultado === 'enviada') {
         enviadas += 1;
