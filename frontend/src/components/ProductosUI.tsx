@@ -28,11 +28,13 @@ import {
 export function ProductoCard({
   producto,
   inventory = false,
+  edicionBloqueada = false,
   onUpdated,
   resumen,
 }: {
   producto: Producto;
   inventory?: boolean;
+  edicionBloqueada?: boolean;
   onUpdated?: () => void;
   /** RF-02: promedio del producto; ausente si aún no se cargó. */
   resumen?: ResumenCalificaciones;
@@ -165,7 +167,7 @@ export function ProductoCard({
               <>
                 <TextButton
                   title={`Editar ${producto.nombre}`}
-                  disabled={busy}
+                  disabled={busy || edicionBloqueada}
                   onPress={() =>
                     router.push({
                       pathname: '/editar-producto',

@@ -119,6 +119,30 @@ class GestionProductoIntegrationTest {
     }
 
     @Test
+    void keyedEditReplaysOriginalResultAndRejectsDifferentPrecondition() throws Exception {
+        Actor seller = seller();
+        String id = create(seller.token(), "Mango");
+        String path = "/productos/" + id;
+        String originalVersion = etag(ok("GET", path, seller.token(), null, null));
+        String operation = key();
+        var changes = Map.of("precio", 4500);
+
+        var first = request("PATCH", path, seller.token(), changes, operation, originalVersion);
+        assertEquals(200, first.statusCode(), first.body());
+        var replay = request("PATCH", path, seller.token(), changes, operation, originalVersion);
+        assertEquals(200, replay.statusCode(), replay.body());
+        assertEquals(body(first), body(replay));
+        assertEquals(etag(first), etag(replay));
+
+        var changedVersion = request("PATCH", path, seller.token(), changes, operation, etag(first));
+        assertEquals(422, changedVersion.statusCode(), changedVersion.body());
+        assertEquals("IDEMPOTENCY_KEY_REUSED", body(changedVersion).get("code"));
+        var stale = request("PATCH", path, seller.token(), changes, key(), originalVersion);
+        assertEquals(409, stale.statusCode(), stale.body());
+        assertEquals(etag(first), etag(ok("GET", path, seller.token(), null, null)));
+    }
+
+    @Test
     void rejectsInvalidOrNonEditableFieldsWithoutApplyingAnyPart() throws Exception {
         Actor seller = seller(); String id = create(seller.token(), "Original");
         var before = ok("GET", "/productos/" + id, seller.token(), null, null);

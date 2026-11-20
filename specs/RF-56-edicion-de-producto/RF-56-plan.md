@@ -20,7 +20,7 @@ El vendedor corrige un producto publicado con `PATCH /productos/{id}`: nombre, p
 
 Entrega en línea implementada el 2026-11-11. `ProductosPort`/`ProductosUseCase` y `ProductoController` exponen `GET /api/v1/productos/{id}` y `PATCH /api/v1/productos/{id}` al propietario. La edición parcial valida todo antes de guardar, permite borrar la descripción con `null`, rechaza campos ajenos y conserva unidad, inventario y estado. El índice único resuelve nombres duplicados con `409`.
 
-`V8__producto_version.sql` añade `version`. La persistencia existente es JDBC: usa `UPDATE ... WHERE version = ? RETURNING *`, sin entidad JPA ni `@Version`. También se incrementa al ajustar inventario o eliminar. La consulta devuelve `ETag` y `version`; el formulario `frontend/src/app/editar-producto.tsx` envía `If-Match`. Esta cabecera es opcional para clientes externos; todas las escrituras comparan además la versión leída en la transacción. El endpoint PATCH queda exceptuado de `Idempotency-Key`, conforme al contrato específico de esta RF.
+`V8__producto_version.sql` añade `version`. La persistencia existente es JDBC: usa `UPDATE ... WHERE version = ? RETURNING *`, sin entidad JPA ni `@Version`. También se incrementa al ajustar inventario o eliminar. La consulta devuelve `ETag` y `version`; el formulario `frontend/src/app/editar-producto.tsx` envía `If-Match`. Esta cabecera es opcional para clientes externos; todas las escrituras comparan además la versión leída en la transacción. El PATCH admite `Idempotency-Key` para la edición encolada. Las solicitudes anteriores sin clave conservan su comportamiento.
 
 Ante conflicto, se devuelve `409` y se conserva el borrador con una acción explícita para recargar, en lugar del reintento automático propuesto más abajo: repetir con una versión nueva podría sobrescribir cambios que el vendedor aún no ha visto. Se reutilizan los campos y validadores compartidos; creación y edición mantienen pantallas separadas.
 
@@ -99,7 +99,7 @@ No cambia estados: `DISPONIBLE` y `AGOTADO` se conservan. Un producto `ELIMINADO
 | Authorization | ✅ | `Bearer <JWT>` |
 | Content-Type | ✅ | `application/json` |
 
-`PATCH` no exige `Idempotency-Key` (spec-general). Repetir el mismo cuerpo deja el mismo resultado.
+`PATCH` admite una clave de idempotencia opcional. La cola envía la clave junto con el `If-Match` original.
 
 - **Respuestas exitosas**: `200` con `X-Request-Id` y body `{ "id", "nombre", "precio", "unidad", "descripcion", "cantidadDisponible", "estado" }`.
 - **Errores**:
@@ -122,6 +122,8 @@ No cambia estados: `DISPONIBLE` y `AGOTADO` se conservan. Un producto `ELIMINADO
 **Eventos que consume esta feature**: ninguno.
 
 ## Offline & Concurrency Strategy
+
+**Edición offline del MVP (#42).** La app permite guardar un PATCH parcial de nombre, precio o descripción para un producto confirmado descargado. La cola admite una sola edición por cuenta y producto y conserva la clave, el cuerpo y el `If-Match` originales. El servidor incluye `If-Match` en la identidad de la solicitud idempotente. Un cambio de versión requiere consultar los valores vigentes y confirmar la propuesta con una clave nueva. Si el producto ya no está disponible, se conserva el motivo y se permite descartar el pendiente. La prueba manual en Android queda pendiente.
 
 - **Tolerancia a mala conexión (RNF28)**: la edición se guarda en la outbox local y se envía al recuperar la red; mientras tanto la app muestra el valor nuevo como "pendiente de enviar". Si al enviarla llega `409` o `400`, la app avisa y restaura el valor del servidor.
 - **Concurrencia (RNF08)**: `@Version` en `producto`. Un choque entre dos `PATCH`, o entre un `PATCH` y un ajuste de inventario de RF-57, devuelve `409 CONFLICT` y la app reintenta una vez con los datos frescos.

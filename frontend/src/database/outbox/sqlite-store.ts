@@ -17,6 +17,8 @@ type Fila = {
   last_error: string | null;
   next_attempt_at: number;
   created_at: number;
+  if_match?: string | null;
+  error_status?: number | null;
 };
 
 function aAccion(fila: Fila): AccionPendiente {
@@ -27,6 +29,8 @@ function aAccion(fila: Fila): AccionPendiente {
     path: fila.path,
     body: fila.body,
     idempotencyKey: fila.idempotency_key,
+    ...(fila.if_match == null ? {} : { ifMatch: fila.if_match }),
+    ...(fila.error_status == null ? {} : { errorStatus: fila.error_status }),
     descripcion: fila.descripcion,
     status: fila.status as AccionPendiente['status'],
     attempts: fila.attempts,
@@ -61,6 +65,17 @@ export class SqliteOutboxStore implements OutboxStore {
             UNIQUE (usuario_id, idempotency_key)
           );
         `);
+        const columnas = await db.getAllAsync<{ name: string }>('PRAGMA table_info(outbox_por_cuenta)');
+        if (!columnas.some(({ name }) => name === 'if_match')) {
+          await db.execAsync('ALTER TABLE outbox_por_cuenta ADD COLUMN if_match TEXT');
+        }
+        if (!columnas.some(({ name }) => name === 'error_status')) {
+          await db.execAsync('ALTER TABLE outbox_por_cuenta ADD COLUMN error_status INTEGER');
+        }
+        await db.execAsync(`
+          CREATE UNIQUE INDEX IF NOT EXISTS outbox_edicion_por_producto
+          ON outbox_por_cuenta (usuario_id, path) WHERE method = 'PATCH' AND if_match IS NOT NULL
+        `);
         return db;
       })();
     }
@@ -75,13 +90,16 @@ export class SqliteOutboxStore implements OutboxStore {
   async insertar(a: AccionPendiente): Promise<void> {
     const db = await this.db();
     // Si la misma acción se encola dos veces (doble toque), la clave única deja solo una.
-    await db.runAsync(
+    const resultado = await db.runAsync(
       `INSERT OR IGNORE INTO outbox_por_cuenta
-         (id, usuario_id, method, path, body, idempotency_key, descripcion, status, attempts, last_error, next_attempt_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, usuario_id, method, path, body, idempotency_key, descripcion, status, attempts, last_error, next_attempt_at, created_at, if_match)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       a.id, a.usuarioId, a.method, a.path, a.body, a.idempotencyKey, a.descripcion, a.status, a.attempts, a.lastError,
-      a.nextAttemptAt, a.createdAt,
+      a.nextAttemptAt, a.createdAt, a.ifMatch ?? null,
     );
+    if (a.ifMatch && resultado.changes === 0) {
+      throw new Error('Este producto ya tiene una edición pendiente.');
+    }
   }
 
   async listar(): Promise<AccionPendiente[]> {
@@ -93,8 +111,8 @@ export class SqliteOutboxStore implements OutboxStore {
   async actualizar(a: AccionPendiente): Promise<void> {
     const db = await this.db();
     await db.runAsync(
-      'UPDATE outbox_por_cuenta SET status = ?, attempts = ?, last_error = ?, next_attempt_at = ? WHERE id = ?',
-      a.status, a.attempts, a.lastError, a.nextAttemptAt, a.id,
+      'UPDATE outbox_por_cuenta SET status = ?, attempts = ?, last_error = ?, next_attempt_at = ?, error_status = ? WHERE id = ?',
+      a.status, a.attempts, a.lastError, a.nextAttemptAt, a.errorStatus ?? null, a.id,
     );
   }
 
@@ -103,10 +121,10 @@ export class SqliteOutboxStore implements OutboxStore {
     const result = await db.runAsync(
       `UPDATE outbox_por_cuenta
        SET body = ?, idempotency_key = ?, descripcion = ?, status = ?, attempts = ?,
-           last_error = ?, next_attempt_at = ?, created_at = ?
+           last_error = ?, next_attempt_at = ?, created_at = ?, if_match = ?, error_status = NULL
        WHERE id = ? AND usuario_id = ? AND status = 'FALLIDA' AND idempotency_key = ?`,
       a.body, a.idempotencyKey, a.descripcion, a.status, a.attempts, a.lastError,
-      a.nextAttemptAt, a.createdAt, a.id, a.usuarioId, claveAnterior,
+      a.nextAttemptAt, a.createdAt, a.ifMatch ?? null, a.id, a.usuarioId, claveAnterior,
     );
     return result.changes === 1;
   }

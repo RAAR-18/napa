@@ -102,15 +102,18 @@ public class IdempotencyFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/pedidos/cotizacion")
                 // RF-38: único por (usuario, token) en la base; repetirlo no duplica (spec-general).
                 || path.equals("/api/v1/dispositivos");
-        boolean productEdit = "PATCH".equalsIgnoreCase(request.getMethod())
-                && (path.matches("/api/v1/productos/[^/]+")
+        boolean patch = "PATCH".equalsIgnoreCase(request.getMethod());
+        boolean keyedProductEdit = patch && path.matches("/api/v1/productos/[^/]+")
+                && request.getHeader(IDEMPOTENCY_HEADER) != null;
+        boolean exemptPatch = patch
+                && (path.matches("/api/v1/productos/[^/]+") && !keyedProductEdit
                 // RF-29: repetir la misma edición deja el mismo resultado (spec-general: PATCH sin clave).
                 || path.equals("/api/v1/emprendimientos/me")
                 // RF-04 y RF-06: editar una calificación o moderar su texto no exige clave (spec-general §2.4).
                 || path.matches("/api/v1/calificaciones/[^/]+(/moderar-texto)?")
                 // RF-08 y RF-67: editar un perfil deja el mismo resultado si se repite.
                 || path.matches("/api/v1/usuarios/[^/]+"));
-        return exempt || productEdit || !(path.startsWith("/api/v1/")
+        return exempt || exemptPatch || !(path.startsWith("/api/v1/")
                 && ("POST".equalsIgnoreCase(request.getMethod())
                 || "PATCH".equalsIgnoreCase(request.getMethod())));
     }
@@ -430,6 +433,11 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         digest.update((byte) 0);
         digest.update(Objects.toString(request.getQueryString(), "").getBytes(StandardCharsets.UTF_8));
         digest.update((byte) 0);
+        if ("PATCH".equalsIgnoreCase(request.getMethod())
+                && request.getRequestURI().matches("/api/v1/productos/[^/]+")) {
+            digest.update(Objects.toString(request.getHeader("If-Match"), "").getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+        }
         digest.update(body);
         return HexFormat.of().formatHex(digest.digest());
     }

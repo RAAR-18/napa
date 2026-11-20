@@ -10,7 +10,7 @@ import { ApiError, NetworkError } from '../../lib/api';
 import { clearSession, getValidSession, readSession } from '../../lib/auth';
 import { outbox } from '../../database/outbox';
 import { borrarCatalogoGuardado, leerPaginaCatalogo, listarPaginasGuardadasCatalogo } from '../../lib/catalogo-cache';
-import { leerPaginaInventario } from '../../lib/inventario-cache';
+import { leerPaginaInventario, leerProductoInventario } from '../../lib/inventario-cache';
 import { createProducto, deleteProducto, editProducto, getMiProducto, listCatalogo, listMisProductos, updateInventario, type Producto, type ProductosPage } from '../../lib/productos';
 
 jest.mock('expo-router', () => ({
@@ -47,6 +47,7 @@ jest.mock('../../lib/catalogo-cache', () => ({
 jest.mock('../../lib/inventario-cache', () => ({
   guardarPaginaInventario: jest.fn(),
   leerPaginaInventario: jest.fn(),
+  leerProductoInventario: jest.fn(),
   borrarInventarioGuardado: jest.fn(),
 }));
 jest.mock('../../lib/productos', () => ({
@@ -384,3 +385,18 @@ it('queues a bound registration without waiting for the server', async () => {
   }));
   await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/mis-productos'));
 }, 15000);
+
+it('queues only the edited fields with the version from the saved product', async () => {
+  jest.mocked(readSession).mockResolvedValue({ ...seller, usuarioId: 'vendedor' });
+  jest.mocked(leerProductoInventario).mockResolvedValueOnce({ ...available, version: 7 });
+  const view = await render(<EditarProductoScreen />);
+  await waitFor(() => expect(view.getByLabelText('Precio por unidad (COP)')).toBeTruthy());
+  await fireEvent.changeText(view.getByLabelText('Precio por unidad (COP)'), '4500');
+  await fireEvent.press(view.getByRole('button', { name: 'Guardar cambios' }));
+  await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith({
+    usuarioId: 'vendedor', method: 'PATCH', path: '/api/v1/productos/product-id',
+    body: { precio: 4500 }, ifMatch: '"7"', idempotencyKey: 'registro-idempotente',
+    descripcion: 'Editar producto: Mango',
+  }));
+  expect(editProducto).not.toHaveBeenCalled();
+}, 60000);

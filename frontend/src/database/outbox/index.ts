@@ -18,7 +18,10 @@ async function enviarConSesion(accion: AccionPendiente): Promise<void> {
     }
     return requestVoid(accion.path, {
       method: accion.method,
-      headers: jsonHeaders({ accessToken: session.accessToken, idempotencyKey: accion.idempotencyKey }),
+      headers: {
+        ...jsonHeaders({ accessToken: session.accessToken, idempotencyKey: accion.idempotencyKey }),
+        ...(accion.ifMatch ? { 'If-Match': accion.ifMatch } : {}),
+      },
       body: accion.body ?? undefined,
     });
   });
@@ -29,6 +32,6 @@ export const outbox = new Outbox({
   store: new SqliteOutboxStore(),
   usuarioActual: async () => (await readSession())?.usuarioId ?? null,
   enviar: enviarConSesion,
-  conservarReintentosServidor: (accion) => accion.method === 'POST' && accion.path === RUTA_REGISTRO_PRODUCTO,
+  conservarReintentosServidor: (accion) => Boolean(accion.ifMatch) || (accion.method === 'POST' && accion.path === RUTA_REGISTRO_PRODUCTO),
   nuevoId: () => randomUUID(),
 });
