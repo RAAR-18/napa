@@ -217,7 +217,7 @@ export default function MiEmprendimientoScreen() {
       />
       {loading ? <ActivityIndicator accessibilityLabel="Cargando emprendimiento" color={palette.green} /> : null}
       <ErrorBanner message={error} />
-      {notice ? <Text accessibilityRole="status" style={styles.notice}>{notice}</Text> : null}
+      {notice ? <Text aria-live="polite" style={styles.notice}>{notice}</Text> : null}
       {!loading && error && !actual && !sinEmprendimiento && role ? (
         <PrimaryButton title="Reintentar" onPress={() => setAttempt((value) => value + 1)} />
       ) : null}

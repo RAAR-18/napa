@@ -361,7 +361,7 @@ export default function PedidoVendedorScreen() {
           {detail.domicilio?.estado === 'ENTREGADO' && userRole === 'VENDEDOR_PUNTO_FIJO' ? (
             <PagoTarifaDomicilio domicilioId={detail.domicilio.id} rol="VENDEDOR" />
           ) : null}
-          {notice ? <Text accessibilityRole="status" style={styles.notice}>{notice}</Text> : null}
+          {notice ? <Text aria-live="polite" style={styles.notice}>{notice}</Text> : null}
           {detail.estado === 'PENDIENTE' && !pendingAction && !loading ? (
             <>
               <HelperText>Responder requiere conexión a internet.</HelperText>

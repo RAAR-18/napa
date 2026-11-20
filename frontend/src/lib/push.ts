@@ -3,6 +3,10 @@ import { Platform } from 'react-native';
 
 import { darDeBajaDispositivo, registrarDispositivo } from './notificaciones';
 
+import { AndroidImportance } from 'expo-notifications';
+
+import { ApiError } from './api';
+
 /** Con la app abierta el aviso también se muestra; la lista de la app es la fuente de verdad. */
 export function configurarAvisosEnPrimerPlano() {
   if (Platform.OS === 'web') return;
@@ -22,35 +26,55 @@ function plataforma(): 'ANDROID' | 'IOS' | null {
   return null;
 }
 
-/** Token FCM nativo; null si no hay permiso, en web o si el build no tiene Firebase configurado. */
 async function tokenDelDispositivo(pedirPermiso: boolean): Promise<string | null> {
   if (!plataforma()) return null;
+
   try {
+    if (pedirPermiso && Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Notificaciones de Ñapa',
+        importance: AndroidImportance.DEFAULT,
+      });
+    }
+
     let { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted' && pedirPermiso) {
       ({ status } = await Notifications.requestPermissionsAsync());
     }
-    if (status !== 'granted') return null;
+
+    if (status !== 'granted') {
+      if (__DEV__ && pedirPermiso) {
+        console.info('[push] Permiso de notificaciones no concedido.');
+      }
+      return null;
+    }
+
     const token = await Notifications.getDevicePushTokenAsync();
     return typeof token.data === 'string' && token.data ? token.data : null;
-  } catch {
-    // Expo Go y los builds sin google-services.json no entregan token: la lista de la app sigue funcionando.
+  } catch (error) {
+    if (__DEV__ && pedirPermiso) {
+      console.info(
+        '[push] Error nativo:',
+        error instanceof Error ? error.message : String(error),
+      );
+    }
     return null;
   }
 }
 
-/**
- * RF-38: registra el teléfono para recibir los avisos de la cuenta. Nunca falla: si el push no está disponible,
- * el usuario igual ve sus notificaciones en la app.
- */
 export async function registrarPush(): Promise<boolean> {
   const tipo = plataforma();
   const token = await tokenDelDispositivo(true);
   if (!tipo || !token) return false;
+
   try {
     await registrarDispositivo(token, tipo);
     return true;
-  } catch {
+  } catch (error) {
+    if (__DEV__) {
+      const detalle = error instanceof ApiError ? ` (HTTP ${error.status})` : '';
+      console.info(`[push] Falló POST /api/v1/dispositivos${detalle}.`);
+    }
     return false;
   }
 }

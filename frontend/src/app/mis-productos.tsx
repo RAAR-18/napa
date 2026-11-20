@@ -54,11 +54,7 @@ export default function MisProductosScreen() {
         </>
       ) : null}
       <OrdenProductosControl value={sort} onChange={changeSort} />
-      {notice ? (
-        <Text accessibilityRole="status" style={productStyles.status}>
-          {notice}
-        </Text>
-      ) : null}
+      {notice ? <Text aria-live="polite" style={productStyles.status}>{notice}</Text> : null}
       <ErrorBanner message={error} />
       {offlineUpdatedAt !== null ? (
         <HelperText>
