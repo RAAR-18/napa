@@ -14,6 +14,7 @@ import {
 } from '../components/AuthUI';
 import { outbox, type AccionPendiente } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
+import { edicionEmprendimientoPendiente } from '../lib/emprendimiento-pendiente';
 import { edicionDescartableSinRevision, cambioPendienteProducto, productoPendiente } from '../lib/productos-pendientes';
 
 function formatDate(ms: number) {
@@ -92,6 +93,10 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
               <TextButton title="Corregir y reenviar" onPress={() => router.push({
                 pathname: '/nuevo-producto', params: { pendienteId: accion.id },
               })} />
+            ) : edicionEmprendimientoPendiente(accion) ? (
+              ![403, 404, 410].includes(accion.errorStatus ?? 0) ? (
+                <TextButton title="Ver propuesta" onPress={() => router.push('/mi-emprendimiento')} />
+              ) : null
             ) : edicion ? (
               !edicionDescartableSinRevision(accion) ? (
                 <TextButton title={edicion.inventario ? 'Revisar ajuste' : 'Revisar edición'} onPress={() => router.push({

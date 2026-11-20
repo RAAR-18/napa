@@ -1,6 +1,7 @@
 package co.edu.napa.emprendimientos.application.usecase;
 
 import co.edu.napa.cuentas.domain.model.RolUsuario;
+import co.edu.napa.emprendimientos.application.ports.in.GestionarEmprendimientoPort.BaseEdicion;
 import co.edu.napa.emprendimientos.application.ports.in.GestionarEmprendimientoPort.Edicion;
 import co.edu.napa.emprendimientos.application.ports.in.GestionarEmprendimientoPort.NuevaUbicacion;
 import co.edu.napa.emprendimientos.application.ports.out.EmprendimientoRepositoryPort;
@@ -48,7 +49,7 @@ class GestionarEmprendimientoUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        when(businesses.findActiveByUsuarioId(SELLER)).thenReturn(Optional.of(business));
+        when(businesses.lockActiveByUsuarioId(SELLER)).thenReturn(Optional.of(business));
         when(locations.findById(LOCATION)).thenReturn(Optional.of(location));
         when(businesses.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(locations.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -109,6 +110,31 @@ class GestionarEmprendimientoUseCaseTest {
         assertEquals("VALIDATION_ERROR", assertThrows(DomainException.class,
                 () -> useCase.editar(SELLER, RolUsuario.VENDEDOR_AMBULANTE,
                         new Edicion(null, LocalTime.of(18, 0), null, null))).code());
+    }
+
+    @Test
+    void rejectsTheWholeProposalWhenEitherEndOfTheScheduleChanged() {
+        var base = new BaseEdicion(business.id(), business.descripcion(), LocalTime.of(7, 0), LocalTime.of(18, 0));
+        var proposal = new Edicion("Otra descripción", null, LocalTime.of(20, 0), null, base);
+
+        DomainException error = assertThrows(DomainException.class,
+                () -> useCase.editar(SELLER, RolUsuario.VENDEDOR_AMBULANTE, proposal));
+
+        assertEquals("CONFLICT", error.code());
+        verify(businesses, never()).save(any());
+    }
+
+    @Test
+    void rejectsAProposalForAnotherBusiness() {
+        var base = new BaseEdicion(UUID.randomUUID(), business.descripcion(),
+                business.horaApertura(), business.horaCierre());
+        var proposal = new Edicion("Otra descripción", null, null, null, base);
+
+        DomainException error = assertThrows(DomainException.class,
+                () -> useCase.editar(SELLER, RolUsuario.VENDEDOR_AMBULANTE, proposal));
+
+        assertEquals("NOT_FOUND", error.code());
+        verify(businesses, never()).save(any());
     }
 
     @Test

@@ -42,7 +42,7 @@ public class GestionarEmprendimientoUseCase implements GestionarEmprendimientoPo
     @Override
     @Transactional(readOnly = true)
     public CrearEmprendimientoResult consultarPropio(UUID vendedorId, RolUsuario rol) {
-        Emprendimiento emprendimiento = activo(vendedorId);
+        Emprendimiento emprendimiento = activo(vendedorId, false);
         return new CrearEmprendimientoResult(emprendimiento, ubicacion(emprendimiento), rol);
     }
 
@@ -56,7 +56,8 @@ public class GestionarEmprendimientoUseCase implements GestionarEmprendimientoPo
                 && (edicion.descripcion().isBlank() || edicion.descripcion().strip().length() > 500)) {
             throw validation("descripcion", "La descripción es obligatoria y no debe exceder 500 caracteres.");
         }
-        Emprendimiento actual = activo(vendedorId);
+        Emprendimiento actual = activo(vendedorId, true);
+        verificarBase(actual, edicion);
         Instant now = Instant.now(clock);
         Emprendimiento editado = actual.editar(edicion.descripcion(), edicion.horaApertura(),
                 edicion.horaCierre(), now);
@@ -80,7 +81,7 @@ public class GestionarEmprendimientoUseCase implements GestionarEmprendimientoPo
     @Override
     @Transactional
     public void eliminar(UUID vendedorId) {
-        Emprendimiento actual = activo(vendedorId);
+        Emprendimiento actual = activo(vendedorId, true);
         long abiertos = pedidos.contarDeEmprendimiento(actual.id());
         if (abiertos > 0) {
             throw new DomainException("HAS_PENDING_ORDERS",
@@ -90,11 +91,28 @@ public class GestionarEmprendimientoUseCase implements GestionarEmprendimientoPo
         emprendimientos.save(actual.eliminar(Instant.now(clock)));
     }
 
-    private Emprendimiento activo(UUID vendedorId) {
+    private static void verificarBase(Emprendimiento actual, Edicion edicion) {
+        var base = edicion.base();
+        if (base == null) return;
+        if (!actual.id().equals(base.emprendimientoId())) {
+            throw new DomainException("NOT_FOUND", "El emprendimiento original ya no está activo en esta cuenta.");
+        }
+        boolean cambioDescripcion = edicion.descripcion() != null
+                && !Objects.equals(base.descripcion(), actual.descripcion());
+        boolean cambioHorario = (edicion.horaApertura() != null || edicion.horaCierre() != null)
+                && (!Objects.equals(base.horaApertura(), actual.horaApertura())
+                    || !Objects.equals(base.horaCierre(), actual.horaCierre()));
+        if (cambioDescripcion || cambioHorario) {
+            throw new DomainException("CONFLICT", "Los datos del emprendimiento cambiaron. Revisa los valores vigentes.");
+        }
+    }
+
+    private Emprendimiento activo(UUID vendedorId, boolean bloquear) {
         if (vendedorId == null) {
             throw new DomainException("UNAUTHORIZED", "No se pudo identificar al usuario autenticado.");
         }
-        return emprendimientos.findActiveByUsuarioId(vendedorId)
+        return (bloquear ? emprendimientos.lockActiveByUsuarioId(vendedorId)
+                : emprendimientos.findActiveByUsuarioId(vendedorId))
                 .orElseThrow(() -> new DomainException("NOT_FOUND", SIN_EMPRENDIMIENTO));
     }
 

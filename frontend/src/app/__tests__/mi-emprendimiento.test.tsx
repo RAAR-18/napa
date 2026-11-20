@@ -4,8 +4,10 @@ import { router } from 'expo-router';
 
 import EmprendimientoDetalleScreen from '../emprendimiento-detalle';
 import MiEmprendimientoScreen from '../mi-emprendimiento';
-import { ApiError } from '../../lib/api';
-import { getValidSession } from '../../lib/auth';
+import { ApiError, NetworkError } from '../../lib/api';
+import { getValidSession, readSession } from '../../lib/auth';
+import { outbox } from '../../database/outbox';
+import { leerEmprendimientoPropio } from '../../lib/emprendimiento-propio-cache';
 import {
   editarMiEmprendimiento,
   eliminarMiEmprendimiento,
@@ -34,7 +36,21 @@ jest.mock('react-native-maps', () => {
   const Marker = ({ title }: { title: string }) => <Text>{`marcador ${title}`}</Text>;
   return { __esModule: true, default: MapView, Marker };
 });
-jest.mock('../../lib/auth', () => ({ clearSession: jest.fn(), getValidSession: jest.fn() }));
+jest.mock('../../lib/auth', () => ({
+  clearSession: jest.fn(), getValidSession: jest.fn(),
+  getSessionGeneration: () => 0, readSession: jest.fn().mockResolvedValue(null),
+}));
+jest.mock('../../lib/emprendimiento-propio-cache', () => ({
+  leerEmprendimientoPropio: jest.fn(),
+  guardarEmprendimientoPropio: jest.fn().mockResolvedValue(undefined),
+  borrarEmprendimientoPropio: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('../../database/outbox', () => ({
+  outbox: {
+    listar: jest.fn().mockResolvedValue([]), suscribir: () => () => {},
+    procesar: jest.fn().mockResolvedValue({ enviadas: 0 }), encolar: jest.fn(),
+  },
+}));
 jest.mock('../../lib/emprendimientos', () => ({
   ...jest.requireActual('../../lib/emprendimientos'),
   editarMiEmprendimiento: jest.fn(),
@@ -69,6 +85,7 @@ const mine: Emprendimiento = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.mocked(readSession).mockResolvedValue(null);
 });
 
 describe('mi emprendimiento (RF-29, RF-30)', () => {
@@ -221,3 +238,24 @@ describe('detalle del emprendimiento (RF-32, RF-34)', () => {
     expect(view.queryByText('Ver productos')).toBeNull();
   });
 });
+
+it('queues basic business changes with their original values from a saved copy', async () => {
+  const local = { ...session('VENDEDOR_PUNTO_FIJO'), usuarioId: 'vendedor', expiresAt: 0 };
+  jest.mocked(readSession).mockResolvedValue(local);
+  jest.mocked(getValidSession).mockRejectedValueOnce(new NetworkError('Sin conexión'));
+  jest.mocked(leerEmprendimientoPropio).mockResolvedValueOnce({ valor: mine, fecha: Date.now() });
+  const view = await render(<MiEmprendimientoScreen />);
+  await waitFor(() => expect(view.getByText(/Datos guardados/)).toBeTruthy());
+  expect(view.queryByLabelText('Latitud')).toBeNull();
+
+  await fireEvent.changeText(view.getByLabelText('Cierra (HH:mm)'), '19:30');
+  await fireEvent.press(view.getByText('Guardar cambios'));
+  await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
+    usuarioId: 'vendedor', method: 'PATCH', path: '/api/v1/emprendimientos/me',
+    body: { horaCierre: '19:30', base: {
+      emprendimientoId: mine.id, descripcion: mine.descripcion,
+      horaApertura: mine.horaApertura, horaCierre: mine.horaCierre,
+    } },
+  })));
+  expect(editarMiEmprendimiento).not.toHaveBeenCalled();
+}, 60000);

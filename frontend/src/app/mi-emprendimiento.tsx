@@ -15,8 +15,12 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
-import { ApiError } from '../lib/api';
-import { clearSession, getValidSession } from '../lib/auth';
+import { ApiError, NetworkError } from '../lib/api';
+import { clearSession, getSessionGeneration, getValidSession, readSession } from '../lib/auth';
+import { outbox } from '../database/outbox';
+import { useAccionesPendientes } from '../hooks/useOutbox';
+import { edicionConBase, edicionEmprendimientoPendiente, RUTA_EDICION_EMPRENDIMIENTO } from '../lib/emprendimiento-pendiente';
+import { borrarEmprendimientoPropio, guardarEmprendimientoPropio, leerEmprendimientoPropio } from '../lib/emprendimiento-propio-cache';
 import {
   categoriaNombres,
   editarMiEmprendimiento,
@@ -59,7 +63,32 @@ export default function MiEmprendimientoScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [fechaCopia, setFechaCopia] = useState<number | null>(null);
+  const [revisionId, setRevisionId] = useState<string | null>(null);
   const deleteKey = useRef<string | null>(null);
+  const guardando = useRef(false);
+  const borradorTocado = useRef(false);
+  const sesionForm = useRef<{ cuenta?: string; generacion: number } | null>(null);
+  const pendientes = useAccionesPendientes().flatMap((accion) => {
+    const cambios = edicionEmprendimientoPendiente(accion);
+    return cambios ? [{ accion, cambios }] : [];
+  });
+  const pendienteActual = pendientes.find(({ cambios }) => cambios.base.emprendimientoId === actual?.id);
+  const bloqueado = Boolean(pendienteActual && pendienteActual.accion.id !== revisionId);
+  const anteriores = useRef(pendientes.length);
+
+  useEffect(() => {
+    const cantidadAnterior = anteriores.current;
+    anteriores.current = pendientes.length;
+    if (cantidadAnterior > pendientes.length) {
+      borradorTocado.current = false;
+      const actualizar = () => {
+        setNotice(null);
+        setAttempt((valor) => valor + 1);
+      };
+      actualizar();
+    }
+  }, [pendientes.length]);
   const ambulante = role === 'VENDEDOR_AMBULANTE';
 
   function fill(value: Emprendimiento) {
@@ -75,20 +104,67 @@ export default function MiEmprendimientoScreen() {
 
   useEffect(() => {
     let active = true;
+    const generacion = getSessionGeneration();
+    const vigente = () => active && generacion === getSessionGeneration();
+
     async function load() {
       setLoading(true);
       setError(null);
+      let cuenta: string | undefined;
+      let hayCopia = false;
       try {
+        const local = await readSession();
+        const vendedorLocal = local?.rol === 'VENDEDOR_AMBULANTE' || local?.rol === 'VENDEDOR_PUNTO_FIJO';
+        cuenta = vendedorLocal ? local?.usuarioId : undefined;
+        if (cuenta && local) {
+          try {
+            const copia = await leerEmprendimientoPropio(cuenta);
+            if (!vigente()) return;
+            if (copia) {
+              hayCopia = true;
+              sesionForm.current = { cuenta, generacion };
+              setRole(local.rol);
+              setSinEmprendimiento(false);
+              if (!borradorTocado.current) fill(copia.valor);
+              setFechaCopia(copia.fecha);
+              setLoading(false);
+            }
+          } catch (cause) {
+            console.warn('No se pudo leer el emprendimiento guardado.', cause);
+          }
+        }
         const session = await getValidSession();
-        if (!active) return;
+        if (!vigente()) return;
         setRole(session.rol);
         if (session.rol !== 'VENDEDOR_AMBULANTE' && session.rol !== 'VENDEDOR_PUNTO_FIJO') {
+          setActual(null);
+          setFechaCopia(null);
           setError('Solo las cuentas de vendedor tienen un emprendimiento.');
           return;
         }
         const response = await obtenerMiEmprendimiento();
-        if (active) fill(response);
+        if (!vigente()) return;
+        if (session.usuarioId) {
+          await guardarEmprendimientoPropio(session.usuarioId, response, vigente)
+            .catch((cause: unknown) => console.warn('No se pudo guardar el emprendimiento.', cause));
+        }
+        if (!vigente()) return;
+        if (!borradorTocado.current) {
+          sesionForm.current = { cuenta: session.usuarioId, generacion };
+          setSinEmprendimiento(false);
+          fill(response);
+          setFechaCopia(null);
+        }
       } catch (cause) {
+        if (!vigente()) return;
+        if (cause instanceof NetworkError && hayCopia) return;
+        setActual(null);
+        setFechaCopia(null);
+        if (cuenta && cause instanceof ApiError && [401, 403, 404].includes(cause.status)) {
+          await borrarEmprendimientoPropio(cuenta)
+            .catch((error: unknown) => console.warn('No se pudo limpiar el emprendimiento guardado.', error));
+        }
+        if (!vigente()) return;
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
@@ -147,6 +223,7 @@ export default function MiEmprendimientoScreen() {
   }
 
   async function save() {
+    if (!actual || bloqueado || guardando.current || busy) return;
     setError(null);
     setNotice(null);
     const input = changes();
@@ -154,13 +231,85 @@ export default function MiEmprendimientoScreen() {
       setError(input);
       return;
     }
+    guardando.current = true;
     setBusy(true);
+    const generacion = getSessionGeneration();
+    const vigente = () => generacion === getSessionGeneration();
     try {
-      fill(await editarMiEmprendimiento(input));
-      setNotice('Cambios guardados. Los clientes ya los ven.');
+      const cuenta = (await readSession())?.usuarioId;
+      if (!vigente() || sesionForm.current?.generacion !== generacion || sesionForm.current.cuenta !== cuenta) {
+        throw new Error('La cuenta activa cambió. Abre Mi emprendimiento de nuevo.');
+      }
+      if (input.ubicacion && fechaCopia !== null) {
+        throw new Error('Conéctate para cambiar la ubicación.');
+      }
+      if (cuenta && !input.ubicacion) {
+        const envio = {
+          body: edicionConBase(input, actual), idempotencyKey: randomUUID(),
+          descripcion: `Editar emprendimiento: ${actual.nombre}`,
+        };
+        if (revisionId && pendienteActual?.accion.id === revisionId) {
+          await outbox.corregirFallida(pendienteActual.accion, envio);
+        } else {
+          await outbox.encolar({ ...envio, usuarioId: cuenta, method: 'PATCH', path: RUTA_EDICION_EMPRENDIMIENTO });
+        }
+        if (!vigente()) return;
+        borradorTocado.current = false;
+        setRevisionId(null);
+        fill(actual);
+        setNotice('Edición pendiente de sincronización.');
+        void outbox.procesar().then(({ enviadas }) => {
+          if (enviadas > 0 && vigente()) {
+            setNotice(null);
+            setAttempt((valor) => valor + 1);
+          }
+        }).catch(() => undefined);
+      } else {
+        if (fechaCopia !== null) throw new Error('Conéctate para confirmar la cuenta antes de guardar.');
+        const guardado = await editarMiEmprendimiento(input);
+        if (!vigente()) return;
+        if (cuenta) await guardarEmprendimientoPropio(cuenta, guardado, vigente).catch(() => undefined);
+        if (!vigente()) return;
+        borradorTocado.current = false;
+        fill(guardado);
+        setNotice('Cambios guardados. Los clientes ya los ven.');
+      }
     } catch (cause) {
-      setError(errorMessage(cause, 'No se pudieron guardar los cambios.'));
+      if (vigente()) setError(errorMessage(cause, 'No se pudieron guardar los cambios.'));
     } finally {
+      guardando.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function revisar(pendiente: (typeof pendientes)[number]) {
+    if (busy || guardando.current) return;
+    guardando.current = true;
+    setBusy(true);
+    setError(null);
+    const generacion = getSessionGeneration();
+    try {
+      const cuenta = (await readSession())?.usuarioId;
+      if (cuenta !== pendiente.accion.usuarioId || generacion !== getSessionGeneration()) return;
+      const vigente = await obtenerMiEmprendimiento();
+      if (generacion !== getSessionGeneration()) return;
+      sesionForm.current = { cuenta, generacion };
+      if (vigente.id !== pendiente.cambios.base.emprendimientoId) {
+        fill(vigente);
+        setFechaCopia(null);
+        throw new Error('El emprendimiento original ya no está activo. Puedes descartar la propuesta.');
+      }
+      fill(vigente);
+      setFechaCopia(null);
+      setRevisionId(pendiente.accion.id);
+      borradorTocado.current = true;
+      setDescripcion(pendiente.cambios.descripcion ?? vigente.descripcion);
+      setApertura(hhmm(pendiente.cambios.horaApertura ?? vigente.horaApertura));
+      setCierre(hhmm(pendiente.cambios.horaCierre ?? vigente.horaCierre));
+    } catch (cause) {
+      setError(errorMessage(cause, 'Conéctate para revisar los datos vigentes.'));
+    } finally {
+      guardando.current = false;
       setBusy(false);
     }
   }
@@ -191,6 +340,8 @@ export default function MiEmprendimientoScreen() {
     setBusy(true);
     try {
       await eliminarMiEmprendimiento(deleteKey.current);
+      const cuenta = sesionForm.current?.cuenta;
+      if (cuenta) await borrarEmprendimientoPropio(cuenta).catch(() => undefined);
       deleteKey.current = null;
       setConfirmDelete(false);
       setActual(null);
@@ -227,17 +378,55 @@ export default function MiEmprendimientoScreen() {
           <PrimaryButton title="Crear mi emprendimiento" onPress={() => router.push('/emprendimiento')} />
         </>
       ) : null}
+      {fechaCopia !== null ? (
+        <HelperText>Datos guardados. Última actualización: {new Date(fechaCopia).toLocaleString('es-CO')}. La ubicación requiere conexión.</HelperText>
+      ) : null}
+      {pendientes.map((pendiente) => {
+        const { accion, cambios } = pendiente;
+        const revisarDisponible = accion.status === 'FALLIDA'
+          && ![403, 404, 410].includes(accion.errorStatus ?? 0)
+          && (!actual || fechaCopia !== null || actual.id === cambios.base.emprendimientoId);
+        return (
+          <View key={accion.id} style={styles.pending}>
+            <Text style={styles.section}>{accion.status === 'FALLIDA' ? 'Requiere revisión' : 'Edición pendiente de sincronización'}</Text>
+            <HelperText>{accion.descripcion}</HelperText>
+            {cambios.descripcion !== undefined ? <Text>Descripción propuesta: {cambios.descripcion}</Text> : null}
+            {cambios.horaApertura !== undefined || cambios.horaCierre !== undefined ? (
+              <Text>Horario propuesto: {hhmm(cambios.horaApertura ?? cambios.base.horaApertura)}–{hhmm(cambios.horaCierre ?? cambios.base.horaCierre)}</Text>
+            ) : null}
+            {accion.status === 'FALLIDA' ? (
+              <>
+                <HelperText>{accion.lastError ?? 'El servidor rechazó la edición.'}</HelperText>
+                {revisarDisponible ? <TextButton title="Revisar propuesta" disabled={busy} onPress={() => void revisar(pendiente)} /> : null}
+                <TextButton title="Descartar" disabled={busy} onPress={() => {
+                  void outbox.descartar(accion.id).then(() => setRevisionId(null)).catch((cause: unknown) => {
+                    setError(errorMessage(cause, 'No se pudo descartar la propuesta.'));
+                  });
+                }} />
+              </>
+            ) : null}
+          </View>
+        );
+      })}
       {actual ? (
         <>
-          <Field label="Descripción" value={descripcion} onChangeText={setDescripcion} multiline maxLength={500} />
+          {revisionId ? (
+            <HelperText>Datos vigentes: {actual.descripcion}. Horario: {hhmm(actual.horaApertura)}–{hhmm(actual.horaCierre)}.</HelperText>
+          ) : null}
+          <Field label="Descripción" value={descripcion} onChangeText={(valor) => {
+            borradorTocado.current = true;
+            setDescripcion(valor);
+          }} editable={!busy && !bloqueado} multiline maxLength={500} />
           <View style={styles.row}>
             <View style={styles.half}>
-              <Field label="Abre (HH:mm)" value={apertura} onChangeText={setApertura} maxLength={5} />
+              <Field label="Abre (HH:mm)" value={apertura} onChangeText={(valor) => { borradorTocado.current = true; setApertura(valor); }} editable={!busy && !bloqueado} maxLength={5} />
             </View>
             <View style={styles.half}>
-              <Field label="Cierra (HH:mm)" value={cierre} onChangeText={setCierre} maxLength={5} />
+              <Field label="Cierra (HH:mm)" value={cierre} onChangeText={(valor) => { borradorTocado.current = true; setCierre(valor); }} editable={!busy && !bloqueado} maxLength={5} />
             </View>
           </View>
+          {fechaCopia === null && !revisionId && !bloqueado ? (
+          <>
           <Text style={styles.section}>{ambulante ? 'Zona de venta' : 'Ubicación del punto'}</Text>
           {ambulante ? (
             <HelperText>Cuando cambies de zona durante el día, toca «Estoy aquí» y guarda.</HelperText>
@@ -264,7 +453,10 @@ export default function MiEmprendimientoScreen() {
             maxLength={300}
           />
           <Field label="Referencia (opcional)" value={referencia} onChangeText={setReferencia} maxLength={300} />
-          <PrimaryButton title="Guardar cambios" busy={busy && !confirmDelete} onPress={() => void save()} />
+          </>
+          ) : null}
+          <PrimaryButton title={revisionId ? 'Confirmar y reenviar' : 'Guardar cambios'} busy={busy && !confirmDelete}
+            disabled={bloqueado} onPress={() => void save()} />
           <TextButton
             title="Ver la reputación de mi emprendimiento"
             onPress={() =>
@@ -274,6 +466,7 @@ export default function MiEmprendimientoScreen() {
               })
             }
           />
+          {fechaCopia === null && !revisionId && !bloqueado ? (
           <View style={styles.danger}>
             <Text style={styles.section}>Eliminar emprendimiento</Text>
             <HelperText>
@@ -290,7 +483,14 @@ export default function MiEmprendimientoScreen() {
               <TextButton title="Eliminar emprendimiento" disabled={busy} onPress={() => setConfirmDelete(true)} />
             )}
           </View>
+          ) : null}
         </>
+      ) : null}
+      {actual ? (
+        <TextButton title="Actualizar datos" disabled={busy || loading || Boolean(revisionId)} onPress={() => {
+          borradorTocado.current = false;
+          setAttempt((valor) => valor + 1);
+        }} />
       ) : null}
       <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
@@ -298,6 +498,7 @@ export default function MiEmprendimientoScreen() {
 }
 
 const styles = StyleSheet.create({
+  pending: { marginVertical: 8, padding: 12, borderRadius: 12, borderColor: palette.border, borderWidth: 1 },
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
   section: { color: palette.dark, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800', marginTop: 14 },

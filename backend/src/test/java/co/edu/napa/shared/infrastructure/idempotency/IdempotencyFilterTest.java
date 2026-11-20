@@ -15,6 +15,7 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -46,6 +47,18 @@ class IdempotencyFilterTest {
         assertEquals(409, response.getStatus());
         assertTrue(response.getContentAsString().contains("IDEMPOTENCY_IN_PROGRESS"));
         assertEquals("1", response.getHeader("Retry-After"));
+    }
+
+    @Test
+    void businessPatchOptsInToIdempotencyWhenTheClientSendsAKey() {
+        IdempotencyFilter filter = filter(mock(StringRedisTemplate.class));
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("PATCH");
+        request.setRequestURI("/api/v1/emprendimientos/me");
+
+        assertTrue(filter.shouldNotFilter(request));
+        request.addHeader("Idempotency-Key", UUID.randomUUID().toString());
+        assertFalse(filter.shouldNotFilter(request));
     }
 
     @Test

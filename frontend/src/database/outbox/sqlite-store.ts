@@ -81,6 +81,11 @@ export class SqliteOutboxStore implements OutboxStore {
             OR method = 'POST' AND path GLOB '/api/v1/productos/*/inventario'
           )
         `);
+        await db.execAsync(`
+          CREATE UNIQUE INDEX IF NOT EXISTS outbox_edicion_emprendimiento
+          ON outbox_por_cuenta (usuario_id, json_extract(body, '$.base.emprendimientoId'))
+          WHERE method = 'PATCH' AND path = '/api/v1/emprendimientos/me' AND json_valid(body)
+        `);
         return db;
       })();
     }
@@ -102,6 +107,9 @@ export class SqliteOutboxStore implements OutboxStore {
       a.id, a.usuarioId, a.method, a.path, a.body, a.idempotencyKey, a.descripcion, a.status, a.attempts, a.lastError,
       a.nextAttemptAt, a.createdAt, a.ifMatch ?? null,
     );
+    if (resultado.changes === 0 && a.method === 'PATCH' && a.path === '/api/v1/emprendimientos/me') {
+      throw new Error('Ya hay una edición pendiente para este emprendimiento.');
+    }
     if (a.ifMatch && resultado.changes === 0) {
       throw new Error('Este producto ya tiene un cambio pendiente.');
     }

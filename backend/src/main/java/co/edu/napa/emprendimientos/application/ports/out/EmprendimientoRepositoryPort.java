@@ -12,5 +12,7 @@ public interface EmprendimientoRepositoryPort {
 
     Optional<Emprendimiento> findActiveByUsuarioId(UUID usuarioId);
 
+    Optional<Emprendimiento> lockActiveByUsuarioId(UUID usuarioId);
+
     Optional<Emprendimiento> findActiveById(UUID id);
 }

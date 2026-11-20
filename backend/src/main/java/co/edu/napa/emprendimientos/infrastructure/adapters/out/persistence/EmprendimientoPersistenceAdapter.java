@@ -46,6 +46,12 @@ public class EmprendimientoPersistenceAdapter implements EmprendimientoRepositor
     }
 
     @Override
+    public Optional<Emprendimiento> lockActiveByUsuarioId(UUID usuarioId) {
+        return repository.findLockedByUsuarioIdAndEstado(usuarioId, EstadoEmprendimiento.ACTIVO)
+                .map(EmprendimientoJpaEntity::toDomain);
+    }
+
+    @Override
     public Optional<Emprendimiento> findActiveById(UUID id) {
         return repository.findByIdAndEstado(id, EstadoEmprendimiento.ACTIVO)
                 .map(EmprendimientoJpaEntity::toDomain);

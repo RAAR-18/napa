@@ -199,7 +199,7 @@ export class Outbox {
       }
       // El servidor la rechazó por sus datos o su estado: reenviarla daría el mismo resultado.
       await this.store.actualizar({ ...accion, attempts, status: 'FALLIDA', lastError: mensaje,
-        ...(cause instanceof ApiError && accion.ifMatch ? { errorStatus: cause.details.estadoActual === 'ELIMINADO' ? 410 : cause.status } : {}) });
+        ...(cause instanceof ApiError && (accion.ifMatch || this.conservarReintentosServidor(accion)) ? { errorStatus: cause.details.estadoActual === 'ELIMINADO' ? 410 : cause.status } : {}) });
       return 'fallida';
     }
   }

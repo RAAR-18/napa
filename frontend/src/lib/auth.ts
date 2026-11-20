@@ -325,6 +325,12 @@ export async function logout(): Promise<void> {
     } catch (cause) {
       console.warn('No se pudo borrar el inventario al cerrar sesión.', cause);
     }
+    try {
+      const { borrarEmprendimientoPropio } = await import('./emprendimiento-propio-cache');
+      await borrarEmprendimientoPropio(session.usuarioId);
+    } catch (cause) {
+      console.warn('No se pudo borrar el emprendimiento guardado al cerrar sesión.', cause);
+    }
   }
 }
 
