@@ -139,7 +139,10 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: la actualización entra al outbox ("pendiente de envío"). Como el valor se **fija** (no se suma), un reenvío es idempotente; si varias actualizaciones del mismo producto quedan en cola, se aplican en orden.
+- **Ajuste offline del MVP (#43)**. El vendedor puede guardar una cantidad absoluta desde Mis productos con la versión de la copia vigente. La cola conserva un solo cambio por cuenta y producto, compartido con RF-56. La cantidad propuesta se muestra separada de la confirmada.
+- Los reintentos conservan la cantidad, el `If-Match` y la clave de idempotencia. Si la operación ya se aplicó, el servidor devuelve el primer resultado sin aplicar de nuevo esa cantidad. Solicitudes anteriores sin `If-Match` conservan su comportamiento.
+- Si la versión cambió, la app muestra **Requiere revisión**. El vendedor puede descartar el ajuste o consultar la cantidad actual, confirmarla junto con su propuesta y enviar un valor absoluto con una clave nueva.
+- **Evidencia manual en Android (#43)**. El vendedor guardó un ajuste con el backend detenido, vio la cantidad propuesta y comprobó que el mismo producto quedó bloqueado para edición. Al reactivar el backend, se aplicó el ajuste. En una segunda prueba se modificó el inventario desde otra sesión antes de reabrir la app. El ajuste quedó en «Requiere revisión» y la app mostró la cantidad vigente y la propuesta para confirmar un nuevo valor.
 - **Concurrencia (RNF08)**: la actualización manual toma la fila con `SELECT ... FOR UPDATE`; el descuento usa `UPDATE` condicional por ítem, siempre ordenados por id para evitar interbloqueos. Un descuento y una actualización manual simultáneos se serializan.
 - **Idempotencia (RNF27)**: `idem:{userId}:{key}`.
 

@@ -73,8 +73,13 @@ export class SqliteOutboxStore implements OutboxStore {
           await db.execAsync('ALTER TABLE outbox_por_cuenta ADD COLUMN error_status INTEGER');
         }
         await db.execAsync(`
-          CREATE UNIQUE INDEX IF NOT EXISTS outbox_edicion_por_producto
-          ON outbox_por_cuenta (usuario_id, path) WHERE method = 'PATCH' AND if_match IS NOT NULL
+          CREATE UNIQUE INDEX IF NOT EXISTS outbox_cambio_por_producto
+          ON outbox_por_cuenta (usuario_id, CASE WHEN method = 'POST'
+            THEN substr(path, 1, length(path) - length('/inventario')) ELSE path END)
+          WHERE if_match IS NOT NULL AND (
+            method = 'PATCH' AND path GLOB '/api/v1/productos/*'
+            OR method = 'POST' AND path GLOB '/api/v1/productos/*/inventario'
+          )
         `);
         return db;
       })();
@@ -98,7 +103,7 @@ export class SqliteOutboxStore implements OutboxStore {
       a.nextAttemptAt, a.createdAt, a.ifMatch ?? null,
     );
     if (a.ifMatch && resultado.changes === 0) {
-      throw new Error('Este producto ya tiene una edición pendiente.');
+      throw new Error('Este producto ya tiene un cambio pendiente.');
     }
   }
 

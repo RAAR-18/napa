@@ -22,7 +22,7 @@ import { useResumenesCalificacion } from '../hooks/useResumenesCalificacion';
 import { CardGrid, GridCard } from '../components/NapaUI';
 import { outbox } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
-import { edicionDescartableSinRevision, edicionPendiente, productoPendiente } from '../lib/productos-pendientes';
+import { edicionDescartableSinRevision, cambioPendienteProducto, productoPendiente } from '../lib/productos-pendientes';
 
 export default function MisProductosScreen() {
   const { data, busy, error, offlineUpdatedAt, sort, changeSort, refresh, setPage } =
@@ -37,7 +37,7 @@ export default function MisProductosScreen() {
   const [errorPendiente, setErrorPendiente] = useState<string | null>(null);
   const acciones = useAccionesPendientes();
   const ediciones = acciones.flatMap((accion) => {
-    const edicion = edicionPendiente(accion);
+    const edicion = cambioPendienteProducto(accion);
     return edicion ? [{ accion, ...edicion }] : [];
   });
   const pendientes = acciones.flatMap((accion) => {
@@ -110,20 +110,23 @@ export default function MisProductosScreen() {
       ) : null}
       {ediciones.length ? (
         <CardGrid>
-          {ediciones.map(({ accion, productoId, cambios }) => (
+          {ediciones.map(({ accion, productoId, cambios, inventario }) => (
             <GridCard key={accion.id}>
               <Text style={productStyles.name}>{accion.descripcion}</Text>
+              {cambios.cantidadDisponible !== undefined ? (
+                <Text>Cantidad propuesta: {cambios.cantidadDisponible.toLocaleString('es-CO')}</Text>
+              ) : null}
               {cambios.nombre !== undefined ? <Text>Nombre propuesto: {cambios.nombre}</Text> : null}
               {cambios.precio !== undefined ? <Text>Precio propuesto: {cambios.precio.toLocaleString('es-CO')} COP</Text> : null}
               {cambios.descripcion !== undefined ? <Text>Descripción propuesta: {cambios.descripcion ?? 'Sin descripción'}</Text> : null}
               <Text style={productStyles.status}>
-                {accion.status === 'FALLIDA' ? 'Requiere revisión' : 'Edición pendiente de sincronización'}
+                {accion.status === 'FALLIDA' ? 'Requiere revisión' : inventario ? 'Ajuste pendiente de sincronización' : 'Edición pendiente de sincronización'}
               </Text>
               {accion.status === 'FALLIDA' ? (
                 <>
                   <HelperText>{accion.lastError ?? 'El servidor rechazó la edición.'}</HelperText>
                   {!edicionDescartableSinRevision(accion) ? (
-                    <TextButton title="Revisar edición" onPress={() => router.push({
+                    <TextButton title={inventario ? 'Revisar ajuste' : 'Revisar edición'} onPress={() => router.push({
                       pathname: '/editar-producto', params: { productoId, pendienteId: accion.id },
                     })} />
                   ) : null}
@@ -155,32 +158,18 @@ export default function MisProductosScreen() {
         {!busy
           ? data?.content.map((item) => (
               <GridCard key={item.id}>
-                {showingOffline ? (
-                  <>
-                  <Text>
-                    {item.nombre} · {item.precio.toLocaleString('es-CO')} COP por {item.unidad}
-                    {'\n'}Cantidad guardada: {item.cantidadDisponible} ·{' '}
-                    {item.estado === 'AGOTADO' ? 'Agotado' : 'Disponible'}
-                  </Text>
-                  {!ediciones.some(({ productoId }) => productoId === item.id) ? (
-                    <TextButton title={`Editar ${item.nombre}`} onPress={() => router.push({
-                      pathname: '/editar-producto', params: { productoId: item.id },
-                    })} />
-                  ) : null}
-                  </>
-                ) : (
-                  <ProductoCard
-                    key={`${item.id}:${item.updatedAt}`}
-                    producto={item}
-                    inventory
-                    edicionBloqueada={ediciones.some(({ productoId }) => productoId === item.id)}
-                    resumen={resumenes[item.id]}
-                    onUpdated={() => {
-                      setNotice('Catálogo actualizado.');
-                      refresh();
-                    }}
-                  />
-                )}
+                <ProductoCard
+                  key={`${item.id}:${item.updatedAt}:${showingOffline}`}
+                  producto={item}
+                  inventory
+                  offline={showingOffline}
+                  edicionBloqueada={ediciones.some(({ productoId }) => productoId === item.id)}
+                  resumen={resumenes[item.id]}
+                  onUpdated={() => {
+                    setNotice('Catálogo actualizado.');
+                    refresh();
+                  }}
+                />
               </GridCard>
             ))
           : null}

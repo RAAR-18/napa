@@ -318,7 +318,8 @@ it('shows saved inventory in read-only mode when token renewal fails offline', a
   await waitFor(() => expect(screen.getByText(/Cantidad guardada/)).toBeTruthy());
   expect(screen.getByText(/Datos guardados/)).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Agregar producto' })).toBeTruthy();
-  expect(screen.queryByText('Guardar inventario de Mango')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Guardar inventario de Mango' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Eliminar Mango' })).toBeNull();
   expect(leerPaginaInventario).toHaveBeenCalledWith('seller-id', 'nombre,asc', 0);
 });
 
@@ -399,4 +400,22 @@ it('queues only the edited fields with the version from the saved product', asyn
     descripcion: 'Editar producto: Mango',
   }));
   expect(editProducto).not.toHaveBeenCalled();
+}, 60000);
+
+it('queues absolute stock from a saved product using the original version', async () => {
+  jest.mocked(readSession).mockResolvedValue({ ...seller, usuarioId: 'vendedor' });
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  jest.mocked(leerPaginaInventario).mockResolvedValue({
+    data: { ...page, content: [{ ...available, version: 9 }] }, updatedAt: Date.now(),
+  });
+  const view = await render(<MisProductosScreen />);
+  await waitFor(() => expect(view.getByLabelText('Nueva cantidad de Mango')).toBeTruthy());
+  await fireEvent.changeText(view.getByLabelText('Nueva cantidad de Mango'), '17,5');
+  await fireEvent.press(view.getByRole('button', { name: 'Guardar inventario de Mango' }));
+  await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith({
+    usuarioId: 'vendedor', method: 'POST', path: '/api/v1/productos/product-id/inventario',
+    body: { cantidadDisponible: 17.5 }, ifMatch: '"9"', idempotencyKey: 'registro-idempotente',
+    descripcion: 'Ajustar inventario: Mango',
+  }));
+  expect(updateInventario).not.toHaveBeenCalled();
 }, 60000);

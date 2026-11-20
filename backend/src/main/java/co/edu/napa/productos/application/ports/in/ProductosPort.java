@@ -13,7 +13,7 @@ public interface ProductosPort {
     Producto crear(UUID vendedorId, Datos datos);
     Pagina propios(UUID vendedorId, Consulta consulta);
     Pagina catalogo(UUID emprendimientoId, Consulta consulta);
-    Producto actualizarInventario(UUID vendedorId, UUID productoId, BigDecimal cantidad);
+    Producto actualizarInventario(UUID vendedorId, UUID productoId, BigDecimal cantidad, Long versionEsperada);
     Producto consultarPropio(UUID vendedorId, UUID productoId);
     Producto editar(UUID vendedorId, UUID productoId, Edicion edicion);
     void eliminar(UUID vendedorId, UUID productoId);

@@ -57,10 +57,14 @@ public class ProductosUseCase implements ProductosPort {
     }
 
     @Transactional
-    public Producto actualizarInventario(UUID vendedorId, UUID productoId, BigDecimal cantidad) {
+    public Producto actualizarInventario(UUID vendedorId, UUID productoId, BigDecimal cantidad, Long versionEsperada) {
         Producto producto = productos.bloquear(productoId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "No se encontró el producto."));
         verificarPropietario(vendedorId, producto);
+        producto.requirePublished();
+        if (versionEsperada != null && versionEsperada != producto.version()) {
+            throw new DomainException("CONFLICT", "El producto cambió. Revisa la cantidad actual antes de ajustar el inventario.");
+        }
         return productos.actualizarInventario(producto.conInventario(cantidad, Instant.now(clock)));
     }
 
