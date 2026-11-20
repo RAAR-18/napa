@@ -8,12 +8,14 @@ import co.edu.napa.pedidos.domain.model.ModalidadEntrega;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface RealizarPedidoPort {
     PedidoCreado realizar(UUID compradorId, SolicitudPedido solicitud);
 
-    record SolicitudPedido(Solicitud cotizacion, String medioPago, Long totalEsperado) {}
+    record SolicitudPedido(Solicitud cotizacion, String medioPago, Long totalEsperado,
+                           Map<UUID, Long> preciosUnitariosEsperados) {}
 
     record PedidoCreado(
             UUID id,

@@ -175,7 +175,15 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 ## Offline & Concurrency Strategy
 
-- **Tolerancia a mala conexión (RNF28)**: el carrito se guarda como borrador en SQLite; entrega directa y recogida se envían por el outbox con la misma `Idempotency-Key` ("pendiente de envío"); si al sincronizar el servidor responde `PRODUCT_UNAVAILABLE`, `OUT_OF_STOCK` o `CONFLICT`, la app muestra el motivo y devuelve al cliente a su carrito. El domicilio exige conexión porque depende de la cotización por ruta.
+### Creación de pedidos sin conexión en el MVP
+
+- El carrito se conserva como borrador en SQLite por cuenta y emprendimiento. El envío automático al recuperar conexión está disponible para pedidos inmediatos de entrega directa y recogida. Domicilio requiere cotización en línea y las reservas se pueden conservar como borrador.
+- El cliente confirma los productos, sus precios unitarios estimados y el total a partir del catálogo descargado. Puede elegir entre los medios de pago obtenidos en una cotización previa exitosa del mismo emprendimiento y modalidad. La copia tiene una vigencia de siete días y se limpia al cerrar sesión. Si faltan datos, el carrito se conserva como borrador.
+- Para entrega directa, el cliente confirma explícitamente la dirección y coordenadas guardadas. Si faltan o deben editarse, se requiere conexión para confirmar la dirección. En recogida se muestra el punto guardado cuando está disponible.
+- La app muestra el pedido como pendiente de envío hasta que el servidor devuelve el ID del pedido creado. El servidor valida los precios unitarios aunque coincida el total, la disponibilidad y el medio de pago. Los reintentos técnicos mantienen la misma solicitud y la misma `Idempotency-Key`.
+- Si el servidor rechaza el pedido, la app muestra «Requiere revisión» y permite recuperar el carrito para volver a cotizar en línea. Cualquier nuevo envío se inicia tras confirmación explícita y con una clave nueva.
+
+
 - **Concurrencia (RNF08)**: crear un pedido no descuenta inventario, así que no compite por existencias; la protección contra duplicados es la `Idempotency-Key`.
 - **Idempotencia (RNF27)**: `idem:{userId}:{key}`; el reintento devuelve el `201` guardado con `Idempotent-Replayed: true`.
 

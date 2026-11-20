@@ -1,5 +1,5 @@
 import { fonts } from '../components/theme';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -12,6 +12,8 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
+import { useAccionesPendientes } from '../hooks/useOutbox';
+import { paramsRevisionPedido, pedidoPendiente } from '../lib/pedido-offline';
 import { ApiError } from '../lib/api';
 import { clearSession } from '../lib/auth';
 import { consultarListadoCliente } from '../lib/pedidos-cliente-consulta';
@@ -82,6 +84,13 @@ function PedidoRow({ item }: { item: PedidoClienteListadoItem }) {
 }
 
 export default function MisPedidosScreen() {
+  const acciones = useAccionesPendientes();
+  const pendientes = acciones.flatMap((accion) => {
+    const pedido = pedidoPendiente(accion);
+    return pedido ? [{ accion, pedido }] : [];
+  });
+  const pendientesActivos = pendientes.filter(({ accion }) => accion.status === 'PENDIENTE').length;
+  const anteriores = useRef(pendientesActivos);
   const [data, setData] = useState<PedidosClientePagina | null>(null);
   const [fechaCopia, setFechaCopia] = useState<number | null>(null);
   const [paginasGuardadas, setPaginasGuardadas] = useState<number[]>([]);
@@ -90,6 +99,11 @@ export default function MisPedidosScreen() {
   const [page, setPage] = useState(0);
   const [estado, setEstado] = useState<EstadoPedido | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (pendientesActivos < anteriores.current) setLoadAttempt((intento) => intento + 1);
+    anteriores.current = pendientesActivos;
+  }, [pendientesActivos]);
 
   useEffect(() => {
     let active = true;
@@ -145,6 +159,20 @@ export default function MisPedidosScreen() {
         description="Del más reciente al más antiguo. Toca uno para ver su estado."
         action={<RefreshButton disabled={loading} onPress={() => setLoadAttempt((a) => a + 1)} />}
       />
+      {pendientes.map(({ accion, pedido }) => (
+        <View key={accion.id} style={styles.card}>
+          <Text style={styles.details}>{accion.descripcion} · {modalidadPedidoNombres[pedido.modalidad]}</Text>
+          <Text style={styles.details}>{accion.status === 'FALLIDA' ? 'Requiere revisión' : 'Pendiente de envío'}</Text>
+          {accion.status === 'FALLIDA' ? (
+            <>
+              <HelperText>{accion.lastError ?? 'El servidor rechazó el pedido.'}</HelperText>
+              <TextButton title="Revisar pedido" onPress={() => router.push({
+                pathname: '/catalogo', params: paramsRevisionPedido(accion, pedido),
+              })} />
+            </>
+          ) : null}
+        </View>
+      ))}
       <FilterPanel>
         <FilterRow label="Estado">
           {filtrosEstado.map((option) => (

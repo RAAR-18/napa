@@ -65,6 +65,7 @@ export type CotizacionPedido = {
 export type CrearPedidoInput = CotizarPedidoInput & {
   medioPago: MedioPagoPedido;
   totalEsperado: number;
+  preciosUnitariosEsperados?: Record<string, number>;
 };
 
 export type PedidoCreado = {

@@ -74,6 +74,19 @@ public class RealizarPedidoUseCase implements RealizarPedidoPort {
             throw new DomainException("BUSINESS_RULE", "El vendedor no tiene habilitado ese medio de pago.",
                     Map.of("motivo", "MEDIO_PAGO_NO_DISPONIBLE"));
         }
+        var preciosEsperados = solicitud.preciosUnitariosEsperados();
+        if (preciosEsperados != null) {
+            if (preciosEsperados.size() != cotizacion.items().size()
+                    || cotizacion.items().stream().anyMatch(item -> preciosEsperados.get(item.productoId()) == null)) {
+                throw invalid("preciosUnitariosEsperados", "Indica el precio esperado de cada producto del pedido.");
+            }
+            for (var item : cotizacion.items()) {
+                if (preciosEsperados.get(item.productoId()) != item.precioUnitario()) {
+                    throw new DomainException("CONFLICT", "Cambió el precio de un producto del pedido.",
+                            Map.of("productoId", item.productoId(), "precioActual", item.precioUnitario()));
+                }
+            }
+        }
         if (solicitud.totalEsperado() != null && solicitud.totalEsperado() != cotizacion.total()) {
             throw new DomainException("CONFLICT", "El total cambió desde que revisaste la cotización.",
                     Map.of("totalActual", cotizacion.total()));

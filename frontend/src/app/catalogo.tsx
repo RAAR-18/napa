@@ -10,6 +10,8 @@ export default function CatalogoScreen() {
   const params = useLocalSearchParams<{
     emprendimientoId?: string | string[];
     tipoVendedor?: string | string[];
+    direccionRecogida?: string;
+    pendienteId?: string;
   }>();
   const id = typeof params.emprendimientoId === 'string' ? params.emprendimientoId : undefined;
   const sellerType =
@@ -37,20 +39,25 @@ export default function CatalogoScreen() {
           {data.totalElements > data.size ? (
             <HelperText>Sin conexión solo están disponibles las páginas guardadas.</HelperText>
           ) : null}
-          {data.content.map((producto) => <ProductoCard key={producto.id} producto={producto} />)}
-          <ProductosPagination data={data} busy={busy} onPage={setPage} />
+          {!sellerType ? data.content.map((producto) => <ProductoCard key={producto.id} producto={producto} />) : null}
+          {!sellerType ? <ProductosPagination data={data} busy={busy} onPage={setPage} /> : null}
         </>
-      ) : sellerType ? (
+      ) : null}
+      {sellerType ? (
         <PedidoCatalogo
+          key={`${id}:${params.pendienteId ?? ''}`}
           emprendimientoId={id ?? ''}
+          offline={offlineUpdatedAt !== null}
+          direccionRecogida={params.direccionRecogida}
+          pendienteId={params.pendienteId}
           tipoVendedor={sellerType}
           productos={data?.content ?? []}
-          enabled={!busy && !error && data !== null}
+          enabled={!busy && ((data !== null && !error) || Boolean(params.pendienteId))}
           pageData={data}
           pageBusy={busy}
           onPage={setPage}
         />
-      ) : !busy && data ? (
+      ) : !busy && data && offlineUpdatedAt === null ? (
         <HelperText>No se pudo identificar la modalidad de este emprendimiento. Vuelve al listado y selecciónalo de nuevo.</HelperText>
       ) : null}
       {!busy && !data && anteriorGuardada !== undefined ? (

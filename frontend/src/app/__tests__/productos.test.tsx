@@ -1,5 +1,5 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import CatalogoScreen from '../catalogo';
@@ -8,18 +8,20 @@ import NuevoProductoScreen from '../nuevo-producto';
 import EditarProductoScreen from '../editar-producto';
 import { ApiError, NetworkError } from '../../lib/api';
 import { clearSession, getValidSession, readSession } from '../../lib/auth';
-import { outbox } from '../../database/outbox';
+import { guardarBorradorPedido, guardarCarritoEncolado, leerCarritoEncolado, leerCotizacionOffline } from '../../lib/pedido-offline';
+import { outbox, type AccionPendiente } from '../../database/outbox';
+import { cotizarPedido, crearPedido } from '../../lib/pedidos';
 import { borrarCatalogoGuardado, leerPaginaCatalogo, listarPaginasGuardadasCatalogo } from '../../lib/catalogo-cache';
 import { leerPaginaInventario, leerProductoInventario } from '../../lib/inventario-cache';
 import { createProducto, deleteProducto, editProducto, getMiProducto, listCatalogo, listMisProductos, updateInventario, type Producto, type ProductosPage } from '../../lib/productos';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn() },
-  useLocalSearchParams: () => ({
+  useLocalSearchParams: jest.fn(() => ({
     emprendimientoId: 'business-id',
     tipoVendedor: 'AMBULANTE',
     productoId: 'product-id',
-  }),
+  })),
   useFocusEffect: (effect: () => void | (() => void)) => {
     const React = jest.requireActual<typeof import('react')>('react');
     React.useEffect(effect, [effect]);
@@ -28,8 +30,9 @@ jest.mock('expo-router', () => ({
 jest.mock('../../lib/uuid', () => ({ randomUUID: () => 'registro-idempotente' }));
 jest.mock('../../database/outbox', () => ({
   outbox: {
+    propietario: jest.fn().mockResolvedValue('client-id'),
     listar: jest.fn().mockResolvedValue([]), suscribir: () => () => {},
-    encolar: jest.fn(), procesar: jest.fn().mockResolvedValue(undefined),
+    encolar: jest.fn(), corregirFallida: jest.fn().mockResolvedValue(undefined), procesar: jest.fn().mockResolvedValue(undefined),
   },
 }));
 jest.mock('../../lib/auth', () => ({
@@ -37,6 +40,21 @@ jest.mock('../../lib/auth', () => ({
   getValidSession: jest.fn(),
   readSession: jest.fn(),
   clearSession: jest.fn(),
+}));
+jest.mock('../../lib/pedidos', () => ({
+  ...jest.requireActual('../../lib/pedidos'),
+  cotizarPedido: jest.fn(), crearPedido: jest.fn(),
+}));
+jest.mock('../../lib/pedido-offline', () => ({
+  ...jest.requireActual('../../lib/pedido-offline'),
+  guardarBorradorPedido: jest.fn().mockResolvedValue(undefined),
+  guardarCarritoEncolado: jest.fn().mockResolvedValue(undefined),
+  leerCotizacionOffline: jest.fn().mockResolvedValue(null),
+  leerCarritoEncolado: jest.fn().mockResolvedValue(null),
+  guardarCotizacionOffline: jest.fn().mockResolvedValue(undefined),
+  borrarCarritoEncolado: jest.fn().mockResolvedValue(undefined),
+  leerBorradorPedido: jest.fn().mockResolvedValue(null),
+  borrarBorradorPedido: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../../lib/catalogo-cache', () => ({
   guardarPaginaCatalogo: jest.fn(),
@@ -325,8 +343,8 @@ it('shows saved inventory in read-only mode when token renewal fails offline', a
 
 const clientOffline = { ...seller, rol: 'CLIENTE', usuarioId: 'client-id', expiresAt: 0 };
 
-it('shows saved catalog in read-only mode when token renewal fails offline', async () => {
-  jest.mocked(readSession).mockResolvedValueOnce(clientOffline).mockResolvedValueOnce(clientOffline);
+it('shows saved catalog and cart when token renewal fails offline', async () => {
+  jest.mocked(readSession).mockResolvedValue(clientOffline);
   jest.mocked(getValidSession).mockRejectedValueOnce(new NetworkError('Sin conexión'));
   jest.mocked(leerPaginaCatalogo).mockResolvedValueOnce({
     data: { ...page, content: [exhausted] },
@@ -337,8 +355,113 @@ it('shows saved catalog in read-only mode when token renewal fails offline', asy
 
   await waitFor(() => expect(view.getByText(/Datos guardados/)).toBeTruthy());
   expect(view.getByText('Solo reserva')).toBeTruthy();
-  expect(view.queryByText('Arma tu pedido')).toBeNull();
+  expect(view.getByText('Arma tu pedido')).toBeTruthy();
   expect(leerPaginaCatalogo).toHaveBeenCalledWith('client-id', 'business-id', 'nombre,asc', 0);
+}, 15000);
+
+it('uses a saved quote and requires address confirmation before queuing direct delivery', async () => {
+  jest.mocked(readSession).mockResolvedValue(clientOffline);
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  jest.mocked(leerPaginaCatalogo).mockResolvedValue({ data: page, updatedAt: Date.now() });
+  const direccion = { direccion: 'Calle 15', latitud: 11.24, longitud: -74.21, referencia: null };
+  jest.mocked(leerCotizacionOffline).mockResolvedValueOnce({ medios: ['EFECTIVO'], direccion });
+  const view = await render(<CatalogoScreen />);
+
+  await waitFor(() => expect(view.getByText('Arma tu pedido')).toBeTruthy());
+  await fireEvent.press(view.getByRole('button', { name: 'Agregar Mango al pedido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
+  expect((await view.findByRole('radio', { name: 'Efectivo' })).props.accessibilityState.checked).toBe(true);
+  const confirmar = () => view.getByRole('button', { name: 'Confirmar y guardar pedido pendiente' });
+  expect(confirmar()).toBeDisabled();
+  await fireEvent.press(view.getByRole('radio', { name: 'Confirmo esta dirección' }));
+  await fireEvent.press(confirmar());
+
+  await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
+    usuarioId: 'client-id', method: 'POST', path: '/api/v1/pedidos',
+    idempotencyKey: 'registro-idempotente',
+    body: {
+      emprendimientoId: 'business-id', modalidad: 'ENTREGA_DIRECTA', medioPago: 'EFECTIVO',
+      ubicacionEntrega: direccion, items: [{ productoId: 'product-id', cantidad: 1 }],
+      totalEsperado: 3500, preciosUnitariosEsperados: { 'product-id': 3500 },
+    },
+  })));
+  expect(guardarCarritoEncolado).toHaveBeenCalledTimes(1);
+  expect(await view.findByText('Pedido guardado para envío')).toBeTruthy();
+}, 15000);
+
+it('saves a reservation as a draft even with a previously saved payment method', async () => {
+  jest.mocked(readSession).mockResolvedValue(clientOffline);
+  jest.mocked(getValidSession).mockRejectedValue(new NetworkError('Sin conexión'));
+  jest.mocked(leerPaginaCatalogo).mockResolvedValue({ data: page, updatedAt: Date.now() });
+  jest.mocked(leerCotizacionOffline).mockResolvedValueOnce({
+    medios: ['EFECTIVO'], direccion: { direccion: 'Calle 15', latitud: 11.24, longitud: -74.21, referencia: null },
+  });
+  const view = await render(<CatalogoScreen />);
+
+  await fireEvent.press(await view.findByRole('button', { name: 'Agregar Mango al pedido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
+  await fireEvent.press(view.getByRole('radio', { name: 'Reserva' }));
+  await fireEvent.changeText(
+    view.getByLabelText('Fecha y hora acordadas (AAAA-MM-DDTHH:mm)'), '2027-01-01T15:30',
+  );
+  expect(view.queryByRole('button', { name: 'Confirmar y guardar pedido pendiente' })).toBeNull();
+  await fireEvent.press(view.getByRole('button', { name: 'Guardar borrador' }));
+
+  await waitFor(() => expect(guardarBorradorPedido).toHaveBeenCalledWith(
+    'client-id', 'business-id', {
+      modalidad: 'ENTREGA_DIRECTA', reserva: true, fechaReserva: '2027-01-01T15:30',
+      items: [{ producto: available, cantidad: 1 }],
+    },
+  ));
+  expect(outbox.encolar).not.toHaveBeenCalled();
+}, 15000);
+
+it('reopens a rejected cart and replaces the failed request only after requoting and confirmation', async () => {
+  jest.mocked(readSession).mockResolvedValue(clientOffline);
+  jest.mocked(getValidSession).mockResolvedValue(clientOffline);
+  jest.mocked(useLocalSearchParams).mockReturnValue({
+    emprendimientoId: 'business-id', tipoVendedor: 'AMBULANTE', pendienteId: 'failed-order',
+  });
+  const direccion = { direccion: 'Calle 15', latitud: 11.24, longitud: -74.21, referencia: null };
+  const body = {
+    emprendimientoId: 'business-id', modalidad: 'ENTREGA_DIRECTA',
+    items: [{ productoId: 'product-id', cantidad: 1 }], ubicacionEntrega: direccion,
+    medioPago: 'EFECTIVO', totalEsperado: 3500, preciosUnitariosEsperados: { 'product-id': 3500 },
+  };
+  const accion: AccionPendiente = {
+    id: 'failed-order', usuarioId: 'client-id', method: 'POST', path: '/api/v1/pedidos',
+    body: JSON.stringify(body), idempotencyKey: 'clave-rechazada', descripcion: 'Pedido a Frutas de Ana',
+    status: 'FALLIDA', attempts: 1, lastError: 'Cambió el precio de un producto.', nextAttemptAt: 0, createdAt: 0,
+  };
+  jest.mocked(outbox.listar).mockResolvedValueOnce([accion]);
+  jest.mocked(leerCarritoEncolado).mockResolvedValueOnce({
+    items: [{ producto: available, cantidad: 1 }],
+    modalidad: 'ENTREGA_DIRECTA', reserva: false, fechaReserva: '',
+  });
+  jest.mocked(cotizarPedido).mockResolvedValueOnce({
+    items: [{ productoId: 'product-id', nombre: 'Mango', unidad: 'KG', cantidad: 1,
+      precioUnitario: 4000, subtotal: 4000, estadoProducto: 'DISPONIBLE' }],
+    subtotal: 4000, tarifaDomicilio: null, total: 4000, modalidadesDisponibles: ['ENTREGA_DIRECTA'],
+    mediosPagoDisponibles: ['EFECTIVO'], pagoDomicilio: null, advertencias: [],
+  });
+  try {
+    const view = await render(<CatalogoScreen />);
+    await view.findByText('Cambió el precio de un producto.');
+    await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Cotizar pedido' }));
+    const confirmar = await view.findByRole('button', { name: 'Confirmar y reenviar pedido' });
+    expect(outbox.corregirFallida).not.toHaveBeenCalled();
+    await fireEvent.press(confirmar);
+    await waitFor(() => expect(outbox.corregirFallida).toHaveBeenCalledWith(accion, expect.objectContaining({
+      idempotencyKey: 'registro-idempotente',
+      body: expect.objectContaining({ totalEsperado: 4000, preciosUnitariosEsperados: { 'product-id': 4000 } }),
+    })));
+    expect(crearPedido).not.toHaveBeenCalled();
+  } finally {
+    jest.mocked(useLocalSearchParams).mockImplementation(() => ({
+      emprendimientoId: 'business-id', tipoVendedor: 'AMBULANTE', productoId: 'product-id',
+    }));
+  }
 }, 15000);
 
 it('offers a saved catalog page when the requested page is missing', async () => {

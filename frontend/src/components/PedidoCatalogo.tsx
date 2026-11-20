@@ -1,6 +1,6 @@
 import { fonts } from './theme';
 import { CardGrid, GridCard } from './NapaUI';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -16,7 +16,15 @@ import {
 } from './AuthUI';
 import { ProductoCard, ProductosPagination } from './ProductosUI';
 import { useResumenesCalificacion } from '../hooks/useResumenesCalificacion';
-import { ApiError } from '../lib/api';
+import { ApiError, NetworkError } from '../lib/api';
+import { getSessionGeneration, readSession } from '../lib/auth';
+import { outbox, type AccionPendiente } from '../database/outbox';
+import {
+  borrarBorradorPedido, borrarCarritoEncolado, guardarBorradorPedido, guardarCarritoEncolado,
+  guardarCotizacionOffline, leerBorradorPedido, leerCarritoEncolado, leerCotizacionOffline,
+  pedidoPendiente, prepararPedidoOffline, RUTA_CREACION_PEDIDO,
+  type CarritoPedido, type DatosCotizacionGuardada,
+} from '../lib/pedido-offline';
 import { requestDeviceLocation } from '../lib/location';
 import {
   type CotizacionPedido,
@@ -44,6 +52,9 @@ type CartItem = {
 type Props = {
   emprendimientoId: string;
   tipoVendedor: TipoVendedor;
+  offline?: boolean;
+  direccionRecogida?: string;
+  pendienteId?: string;
   productos: Producto[];
   enabled: boolean;
   pageData: ProductosPage | null;
@@ -131,6 +142,9 @@ function deliveryLocation(
 export function PedidoCatalogo({
   emprendimientoId,
   tipoVendedor,
+  offline: catalogoOffline = false,
+  direccionRecogida,
+  pendienteId,
   productos,
   enabled,
   pageData,
@@ -163,15 +177,91 @@ export function PedidoCatalogo({
   const [creating, setCreating] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sinConexion, setSinConexion] = useState(false);
+  const offline = catalogoOffline || sinConexion;
+  const [cuenta, setCuenta] = useState<string | null>(null);
+  const [datosGuardados, setDatosGuardados] = useState<DatosCotizacionGuardada | null>(null);
+  const [direccionConfirmada, setDireccionConfirmada] = useState(false);
+  const [revision, setRevision] = useState<AccionPendiente | null>(null);
+  const [mensajeLocal, setMensajeLocal] = useState<string | null>(null);
+  const [enCola, setEnCola] = useState(false);
+  const guardando = useRef(false);
+  const carritoCargado = useRef(false);
   const pendingRequest = useRef<{ body: string; key: string } | null>(null);
 
+  useEffect(() => {
+    if (!enabled || carritoCargado.current) return;
+    let active = true;
+    async function cargar() {
+      const generacion = getSessionGeneration();
+      const session = await readSession();
+      const propietario = session?.usuarioId;
+      if (!active || !propietario || session.rol !== 'CLIENTE' || generacion !== getSessionGeneration()) return;
+      setCuenta(propietario);
+      const accion = pendienteId
+        ? (await outbox.listar()).find((item) => item.id === pendienteId && item.status === 'FALLIDA')
+        : undefined;
+      const pedido = accion ? pedidoPendiente(accion) : null;
+      const carrito = pendienteId
+        ? accion && pedido?.emprendimientoId === emprendimientoId
+          ? await leerCarritoEncolado(propietario, accion.idempotencyKey)
+          : null
+        : await leerBorradorPedido(propietario, emprendimientoId);
+      if (!active || generacion !== getSessionGeneration()) return;
+      carritoCargado.current = true;
+      if (pendienteId && (!carrito || !accion || !pedido)) {
+        setError('Este pedido ya no está disponible para revisión.');
+        return;
+      }
+      if (!carrito) return;
+      setCart((actual) => actual.length ? actual : carrito.items);
+      setModalidad(carrito.modalidad);
+      setReserve(carrito.reserva);
+      setReservationDate(carrito.fechaReserva);
+      if (accion) {
+        setRevision(accion);
+        setMensajeLocal(accion.lastError ?? 'Requiere revisión. Vuelve a cotizar el pedido.');
+      }
+      if (pedido?.ubicacionEntrega) {
+        const ubicacion = pedido.ubicacionEntrega;
+        setAddress(ubicacion.direccion);
+        setLatitude(String(ubicacion.latitud));
+        setLongitude(String(ubicacion.longitud));
+        setNeighborhood(ubicacion.barrio ?? '');
+        setReference(ubicacion.referencia ?? '');
+      }
+    }
+    void cargar().catch(() => {
+      if (active && pendienteId) setError('No se pudo recuperar el carrito del pedido.');
+    });
+    return () => { active = false; };
+  }, [emprendimientoId, enabled, pendienteId]);
+
+  useEffect(() => {
+    if (!offline || !cuenta) return;
+    let active = true;
+    void leerCotizacionOffline(cuenta, emprendimientoId, modalidad)
+      .then((datos) => { if (active) setDatosGuardados(datos); })
+      .catch(() => { if (active) setDatosGuardados(null); });
+    return () => { active = false; };
+  }, [cuenta, emprendimientoId, modalidad, offline]);
+
+  const carrito: CarritoPedido = { items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate };
+  const medioOffline = paymentMethod && datosGuardados?.medios.includes(paymentMethod)
+    ? paymentMethod
+    : datosGuardados?.medios.length === 1 ? datosGuardados.medios[0] : null;
+  const pedidoOffline = prepararPedidoOffline(
+    emprendimientoId, carrito, datosGuardados, medioOffline, direccionConfirmada,
+  );
+
   const modalities = useMemo(() => {
+    if (revision) return [modalidad];
     const options: ModalidadPedido[] =
       tipoVendedor === 'AMBULANTE' ? ['ENTREGA_DIRECTA'] : ['RECOGIDA', 'DOMICILIO'];
     return availableModalities
       ? options.filter((option) => availableModalities.includes(option))
       : options;
-  }, [availableModalities, tipoVendedor]);
+  }, [availableModalities, tipoVendedor, revision, modalidad]);
 
   const estimatedSubtotal = cart.reduce(
     (total, item) => total + Math.round(item.producto.precio * item.cantidad),
@@ -181,6 +271,7 @@ export function PedidoCatalogo({
   function invalidateQuote() {
     setQuote(null);
     setPaymentMethod(null);
+    setDireccionConfirmada(false);
     setError(null);
   }
 
@@ -258,7 +349,15 @@ export function PedidoCatalogo({
     setError(null);
     setQuoting(true);
     try {
-      const result = await cotizarPedido(quoteInput());
+      const input = quoteInput();
+      const propietario = (await readSession())?.usuarioId;
+      const result = await cotizarPedido(input);
+      if (propietario && (await readSession())?.usuarioId === propietario && input.modalidad !== 'DOMICILIO') {
+        await guardarCotizacionOffline(propietario, emprendimientoId, input.modalidad, {
+          medios: result.mediosPagoDisponibles,
+          direccion: input.ubicacionEntrega ?? null,
+        }).catch(() => undefined);
+      }
       setAvailableModalities(result.modalidadesDisponibles);
       setQuote(result);
       setPaymentMethod((current) =>
@@ -268,6 +367,11 @@ export function PedidoCatalogo({
       );
       setStep('summary');
     } catch (cause) {
+      if (cause instanceof NetworkError) {
+        setSinConexion(true);
+        setError('No pudimos conectar con el servidor.');
+        return;
+      }
       if (cause instanceof ApiError && cause.code === 'BANK_ACCOUNT_REQUIRED') {
         setAvailableModalities(['RECOGIDA']);
         setModalidad('RECOGIDA');
@@ -286,6 +390,9 @@ export function PedidoCatalogo({
       ...quoteInput(),
       medioPago: paymentMethod,
       totalEsperado: quote.total,
+      ...(revision ? { preciosUnitariosEsperados: Object.fromEntries(
+        quote.items.map((item) => [item.productoId, item.precioUnitario]),
+      ) } : {}),
     };
   }
 
@@ -295,9 +402,27 @@ export function PedidoCatalogo({
       setError('Este vendedor aún no tiene un medio de pago disponible.');
       return;
     }
+    if (guardando.current || (pendienteId && !revision)) return;
+    guardando.current = true;
     setCreating(true);
     try {
       const input = createInput();
+      if (revision && cuenta) {
+        const clave = randomUUID();
+        await guardarCarritoEncolado(cuenta, clave, carrito);
+        try {
+          await outbox.corregirFallida(revision, {
+            body: input, idempotencyKey: clave, descripcion: revision.descripcion,
+          });
+        } catch (cause) {
+          await borrarCarritoEncolado(cuenta, clave).catch(() => undefined);
+          throw cause;
+        }
+        await borrarCarritoEncolado(cuenta, revision.idempotencyKey).catch(() => undefined);
+        setEnCola(true);
+        void outbox.procesar().catch(() => undefined);
+        return;
+      }
       const body = JSON.stringify(input);
       if (!pendingRequest.current || pendingRequest.current.body !== body) {
         pendingRequest.current = { body, key: randomUUID() };
@@ -305,6 +430,7 @@ export function PedidoCatalogo({
       const order = await crearPedido(input, pendingRequest.current.key);
       pendingRequest.current = null;
       setCreated(order);
+      if (cuenta) await borrarBorradorPedido(cuenta, emprendimientoId).catch(() => undefined);
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 409) {
         setQuote(null);
@@ -313,6 +439,43 @@ export function PedidoCatalogo({
       }
       setError(await productErrorMessage(cause));
     } finally {
+      guardando.current = false;
+      setCreating(false);
+    }
+  }
+
+  async function guardarOffline(enviar: boolean) {
+    if (guardando.current || !cuenta || !cart.length || pendienteId) return;
+    if (enviar && !pedidoOffline) return;
+    guardando.current = true;
+    setCreating(true);
+    setError(null);
+    try {
+      if (cuenta !== await outbox.propietario()) throw new Error('La sesión cambió. Abre el catálogo nuevamente.');
+      if (enviar && pedidoOffline) {
+        const clave = randomUUID();
+        await guardarCarritoEncolado(cuenta, clave, carrito);
+        try {
+          if (cuenta !== await outbox.propietario()) throw new Error('La sesión cambió. Abre el catálogo nuevamente.');
+          await outbox.encolar({
+            usuarioId: cuenta, method: 'POST', path: RUTA_CREACION_PEDIDO, body: pedidoOffline,
+            idempotencyKey: clave, descripcion: `Pedido a ${pageData?.emprendimiento?.nombre ?? 'emprendimiento'}`,
+          });
+        } catch (cause) {
+          await borrarCarritoEncolado(cuenta, clave).catch(() => undefined);
+          throw cause;
+        }
+        setEnCola(true);
+        await borrarBorradorPedido(cuenta, emprendimientoId).catch(() => undefined);
+        void outbox.procesar().catch(() => undefined);
+      } else {
+        await guardarBorradorPedido(cuenta, emprendimientoId, carrito);
+        setMensajeLocal('Borrador guardado en este dispositivo.');
+      }
+    } catch {
+      setError('No se pudo guardar el pedido en este dispositivo. Intenta de nuevo.');
+    } finally {
+      guardando.current = false;
       setCreating(false);
     }
   }
@@ -338,6 +501,16 @@ export function PedidoCatalogo({
 
   if (!enabled) return null;
 
+  if (enCola) {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.heading}>Pedido guardado para envío</Text>
+        <HelperText>Consulta el resultado de la sincronización en Mis pedidos.</HelperText>
+        <PrimaryButton title="Ir a Mis pedidos" onPress={() => router.push('/mis-pedidos')} />
+      </View>
+    );
+  }
+
   if (created) {
     return (
       <View style={styles.section}>
@@ -361,6 +534,7 @@ export function PedidoCatalogo({
       <Text accessibilityRole="header" style={styles.heading}>
         Arma tu pedido
       </Text>
+      {mensajeLocal ? <HelperText>{mensajeLocal}</HelperText> : null}
       {step === 'cart' ? (
         <>
           <HelperText>
@@ -429,13 +603,32 @@ export function PedidoCatalogo({
                 label={modalityNames[option]}
                 selected={modalidad === option}
                 onPress={() => {
+                  if (option === modalidad) return;
+                  setDatosGuardados(null);
                   setModalidad(option);
                   invalidateQuote();
                 }}
               />
             ))}
           </View>
-          {modalidad !== 'RECOGIDA' ? (
+          {offline ? (
+            modalidad === 'ENTREGA_DIRECTA' && datosGuardados?.direccion ? (
+              <>
+                <Text style={styles.detail}>{datosGuardados.direccion.direccion}</Text>
+                <Text style={styles.detail}>
+                  {datosGuardados.direccion.latitud}, {datosGuardados.direccion.longitud}
+                </Text>
+                <OptionButton label="Confirmo esta dirección"
+                  selected={direccionConfirmada}
+                  onPress={() => setDireccionConfirmada((confirmada) => !confirmada)} />
+                <HelperText>Conéctate para cambiar la dirección.</HelperText>
+              </>
+            ) : modalidad === 'RECOGIDA' && direccionRecogida ? (
+              <Text style={styles.detail}>Punto de recogida: {direccionRecogida}</Text>
+            ) : modalidad === 'ENTREGA_DIRECTA' ? (
+              <HelperText>Conéctate para cotizar y guardar una dirección de entrega.</HelperText>
+            ) : null
+          ) : modalidad !== 'RECOGIDA' ? (
             <>
               <Text style={styles.subheading}>Ubicación de entrega</Text>
               <HelperText>
@@ -517,44 +710,87 @@ export function PedidoCatalogo({
             <HelperText>No necesitas indicar una dirección para recoger.</HelperText>
           )}
 
-          <Text style={styles.subheading}>¿Es una reserva?</Text>
-          <View style={styles.options}>
-            <OptionButton
-              label="Pedido inmediato"
-              selected={!reserve}
-              onPress={() => {
-                setReserve(false);
-                invalidateQuote();
-              }}
-            />
-            <OptionButton
-              label="Reserva"
-              selected={reserve}
-              onPress={() => {
-                setReserve(true);
-                invalidateQuote();
-              }}
-            />
-          </View>
-          {reserve ? (
+          {!revision ? (
             <>
-              <Field
-                label="Fecha y hora acordadas (AAAA-MM-DDTHH:mm)"
-                placeholder="2026-12-24T15:30"
-                value={reservationDate}
-                onChangeText={(value) => {
-                  setReservationDate(value);
-                  invalidateQuote();
-                }}
-              />
-              <HelperText>
-                Los productos agotados solo se aceptan en reservas; el vendedor confirmará si puede
-                cumplirla.
-              </HelperText>
+              <Text style={styles.subheading}>¿Es una reserva?</Text>
+              <View style={styles.options}>
+                <OptionButton
+                  label="Pedido inmediato"
+                  selected={!reserve}
+                  onPress={() => {
+                    setReserve(false);
+                    invalidateQuote();
+                  }}
+                />
+                <OptionButton
+                  label="Reserva"
+                  selected={reserve}
+                  onPress={() => {
+                    setReserve(true);
+                    invalidateQuote();
+                  }}
+                />
+              </View>
+              {reserve ? (
+                <>
+                  <Field
+                    label="Fecha y hora acordadas (AAAA-MM-DDTHH:mm)"
+                    placeholder="2026-12-24T15:30"
+                    value={reservationDate}
+                    onChangeText={(value) => {
+                      setReservationDate(value);
+                      invalidateQuote();
+                    }}
+                  />
+                  <HelperText>
+                    Los productos agotados solo se aceptan en reservas; el vendedor confirmará si puede
+                    cumplirla.
+                  </HelperText>
+            </>
+          ) : null}
             </>
           ) : null}
           <ErrorBanner message={error} />
-          <PrimaryButton title="Cotizar pedido" busy={quoting} onPress={() => void reviewQuote()} />
+          {offline ? (
+            <>
+              {!pendienteId && !reserve && modalidad !== 'DOMICILIO' ? (
+                <>
+                  {cart.map(({ producto, cantidad }) => (
+                    <Text key={producto.id} style={styles.detail}>
+                      {cantidad} · {producto.nombre} · ${producto.precio.toLocaleString('es-CO')} COP por unidad
+                    </Text>
+                  ))}
+                  <Text style={styles.total}>Total estimado: ${estimatedSubtotal.toLocaleString('es-CO')} COP</Text>
+                  <Text style={styles.subheading}>Medio de pago</Text>
+                  {datosGuardados?.medios.length ? datosGuardados.medios.map((medio) => (
+                    <OptionButton key={medio} label={paymentNames[medio]}
+                      selected={medioOffline === medio} onPress={() => setPaymentMethod(medio)} />
+                  )) : <HelperText>Conéctate para consultar los medios de pago de esta modalidad.</HelperText>}
+                  {datosGuardados?.medios.length && !medioOffline ? (
+                    <HelperText>Selecciona un medio de pago para continuar.</HelperText>
+                  ) : null}
+                  {modalidad === 'ENTREGA_DIRECTA' && datosGuardados?.direccion && !direccionConfirmada ? (
+                    <HelperText>Confirma la dirección guardada para habilitar el envío.</HelperText>
+                  ) : null}
+                  <PrimaryButton title="Confirmar y guardar pedido pendiente" busy={creating}
+                    disabled={!pedidoOffline || !cuenta} onPress={() => void guardarOffline(true)} />
+                </>
+              ) : <HelperText>Conéctate para cotizar y confirmar este pedido.</HelperText>}
+              {!catalogoOffline ? (
+                <TextButton title="Reintentar conexión" disabled={creating} onPress={() => {
+                  setSinConexion(false);
+                  invalidateQuote();
+                }} />
+              ) : null}
+              {!pendienteId ? (
+                <TextButton title="Guardar borrador" disabled={creating || !cuenta}
+                  onPress={() => void guardarOffline(false)} />
+              ) : null}
+            </>
+          ) : (
+            <PrimaryButton title="Cotizar pedido" busy={quoting}
+              disabled={Boolean(pendienteId && !revision)} onPress={() => void reviewQuote()} />
+          )}
           <TextButton
             title="Volver a los productos"
             onPress={() => {
@@ -572,6 +808,7 @@ export function PedidoCatalogo({
             <View key={item.productoId} style={styles.summaryRow}>
               <Text style={styles.detail}>
                 {item.cantidad.toLocaleString('es-CO')} · {item.nombre}
+                {revision ? ` · ${item.precioUnitario.toLocaleString('es-CO')} COP por unidad` : ''}
               </Text>
               <Text style={styles.detail}>${item.subtotal.toLocaleString('es-CO')} COP</Text>
             </View>
@@ -614,10 +851,13 @@ export function PedidoCatalogo({
             <HelperText key={warning}>{warning}</HelperText>
           ))}
           <ErrorBanner message={error} />
+          {offline ? (
+            <HelperText>Vuelve a revisar la entrega para usar los datos guardados.</HelperText>
+          ) : null}
           <PrimaryButton
-            title="Confirmar pedido"
+            title={revision ? 'Confirmar y reenviar pedido' : 'Confirmar pedido'}
             busy={creating}
-            disabled={quote.mediosPagoDisponibles.length === 0 || !paymentMethod}
+            disabled={offline || quote.mediosPagoDisponibles.length === 0 || !paymentMethod}
             onPress={() => void confirmOrder()}
           />
           <TextButton

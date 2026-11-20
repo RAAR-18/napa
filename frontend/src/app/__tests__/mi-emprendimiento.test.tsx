@@ -209,7 +209,7 @@ describe('detalle del emprendimiento (RF-32, RF-34)', () => {
 
     await fireEvent.press(view.getByText('Ver productos'));
     expect(router.push).toHaveBeenCalledWith({
-      pathname: '/catalogo', params: { emprendimientoId: 'business-id', tipoVendedor: 'PUNTO_FIJO' },
+      pathname: '/catalogo', params: { emprendimientoId: 'business-id', tipoVendedor: 'PUNTO_FIJO', direccionRecogida: 'Calle 15' },
     });
   });
 
