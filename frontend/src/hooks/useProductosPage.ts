@@ -46,12 +46,29 @@ export function useProductosPage(mode: 'seller' | 'client', businessId?: string)
 
       try {
         localSession = await readSession();
+        if (!isCurrent()) return;
+
+        if (mode === 'seller' && localSession?.usuarioId &&
+            (localSession.rol === 'VENDEDOR_AMBULANTE' || localSession.rol === 'VENDEDOR_PUNTO_FIJO')) {
+          try {
+            const cached = await leerPaginaInventario(localSession.usuarioId, query.sort, query.page);
+            if (!isCurrent()) return;
+            if (cached) {
+              setOfflineUpdatedAt(cached.updatedAt);
+              setData(cached.data);
+              setBusy(false);
+            }
+          } catch (cause) {
+            console.warn('No se pudo leer el inventario guardado.', cause);
+          }
+        }
 
         const session = await getValidSession();
         const seller =
           session.rol === 'VENDEDOR_AMBULANTE' ||
           session.rol === 'VENDEDOR_PUNTO_FIJO';
 
+        if (!isCurrent()) return;
         if (mode === 'seller' ? !seller : session.rol !== 'CLIENTE') {
           throw new Error(
             mode === 'seller'
@@ -89,6 +106,7 @@ export function useProductosPage(mode: 'seller' | 'client', businessId?: string)
         if (query.page > lastPage) {
           setQuery((current) => ({ ...current, page: lastPage }));
         } else {
+          setOfflineUpdatedAt(null);
           setData(result);
         }
       } catch (cause) {
@@ -134,6 +152,8 @@ export function useProductosPage(mode: 'seller' | 'client', businessId?: string)
           }
         }
 
+        setData(null);
+        setOfflineUpdatedAt(null);
         if (
           cuentaId &&
           cause instanceof ApiError &&

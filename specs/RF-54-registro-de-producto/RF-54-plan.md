@@ -126,7 +126,7 @@ Heredado de `specs/templates/plan-template.md`. Objetivos propios:
 
 ## Offline & Concurrency Strategy
 
-- **Registro offline en el MVP (#41)**. Ante un fallo de red, la app guarda la solicitud y su clave en el outbox de la cuenta. El cuerpo incluye el identificador del emprendimiento conocido al iniciar el registro. Si falta ese identificador, la app pide conectarse y abrir Mis productos.
+- **Registro offline en el MVP (#41)**. Cuando identifica la cuenta y el emprendimiento, la app guarda primero la solicitud y su clave en el outbox y la envía en segundo plano. Mis productos muestra de inmediato la página vigente de inventario guardado mientras consulta el servidor, de modo que el vendedor puede registrar más productos. El cuerpo incluye el identificador del emprendimiento conocido al iniciar el registro. Si falta ese identificador, la app pide conectarse y abrir Mis productos.
 - El servidor verifica que el emprendimiento indicado coincide con el activo del vendedor. Si cambió, devuelve `409 INVALID_STATE` sin publicar el producto. Un cliente anterior puede seguir enviando el cuerpo sin el campo opcional.
 - Mis productos muestra el registro pendiente en solo lectura y separado de los productos confirmados. Los reintentos conservan cuerpo y clave, incluso después de una respuesta perdida. El catálogo público muestra los productos confirmados por el servidor según las reglas habituales.
 - Ante un rechazo definitivo, el vendedor puede corregir el registro con una nueva clave o descartarlo. Corregir mantiene el emprendimiento original; publicar en otro requiere iniciar un registro nuevo. La evidencia manual en Android queda pendiente.

@@ -27,7 +27,10 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('../../lib/uuid', () => ({ randomUUID: () => 'registro-idempotente' }));
 jest.mock('../../database/outbox', () => ({
-  outbox: { listar: jest.fn().mockResolvedValue([]), suscribir: () => () => {}, encolar: jest.fn() },
+  outbox: {
+    listar: jest.fn().mockResolvedValue([]), suscribir: () => () => {},
+    encolar: jest.fn(), procesar: jest.fn().mockResolvedValue(undefined),
+  },
 }));
 jest.mock('../../lib/auth', () => ({
   getSessionGeneration: () => 0,
@@ -363,9 +366,9 @@ it('invalidates the saved catalog of a business that the server no longer expose
   expect(leerPaginaCatalogo).not.toHaveBeenCalled();
 }, 15000);
 
-it('queues a bound registration with the same key when the first request loses connectivity', async () => {
+it('queues a bound registration without waiting for the server', async () => {
   jest.mocked(readSession).mockResolvedValue({ ...seller, usuarioId: 'cuenta-A' });
-  jest.mocked(createProducto).mockRejectedValueOnce(new NetworkError('Sin conexión'));
+  jest.mocked(outbox.procesar).mockImplementationOnce(() => new Promise(() => {}));
   const view = await render(<NuevoProductoScreen />);
   await waitFor(() => expect(view.getByLabelText('Nombre del producto')).toBeTruthy());
   await fireEvent.changeText(view.getByLabelText('Nombre del producto'), 'Mango');
@@ -374,11 +377,10 @@ it('queues a bound registration with the same key when the first request loses c
   await fireEvent.press(view.getByRole('button', { name: 'Publicar producto' }));
 
   await waitFor(() => expect(outbox.encolar).toHaveBeenCalled());
-  const [body, key] = jest.mocked(createProducto).mock.calls[0];
-  expect(key).toBe('registro-idempotente');
+  expect(createProducto).not.toHaveBeenCalled();
   expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
-    usuarioId: 'cuenta-A', path: '/api/v1/productos', idempotencyKey: key,
-    body: { ...body, emprendimientoId: 'business-id' },
+    usuarioId: 'cuenta-A', path: '/api/v1/productos', idempotencyKey: 'registro-idempotente',
+    body: expect.objectContaining({ nombre: 'Mango', emprendimientoId: 'business-id' }),
   }));
   await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/mis-productos'));
 }, 15000);

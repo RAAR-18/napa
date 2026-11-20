@@ -29,12 +29,14 @@ export default function NuevoProductoScreen() {
 
   useEffect(() => {
     let active = true;
-    getValidSession().catch(async (cause: unknown) => {
-      if (!(cause instanceof NetworkError) || (!destino && !pendienteId)) throw cause;
-      const local = await readSession();
-      if (!local?.usuarioId) throw cause;
-      return local;
-    }).then(async (session) => {
+    async function obtenerSesion() {
+      if (destino || pendienteId) {
+        const local = await readSession();
+        if (local?.usuarioId) return local;
+      }
+      return getValidSession();
+    }
+    obtenerSesion().then(async (session) => {
       if (!active) return;
       if (session.rol !== 'VENDEDOR_AMBULANTE' && session.rol !== 'VENDEDOR_PUNTO_FIJO') {
         throw new Error('Solo los vendedores pueden publicar productos.');
@@ -85,17 +87,19 @@ export default function NuevoProductoScreen() {
       } else {
         const propietario = (await readSession())?.usuarioId;
         if (getSessionGeneration() !== generation) return;
-        try {
-          await createProducto(body, key, propietario);
-        } catch (cause) {
-          if (!(cause instanceof NetworkError) || getSessionGeneration() !== generation) throw cause;
-          if (!origen || !propietario) {
-            throw new Error('Conéctate y abre Mis productos para identificar tu emprendimiento antes de guardar.');
-          }
+        if (origen && propietario) {
           await outbox.encolar({
             usuarioId: propietario, method: 'POST', path: RUTA_REGISTRO_PRODUCTO, body,
             idempotencyKey: key, descripcion: descripcionEnvio,
           });
+          void outbox.procesar().catch(() => undefined);
+        } else {
+          try {
+            await createProducto(body, key, propietario);
+          } catch (cause) {
+            if (!(cause instanceof NetworkError)) throw cause;
+            throw new Error('Conéctate y abre Mis productos para identificar tu emprendimiento antes de guardar.');
+          }
         }
       }
       if (getSessionGeneration() === generation) router.replace('/mis-productos');
