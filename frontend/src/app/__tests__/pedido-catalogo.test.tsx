@@ -1,5 +1,6 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import * as Crypto from 'expo-crypto';
+import * as Location from 'expo-location';
 
 import { PedidoCatalogo } from '../../components/PedidoCatalogo';
 import { ApiError } from '../../lib/api';
@@ -270,5 +271,68 @@ it('re-quotes after a total conflict and retries with a new idempotency key', as
   const secondKey = jest.mocked(crearPedido).mock.calls[1][1];
   expect(firstKey).not.toBe(secondKey);
   expect(jest.mocked(crearPedido).mock.calls[1][0].totalEsperado).toBe(4000);
+});
+
+it('requests device location on demand for delivery and quotes the order', async () => {
+  jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({
+    status: 'granted',
+  } as Location.LocationPermissionResponse);
+  jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({
+    coords: { latitude: 4.711, longitude: -74.0721 },
+  } as Location.LocationObject);
+
+  const view = await renderOrder();
+  await fireEvent.press(view.getByRole('button', { name: 'Agregar Mango al pedido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
+  await fireEvent.press(view.getByRole('radio', { name: 'Domicilio' }));
+  await fireEvent.changeText(view.getByLabelText('Dirección de entrega'), 'Carrera 7 # 10-20');
+
+  // Trigger device location request
+  await fireEvent.press(view.getByRole('button', { name: 'Usar mi ubicación actual' }));
+
+  await waitFor(() => {
+    expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalled();
+    expect(Location.getCurrentPositionAsync).toHaveBeenCalled();
+    expect(view.getByText(/✓ Ubicación del dispositivo obtenida/)).toBeTruthy();
+    expect(view.getByLabelText('Latitud').props.value).toBe('4.711');
+    expect(view.getByLabelText('Longitud').props.value).toBe('-74.0721');
+  });
+
+  await fireEvent.press(view.getByRole('button', { name: 'Cotizar pedido' }));
+
+  await waitFor(() => {
+    expect(cotizarPedido).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modalidad: 'DOMICILIO',
+        ubicacionEntrega: {
+          latitud: 4.711,
+          longitud: -74.0721,
+          direccion: 'Carrera 7 # 10-20',
+          referencia: null,
+        },
+      }),
+    );
+  });
+});
+
+it('displays friendly message when device location permission is denied for delivery', async () => {
+  jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({
+    status: 'denied',
+  } as Location.LocationPermissionResponse);
+
+  const view = await renderOrder();
+  await fireEvent.press(view.getByRole('button', { name: 'Agregar Mango al pedido' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
+  await fireEvent.press(view.getByRole('radio', { name: 'Domicilio' }));
+
+  await fireEvent.press(view.getByRole('button', { name: 'Usar mi ubicación actual' }));
+
+  await waitFor(() => {
+    expect(
+      view.getByText(
+        'No se concedió permiso de ubicación. Puedes escribir las coordenadas manualmente.',
+      ),
+    ).toBeTruthy();
+  });
 });
 
