@@ -148,7 +148,10 @@ export default function EmprendimientoDetalleScreen() {
             onPress={() =>
               router.push({
                 pathname: '/catalogo',
-                params: { emprendimientoId: detalle.id, tipoVendedor: detalle.tipoVendedor },
+                params: {
+                  emprendimientoId: detalle.id, tipoVendedor: detalle.tipoVendedor,
+                  ...(detalle.tipoVendedor === 'PUNTO_FIJO' && detalle.ubicacion?.direccion ? { direccionRecogida: detalle.ubicacion.direccion } : {}),
+                },
               })
             }
           />

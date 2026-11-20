@@ -14,6 +14,7 @@ import {
 } from '../components/AuthUI';
 import { outbox, type AccionPendiente } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
+import { borrarCarritoEncolado, paramsRevisionPedido, pedidoPendiente } from '../lib/pedido-offline';
 import { edicionEmprendimientoPendiente } from '../lib/emprendimiento-pendiente';
 import { edicionDescartableSinRevision, cambioPendienteProducto, productoPendiente } from '../lib/productos-pendientes';
 
@@ -81,6 +82,7 @@ export default function PendientesEnvioScreen() {
 function Tarjeta({ accion }: { accion: AccionPendiente }) {
   const fallida = accion.status === 'FALLIDA';
   const edicion = cambioPendienteProducto(accion);
+  const pedido = pedidoPendiente(accion);
   return (
     <View style={[styles.card, fallida && styles.failed]}>
       <Text style={styles.title}>{accion.descripcion}</Text>
@@ -89,7 +91,11 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
         <>
           <Text style={styles.error}>{accion.lastError ?? 'El servidor la rechazó.'}</Text>
           <View style={styles.actions}>
-            {productoPendiente(accion) ? (
+            {pedido ? (
+              <TextButton title="Revisar pedido" onPress={() => router.push({
+                pathname: '/catalogo', params: paramsRevisionPedido(accion, pedido),
+              })} />
+            ) : productoPendiente(accion) ? (
               <TextButton title="Corregir y reenviar" onPress={() => router.push({
                 pathname: '/nuevo-producto', params: { pendienteId: accion.id },
               })} />
@@ -106,7 +112,9 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
             ) : (
               <TextButton title="Reintentar" onPress={() => void outbox.reintentar(accion.id)} />
             )}
-            <TextButton title="Descartar" onPress={() => void outbox.descartar(accion.id)} />
+            <TextButton title="Descartar" onPress={() => void outbox.descartar(accion.id).then(() => {
+              if (pedido) return borrarCarritoEncolado(accion.usuarioId, accion.idempotencyKey);
+            }).catch(() => undefined)} />
           </View>
         </>
       ) : (

@@ -308,6 +308,8 @@ export async function logout(): Promise<void> {
     try {
       const { borrarCatalogoGuardado } = await import('./catalogo-cache');
       await borrarCatalogoGuardado(session.usuarioId);
+      const { borrarCotizacionesOffline } = await import('./pedido-offline');
+      await borrarCotizacionesOffline(session.usuarioId);
     } catch (cause) {
       console.warn('No se pudo borrar el catálogo al cerrar sesión.', cause);
     }

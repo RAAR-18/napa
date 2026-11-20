@@ -612,6 +612,45 @@ class ProductosIntegrationTest {
     }
 
     @Test
+    void expectedUnitPricesDetectChangesEvenWhenTotalMatches() throws Exception {
+        String seller = account("VENDEDOR_AMBULANTE");
+        String business = business(seller);
+        ok("PUT", "/vendedores/me/configuracion-pago", seller, Map.of("aceptaEfectivo", true));
+        String customer = account("CLIENTE");
+        String mango = body(request("POST", "/productos", seller, product("Mango", "12.5"), key()))
+                .get("id").toString();
+        String papaya = body(request("POST", "/productos", seller, product("Papaya", "12.5"), key()))
+                .get("id").toString();
+        var order = new HashMap<String, Object>(Map.of(
+                "emprendimientoId", business,
+                "modalidad", "ENTREGA_DIRECTA",
+                "items", List.of(
+                        Map.of("productoId", mango, "cantidad", BigDecimal.ONE),
+                        Map.of("productoId", papaya, "cantidad", BigDecimal.ONE)),
+                "ubicacionEntrega", Map.of(
+                        "latitud", 4.72, "longitud", -74.06, "direccion", "Calle de prueba", "barrio", "Centro"),
+                "medioPago", "EFECTIVO",
+                "totalEsperado", 7000,
+                "preciosUnitariosEsperados", Map.of(mango, 3400, papaya, 3600)));
+        long ordersBefore = jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class);
+        var conflict = request("POST", "/pedidos", customer, order, key());
+
+        assertEquals(409, conflict.statusCode(), conflict.body());
+        assertEquals("CONFLICT", body(conflict).get("code"));
+        assertEquals(ordersBefore, jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class));
+
+        order.put("preciosUnitariosEsperados", Map.of(mango, 3500, papaya, 3500));
+        String idempotencyKey = key();
+        var created = request("POST", "/pedidos", customer, order, idempotencyKey);
+        var replay = request("POST", "/pedidos", customer, order, idempotencyKey);
+        assertEquals(201, created.statusCode(), created.body());
+        assertEquals(201, replay.statusCode(), replay.body());
+        assertNotNull(body(created).get("id"));
+        assertEquals(body(created).get("id"), body(replay).get("id"));
+        assertEquals(ordersBefore + 1, jdbc.queryForObject("SELECT count(*) FROM pedido", Long.class));
+    }
+
+    @Test
     void authorizationRestrictsManagementToTheOwnerAndCatalogToClients() throws Exception {
         String seller = account("VENDEDOR_AMBULANTE");
         String business = business(seller);

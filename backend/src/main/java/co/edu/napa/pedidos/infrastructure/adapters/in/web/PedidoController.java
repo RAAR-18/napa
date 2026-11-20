@@ -160,7 +160,8 @@ public class PedidoController {
         }
         PedidoCreado creado = realizarPedido.realizar(UUID.fromString(jwt.getSubject()),
                 new SolicitudPedido(solicitud(body.emprendimientoId(), body.modalidad(), body.items(),
-                        body.ubicacionEntrega(), body.reserva()), body.medioPago(), body.totalEsperado()));
+                        body.ubicacionEntrega(), body.reserva()), body.medioPago(), body.totalEsperado(),
+                        body.preciosUnitariosEsperados()));
         return ResponseEntity.created(URI.create("/api/v1/pedidos/" + creado.id()))
                 .cacheControl(CacheControl.noStore()).body(creado);
     }
@@ -342,7 +343,8 @@ public class PedidoController {
             @Valid UbicacionRequest ubicacionEntrega,
             Instant reserva,
             @NotBlank String medioPago,
-            @PositiveOrZero Long totalEsperado
+            @PositiveOrZero Long totalEsperado,
+            @Size(max = 20) Map<UUID, @NotNull @PositiveOrZero Long> preciosUnitariosEsperados
     ) {}
 
     public record ItemRequest(
