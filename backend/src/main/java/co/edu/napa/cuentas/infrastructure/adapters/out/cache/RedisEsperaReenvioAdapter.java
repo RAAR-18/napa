@@ -1,6 +1,7 @@
 package co.edu.napa.cuentas.infrastructure.adapters.out.cache;
 
 import co.edu.napa.cuentas.application.ports.out.EsperaReenvioPort;
+import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.shared.domain.DomainException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,10 +49,10 @@ public class RedisEsperaReenvioAdapter implements EsperaReenvioPort {
     }
 
     @Override
-    public void exigirDisponible(String celular) {
+    public void exigirDisponible(String celular, CanalVerificacion canal) {
         Long ttl;
         try {
-            ttl = redisTemplate.getExpire(esperaKey(celular));
+            ttl = redisTemplate.getExpire(esperaKey(celular, canal));
         } catch (DataAccessException exception) {
             throw unavailable(exception);
         }
@@ -65,11 +66,11 @@ public class RedisEsperaReenvioAdapter implements EsperaReenvioPort {
     }
 
     @Override
-    public long registrarEnvio(String celular) {
+    public long registrarEnvio(String celular, CanalVerificacion canal) {
         try {
             Long espera = redisTemplate.execute(
                     REGISTRAR,
-                    List.of(esperaKey(celular), "verif-espera:n:" + digest(celular)),
+                    List.of(esperaKey(celular, canal), "verif-espera:n:" + digest(celular + ":" + canal.name())),
                     Long.toString(ESPERA_INICIAL_SEGUNDOS),
                     Long.toString(ESPERA_MAXIMA_SEGUNDOS),
                     Long.toString(VENTANA_SEGUNDOS)
@@ -81,17 +82,15 @@ public class RedisEsperaReenvioAdapter implements EsperaReenvioPort {
     }
 
     static String formato(long segundos) {
-        long minutos = segundos / 60;
-        long resto = segundos % 60;
-        if (minutos == 0) {
-            return resto + " segundos";
+        if (segundos < 60) {
+            return segundos == 1 ? "1 segundo" : segundos + " segundos";
         }
-        return resto == 0 ? minutos + (minutos == 1 ? " minuto" : " minutos")
-                : "%d:%02d minutos".formatted(minutos, resto);
+        long minutos = (segundos + 59) / 60;
+        return minutos == 1 ? "1 minuto" : minutos + " minutos";
     }
 
-    private String esperaKey(String celular) {
-        return "verif-espera:bloqueo:" + digest(celular);
+    private String esperaKey(String celular, CanalVerificacion canal) {
+        return "verif-espera:bloqueo:" + digest(celular + ":" + canal.name());
     }
 
     private String digest(String value) {
