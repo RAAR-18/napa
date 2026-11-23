@@ -149,6 +149,42 @@ class OutboxEventPublisherIntegrationTest {
         ));
     }
 
+    @Test
+    void anotherRelayCanClaimWaitingEventWhileFirstHandlerIsRunning() {
+        Instant now = Instant.now();
+        TestEvent first = new TestEvent(UUID.randomUUID(), now, UUID.randomUUID(), UUID.randomUUID(), Map.of());
+        TestEvent second = new TestEvent(UUID.randomUUID(), now, UUID.randomUUID(), UUID.randomUUID(), Map.of());
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            eventPublisher.publish(first);
+            eventPublisher.publish(second);
+        });
+        jdbcTemplate.update("UPDATE outbox_event SET created_at = now() - interval '1 second' WHERE event_id = ?",
+                first.eventId());
+
+        List<UUID> handled = new ArrayList<>();
+        OutboxEventHandler handler = new OutboxEventHandler() {
+            @Override
+            public String eventType() {
+                return first.type();
+            }
+
+            @Override
+            public void handle(OutboxEnvelope envelope) {
+                handled.add(envelope.eventId());
+                if (envelope.eventId().equals(first.eventId())) {
+                    new OutboxRelay(jdbcTemplate, new ObjectMapper(), transactionManager, List.of(this))
+                            .dispatchPendingEvents();
+                    assertEquals(List.of(first.eventId(), second.eventId()), handled);
+                }
+            }
+        };
+
+        new OutboxRelay(jdbcTemplate, new ObjectMapper(), transactionManager, List.of(handler))
+                .dispatchPendingEvents();
+
+        assertEquals(List.of(first.eventId(), second.eventId()), handled);
+    }
+
     private record TestEvent(
             UUID eventId,
             Instant occurredAt,

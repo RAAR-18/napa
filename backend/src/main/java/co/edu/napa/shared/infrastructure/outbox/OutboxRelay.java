@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(prefix = "napa.outbox", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class OutboxRelay {
     private static final Logger log = LoggerFactory.getLogger(OutboxRelay.class);
-    private static final int BATCH_SIZE = 100;
+    private static final int MAX_EVENTS_PER_POLL = 100;
     private static final int LEASE_SECONDS = 30;
     private static final int MAX_ATTEMPTS = 8;
     private static final int MAX_ERROR_LENGTH = 2_000;
@@ -61,11 +61,16 @@ public class OutboxRelay {
     @Scheduled(fixedDelayString = "${napa.outbox.poll-interval-ms:500}")
     public void dispatchPendingEvents() {
         UUID workerId = UUID.randomUUID();
-        List<OutboxEnvelope> events = claimBatch(workerId);
-        events.forEach(event -> dispatch(workerId, event));
+        for (int dispatched = 0; dispatched < MAX_EVENTS_PER_POLL; dispatched++) {
+            List<OutboxEnvelope> claimed = claimNextEvent(workerId);
+            if (claimed.isEmpty()) {
+                return;
+            }
+            dispatch(workerId, claimed.getFirst());
+        }
     }
 
-    private List<OutboxEnvelope> claimBatch(UUID workerId) {
+    private List<OutboxEnvelope> claimNextEvent(UUID workerId) {
         return transactionTemplate.execute(status -> jdbcTemplate.query(
                 """
                 UPDATE outbox_event
@@ -79,15 +84,14 @@ public class OutboxRelay {
                        OR (status = 'PROCESSING' AND locked_until <= now())
                     ORDER BY created_at
                     FOR UPDATE SKIP LOCKED
-                    LIMIT ?
+                    LIMIT 1
                 )
                 RETURNING event_id, event_type, event_version, occurred_at,
                           aggregate_type, aggregate_id, actor_user_id, payload, attempt_count
                 """,
                 this::mapEnvelope,
                 workerId,
-                LEASE_SECONDS,
-                BATCH_SIZE
+                LEASE_SECONDS
         ));
     }
 
