@@ -54,6 +54,18 @@ public class RedisLimitadorVerificacionAdapter implements LimitadorVerificacionP
             Long.class
     );
 
+    /** Resta uno a cada contador que esté por encima de cero. */
+    private static final RedisScript<Long> LIBERAR_ENVIO = new DefaultRedisScript<>(
+            """
+            for i = 1, #KEYS do
+                local count = tonumber(redis.call('get', KEYS[i]) or '0')
+                if count > 0 then redis.call('decr', KEYS[i]) end
+            end
+            return 0
+            """,
+            Long.class
+    );
+
     private final StringRedisTemplate redisTemplate;
 
     public RedisLimitadorVerificacionAdapter(StringRedisTemplate redisTemplate) {
@@ -77,12 +89,29 @@ public class RedisLimitadorVerificacionAdapter implements LimitadorVerificacionP
             if (retryAfter != null && retryAfter > 0) {
                 throw new DomainException(
                         "RATE_LIMITED",
-                        "Demasiadas solicitudes de código. Inténtalo más tarde.",
+                        "Ya pediste varios códigos. Espera " + RedisEsperaReenvioAdapter.formato(retryAfter) + " para pedir otro.",
                         Map.of("retryAfter", retryAfter)
                 );
             }
         } catch (DataAccessException exception) {
             throw unavailable(exception);
+        }
+    }
+
+    @Override
+    public void liberarEnvio(String celular, String ipAddress) {
+        try {
+            redisTemplate.execute(
+                    LIBERAR_ENVIO,
+                    List.of(
+                            "verif-rl:min:" + digest(celular),
+                            "verif-rl:hora:" + digest(celular),
+                            "verif-rl:ip:" + digest(ipAddress == null ? "desconocida" : ipAddress)
+                    )
+            );
+        } catch (DataAccessException exception) {
+            // Si no se puede devolver, el límite solo queda un poco más estricto.
+            log.warn("No se pudo devolver un envío de verificación al limitador", exception);
         }
     }
 

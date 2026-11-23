@@ -197,6 +197,23 @@ class SolicitarVerificacionUseCaseTest {
         verify(verificarCelular, never()).iniciar(anyString(), any(), any());
     }
 
+    @Test
+    void returnsTheSendToTheLimiterWhenTheProviderFails() {
+        when(usuarios.findByCelular(CELULAR))
+                .thenReturn(Optional.of(user(RolUsuario.CLIENTE, EstadoUsuario.PENDIENTE_VERIFICACION)));
+        when(verificarCelular.iniciar(anyString(), any(), any())).thenThrow(
+                new DomainException("EXTERNAL_SERVICE_UNAVAILABLE", "SMS caído")
+        );
+        when(mensajes.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThrows(DomainException.class, () -> useCase.solicitar(
+                CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.SMS, "127.0.0.1"
+        ));
+
+        verify(limitador).liberarEnvio(CELULAR, "127.0.0.1");
+        verify(espera, never()).registrarEnvio(anyString());
+    }
+
     private Usuario user(RolUsuario rol, EstadoUsuario estado) {
         return new Usuario(
                 UUID.randomUUID(), "Ana", CELULAR, "ana@example.com",

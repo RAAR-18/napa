@@ -77,6 +77,16 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
         // La espera y los límites cuentan igual exista o no la cuenta, para no revelar cuáles existen.
         espera.exigirDisponible(celular);
         limitador.registrarEnvio(celular, ipAddress);
+        try {
+            return enviar(celular, proposito, canal);
+        } catch (RuntimeException exception) {
+            // Si el código no salió no cuenta: la persona puede pedirlo enseguida por el otro medio.
+            limitador.liberarEnvio(celular, ipAddress);
+            throw exception;
+        }
+    }
+
+    private EnvioSolicitado enviar(String celular, PropositoVerificacion proposito, CanalVerificacion canal) {
         if (proposito == PropositoVerificacion.CAMBIO && usuarios.existsByCelular(celular)) {
             throw new DomainException("PHONE_ALREADY_REGISTERED", "Ese celular ya está registrado.");
         }
