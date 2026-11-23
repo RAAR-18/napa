@@ -107,7 +107,9 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
             );
             throw new DomainException(
                     exception.code(),
-                    "No pudimos enviar el código. Inténtalo de nuevo o pídelo por SMS.",
+                    canal == CanalVerificacion.CORREO
+                            ? "No pudimos enviar el código a tu correo. Inténtalo de nuevo o pídelo por SMS."
+                            : "No pudimos enviar el SMS. Inténtalo de nuevo o pide el código por correo.",
                     Map.of("mensajeId", fallido.id().toString(), "canal", canal.name())
             );
         }
