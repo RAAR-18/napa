@@ -9,6 +9,7 @@ import {
   HelperText,
   PageHeading,
   PrimaryButton,
+  SuccessNotice,
   TextButton,
 } from '../components/AuthUI';
 import {
@@ -233,7 +234,7 @@ export default function VerifyScreen() {
         }
       />
       <ErrorBanner message={error} />
-      {message ? <HelperText>{message}</HelperText> : null}
+      <SuccessNotice message={message} />
       <Field
         autoCapitalize="none"
         keyboardType="number-pad"

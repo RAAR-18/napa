@@ -9,6 +9,10 @@ public interface LimitadorVerificacionPort {
     /** Cuenta un envío por celular y por IP; lanza RATE_LIMITED con retryAfter si se superó algún límite. */
     void registrarEnvio(String celular, String ipAddress);
 
+    /** Devuelve el envío contado si al final no salió (falló el proveedor o la solicitud no era válida). */
+    default void liberarEnvio(String celular, String ipAddress) {
+    }
+
     int intentosRestantes(String celular, PropositoVerificacion proposito);
 
     /** Suma un intento fallido y devuelve cuántos quedan. */

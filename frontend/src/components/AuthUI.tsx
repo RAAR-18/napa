@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 
 import { AppShell, Brand, useNapaNavigation } from './AppShell';
-import { Hero, Icon, SectionHeading, heroContent } from './NapaUI';
+import { Hero, SectionHeading, heroContent } from './NapaUI';
 import { fonts, palette } from './theme';
+import { Toast } from './Toast';
 
 export { palette } from './theme';
 
@@ -145,14 +146,14 @@ export function TextButton({
   );
 }
 
+/** Los errores se muestran como notificación arriba de la pantalla (ver Toast). */
 export function ErrorBanner({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <View accessibilityRole="alert" style={styles.errorBanner}>
-      <Icon name="alert-circle" color={palette.error} size={19} />
-      <Text style={styles.errorText}>{message}</Text>
-    </View>
-  );
+  return <Toast message={message} tone="error" />;
+}
+
+/** Aviso de éxito con la misma notificación. */
+export function SuccessNotice({ message }: { message: string | null }) {
+  return <Toast message={message} tone="success" />;
 }
 
 export function HelperText({ children }: PropsWithChildren) {
