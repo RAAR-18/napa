@@ -65,7 +65,6 @@ type RegistrationInput = {
   password: string;
   confirmacionPassword: string;
   rol: UserRole;
-  canal: VerificationChannel;
 };
 
 function isStoredSession(value: unknown): value is StoredSession {
@@ -135,7 +134,7 @@ export async function clearSession(): Promise<void> {
   await authStorage.deleteItemAsync(AUTH_SESSION_KEY);
 }
 
-/** Devuelve el estado del envío del código: ENVIADO, o FALLIDO si el SMS o el correo no salió. */
+/** Crea la cuenta sin enviar código: después la app pregunta si prefiere SMS o correo. */
 export async function register(input: RegistrationInput): Promise<string | null> {
   const { confirmacionPassword, ...registration } = input;
   const response = await requestJson<{
@@ -186,16 +185,18 @@ export async function requestVerification(
   celular: string,
   proposito: VerificationPurpose,
   canal: VerificationChannel = 'SMS',
-): Promise<void> {
+): Promise<number> {
   const path =
     proposito === 'REGISTRO'
       ? `${AUTH_PATH}/verify-phone/request`
       : `${AUTH_PATH}/password/recover/request`;
-  await requestJson(path, {
+  const response = await requestJson<{ reenvioDisponibleEn?: number | string } | null>(path, {
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({ celular, canal }),
   });
+  const espera = Number(response?.reenvioDisponibleEn);
+  return Number.isFinite(espera) && espera > 0 ? espera : 120;
 }
 
 export async function resetPassword(

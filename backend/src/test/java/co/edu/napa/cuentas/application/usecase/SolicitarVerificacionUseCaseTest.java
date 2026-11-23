@@ -1,6 +1,7 @@
 package co.edu.napa.cuentas.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.SolicitarVerificacionPort;
+import co.edu.napa.cuentas.application.ports.out.EsperaReenvioPort;
 import co.edu.napa.cuentas.application.ports.out.LimitadorVerificacionPort;
 import co.edu.napa.cuentas.application.ports.out.MensajeRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
@@ -47,14 +48,17 @@ class SolicitarVerificacionUseCaseTest {
     @Mock private VerificarCelularPort verificarCelular;
     @Mock private MensajeRepositoryPort mensajes;
     @Mock private LimitadorVerificacionPort limitador;
+    @Mock private EsperaReenvioPort espera;
 
     private SolicitarVerificacionUseCase useCase;
 
     @BeforeEach
     void setUp() {
         useCase = new SolicitarVerificacionUseCase(
-                usuarios, verificarCelular, mensajes, limitador, Clock.fixed(NOW, ZoneOffset.UTC)
+                usuarios, verificarCelular, mensajes, limitador, espera, Clock.fixed(NOW, ZoneOffset.UTC)
         );
+        org.mockito.Mockito.lenient().when(espera.registrarEnvio(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(120L);
     }
 
     @Test
@@ -75,7 +79,7 @@ class SolicitarVerificacionUseCaseTest {
         assertEquals("sid-1", guardado.getValue().proveedorId());
         assertEquals(CELULAR, guardado.getValue().destino());
         assertEquals(guardado.getValue().id(), envio.mensajeId());
-        assertEquals(60, envio.reenvioDisponibleEn());
+        assertEquals(120, envio.reenvioDisponibleEn());
         verify(limitador).registrarEnvio(CELULAR, "127.0.0.1");
         verify(limitador).reiniciarIntentos(CELULAR, PropositoVerificacion.REGISTRO);
     }
@@ -113,7 +117,7 @@ class SolicitarVerificacionUseCaseTest {
         );
 
         assertNotNull(envio.mensajeId());
-        assertEquals(60, envio.reenvioDisponibleEn());
+        assertEquals(120, envio.reenvioDisponibleEn());
         verify(limitador).registrarEnvio(CELULAR, "127.0.0.1");
         verify(verificarCelular, never()).iniciar(anyString(), any(), any());
         verify(mensajes, never()).save(any());

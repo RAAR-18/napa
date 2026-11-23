@@ -45,14 +45,13 @@ describe('RegisterScreen', () => {
         password: 'clave-segura',
         confirmacionPassword: 'clave-segura',
         rol: 'VENDEDOR_AMBULANTE',
-        canal: 'SMS',
       });
       expect(router.push).toHaveBeenCalledWith({
         pathname: '/verify',
         params: {
           celular: '+573001234567',
           proposito: 'REGISTRO',
-          canal: 'SMS',
+          tieneCorreo: '1',
         },
       });
     });

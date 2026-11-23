@@ -9,7 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.UUID;
+
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SolicitarRecuperacionUseCaseTest {
@@ -24,6 +27,10 @@ class SolicitarRecuperacionUseCaseTest {
 
     @Test
     void delegatesToTheVerificationUseCaseWithTheRecoveryPurpose() {
+        when(solicitarVerificacion.solicitar(
+                "300 123 4567", PropositoVerificacion.RECUPERACION, CanalVerificacion.WHATSAPP, "127.0.0.1"
+        )).thenReturn(new SolicitarVerificacionPort.EnvioSolicitado(UUID.randomUUID(), CanalVerificacion.WHATSAPP, 120));
+
         useCase.solicitar("300 123 4567", "127.0.0.1");
 
         verify(solicitarVerificacion).solicitar(

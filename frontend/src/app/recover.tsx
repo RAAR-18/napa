@@ -23,13 +23,15 @@ export default function RecoverScreen() {
     setError(null);
     setBusy(true);
     try {
-      await requestVerification(celular.trim(), 'RECUPERACION_CONTRASENA', canal);
+      const espera = await requestVerification(celular.trim(), 'RECUPERACION_CONTRASENA', canal);
       router.push({
         pathname: '/verify',
         params: {
           celular: celular.trim(),
           proposito: 'RECUPERACION_CONTRASENA',
           canal,
+          espera: String(espera),
+          tieneCorreo: '1',
         },
       });
     } catch (cause) {

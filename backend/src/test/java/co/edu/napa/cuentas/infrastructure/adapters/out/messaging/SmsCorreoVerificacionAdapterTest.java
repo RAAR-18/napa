@@ -7,11 +7,17 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -26,10 +32,15 @@ class SmsCorreoVerificacionAdapterTest {
     private final HashOperations<String, Object, Object> hash = mock(HashOperations.class);
     private final SmsReactorClient sms = mock(SmsReactorClient.class);
     private final BrevoCorreoClient correo = mock(BrevoCorreoClient.class);
-    private final SmsCorreoVerificacionAdapter adapter = new SmsCorreoVerificacionAdapter(redis, sms, correo);
+    @SuppressWarnings("unchecked")
+    private final ValueOperations<String, String> values = mock(ValueOperations.class);
+    private final SmsCorreoVerificacionAdapter adapter = new SmsCorreoVerificacionAdapter(
+            redis, sms, correo, 25, 300, Clock.fixed(Instant.parse("2026-11-22T15:00:00Z"), ZoneOffset.UTC));
 
     SmsCorreoVerificacionAdapterTest() {
         when(redis.opsForHash()).thenReturn(hash);
+        when(redis.opsForValue()).thenReturn(values);
+        when(values.increment(anyString())).thenReturn(1L);
     }
 
     @Test
@@ -60,6 +71,28 @@ class SmsCorreoVerificacionAdapterTest {
 
         assertEquals("EXTERNAL_SERVICE_UNAVAILABLE", exception.code());
         verifyNoInteractions(hash);
+    }
+
+    @Test
+    void stopsSendingSmsWhenTheDailyQuotaIsUsedUp() {
+        when(values.increment("auth:verification:codigo:cupo:sms:2026-11-22")).thenReturn(26L);
+
+        DomainException exception = assertThrows(DomainException.class, () ->
+                adapter.iniciar("+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.SMS));
+
+        assertTrue(exception.getMessage().contains("Pide el código por correo"));
+        verifyNoInteractions(sms);
+        verify(values).decrement("auth:verification:codigo:cupo:sms:2026-11-22");
+    }
+
+    @Test
+    void returnsTheQuotaWhenTheSendFails() {
+        doThrow(new EnvioFallidoException("HTTP 500")).when(correo).enviarCodigo(anyString(), anyString());
+
+        assertThrows(DomainException.class, () -> adapter.iniciar(
+                "+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.CORREO, "ana@example.com"));
+
+        verify(values).decrement("auth:verification:codigo:cupo:correo:2026-11-22");
     }
 
     @SuppressWarnings("unchecked")

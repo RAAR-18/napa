@@ -7,6 +7,8 @@ import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.shared.domain.DomainException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,7 +20,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +40,7 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
     private static final int MAX_ATTEMPTS = 5;
     private static final Duration CODE_TTL = Duration.ofMinutes(10);
     private static final String PREFIX = "auth:verification:codigo:";
+    private static final ZoneId ZONA = ZoneId.of("America/Bogota");
     private static final RedisScript<Long> RECORD_FAILURE = new DefaultRedisScript<>(
             """
             if redis.call('EXISTS', KEYS[1]) == 0 then return -1 end
@@ -52,15 +58,35 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
     private final SmsReactorClient sms;
     private final BrevoCorreoClient correo;
     private final SecureRandom random = new SecureRandom();
+    private final int limiteDiarioSms;
+    private final int limiteDiarioCorreo;
+    private final Clock clock;
 
+    @Autowired
     public SmsCorreoVerificacionAdapter(
             StringRedisTemplate redisTemplate,
             SmsReactorClient sms,
-            BrevoCorreoClient correo
+            BrevoCorreoClient correo,
+            @Value("${napa.verification.limite-diario-sms:25}") int limiteDiarioSms,
+            @Value("${napa.verification.limite-diario-correo:300}") int limiteDiarioCorreo
+    ) {
+        this(redisTemplate, sms, correo, limiteDiarioSms, limiteDiarioCorreo, Clock.system(ZONA));
+    }
+
+    SmsCorreoVerificacionAdapter(
+            StringRedisTemplate redisTemplate,
+            SmsReactorClient sms,
+            BrevoCorreoClient correo,
+            int limiteDiarioSms,
+            int limiteDiarioCorreo,
+            Clock clock
     ) {
         this.redisTemplate = redisTemplate;
         this.sms = sms;
         this.correo = correo;
+        this.limiteDiarioSms = limiteDiarioSms;
+        this.limiteDiarioCorreo = limiteDiarioCorreo;
+        this.clock = clock;
     }
 
     @Override
@@ -90,6 +116,9 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
     }
 
     private void entregar(String celular, CanalVerificacion canal, String destinoCorreo, String codigo) {
+        boolean porCorreo = canal == CanalVerificacion.CORREO;
+        String cupo = PREFIX + "cupo:" + (porCorreo ? "correo:" : "sms:") + LocalDate.now(clock);
+        reservarCupo(cupo, porCorreo ? limiteDiarioCorreo : limiteDiarioSms, porCorreo);
         try {
             if (canal == CanalVerificacion.CORREO) {
                 if (destinoCorreo == null || destinoCorreo.isBlank()) {
@@ -101,7 +130,11 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
                 sms.enviar(celular, "Napa: tu codigo de verificacion es " + codigo
                         + ". Vence en 10 minutos. No lo compartas.");
             }
-        } catch (EnvioFallidoException exception) {
+        } catch (EnvioFallidoException | DomainException exception) {
+            liberarCupo(cupo);
+            if (exception instanceof DomainException domain) {
+                throw domain;
+            }
             log.error("Código de verificación no enviado por {}: {}", canal, exception.getMessage());
             throw new DomainException(
                     "EXTERNAL_SERVICE_UNAVAILABLE",
@@ -109,6 +142,35 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
                             ? "No pudimos enviar el código a tu correo. Inténtalo de nuevo o elige SMS."
                             : "No pudimos enviar el SMS. Inténtalo de nuevo o elige recibirlo por correo."
             );
+        }
+    }
+
+    /** Cupo diario de la cuenta del proveedor (SMSReactor: 25 SMS; Brevo: 300 correos). */
+    private void reservarCupo(String key, int limite, boolean porCorreo) {
+        Long usados;
+        try {
+            usados = redisTemplate.opsForValue().increment(key);
+            redisTemplate.expire(key, Duration.ofHours(48));
+        } catch (DataAccessException exception) {
+            throw unavailable(exception);
+        }
+        if (usados != null && usados > limite) {
+            liberarCupo(key);
+            log.warn("Se agotó el cupo diario de {} ({})", porCorreo ? "correos" : "SMS", limite);
+            throw new DomainException(
+                    "EXTERNAL_SERVICE_UNAVAILABLE",
+                    porCorreo
+                            ? "Hoy ya no podemos enviar más correos. Pide el código por SMS o inténtalo mañana."
+                            : "Hoy ya no podemos enviar más SMS. Pide el código por correo o inténtalo mañana."
+            );
+        }
+    }
+
+    private void liberarCupo(String key) {
+        try {
+            redisTemplate.opsForValue().decrement(key);
+        } catch (DataAccessException exception) {
+            log.warn("No se pudo devolver el cupo diario {}", key, exception);
         }
     }
 

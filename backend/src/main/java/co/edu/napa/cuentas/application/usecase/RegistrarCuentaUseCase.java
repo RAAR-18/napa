@@ -2,9 +2,11 @@ package co.edu.napa.cuentas.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.RegistrarCuentaPort;
 import co.edu.napa.cuentas.application.ports.in.SolicitarVerificacionPort;
+import co.edu.napa.cuentas.application.ports.out.DominioCorreoPort;
 import co.edu.napa.cuentas.application.ports.out.PasswordHashingPort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
 import co.edu.napa.cuentas.domain.model.Celular;
+import co.edu.napa.cuentas.domain.model.Correo;
 import co.edu.napa.cuentas.domain.model.PasswordPolicy;
 import co.edu.napa.cuentas.domain.model.EstadoUsuario;
 import co.edu.napa.cuentas.domain.model.CanalVerificacion;
@@ -18,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -30,14 +31,17 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
     private final UsuarioRepositoryPort usuarios;
     private final SolicitarVerificacionPort solicitarVerificacion;
     private final PasswordHashingPort passwordHashing;
+    private final DominioCorreoPort dominioCorreo;
     private final Clock clock;
 
     public RegistrarCuentaUseCase(
             UsuarioRepositoryPort usuarios,
             SolicitarVerificacionPort solicitarVerificacion,
             PasswordHashingPort passwordHashing,
+            DominioCorreoPort dominioCorreo,
             Clock clock
     ) {
+        this.dominioCorreo = Objects.requireNonNull(dominioCorreo, "dominioCorreo");
         this.usuarios = Objects.requireNonNull(usuarios, "usuarios");
         this.solicitarVerificacion = Objects.requireNonNull(solicitarVerificacion, "solicitarVerificacion");
         this.passwordHashing = Objects.requireNonNull(passwordHashing, "passwordHashing");
@@ -59,7 +63,8 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
     ) {
         String celular = Celular.desde(celularInput).valor();
         String correo = normalizarCorreo(correoInput);
-        CanalVerificacion canal = canalInput == null ? CanalVerificacion.WHATSAPP : canalInput;
+        // Sin canal la cuenta se crea sin enviar nada: la app pregunta antes si prefiere SMS o correo.
+        CanalVerificacion canal = canalInput;
         if (canal == CanalVerificacion.CORREO && correo == null) {
             throw new DomainException(
                     "VALIDATION_ERROR",
@@ -101,7 +106,9 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
                 now
         );
         usuarios.save(usuario);
-        VerificacionInfo verificacion = solicitarCodigo(celular, canal, ipAddress);
+        VerificacionInfo verificacion = canal == null
+                ? new VerificacionInfo(null, null, 0, "PENDIENTE")
+                : solicitarCodigo(celular, canal, ipAddress);
         return new RegistroResultado(usuario.id(), usuario.estado().name(), verificacion);
     }
 
@@ -132,7 +139,15 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
         if (correoInput == null || correoInput.isBlank()) {
             return null;
         }
-        return correoInput.trim().toLowerCase(Locale.ROOT);
+        Correo correo = Correo.desde(correoInput);
+        if (!dominioCorreo.recibeCorreo(correo.dominio())) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "El dominio \"" + correo.dominio() + "\" no recibe correos. Revisa que esté bien escrito.",
+                    Map.of("field", "correo")
+            );
+        }
+        return correo.valor();
     }
 
     private void validarNombre(String nombre) {

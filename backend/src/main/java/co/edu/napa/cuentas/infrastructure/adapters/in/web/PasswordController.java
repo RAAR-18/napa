@@ -61,10 +61,11 @@ public class PasswordController {
             @Valid @RequestBody RecuperacionSolicitudRequest request,
             HttpServletRequest servletRequest
     ) {
-        solicitarRecuperacion.solicitar(request.celular(), request.canal(), servletRequest.getRemoteAddr());
+        long espera = solicitarRecuperacion.solicitar(
+                request.celular(), request.canal(), servletRequest.getRemoteAddr());
         return ResponseEntity.accepted()
                 .cacheControl(CacheControl.noStore())
-                .body(Map.of("estado", "SOLICITADA"));
+                .body(Map.of("estado", "SOLICITADA", "reenvioDisponibleEn", Long.toString(espera)));
     }
 
     @PostMapping("/recover/confirm")
