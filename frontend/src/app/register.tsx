@@ -38,7 +38,7 @@ export default function RegisterScreen() {
     setError(null);
     setBusy(true);
     try {
-      await register({
+      const mensajeId = await register({
         nombre: nombre.trim(),
         celular: celular.trim(),
         correo: correo.trim() || null,
@@ -48,7 +48,11 @@ export default function RegisterScreen() {
       });
       router.push({
         pathname: '/verify',
-        params: { celular: celular.trim(), proposito: 'REGISTRO' },
+        params: {
+          celular: celular.trim(),
+          proposito: 'REGISTRO',
+          ...(mensajeId ? { mensajeId } : {}),
+        },
       });
     } catch (cause) {
       setError(
