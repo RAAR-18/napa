@@ -51,11 +51,18 @@ public class BrevoCorreoClient {
         }
         String texto = "Tu código de verificación de Ñapa es " + codigo
                 + ". Vence en 10 minutos. Si no lo pediste, ignora este correo.";
-        String html = "<div style=\"font-family:Arial,sans-serif;max-width:420px\">"
-                + "<h2 style=\"color:#1F4E79\">Ñapa</h2>"
-                + "<p>Tu código de verificación es:</p>"
+        // Documento completo con charset y letras especiales como entidades: así ningún servidor
+        // las convierte en "Ã‘apa" (pasaba con el fragmento suelto) y el correo no parece spam.
+        String html = "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"utf-8\">"
+                + "<title>C&oacute;digo de &Ntilde;apa</title></head>"
+                + "<body style=\"margin:0;padding:24px;background:#FAF6EF\">"
+                + "<div style=\"font-family:Arial,sans-serif;max-width:420px;margin:0 auto;background:#FFFFFF;"
+                + "border-radius:12px;padding:24px;color:#342036\">"
+                + "<h2 style=\"color:#E95F3D;margin-top:0\">&Ntilde;apa</h2>"
+                + "<p>Tu c&oacute;digo de verificaci&oacute;n es:</p>"
                 + "<p style=\"font-size:32px;font-weight:bold;letter-spacing:8px\">" + codigo + "</p>"
-                + "<p>Vence en 10 minutos. Si no lo pediste, ignora este correo.</p></div>";
+                + "<p>Vence en 10 minutos. Si no lo pediste, ignora este correo.</p>"
+                + "</div></body></html>";
         String body = "{\"sender\":{\"name\":" + JsonTexto.de(remitenteNombre) + ",\"email\":"
                 + JsonTexto.de(remitenteCorreo) + "},\"to\":[{\"email\":" + JsonTexto.de(destino) + "}],"
                 + "\"subject\":" + JsonTexto.de("Tu código de Ñapa: " + codigo) + ","
