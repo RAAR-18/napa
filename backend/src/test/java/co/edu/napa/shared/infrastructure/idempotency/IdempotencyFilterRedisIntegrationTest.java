@@ -2,12 +2,15 @@ package co.edu.napa.shared.infrastructure.idempotency;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.ServletException;
+import com.github.dockerjava.api.model.ExposedPort;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.testcontainers.containers.GenericContainer;
@@ -18,6 +21,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,6 +32,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.awaitility.Awaitility.await;
 
 @Testcontainers(disabledWithoutDocker = true)
 class IdempotencyFilterRedisIntegrationTest {
@@ -40,12 +46,20 @@ class IdempotencyFilterRedisIntegrationTest {
 
     @BeforeAll
     static void connectToRedis() {
+        connectToRedis(redis.getFirstMappedPort());
+    }
+
+    private static void connectToRedis(int port) {
         connectionFactory = new LettuceConnectionFactory(
-                new RedisStandaloneConfiguration(redis.getHost(), redis.getFirstMappedPort())
+                new RedisStandaloneConfiguration(redis.getHost(), port),
+                LettuceClientConfiguration.builder().commandTimeout(Duration.ofSeconds(3)).build()
         );
         connectionFactory.afterPropertiesSet();
         connectionFactory.start();
-        redisTemplate = new StringRedisTemplate(connectionFactory);
+        if (redisTemplate == null) {
+            redisTemplate = new StringRedisTemplate();
+        }
+        redisTemplate.setConnectionFactory(connectionFactory);
         redisTemplate.afterPropertiesSet();
     }
 
@@ -83,6 +97,54 @@ class IdempotencyFilterRedisIntegrationTest {
         assertNull(replayResponse.getHeader("X-Request-Id"));
         assertEquals("true", replayResponse.getHeader("Idempotent-Replayed"));
         assertEquals("{\"id\":\"123\"}", replayResponse.getContentAsString());
+    }
+
+    @Test
+    void retriesTheSameWriteAfterRedisRestarts() throws Exception {
+        IdempotencyFilter filter = filter();
+        String key = UUID.randomUUID().toString();
+        String body = "{\"pedido\":1}";
+        String containerId = redis.getContainerId();
+        var docker = redis.getDockerClient();
+        MockHttpServletResponse unavailable = new MockHttpServletResponse();
+
+        docker.stopContainerCmd(containerId).exec();
+        try {
+            filter.doFilter(request(key, body), unavailable, (req, res) -> {
+                throw new AssertionError("The operation must not execute while Redis is unavailable");
+            });
+            assertEquals(503, unavailable.getStatus());
+            assertTrue(unavailable.getContentAsString().contains("EXTERNAL_SERVICE_UNAVAILABLE"));
+        } finally {
+            closeRedisConnection();
+            docker.startContainerCmd(containerId).exec();
+            // Docker Desktop may assign a new host port when the container restarts.
+            var bindings = docker.inspectContainerCmd(containerId).exec()
+                    .getNetworkSettings().getPorts().getBindings();
+            int mappedPort = Integer.parseInt(bindings.get(ExposedPort.tcp(6379))[0].getHostPortSpec());
+            connectToRedis(mappedPort);
+            await().atMost(Duration.ofSeconds(20)).ignoreExceptions().until(() ->
+                    "PONG".equals(redisTemplate.execute((RedisCallback<String>) connection -> connection.ping())));
+        }
+
+        AtomicInteger executions = new AtomicInteger();
+        MockHttpServletResponse recovered = new MockHttpServletResponse();
+        filter.doFilter(request(key, body), recovered, (req, res) -> {
+            executions.incrementAndGet();
+            ((HttpServletResponse) res).setStatus(201);
+            res.getWriter().write("{\"id\":\"123\"}");
+        });
+
+        MockHttpServletResponse replay = new MockHttpServletResponse();
+        filter.doFilter(request(key, body), replay, (req, res) -> {
+            throw new AssertionError("A retry after a lost response must replay without executing");
+        });
+
+        assertEquals(201, recovered.getStatus());
+        assertEquals(1, executions.get());
+        assertEquals(201, replay.getStatus());
+        assertEquals(recovered.getContentAsString(), replay.getContentAsString());
+        assertEquals("true", replay.getHeader("Idempotent-Replayed"));
     }
 
     @Test

@@ -22,7 +22,7 @@ Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dom
 | D3 | Se elimina "Cash-Only". Medios: efectivo o transferencia; domicilio solo digital | RNF29, RF-42, RF-63. |
 | D4 | Push con  **token FCM nativo**  (getDevicePushTokenAsync) + Firebase Admin, y  **development build**  de Expo | Expo Go no sirve para push remoto ni react-native-maps con claves propias. |
 | D5 | Offline:  **expo-sqlite + outbox + Idempotency-Key** , sin WatermelonDB | La app no necesita sincronización bidireccional de grafos; el servidor es la autoridad. Menos dependencias nativas en gama baja (RNF31). |
-| D6 | Idempotencia en dos capas: Redis (respuesta cacheada por clave, 24 h) y  **restricciones únicas en BD**  como garantía final | Si Redis cae, la BD sigue evitando duplicados (RNF27). |
+| D6 | Idempotencia en dos capas: Redis (respuesta cacheada por clave, 24 h) y  **restricciones únicas en BD**  como garantía final | Si el filtro no puede reservar la clave en Redis, las escrituras protegidas devuelven `503 EXTERNAL_SERVICE_UNAVAILABLE` antes de ejecutarse. Las restricciones en BD protegen la integridad de las operaciones que llegan a persistencia (RNF27). |
 | D7 | **Outbox transaccional** : el evento se escribe en la misma transacción; un relay lo despacha. @TransactionalEventListener(AFTER_COMMIT) solo para efectos locales no críticos (invalidar caché) | Evita perder notificaciones si el proceso cae tras el commit. |
 | D8 | JWT de acceso corto + refresh rotativo + claim sv (versión de sesión) validado contra Redis | Permite cerrar sesiones (RF-09 FR-003), eliminar cuentas (RF-11, RF-68) y cambiar rol sin esperar expiración. |
 | D9 | Proveedor de rutas: OpenRouteService (perfil driving-car) tras RoutingPort, con caché en Redis de 24 h (coordenadas a 4 decimales) y respaldo de línea recta al calcular la tarifa (RF-45). Plan Standard gratuito: 2.000 solicitudes/día y 40/min. Si no alcanza, se autoaloja ORS cambiando napa.routing.ors.base-url. RNF19. | RNF19. Tarifa = distancia A–B (RF-45 FR-006) con piso RF-44. |
@@ -131,6 +131,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [x] F011 `DomainEvent` + outbox + relay en `shared/infrastructure/outbox/`
   - [x] Verificar con PostgreSQL que un segundo worker puede reservar el siguiente evento mientras el primero ejecuta su manejador. `OutboxEventPublisherIntegrationTest` pasó 5 pruebas locales, con 0 fallos y 0 omitidas.
 - [x] F012 `IdempotencyFilter` con Redis, integrado después de autenticación; pruebas de concurrencia en `shared/infrastructure/idempotency/`
+  - [x] Validar recuperación con Redis real. Tras un `503`, el reintento con la misma clave y cuerpo ejecuta la operación una sola vez. Un reintento posterior devuelve la respuesta guardada con `Idempotent-Replayed: true`. `IdempotencyFilterRedisIntegrationTest` pasó 4 pruebas locales, con 0 fallos y 0 omitidas.
 - [x] F013 Utilidades geo y `RoutingPort` con adaptador OpenRouteService en `shared/infrastructure/geo/`
 - [x] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
 - [x] F015 Ejecutar las pruebas de integración con Testcontainers (PostGIS, Redis). Validación en GitHub Actions: 287 pruebas, 0 fallos y 0 omitidas; incluye ArchUnit y las suites de integración. 
