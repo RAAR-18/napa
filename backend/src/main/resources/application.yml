@@ -67,11 +67,14 @@ napa:
       password: ${NAPA_ADMIN_PASSWORD:}
 
   verification:
-    provider: ${NAPA_VERIFICATION_PROVIDER:unavailable}   # unavailable | console | imagen | smsreactor
+    provider: ${NAPA_VERIFICATION_PROVIDER:unavailable}   # unavailable | console | sms-correo
     console-code: ${NAPA_OTP_CONSOLE_CODE:}
     smsreactor:
       api-key: ${NAPA_SMSREACTOR_API_KEY:}
       base-url: ${NAPA_SMSREACTOR_BASE_URL:https://smsreactor.com}
       phone-id: ${NAPA_SMSREACTOR_PHONE_ID:}
-      # Si el SMS del registro no sale, la app muestra el código como imagen.
-      respaldo-imagen: ${NAPA_SMSREACTOR_RESPALDO_IMAGEN:true}
+    brevo:
+      api-key: ${NAPA_BREVO_API_KEY:}
+      base-url: ${NAPA_BREVO_BASE_URL:https://api.brevo.com}
+      remitente-correo: ${NAPA_BREVO_SENDER_EMAIL:}
+      remitente-nombre: ${NAPA_BREVO_SENDER_NAME:Ñapa}

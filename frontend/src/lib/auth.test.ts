@@ -65,6 +65,7 @@ describe('auth API contract', () => {
       password: 'password',
       confirmacionPassword: 'password',
       rol: 'CLIENTE',
+      canal: 'CORREO',
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -80,6 +81,7 @@ describe('auth API contract', () => {
           correo: null,
           password: 'password',
           rol: 'CLIENTE',
+          canal: 'CORREO',
           confirmPassword: 'password',
         }),
       }),
@@ -95,7 +97,7 @@ describe('auth API contract', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(new RegExp(`${path}$`)),
       expect.objectContaining({
-        body: JSON.stringify({ celular: '+573001234567' }),
+        body: JSON.stringify({ celular: '+573001234567', canal: 'SMS' }),
       }),
     );
   });

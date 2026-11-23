@@ -1,6 +1,5 @@
 package co.edu.napa.cuentas.infrastructure.adapters.out.messaging;
 
-import co.edu.napa.cuentas.application.ports.out.CodigoVisiblePort;
 import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.application.ports.out.VerificarCelularPort;
 import co.edu.napa.cuentas.domain.model.CanalVerificacion;
@@ -8,10 +7,12 @@ import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.shared.domain.DomainException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -21,19 +22,19 @@ import java.time.Duration;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Base de los proveedores en los que Ñapa genera y valida el código (en Redis, 10 minutos, 5 intentos)
- * y solo delega la entrega. Si la entrega no sale por un canal externo, el código queda visible
- * para mostrarlo como imagen en la app.
+ * Ñapa genera el código (Redis: 10 minutos, 5 intentos) y lo entrega por el canal que elige la
+ * persona: SMS con SMSReactor o correo con Brevo. WHATSAPP, el canal por defecto anterior, se envía por SMS.
  */
-public abstract class CodigoPropioVerificacionAdapter implements VerificarCelularPort, CodigoVisiblePort {
-    private static final Logger log = LoggerFactory.getLogger(CodigoPropioVerificacionAdapter.class);
+@Component
+@ConditionalOnProperty(name = "napa.verification.provider", havingValue = "sms-correo")
+public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
+    private static final Logger log = LoggerFactory.getLogger(SmsCorreoVerificacionAdapter.class);
     private static final int MAX_ATTEMPTS = 5;
     private static final Duration CODE_TTL = Duration.ofMinutes(10);
-    private static final String PREFIX = "auth:verification:imagen:";
+    private static final String PREFIX = "auth:verification:codigo:";
     private static final RedisScript<Long> RECORD_FAILURE = new DefaultRedisScript<>(
             """
             if redis.call('EXISTS', KEYS[1]) == 0 then return -1 end
@@ -48,59 +49,66 @@ public abstract class CodigoPropioVerificacionAdapter implements VerificarCelula
     );
 
     private final StringRedisTemplate redisTemplate;
+    private final SmsReactorClient sms;
+    private final BrevoCorreoClient correo;
     private final SecureRandom random = new SecureRandom();
 
-    protected CodigoPropioVerificacionAdapter(StringRedisTemplate redisTemplate) {
+    public SmsCorreoVerificacionAdapter(
+            StringRedisTemplate redisTemplate,
+            SmsReactorClient sms,
+            BrevoCorreoClient correo
+    ) {
         this.redisTemplate = redisTemplate;
-    }
-
-    /**
-     * Entrega el código. Devuelve true si salió por un canal externo (SMS) y false si la app debe
-     * mostrarlo como imagen. Lanza EXTERNAL_SERVICE_UNAVAILABLE si no hay forma de entregarlo.
-     */
-    protected abstract boolean entregar(String celular, PropositoVerificacion proposito, String codigo);
-
-    protected static DomainException noDisponible(String mensaje) {
-        return new DomainException("EXTERNAL_SERVICE_UNAVAILABLE", mensaje);
+        this.sms = sms;
+        this.correo = correo;
     }
 
     @Override
     public EnvioVerificacion iniciar(String celular, PropositoVerificacion proposito, CanalVerificacion canal) {
+        return iniciar(celular, proposito, canal, null);
+    }
+
+    @Override
+    public EnvioVerificacion iniciar(
+            String celular,
+            PropositoVerificacion proposito,
+            CanalVerificacion canal,
+            String destinoCorreo
+    ) {
         String codigo = "%06d".formatted(random.nextInt(1_000_000));
+        entregar(celular, canal, destinoCorreo, codigo);
         String proveedorId = "codigo-" + UUID.randomUUID();
         String key = key(celular, proposito);
-        boolean externo = entregar(celular, proposito, codigo);
         try {
             redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, Map.of(
-                    "code", codigo,
-                    "prov", proveedorId,
-                    "attempts", "0",
-                    "visible", externo ? "0" : "1"
-            ));
+            redisTemplate.opsForHash().putAll(key, Map.of("code", codigo, "attempts", "0"));
             redisTemplate.expire(key, CODE_TTL);
-            redisTemplate.opsForValue().set(PREFIX + "prov:" + proveedorId, key, CODE_TTL);
             return new EnvioVerificacion(proveedorId);
         } catch (DataAccessException exception) {
             throw unavailable(exception);
         }
     }
 
-    @Override
-    public Optional<String> codigoVigente(String proveedorId) {
+    private void entregar(String celular, CanalVerificacion canal, String destinoCorreo, String codigo) {
         try {
-            String key = redisTemplate.opsForValue().get(PREFIX + "prov:" + proveedorId);
-            if (key == null) {
-                return Optional.empty();
+            if (canal == CanalVerificacion.CORREO) {
+                if (destinoCorreo == null || destinoCorreo.isBlank()) {
+                    throw new DomainException("VALIDATION_ERROR", "No hay un correo al cual enviar el código.");
+                }
+                correo.enviarCodigo(destinoCorreo, codigo);
+            } else {
+                // Sin tildes ni Ñ: así cabe en un solo SMS (GSM-7) y cuesta un crédito.
+                sms.enviar(celular, "Napa: tu codigo de verificacion es " + codigo
+                        + ". Vence en 10 minutos. No lo compartas.");
             }
-            List<Object> values = redisTemplate.opsForHash().multiGet(key, List.of("prov", "code", "visible"));
-            if (values.size() != 3 || !proveedorId.equals(values.get(0)) || values.get(1) == null
-                    || !"1".equals(values.get(2))) {
-                return Optional.empty();
-            }
-            return Optional.of(values.get(1).toString());
-        } catch (DataAccessException exception) {
-            throw unavailable(exception);
+        } catch (EnvioFallidoException exception) {
+            log.error("Código de verificación no enviado por {}: {}", canal, exception.getMessage());
+            throw new DomainException(
+                    "EXTERNAL_SERVICE_UNAVAILABLE",
+                    canal == CanalVerificacion.CORREO
+                            ? "No pudimos enviar el código a tu correo. Inténtalo de nuevo o elige SMS."
+                            : "No pudimos enviar el SMS. Inténtalo de nuevo o elige recibirlo por correo."
+            );
         }
     }
 
@@ -139,45 +147,36 @@ public abstract class CodigoPropioVerificacionAdapter implements VerificarCelula
                         0
                 );
             }
-            return registrarFallo(key);
+            Long remaining = redisTemplate.execute(RECORD_FAILURE, List.of(key), Integer.toString(MAX_ATTEMPTS));
+            if (remaining == null) {
+                throw unavailable(new IllegalStateException("Redis returned no verification attempt result"));
+            }
+            if (remaining < 0) {
+                return new VerificacionResultado(VerificacionResultado.Estado.VENCIDA, 0);
+            }
+            if (remaining == 0) {
+                return new VerificacionResultado(VerificacionResultado.Estado.AGOTADA, 0);
+            }
+            return new VerificacionResultado(VerificacionResultado.Estado.INCORRECTA, remaining.intValue());
         } catch (DataAccessException exception) {
             throw unavailable(exception);
         }
     }
 
-    private VerificacionResultado registrarFallo(String key) {
-        Long remaining = redisTemplate.execute(RECORD_FAILURE, List.of(key), Integer.toString(MAX_ATTEMPTS));
-        if (remaining == null) {
-            throw unavailable(new IllegalStateException("Redis returned no verification attempt result"));
-        }
-        if (remaining < 0) {
-            return new VerificacionResultado(VerificacionResultado.Estado.VENCIDA, 0);
-        }
-        if (remaining == 0) {
-            return new VerificacionResultado(VerificacionResultado.Estado.AGOTADA, 0);
-        }
-        return new VerificacionResultado(VerificacionResultado.Estado.INCORRECTA, remaining.intValue());
-    }
-
     private String key(String celular, PropositoVerificacion proposito) {
-        return PREFIX + digest(celular + ":" + proposito.name());
-    }
-
-    private String digest(String value) {
         try {
-            return HexFormat.of().formatHex(
-                    MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))
-            );
+            return PREFIX + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest((celular + ":" + proposito.name()).getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 is unavailable", exception);
         }
     }
 
     private DomainException unavailable(Exception exception) {
-        log.error("Redis unavailable while processing image phone verification", exception);
+        log.error("Redis unavailable while processing phone verification", exception);
         return new DomainException(
                 "EXTERNAL_SERVICE_UNAVAILABLE",
-                "No fue posible procesar la verificación del celular en este momento."
+                "No fue posible procesar la verificación en este momento."
         );
     }
 }

@@ -15,7 +15,8 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
-import { register, type UserRole } from '../lib/auth';
+import { CanalVerificacionSelector } from '../components/CanalVerificacionSelector';
+import { register, type UserRole, type VerificationChannel } from '../lib/auth';
 
 const roles: { value: UserRole; label: string }[] = [
   { value: 'CLIENTE', label: 'Cliente' },
@@ -31,6 +32,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmacionPassword, setConfirmacionPassword] = useState('');
   const [rol, setRol] = useState<UserRole>('CLIENTE');
+  const [canal, setCanal] = useState<VerificationChannel>('SMS');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,20 +40,22 @@ export default function RegisterScreen() {
     setError(null);
     setBusy(true);
     try {
-      const mensajeId = await register({
+      const envio = await register({
         nombre: nombre.trim(),
         celular: celular.trim(),
         correo: correo.trim() || null,
         password,
         confirmacionPassword,
         rol,
+        canal,
       });
       router.push({
         pathname: '/verify',
         params: {
           celular: celular.trim(),
           proposito: 'REGISTRO',
-          ...(mensajeId ? { mensajeId } : {}),
+          canal,
+          ...(envio === 'FALLIDO' ? { envio } : {}),
         },
       });
     } catch (cause) {
@@ -101,6 +105,14 @@ export default function RegisterScreen() {
         placeholder="nombre@correo.com"
         value={correo}
       />
+      <CanalVerificacionSelector
+        label="¿Cómo quieres recibir el código para activar tu cuenta?"
+        onChange={setCanal}
+        value={canal}
+      />
+      {canal === 'CORREO' && !correo.trim() ? (
+        <HelperText>Escribe tu correo arriba para recibir el código allí.</HelperText>
+      ) : null}
       <Text style={styles.label}>¿Cómo usarás Ñapa?</Text>
       <View style={styles.roles}>
         {roles.map((option) => (
@@ -137,6 +149,7 @@ export default function RegisterScreen() {
         busy={busy}
         disabled={
           !nombre.trim() ||
+          (canal === 'CORREO' && !correo.trim()) ||
           !celular.trim() ||
           password.length < 8 ||
           !confirmacionPassword
