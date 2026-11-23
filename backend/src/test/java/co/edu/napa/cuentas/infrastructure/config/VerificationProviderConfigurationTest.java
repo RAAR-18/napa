@@ -5,6 +5,9 @@ import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.ConsolaVerificacionAdapter;
+import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.ImagenVerificacionAdapter;
+import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.SmsReactorClient;
+import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.SmsReactorVerificacionAdapter;
 import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.UnavailableVerificarCelularAdapter;
 import co.edu.napa.shared.domain.DomainException;
 import org.junit.jupiter.api.Test;
@@ -88,8 +91,49 @@ class VerificationProviderConfigurationTest {
                 .run(context -> assertThat(context).hasFailed());
     }
 
+    @Test
+    void imageProviderOnlyServesRegistration() {
+        runner.withPropertyValues("NAPA_VERIFICATION_PROVIDER=imagen").run(context -> {
+            assertThat(context).hasNotFailed().hasSingleBean(VerificarCelularPort.class);
+            VerificarCelularPort provider = context.getBean(VerificarCelularPort.class);
+            assertThat(provider).isInstanceOf(ImagenVerificacionAdapter.class);
+            DomainException exception = assertThrows(DomainException.class, () -> provider.iniciar(
+                    "+573001234567", PropositoVerificacion.RECUPERACION, CanalVerificacion.WHATSAPP));
+            assertEquals("EXTERNAL_SERVICE_UNAVAILABLE", exception.code());
+        });
+    }
+
+    @Test
+    void imageProviderIsNotAvailableInProduction() {
+        runner.withPropertyValues("spring.profiles.active=prod", "NAPA_VERIFICATION_PROVIDER=imagen")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void smsReactorProviderIsSelectedWithItsApiKey() {
+        runner.withPropertyValues("NAPA_VERIFICATION_PROVIDER=smsreactor", "NAPA_SMSREACTOR_API_KEY=skr_test")
+                .run(context -> {
+                    assertThat(context).hasNotFailed().hasSingleBean(VerificarCelularPort.class);
+                    assertThat(context.getBean(VerificarCelularPort.class))
+                            .isInstanceOf(SmsReactorVerificacionAdapter.class);
+                });
+    }
+
+    @Test
+    void smsReactorProviderRequiresAnApiKey() {
+        runner.withPropertyValues("NAPA_VERIFICATION_PROVIDER=smsreactor", "NAPA_SMSREACTOR_API_KEY=")
+                .run(context -> assertThat(context).hasFailed()
+                        .getFailure().hasRootCauseInstanceOf(IllegalArgumentException.class));
+    }
+
     @Configuration(proxyBeanMethods = false)
-    @Import({ConsolaVerificacionAdapter.class, UnavailableVerificarCelularAdapter.class})
+    @Import({
+            ConsolaVerificacionAdapter.class,
+            ImagenVerificacionAdapter.class,
+            SmsReactorClient.class,
+            SmsReactorVerificacionAdapter.class,
+            UnavailableVerificarCelularAdapter.class
+    })
     static class Providers {
         @Bean
         static PropertySourcesPlaceholderConfigurer placeholders() {

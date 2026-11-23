@@ -67,5 +67,11 @@ napa:
       password: ${NAPA_ADMIN_PASSWORD:}
 
   verification:
-    provider: ${NAPA_VERIFICATION_PROVIDER:unavailable}   # unavailable | console | twilio (pendiente)
+    provider: ${NAPA_VERIFICATION_PROVIDER:unavailable}   # unavailable | console | imagen | smsreactor
     console-code: ${NAPA_OTP_CONSOLE_CODE:}
+    smsreactor:
+      api-key: ${NAPA_SMSREACTOR_API_KEY:}
+      base-url: ${NAPA_SMSREACTOR_BASE_URL:https://smsreactor.com}
+      phone-id: ${NAPA_SMSREACTOR_PHONE_ID:}
+      # Si el SMS del registro no sale, la app muestra el código como imagen.
+      respaldo-imagen: ${NAPA_SMSREACTOR_RESPALDO_IMAGEN:true}

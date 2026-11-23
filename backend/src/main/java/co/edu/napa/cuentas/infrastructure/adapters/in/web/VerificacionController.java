@@ -2,6 +2,7 @@ package co.edu.napa.cuentas.infrastructure.adapters.in.web;
 
 import co.edu.napa.cuentas.application.ports.in.AuthTokens;
 import co.edu.napa.cuentas.application.ports.in.ConfirmarRegistroPort;
+import co.edu.napa.cuentas.application.ports.in.ConsultarCodigoVisiblePort;
 import co.edu.napa.cuentas.application.ports.in.ConsultarMensajeVerificacionPort;
 import co.edu.napa.cuentas.application.ports.in.SolicitarVerificacionPort;
 import co.edu.napa.cuentas.domain.model.CanalVerificacion;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,15 +34,18 @@ public class VerificacionController {
     private final SolicitarVerificacionPort solicitarVerificacion;
     private final ConfirmarRegistroPort confirmarRegistro;
     private final ConsultarMensajeVerificacionPort consultarMensaje;
+    private final ConsultarCodigoVisiblePort consultarCodigoVisible;
 
     public VerificacionController(
             SolicitarVerificacionPort solicitarVerificacion,
             ConfirmarRegistroPort confirmarRegistro,
-            ConsultarMensajeVerificacionPort consultarMensaje
+            ConsultarMensajeVerificacionPort consultarMensaje,
+            ConsultarCodigoVisiblePort consultarCodigoVisible
     ) {
         this.solicitarVerificacion = solicitarVerificacion;
         this.confirmarRegistro = confirmarRegistro;
         this.consultarMensaje = consultarMensaje;
+        this.consultarCodigoVisible = consultarCodigoVisible;
     }
 
     @PostMapping("/request")
@@ -78,6 +83,17 @@ public class VerificacionController {
                 .body(new MensajeResponse(
                         vista.mensajeId(), vista.canal().name(), vista.estado().name(), vista.smsDisponible()
                 ));
+    }
+
+    /** Código del registro como imagen, solo con el proveedor provisional "imagen"; si no, 404. */
+    @GetMapping(value = "/mensajes/{mensajeId}/imagen", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> imagen(@PathVariable UUID mensajeId) {
+        return consultarCodigoVisible.consultar(mensajeId)
+                .map(codigo -> ResponseEntity.ok()
+                        .cacheControl(CacheControl.noStore())
+                        .contentType(MediaType.IMAGE_PNG)
+                        .body(CodigoImagenRenderer.png(codigo)))
+                .orElseGet(() -> ResponseEntity.notFound().cacheControl(CacheControl.noStore()).build());
     }
 
     public record SolicitarRequest(@NotBlank String celular, CanalVerificacion canal) {

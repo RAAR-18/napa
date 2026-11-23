@@ -1,6 +1,6 @@
 import { randomUUID } from './uuid';
 
-import { ApiError, jsonHeaders, requestJson, requestVoid } from './api';
+import { ApiError, apiBaseUrl, jsonHeaders, requestJson, requestVoid } from './api';
 import * as authStorage from './auth-storage';
 
 const AUTH_SESSION_KEY = 'napa.auth.session';
@@ -133,9 +133,13 @@ export async function clearSession(): Promise<void> {
   await authStorage.deleteItemAsync(AUTH_SESSION_KEY);
 }
 
-export async function register(input: RegistrationInput): Promise<void> {
+/** Devuelve el id del envío del código, para mostrarlo como imagen si el backend lo permite. */
+export async function register(input: RegistrationInput): Promise<string | null> {
   const { confirmacionPassword, ...registration } = input;
-  await requestJson<{ usuarioId: string }>(`${AUTH_PATH}/register`, {
+  const response = await requestJson<{
+    usuarioId: string;
+    verificacion?: { mensajeId?: string | null } | null;
+  }>(`${AUTH_PATH}/register`, {
     method: 'POST',
     headers: jsonHeaders({
       deviceId: await deviceId(),
@@ -146,6 +150,12 @@ export async function register(input: RegistrationInput): Promise<void> {
       confirmPassword: confirmacionPassword,
     }),
   });
+  return response.verificacion?.mensajeId ?? null;
+}
+
+/** Imagen con el código de registro mientras no haya SMS; el backend responde 404 si no aplica. */
+export function verificationCodeImageUrl(mensajeId: string): string {
+  return `${apiBaseUrl}${AUTH_PATH}/verify-phone/mensajes/${encodeURIComponent(mensajeId)}/imagen`;
 }
 
 export async function login(
@@ -178,16 +188,17 @@ export async function confirmRegistration(
 export async function requestVerification(
   celular: string,
   proposito: VerificationPurpose,
-): Promise<void> {
+): Promise<string | null> {
   const path =
     proposito === 'REGISTRO'
       ? `${AUTH_PATH}/verify-phone/request`
       : `${AUTH_PATH}/password/recover/request`;
-  await requestJson(path, {
+  const response = await requestJson<{ mensajeId?: string | null } | null>(path, {
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({ celular }),
   });
+  return response?.mensajeId ?? null;
 }
 
 export async function resetPassword(
