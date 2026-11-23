@@ -16,4 +16,16 @@ public interface UsuarioJpaRepository extends JpaRepository<UsuarioJpaEntity, UU
     boolean existsByCorreoIgnoreCase(String correo);
 
     boolean existsByRol(RolUsuario rol);
+
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+    @org.springframework.data.jpa.repository.Query(
+            "delete from UsuarioJpaEntity u where u.id = :id"
+                    + " and u.estado = co.edu.napa.cuentas.domain.model.EstadoUsuario.PENDIENTE_VERIFICACION")
+    int deleteSinVerificar(@org.springframework.data.repository.query.Param("id") UUID id);
+
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+    @org.springframework.data.jpa.repository.Query(
+            "delete from UsuarioJpaEntity u where u.createdAt < :limite"
+                    + " and u.estado = co.edu.napa.cuentas.domain.model.EstadoUsuario.PENDIENTE_VERIFICACION")
+    int deleteSinVerificarAntesDe(@org.springframework.data.repository.query.Param("limite") java.time.Instant limite);
 }
