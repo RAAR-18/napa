@@ -159,6 +159,10 @@ export default function RegisterScreen() {
       />
       <FormFooter>
         <TextButton
+          title="¿Tienes problemas para iniciar sesión? Verifica tu cuenta aquí"
+          onPress={() => router.push({ pathname: '/verify', params: { proposito: 'REGISTRO' } })}
+        />
+        <TextButton
           title="¿Ya tienes cuenta? Inicia sesión"
           onPress={() => router.replace('/login')}
         />
