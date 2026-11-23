@@ -103,6 +103,42 @@ class RegistrarCuentaUseCaseTest {
     }
 
     @Test
+    void replacesAnUnverifiedAccountWithTheSamePhone() {
+        Instant creado = Instant.parse("2026-11-22T12:00:00Z");
+        Usuario pendiente = new Usuario(
+                UUID.randomUUID(), "Anterior", "+573001234567", "otro@example.com", "hash",
+                RolUsuario.CLIENTE, EstadoUsuario.PENDIENTE_VERIFICACION, null, creado, creado
+        );
+        when(usuarios.findByCelular("+573001234567")).thenReturn(java.util.Optional.of(pendiente));
+        when(usuarios.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        useCase.registrar("Ana", "300 123 4567", null, "password1", "password1", RolUsuario.CLIENTE,
+                "device-1", "127.0.0.1", null);
+
+        verify(usuarios).eliminarSinVerificar(pendiente.id());
+        verify(usuarios).save(any());
+    }
+
+    @Test
+    void keepsRejectingAPhoneOfAVerifiedAccount() {
+        Instant creado = Instant.parse("2026-11-22T12:00:00Z");
+        Usuario activa = new Usuario(
+                UUID.randomUUID(), "Ana", "+573001234567", null, "hash",
+                RolUsuario.CLIENTE, EstadoUsuario.ACTIVA, creado, creado, creado
+        );
+        when(usuarios.findByCelular("+573001234567")).thenReturn(java.util.Optional.of(activa));
+        when(usuarios.existsByCelular("+573001234567")).thenReturn(true);
+
+        DomainException exception = assertThrows(
+                DomainException.class,
+                () -> registrar("300 123 4567", null, "password1", "password1", RolUsuario.CLIENTE)
+        );
+
+        assertEquals("PHONE_ALREADY_REGISTERED", exception.code());
+        verify(usuarios, never()).eliminarSinVerificar(any());
+    }
+
+    @Test
     void storesAPendingAccountAndRequestsTheCode() {
         UUID mensajeId = UUID.randomUUID();
         when(usuarios.existsByCelular("+573001234567")).thenReturn(false);

@@ -85,6 +85,15 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
             throw new DomainException("VALIDATION_ERROR", "Selecciona un rol válido para registrarte.");
         }
         Sesion.validarDeviceId(deviceId);
+        // Una cuenta que nunca se verificó no reserva nada: se descarta y se registra la nueva.
+        usuarios.findByCelular(celular)
+                .filter(existente -> existente.estado() == EstadoUsuario.PENDIENTE_VERIFICACION)
+                .ifPresent(existente -> usuarios.eliminarSinVerificar(existente.id()));
+        if (correo != null) {
+            usuarios.findByCorreo(correo)
+                    .filter(existente -> existente.estado() == EstadoUsuario.PENDIENTE_VERIFICACION)
+                    .ifPresent(existente -> usuarios.eliminarSinVerificar(existente.id()));
+        }
         if (usuarios.existsByCelular(celular)) {
             throw new DomainException("PHONE_ALREADY_REGISTERED", "Ese celular ya está registrado.");
         }

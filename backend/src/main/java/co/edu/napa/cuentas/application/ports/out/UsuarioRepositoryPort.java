@@ -24,4 +24,14 @@ public interface UsuarioRepositoryPort {
     boolean existsByRol(RolUsuario rol);
 
     Map<UUID, String> findNamesByIds(Set<UUID> ids);
+
+    /** Borra la cuenta solo si sigue sin verificar; devuelve si borró algo. */
+    default boolean eliminarSinVerificar(UUID id) {
+        return false;
+    }
+
+    /** Borra las cuentas que siguen sin verificar y se crearon antes de ese instante. */
+    default int eliminarSinVerificarCreadasAntesDe(java.time.Instant limite) {
+        return 0;
+    }
 }

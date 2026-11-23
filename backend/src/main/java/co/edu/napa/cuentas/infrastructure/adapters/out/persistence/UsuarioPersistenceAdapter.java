@@ -70,6 +70,16 @@ public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort {
     }
 
     @Override
+    public boolean eliminarSinVerificar(UUID id) {
+        return repository.deleteSinVerificar(id) > 0;
+    }
+
+    @Override
+    public int eliminarSinVerificarCreadasAntesDe(java.time.Instant limite) {
+        return repository.deleteSinVerificarAntesDe(limite);
+    }
+
+    @Override
     public Map<UUID, String> findNamesByIds(Set<UUID> ids) {
         return repository.findAllById(ids).stream()
                 .collect(Collectors.toMap(UsuarioJpaEntity::getId, UsuarioJpaEntity::getNombre));
