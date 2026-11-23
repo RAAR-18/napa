@@ -64,7 +64,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 ### Eventos de dominio y outbox
 
 - Tabla `outbox_event` (definida en `spec-general`). Catálogo de eventos en `specs/general/eventos.md`.
-- El caso de uso publica el evento dentro de su transacción; el relay lo lee por lotes, lo entrega a los manejadores registrados y marca `processed_at`.
+- El caso de uso publica el evento dentro de su transacción; cada worker reserva un evento justo antes de despacharlo, lo entrega al manejador registrado y marca `processed_at`. Cada sondeo procesa hasta 100 eventos, uno a la vez por worker. La reserva dura 30 segundos y un manejador que supera ese plazo puede recibir el evento nuevamente.
 - Manejadores **idempotentes** (entrega al menos una vez): clave natural `event_id` en `notificacion`.
 - `EventoTrazabilidad` (trazabilidad, RF-26) NO se alimenta por eventos: el caso de uso inserta la fila en la misma transacción que cambia el estado del domicilio.
 - Reintentos con retroceso exponencial y límite; tras el límite, estado `DEAD` y alerta.
@@ -129,6 +129,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 **Phase F1 – Núcleo compartido**
 - [x] F010 `ApiError` y manejador global en `backend/.../shared/infrastructure/web/`
 - [x] F011 `DomainEvent` + outbox + relay en `shared/infrastructure/outbox/`
+  - [x] Verificar con PostgreSQL que un segundo worker puede reservar el siguiente evento mientras el primero ejecuta su manejador. `OutboxEventPublisherIntegrationTest` pasó 5 pruebas locales, con 0 fallos y 0 omitidas.
 - [x] F012 `IdempotencyFilter` con Redis, integrado después de autenticación; pruebas de concurrencia en `shared/infrastructure/idempotency/`
 - [x] F013 Utilidades geo y `RoutingPort` con adaptador OpenRouteService en `shared/infrastructure/geo/`
 - [x] F014 Reglas ArchUnit en `backend/src/test/.../ArchitectureTest.java`
