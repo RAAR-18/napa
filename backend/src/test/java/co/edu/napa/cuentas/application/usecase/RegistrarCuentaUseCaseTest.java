@@ -48,7 +48,7 @@ class RegistrarCuentaUseCaseTest {
         lenient().when(passwordHashing.hash(anyString())).thenAnswer(invocation ->
                 "hashed:" + invocation.getArgument(0, String.class));
         useCase = new RegistrarCuentaUseCase(
-                usuarios, solicitarVerificacion, passwordHashing, Clock.fixed(NOW, ZoneOffset.UTC)
+                usuarios, solicitarVerificacion, passwordHashing, dominio -> true, Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
 
@@ -187,6 +187,32 @@ class RegistrarCuentaUseCaseTest {
         );
 
         assertEquals("RATE_LIMITED", exception.code());
+    }
+
+    @Test
+    void choosingEmailRequiresAnEmailBeforeCreatingTheAccount() {
+        DomainException exception = assertThrows(DomainException.class, () -> useCase.registrar(
+                "Ana", "300 123 4567", null, "password1", "password1", RolUsuario.CLIENTE,
+                "device-1", "127.0.0.1", CanalVerificacion.CORREO));
+
+        assertEquals("VALIDATION_ERROR", exception.code());
+        verify(usuarios, never()).save(any());
+    }
+
+    @Test
+    void sendsTheCodeThroughTheChosenChannel() {
+        when(usuarios.existsByCelular("+573001234567")).thenReturn(false);
+        when(usuarios.existsByCorreo("ana@example.com")).thenReturn(false);
+        when(usuarios.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(solicitarVerificacion.solicitar("+573001234567", PropositoVerificacion.REGISTRO,
+                CanalVerificacion.CORREO, "127.0.0.1"))
+                .thenReturn(new SolicitarVerificacionPort.EnvioSolicitado(UUID.randomUUID(), CanalVerificacion.CORREO, 60));
+
+        RegistrarCuentaPort.RegistroResultado result = useCase.registrar(
+                "Ana", "300 123 4567", "ana@example.com", "password1", "password1", RolUsuario.CLIENTE,
+                "device-1", "127.0.0.1", CanalVerificacion.CORREO);
+
+        assertEquals("CORREO", result.verificacion().canal());
     }
 
     private RegistrarCuentaPort.RegistroResultado registrar(

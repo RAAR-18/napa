@@ -95,7 +95,7 @@ describe('auth API contract', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(new RegExp(`${path}$`)),
       expect.objectContaining({
-        body: JSON.stringify({ celular: '+573001234567' }),
+        body: JSON.stringify({ celular: '+573001234567', canal: 'SMS' }),
       }),
     );
   });

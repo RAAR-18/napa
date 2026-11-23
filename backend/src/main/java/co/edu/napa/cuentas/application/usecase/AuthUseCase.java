@@ -361,7 +361,7 @@ public class AuthUseCase {
         if (correoInput == null || correoInput.isBlank()) {
             return null;
         }
-        return correoInput.trim().toLowerCase(Locale.ROOT);
+        return co.edu.napa.cuentas.domain.model.Correo.desde(correoInput).valor();
     }
 
     private void validarNombre(String nombre) {

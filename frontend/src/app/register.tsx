@@ -16,6 +16,7 @@ import {
   palette,
 } from '../components/AuthUI';
 import { register, type UserRole } from '../lib/auth';
+import { validarCorreo } from '../lib/correo';
 
 const roles: { value: UserRole; label: string }[] = [
   { value: 'CLIENTE', label: 'Cliente' },
@@ -38,6 +39,11 @@ export default function RegisterScreen() {
     setError(null);
     setBusy(true);
     try {
+      const errorCorreo = validarCorreo(correo);
+      if (errorCorreo) {
+        setError(errorCorreo);
+        return;
+      }
       await register({
         nombre: nombre.trim(),
         celular: celular.trim(),
@@ -48,7 +54,11 @@ export default function RegisterScreen() {
       });
       router.push({
         pathname: '/verify',
-        params: { celular: celular.trim(), proposito: 'REGISTRO' },
+        params: {
+          celular: celular.trim(),
+          proposito: 'REGISTRO',
+          tieneCorreo: correo.trim() ? '1' : '0',
+        },
       });
     } catch (cause) {
       setError(
@@ -97,6 +107,13 @@ export default function RegisterScreen() {
         placeholder="nombre@correo.com"
         value={correo}
       />
+      {correo.trim() && validarCorreo(correo) ? (
+        <HelperText>{validarCorreo(correo)}</HelperText>
+      ) : (
+        <HelperText>
+          Con correo podrás elegir si verificas tu cuenta por SMS o por correo.
+        </HelperText>
+      )}
       <Text style={styles.label}>¿Cómo usarás Ñapa?</Text>
       <View style={styles.roles}>
         {roles.map((option) => (

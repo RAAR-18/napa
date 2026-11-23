@@ -1,5 +1,6 @@
 package co.edu.napa.cuentas.infrastructure.adapters.in.web;
 
+import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.application.ports.in.AuthTokens;
 import co.edu.napa.cuentas.application.ports.in.CambiarContrasenaPort;
 import co.edu.napa.cuentas.application.ports.in.ConfirmarRecuperacionPort;
@@ -60,10 +61,11 @@ public class PasswordController {
             @Valid @RequestBody RecuperacionSolicitudRequest request,
             HttpServletRequest servletRequest
     ) {
-        solicitarRecuperacion.solicitar(request.celular(), servletRequest.getRemoteAddr());
+        long espera = solicitarRecuperacion.solicitar(
+                request.celular(), request.canal(), servletRequest.getRemoteAddr());
         return ResponseEntity.accepted()
                 .cacheControl(CacheControl.noStore())
-                .body(Map.of("estado", "SOLICITADA"));
+                .body(Map.of("estado", "SOLICITADA", "reenvioDisponibleEn", Long.toString(espera)));
     }
 
     @PostMapping("/recover/confirm")
@@ -87,7 +89,7 @@ public class PasswordController {
     ) {
     }
 
-    public record RecuperacionSolicitudRequest(@NotBlank String celular) {
+    public record RecuperacionSolicitudRequest(@NotBlank String celular, CanalVerificacion canal) {
     }
 
     public record RecuperacionConfirmacionRequest(

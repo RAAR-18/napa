@@ -56,6 +56,7 @@ export type StoredSession = AuthTokens & {
 };
 
 export type VerificationPurpose = 'REGISTRO' | 'RECUPERACION_CONTRASENA';
+export type VerificationChannel = 'SMS' | 'CORREO';
 
 type RegistrationInput = {
   nombre: string;
@@ -133,9 +134,13 @@ export async function clearSession(): Promise<void> {
   await authStorage.deleteItemAsync(AUTH_SESSION_KEY);
 }
 
-export async function register(input: RegistrationInput): Promise<void> {
+/** Crea la cuenta sin enviar código: después la app pregunta si prefiere SMS o correo. */
+export async function register(input: RegistrationInput): Promise<string | null> {
   const { confirmacionPassword, ...registration } = input;
-  await requestJson<{ usuarioId: string }>(`${AUTH_PATH}/register`, {
+  const response = await requestJson<{
+    usuarioId: string;
+    verificacion?: { estado?: string | null } | null;
+  }>(`${AUTH_PATH}/register`, {
     method: 'POST',
     headers: jsonHeaders({
       deviceId: await deviceId(),
@@ -146,6 +151,7 @@ export async function register(input: RegistrationInput): Promise<void> {
       confirmPassword: confirmacionPassword,
     }),
   });
+  return response.verificacion?.estado ?? null;
 }
 
 export async function login(
@@ -178,16 +184,19 @@ export async function confirmRegistration(
 export async function requestVerification(
   celular: string,
   proposito: VerificationPurpose,
-): Promise<void> {
+  canal: VerificationChannel = 'SMS',
+): Promise<number> {
   const path =
     proposito === 'REGISTRO'
       ? `${AUTH_PATH}/verify-phone/request`
       : `${AUTH_PATH}/password/recover/request`;
-  await requestJson(path, {
+  const response = await requestJson<{ reenvioDisponibleEn?: number | string } | null>(path, {
     method: 'POST',
     headers: jsonHeaders(),
-    body: JSON.stringify({ celular }),
+    body: JSON.stringify({ celular, canal }),
   });
+  const espera = Number(response?.reenvioDisponibleEn);
+  return Number.isFinite(espera) && espera > 0 ? espera : 120;
 }
 
 export async function resetPassword(

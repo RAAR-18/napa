@@ -1,5 +1,5 @@
 import { useLocalSearchParams, router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   AuthPage,
@@ -11,18 +11,32 @@ import {
   PrimaryButton,
   TextButton,
 } from '../components/AuthUI';
+import {
+  CanalVerificacionSelector,
+  describirCanal,
+} from '../components/CanalVerificacionSelector';
 import { ApiError } from '../lib/api';
 import {
   confirmRegistration,
   requestVerification,
   resetPassword,
+  type VerificationChannel,
   type VerificationPurpose,
 } from '../lib/auth';
+
+function formatoEspera(segundos: number): string {
+  const minutos = Math.floor(segundos / 60);
+  const resto = segundos % 60;
+  return `${minutos}:${String(resto).padStart(2, '0')}`;
+}
 
 export default function VerifyScreen() {
   const params = useLocalSearchParams<{
     celular?: string;
     proposito?: string;
+    canal?: string;
+    espera?: string;
+    tieneCorreo?: string;
   }>();
   const celular = typeof params.celular === 'string' ? params.celular : '';
   const proposito: VerificationPurpose =
@@ -30,12 +44,32 @@ export default function VerifyScreen() {
       ? 'RECUPERACION_CONTRASENA'
       : 'REGISTRO';
   const isRecovery = proposito === 'RECUPERACION_CONTRASENA';
+  const tieneCorreo = params.tieneCorreo !== '0';
+  const esperaInicial = Number(params.espera);
+  // En la recuperación el código ya salió; en el registro primero se pregunta el medio.
+  const [canalEnviado, setCanalEnviado] = useState<VerificationChannel | null>(
+    isRecovery ? (params.canal === 'CORREO' ? 'CORREO' : 'SMS') : null,
+  );
+  const [canal, setCanal] = useState<VerificationChannel>(
+    params.canal === 'CORREO' ? 'CORREO' : 'SMS',
+  );
+  const [espera, setEspera] = useState(
+    Number.isFinite(esperaInicial) && esperaInicial > 0 ? Math.round(esperaInicial) : 0,
+  );
   const [codigo, setCodigo] = useState('');
   const [contrasenaNueva, setContrasenaNueva] = useState('');
   const [busy, setBusy] = useState(false);
-  const [resending, setResending] = useState(false);
+  const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (espera <= 0) {
+      return undefined;
+    }
+    const timer = setTimeout(() => setEspera((actual) => Math.max(0, actual - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [espera]);
 
   async function submit() {
     setError(null);
@@ -64,21 +98,32 @@ export default function VerifyScreen() {
     }
   }
 
-  async function resend() {
+  async function send() {
+    if (canal === 'CORREO' && !tieneCorreo) {
+      setError('Tu cuenta no tiene correo. Elige recibir el código por SMS.');
+      return;
+    }
     setError(null);
     setMessage(null);
-    setResending(true);
+    setSending(true);
     try {
-      await requestVerification(celular, proposito);
-      setMessage('Solicitamos un nuevo código para tu celular.');
+      const segundos = await requestVerification(celular, proposito, canal);
+      setCanalEnviado(canal);
+      setEspera(segundos);
+      setMessage(`Te enviamos un código por ${describirCanal(canal)}.`);
     } catch (cause) {
+      const retry =
+        cause instanceof ApiError && cause.code === 'RATE_LIMITED'
+          ? Number(cause.details.retryAfter)
+          : 0;
+      if (retry > 0) {
+        setEspera(Math.round(retry));
+      }
       setError(
-        cause instanceof Error
-          ? cause.message
-          : 'No se pudo solicitar otro código.',
+        cause instanceof Error ? cause.message : 'No se pudo enviar el código.',
       );
     } finally {
-      setResending(false);
+      setSending(false);
     }
   }
 
@@ -95,15 +140,67 @@ export default function VerifyScreen() {
     );
   }
 
+  const selector = (
+    <>
+      <CanalVerificacionSelector
+        label={
+          canalEnviado
+            ? '¿No te llegó? Pide otro código'
+            : '¿Prefieres verificar tu cuenta por SMS o por correo?'
+        }
+        onChange={setCanal}
+        value={canal}
+      />
+      {canal === 'CORREO' && !tieneCorreo ? (
+        <HelperText>
+          No registraste un correo, así que el código solo puede llegar por SMS.
+        </HelperText>
+      ) : null}
+    </>
+  );
+
+  if (!canalEnviado) {
+    return (
+      <AuthPage>
+        <PageHeading
+          eyebrow="Verifica tu cuenta"
+          title="¿Cómo quieres recibir tu código?"
+          description={`Tu cuenta quedó creada. Para activarla te enviaremos un código de 6 dígitos por SMS al ${celular} o a tu correo.`}
+        />
+        <ErrorBanner message={error} />
+        {selector}
+        <PrimaryButton
+          busy={sending}
+          disabled={espera > 0 || (canal === 'CORREO' && !tieneCorreo)}
+          title={
+            espera > 0
+              ? `Espera ${formatoEspera(espera)}`
+              : `Enviar código por ${describirCanal(canal)}`
+          }
+          onPress={send}
+        />
+        <FormFooter>
+          <TextButton
+            title="Volver al inicio de sesión"
+            onPress={() => router.replace('/login')}
+          />
+        </FormFooter>
+      </AuthPage>
+    );
+  }
+
+  const destino =
+    canalEnviado === 'CORREO' ? 'a tu correo' : `por SMS al ${celular}`;
+
   return (
     <AuthPage>
       <PageHeading
-        eyebrow={isRecovery ? 'Recuperación segura' : 'Verifica tu celular'}
+        eyebrow={isRecovery ? 'Recuperación segura' : 'Verifica tu cuenta'}
         title={isRecovery ? 'Crea una contraseña nueva' : 'Ingresa tu código'}
         description={
           isRecovery
-            ? `Confirma el código enviado a ${celular} y elige una nueva contraseña.`
-            : `La cuenta quedará activa cuando confirmes el código enviado a ${celular}.`
+            ? `Escribe el código que enviamos ${destino} y elige una nueva contraseña.`
+            : `Tu cuenta quedará activa cuando escribas el código que enviamos ${destino}.`
         }
       />
       <ErrorBanner message={error} />
@@ -130,12 +227,7 @@ export default function VerifyScreen() {
           />
           <HelperText>Debe tener entre 8 y 128 caracteres.</HelperText>
         </>
-      ) : (
-        <HelperText>
-          Si no recibiste el mensaje, puedes solicitar otro código. La verificación
-          está limitada para proteger tu cuenta.
-        </HelperText>
-      )}
+      ) : null}
       <PrimaryButton
         busy={busy}
         disabled={
@@ -145,11 +237,21 @@ export default function VerifyScreen() {
         title={isRecovery ? 'Actualizar contraseña' : 'Verificar y continuar'}
         onPress={submit}
       />
+      {selector}
+      {espera > 0 ? (
+        <HelperText>
+          {`Podrás pedir otro código en ${formatoEspera(espera)}. Cada nuevo envío duplica la espera.`}
+        </HelperText>
+      ) : null}
       <FormFooter>
         <TextButton
-          disabled={resending || busy}
-          title={resending ? 'Solicitando código…' : 'Solicitar otro código'}
-          onPress={resend}
+          disabled={sending || busy || espera > 0 || (canal === 'CORREO' && !tieneCorreo)}
+          title={
+            sending
+              ? 'Enviando código…'
+              : `Enviar otro código por ${describirCanal(canal)}`
+          }
+          onPress={send}
         />
         <TextButton
           title="Volver al inicio de sesión"

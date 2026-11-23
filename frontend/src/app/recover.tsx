@@ -10,10 +10,12 @@ import {
   PrimaryButton,
   TextButton,
 } from '../components/AuthUI';
-import { requestVerification } from '../lib/auth';
+import { CanalVerificacionSelector } from '../components/CanalVerificacionSelector';
+import { requestVerification, type VerificationChannel } from '../lib/auth';
 
 export default function RecoverScreen() {
   const [celular, setCelular] = useState('');
+  const [canal, setCanal] = useState<VerificationChannel>('SMS');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,12 +23,15 @@ export default function RecoverScreen() {
     setError(null);
     setBusy(true);
     try {
-      await requestVerification(celular.trim(), 'RECUPERACION_CONTRASENA');
+      const espera = await requestVerification(celular.trim(), 'RECUPERACION_CONTRASENA', canal);
       router.push({
         pathname: '/verify',
         params: {
           celular: celular.trim(),
           proposito: 'RECUPERACION_CONTRASENA',
+          canal,
+          espera: String(espera),
+          tieneCorreo: '1',
         },
       });
     } catch (cause) {
@@ -45,7 +50,7 @@ export default function RecoverScreen() {
       <PageHeading
         eyebrow="Recupera tu cuenta"
         title="Restablece tu contraseña"
-        description="Te enviaremos un código al celular registrado para crear una contraseña nueva."
+        description="Te enviaremos un código por SMS o al correo de tu cuenta para crear una contraseña nueva."
       />
       <ErrorBanner message={error} />
       <Field
@@ -56,6 +61,7 @@ export default function RecoverScreen() {
         placeholder="+573001234567"
         value={celular}
       />
+      <CanalVerificacionSelector onChange={setCanal} value={canal} />
       <PrimaryButton
         busy={busy}
         disabled={!celular.trim()}

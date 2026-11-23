@@ -15,7 +15,7 @@ jest.mock('../../lib/auth', () => ({
 describe('RegisterScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(register).mockResolvedValue();
+    jest.mocked(register).mockResolvedValue('ENVIADO');
   });
 
   it('submits the selected account details and opens phone verification', async () => {
@@ -48,7 +48,11 @@ describe('RegisterScreen', () => {
       });
       expect(router.push).toHaveBeenCalledWith({
         pathname: '/verify',
-        params: { celular: '+573001234567', proposito: 'REGISTRO' },
+        params: {
+          celular: '+573001234567',
+          proposito: 'REGISTRO',
+          tieneCorreo: '1',
+        },
       });
     });
   });

@@ -4,15 +4,12 @@ import co.edu.napa.cuentas.application.ports.in.PerfilUsuario;
 import co.edu.napa.cuentas.domain.model.Celular;
 import co.edu.napa.shared.domain.DomainException;
 
-import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /** Validaciones de los datos de perfil que comparten RF-08 y RF-67. */
 final class ReglasPerfil {
     static final int NOMBRE_MAXIMO = 120;
     private static final int TEXTO_UBICACION_MAXIMO = 300;
-    private static final Pattern CORREO = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     private ReglasPerfil() {
     }
@@ -34,11 +31,7 @@ final class ReglasPerfil {
     }
 
     static String correo(String correo) {
-        String texto = correo == null ? "" : correo.strip().toLowerCase(Locale.ROOT);
-        if (texto.length() > 254 || !CORREO.matcher(texto).matches()) {
-            throw invalido("correo", "El correo no tiene un formato válido.");
-        }
-        return texto;
+        return co.edu.napa.cuentas.domain.model.Correo.desde(correo).valor();
     }
 
     static PerfilUsuario.Ubicacion ubicacion(PerfilUsuario.Ubicacion ubicacion) {

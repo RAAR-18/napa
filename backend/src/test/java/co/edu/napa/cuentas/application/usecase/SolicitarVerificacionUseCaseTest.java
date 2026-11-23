@@ -1,6 +1,7 @@
 package co.edu.napa.cuentas.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.SolicitarVerificacionPort;
+import co.edu.napa.cuentas.application.ports.out.EsperaReenvioPort;
 import co.edu.napa.cuentas.application.ports.out.LimitadorVerificacionPort;
 import co.edu.napa.cuentas.application.ports.out.MensajeRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class SolicitarVerificacionUseCaseTest {
@@ -46,14 +48,17 @@ class SolicitarVerificacionUseCaseTest {
     @Mock private VerificarCelularPort verificarCelular;
     @Mock private MensajeRepositoryPort mensajes;
     @Mock private LimitadorVerificacionPort limitador;
+    @Mock private EsperaReenvioPort espera;
 
     private SolicitarVerificacionUseCase useCase;
 
     @BeforeEach
     void setUp() {
         useCase = new SolicitarVerificacionUseCase(
-                usuarios, verificarCelular, mensajes, limitador, Clock.fixed(NOW, ZoneOffset.UTC)
+                usuarios, verificarCelular, mensajes, limitador, espera, Clock.fixed(NOW, ZoneOffset.UTC)
         );
+        org.mockito.Mockito.lenient().when(espera.registrarEnvio(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(120L);
     }
 
     @Test
@@ -74,9 +79,33 @@ class SolicitarVerificacionUseCaseTest {
         assertEquals("sid-1", guardado.getValue().proveedorId());
         assertEquals(CELULAR, guardado.getValue().destino());
         assertEquals(guardado.getValue().id(), envio.mensajeId());
-        assertEquals(60, envio.reenvioDisponibleEn());
+        assertEquals(120, envio.reenvioDisponibleEn());
         verify(limitador).registrarEnvio(CELULAR, "127.0.0.1");
         verify(limitador).reiniciarIntentos(CELULAR, PropositoVerificacion.REGISTRO);
+    }
+
+    @Test
+    void sendsTheCodeToTheAccountEmailWhenTheUserChoosesEmail() {
+        when(usuarios.findByCelular(CELULAR))
+                .thenReturn(Optional.of(user(RolUsuario.CLIENTE, EstadoUsuario.PENDIENTE_VERIFICACION)));
+        when(verificarCelular.iniciar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.CORREO,
+                "ana@example.com")).thenReturn(new VerificarCelularPort.EnvioVerificacion("codigo-1"));
+        when(mensajes.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        useCase.solicitar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.CORREO, "127.0.0.1");
+
+        ArgumentCaptor<Mensaje> guardado = ArgumentCaptor.forClass(Mensaje.class);
+        verify(mensajes).save(guardado.capture());
+        assertEquals(CanalVerificacion.CORREO, guardado.getValue().canal());
+    }
+
+    @Test
+    void neverSendsAPhoneChangeCodeByEmail() {
+        DomainException exception = assertThrows(DomainException.class, () -> useCase.solicitar(
+                CELULAR, PropositoVerificacion.CAMBIO, CanalVerificacion.CORREO, "127.0.0.1"));
+
+        assertEquals("VALIDATION_ERROR", exception.code());
+        verifyNoInteractions(verificarCelular);
     }
 
     @Test
@@ -88,7 +117,7 @@ class SolicitarVerificacionUseCaseTest {
         );
 
         assertNotNull(envio.mensajeId());
-        assertEquals(60, envio.reenvioDisponibleEn());
+        assertEquals(120, envio.reenvioDisponibleEn());
         verify(limitador).registrarEnvio(CELULAR, "127.0.0.1");
         verify(verificarCelular, never()).iniciar(anyString(), any(), any());
         verify(mensajes, never()).save(any());

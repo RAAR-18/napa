@@ -5,6 +5,9 @@ import co.edu.napa.cuentas.application.ports.out.VerificacionResultado;
 import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.ConsolaVerificacionAdapter;
+import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.BrevoCorreoClient;
+import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.SmsCorreoVerificacionAdapter;
+import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.SmsReactorClient;
 import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.UnavailableVerificarCelularAdapter;
 import co.edu.napa.shared.domain.DomainException;
 import org.junit.jupiter.api.Test;
@@ -88,8 +91,23 @@ class VerificationProviderConfigurationTest {
                 .run(context -> assertThat(context).hasFailed());
     }
 
+    @Test
+    void smsAndEmailProviderStartsEvenBeforeTheKeysAreConfigured() {
+        runner.withPropertyValues("NAPA_VERIFICATION_PROVIDER=sms-correo").run(context -> {
+            assertThat(context).hasNotFailed().hasSingleBean(VerificarCelularPort.class);
+            assertThat(context.getBean(VerificarCelularPort.class))
+                    .isInstanceOf(SmsCorreoVerificacionAdapter.class);
+        });
+    }
+
     @Configuration(proxyBeanMethods = false)
-    @Import({ConsolaVerificacionAdapter.class, UnavailableVerificarCelularAdapter.class})
+    @Import({
+            ConsolaVerificacionAdapter.class,
+            BrevoCorreoClient.class,
+            SmsReactorClient.class,
+            SmsCorreoVerificacionAdapter.class,
+            UnavailableVerificarCelularAdapter.class
+    })
     static class Providers {
         @Bean
         static PropertySourcesPlaceholderConfigurer placeholders() {
