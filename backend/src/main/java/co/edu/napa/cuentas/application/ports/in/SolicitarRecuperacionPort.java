@@ -8,5 +8,6 @@ public interface SolicitarRecuperacionPort {
         solicitar(celular, CanalVerificacion.WHATSAPP, ipAddress);
     }
 
-    void solicitar(String celular, CanalVerificacion canal, String ipAddress);
+    /** Devuelve los segundos que hay que esperar para pedir otro código. */
+    long solicitar(String celular, CanalVerificacion canal, String ipAddress);
 }

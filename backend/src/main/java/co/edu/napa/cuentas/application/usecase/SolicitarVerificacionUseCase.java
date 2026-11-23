@@ -1,6 +1,7 @@
 package co.edu.napa.cuentas.application.usecase;
 
 import co.edu.napa.cuentas.application.ports.in.SolicitarVerificacionPort;
+import co.edu.napa.cuentas.application.ports.out.EsperaReenvioPort;
 import co.edu.napa.cuentas.application.ports.out.LimitadorVerificacionPort;
 import co.edu.napa.cuentas.application.ports.out.MensajeRepositoryPort;
 import co.edu.napa.cuentas.application.ports.out.UsuarioRepositoryPort;
@@ -35,6 +36,7 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
     private final VerificarCelularPort verificarCelular;
     private final MensajeRepositoryPort mensajes;
     private final LimitadorVerificacionPort limitador;
+    private final EsperaReenvioPort espera;
     private final Clock clock;
 
     public SolicitarVerificacionUseCase(
@@ -42,8 +44,10 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
             VerificarCelularPort verificarCelular,
             MensajeRepositoryPort mensajes,
             LimitadorVerificacionPort limitador,
+            EsperaReenvioPort espera,
             Clock clock
     ) {
+        this.espera = Objects.requireNonNull(espera, "espera");
         this.usuarios = Objects.requireNonNull(usuarios, "usuarios");
         this.verificarCelular = Objects.requireNonNull(verificarCelular, "verificarCelular");
         this.mensajes = Objects.requireNonNull(mensajes, "mensajes");
@@ -70,14 +74,15 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
                     Map.of("field", "canal")
             );
         }
-        // Los límites cuentan igual exista o no la cuenta, para no revelar cuáles existen.
+        // La espera y los límites cuentan igual exista o no la cuenta, para no revelar cuáles existen.
+        espera.exigirDisponible(celular);
         limitador.registrarEnvio(celular, ipAddress);
         if (proposito == PropositoVerificacion.CAMBIO && usuarios.existsByCelular(celular)) {
             throw new DomainException("PHONE_ALREADY_REGISTERED", "Ese celular ya está registrado.");
         }
         if (!puedeRecibirCodigo(celular, proposito)) {
             // Misma respuesta que un envío real, sin llamar al proveedor ni gastar un mensaje.
-            return new EnvioSolicitado(UUID.randomUUID(), canal, SEGUNDOS_ENTRE_ENVIOS);
+            return new EnvioSolicitado(UUID.randomUUID(), canal, espera.registrarEnvio(celular));
         }
 
         String correo = null;
@@ -117,7 +122,7 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
         Mensaje enviado = mensajes.save(
                 Mensaje.nuevo(canal, proposito, celular, EstadoMensaje.ENVIADO, envio.proveedorId(), now)
         );
-        return new EnvioSolicitado(enviado.id(), canal, SEGUNDOS_ENTRE_ENVIOS);
+        return new EnvioSolicitado(enviado.id(), canal, espera.registrarEnvio(celular));
     }
 
     private boolean puedeRecibirCodigo(String celular, PropositoVerificacion proposito) {

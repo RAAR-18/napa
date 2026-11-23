@@ -48,7 +48,7 @@ class RegistrarCuentaUseCaseTest {
         lenient().when(passwordHashing.hash(anyString())).thenAnswer(invocation ->
                 "hashed:" + invocation.getArgument(0, String.class));
         useCase = new RegistrarCuentaUseCase(
-                usuarios, solicitarVerificacion, passwordHashing, Clock.fixed(NOW, ZoneOffset.UTC)
+                usuarios, solicitarVerificacion, passwordHashing, dominio -> true, Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
 

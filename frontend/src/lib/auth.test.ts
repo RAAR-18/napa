@@ -65,7 +65,6 @@ describe('auth API contract', () => {
       password: 'password',
       confirmacionPassword: 'password',
       rol: 'CLIENTE',
-      canal: 'CORREO',
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -81,7 +80,6 @@ describe('auth API contract', () => {
           correo: null,
           password: 'password',
           rol: 'CLIENTE',
-          canal: 'CORREO',
           confirmPassword: 'password',
         }),
       }),
