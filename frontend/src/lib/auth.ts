@@ -166,6 +166,11 @@ export async function login(
   return saveSession(sessionTokens(response));
 }
 
+/** La cuenta se identifica por celular o, si trae "@", por su correo. */
+function cuenta(identificador: string): { celular: string } | { correo: string } {
+  return identificador.includes('@') ? { correo: identificador } : { celular: identificador };
+}
+
 export async function confirmRegistration(
   celular: string,
   codigo: string,
@@ -175,7 +180,7 @@ export async function confirmRegistration(
     {
       method: 'POST',
       headers: jsonHeaders({ deviceId: await deviceId() }),
-      body: JSON.stringify({ celular, codigo }),
+      body: JSON.stringify({ ...cuenta(celular), codigo }),
     },
   );
   return saveSession(sessionTokens(response));
@@ -193,7 +198,9 @@ export async function requestVerification(
   const response = await requestJson<{ reenvioDisponibleEn?: number | string } | null>(path, {
     method: 'POST',
     headers: jsonHeaders(),
-    body: JSON.stringify({ celular, canal }),
+    body: JSON.stringify(
+      proposito === 'REGISTRO' ? { ...cuenta(celular), canal } : { celular, canal },
+    ),
   });
   const espera = Number(response?.reenvioDisponibleEn);
   return Number.isFinite(espera) && espera > 0 ? espera : 120;

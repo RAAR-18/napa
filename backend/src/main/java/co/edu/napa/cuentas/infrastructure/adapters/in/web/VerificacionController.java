@@ -1,11 +1,13 @@
 package co.edu.napa.cuentas.infrastructure.adapters.in.web;
 
 import co.edu.napa.cuentas.application.ports.in.AuthTokens;
+import co.edu.napa.cuentas.application.ports.in.BuscarCuentaPorCorreoPort;
 import co.edu.napa.cuentas.application.ports.in.ConfirmarRegistroPort;
 import co.edu.napa.cuentas.application.ports.in.ConsultarMensajeVerificacionPort;
 import co.edu.napa.cuentas.application.ports.in.SolicitarVerificacionPort;
 import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
+import co.edu.napa.shared.domain.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -32,15 +34,29 @@ public class VerificacionController {
     private final SolicitarVerificacionPort solicitarVerificacion;
     private final ConfirmarRegistroPort confirmarRegistro;
     private final ConsultarMensajeVerificacionPort consultarMensaje;
+    private final BuscarCuentaPorCorreoPort buscarPorCorreo;
 
     public VerificacionController(
             SolicitarVerificacionPort solicitarVerificacion,
             ConfirmarRegistroPort confirmarRegistro,
-            ConsultarMensajeVerificacionPort consultarMensaje
+            ConsultarMensajeVerificacionPort consultarMensaje,
+            BuscarCuentaPorCorreoPort buscarPorCorreo
     ) {
         this.solicitarVerificacion = solicitarVerificacion;
         this.confirmarRegistro = confirmarRegistro;
         this.consultarMensaje = consultarMensaje;
+        this.buscarPorCorreo = buscarPorCorreo;
+    }
+
+    /** La cuenta se identifica por celular o, si no viene, por su correo. */
+    private String celularDe(String celular, String correo) {
+        if (celular != null && !celular.isBlank()) {
+            return celular;
+        }
+        if (correo != null && !correo.isBlank()) {
+            return buscarPorCorreo.celularDe(correo);
+        }
+        throw new DomainException("VALIDATION_ERROR", "Escribe el celular o el correo de tu cuenta.");
     }
 
     @PostMapping("/request")
@@ -48,9 +64,12 @@ public class VerificacionController {
             @Valid @RequestBody SolicitarRequest request,
             HttpServletRequest servletRequest
     ) {
-        CanalVerificacion canal = request.canal() == null ? CanalVerificacion.WHATSAPP : request.canal();
+        boolean porCorreo = request.celular() == null || request.celular().isBlank();
+        CanalVerificacion canal = porCorreo
+                ? CanalVerificacion.CORREO
+                : request.canal() == null ? CanalVerificacion.WHATSAPP : request.canal();
         SolicitarVerificacionPort.EnvioSolicitado envio = solicitarVerificacion.solicitar(
-                request.celular(),
+                celularDe(request.celular(), request.correo()),
                 PropositoVerificacion.REGISTRO,
                 canal,
                 servletRequest.getRemoteAddr()
@@ -67,7 +86,9 @@ public class VerificacionController {
     ) {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
-                .body(confirmarRegistro.confirmar(request.celular(), request.codigo(), deviceId));
+                .body(confirmarRegistro.confirmar(
+                        celularDe(request.celular(), request.correo()), request.codigo(), deviceId
+                ));
     }
 
     @GetMapping("/mensajes/{mensajeId}")
@@ -80,11 +101,12 @@ public class VerificacionController {
                 ));
     }
 
-    public record SolicitarRequest(@NotBlank String celular, CanalVerificacion canal) {
+    public record SolicitarRequest(String celular, String correo, CanalVerificacion canal) {
     }
 
     public record ConfirmarRequest(
-            @NotBlank String celular,
+            String celular,
+            String correo,
             @NotBlank @Pattern(regexp = "^[0-9]{6}$") String codigo
     ) {
     }

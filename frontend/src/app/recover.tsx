@@ -4,12 +4,12 @@ import { router } from 'expo-router';
 import {
   AuthPage,
   ErrorBanner,
-  Field,
   FormFooter,
   PageHeading,
   PrimaryButton,
   TextButton,
 } from '../components/AuthUI';
+import { CelularField } from '../components/CelularField';
 import { CanalVerificacionSelector } from '../components/CanalVerificacionSelector';
 import { requestVerification, type VerificationChannel } from '../lib/auth';
 
@@ -53,14 +53,7 @@ export default function RecoverScreen() {
         description="Te enviaremos un código por SMS o al correo de tu cuenta para crear una contraseña nueva."
       />
       <ErrorBanner message={error} />
-      <Field
-        autoCapitalize="none"
-        keyboardType="phone-pad"
-        label="Celular registrado"
-        onChangeText={setCelular}
-        placeholder="+573001234567"
-        value={celular}
-      />
+      <CelularField label="Celular registrado" onChange={setCelular} />
       <CanalVerificacionSelector onChange={setCanal} value={canal} />
       <PrimaryButton
         busy={busy}
