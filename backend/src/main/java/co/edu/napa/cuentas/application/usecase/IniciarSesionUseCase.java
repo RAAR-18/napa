@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -70,9 +71,11 @@ public class IniciarSesionUseCase implements IniciarSesionPort {
         }
         if (usuario.estado() != EstadoUsuario.ACTIVA
                 || (usuario.rol() != RolUsuario.ADMINISTRADOR && usuario.celularVerificadoAt() == null)) {
+            // La contraseña ya se comprobó: se devuelve el celular para que la app lleve a verificar.
             throw new DomainException(
                     "ACCOUNT_NOT_VERIFIED",
-                    "Debes verificar tu celular antes de iniciar sesión."
+                    "Debes verificar tu cuenta antes de iniciar sesión.",
+                    Map.of("celular", usuario.celular(), "tieneCorreo", usuario.correo() != null)
             );
         }
         loginAttempts.clearIdentifier(identificador);

@@ -112,6 +112,8 @@ class IniciarSesionUseCaseTest {
         );
 
         assertEquals("ACCOUNT_NOT_VERIFIED", exception.code());
+        assertEquals("+573001234567", exception.details().get("celular"));
+        assertEquals(true, exception.details().get("tieneCorreo"));
         verify(sesiones, never()).save(any());
     }
 

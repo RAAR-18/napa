@@ -11,6 +11,7 @@ import {
   PrimaryButton,
   TextButton,
 } from '../components/AuthUI';
+import { ApiError } from '../lib/api';
 import { login } from '../lib/auth';
 import { homeForRole } from '../components/AppShell';
 
@@ -28,6 +29,22 @@ export default function LoginScreen() {
       const session = await login(identificador.trim(), password);
       router.replace(homeForRole(session.rol));
     } catch (cause) {
+      if (
+        cause instanceof ApiError &&
+        cause.code === 'ACCOUNT_NOT_VERIFIED' &&
+        typeof cause.details.celular === 'string'
+      ) {
+        // Cuenta creada pero sin verificar: se lleva a elegir SMS o correo y verificarla.
+        router.push({
+          pathname: '/verify',
+          params: {
+            celular: cause.details.celular,
+            proposito: 'REGISTRO',
+            tieneCorreo: cause.details.tieneCorreo === true ? '1' : '0',
+          },
+        });
+        return;
+      }
       setError(
         cause instanceof Error
           ? cause.message
