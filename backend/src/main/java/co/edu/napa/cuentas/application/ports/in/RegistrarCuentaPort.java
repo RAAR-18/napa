@@ -1,12 +1,13 @@
 package co.edu.napa.cuentas.application.ports.in;
 
+import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 
 import java.util.UUID;
 
-/** RF-07: crea una cuenta pendiente de verificación y pide el código al celular. */
+/** RF-07: crea una cuenta pendiente de verificación y envía el código por SMS o por correo. */
 public interface RegistrarCuentaPort {
-    RegistroResultado registrar(
+    default RegistroResultado registrar(
             String nombre,
             String celular,
             String correo,
@@ -15,6 +16,21 @@ public interface RegistrarCuentaPort {
             RolUsuario rol,
             String deviceId,
             String ipAddress
+    ) {
+        return registrar(nombre, celular, correo, password, confirmacionPassword, rol, deviceId, ipAddress,
+                CanalVerificacion.WHATSAPP);
+    }
+
+    RegistroResultado registrar(
+            String nombre,
+            String celular,
+            String correo,
+            String password,
+            String confirmacionPassword,
+            RolUsuario rol,
+            String deviceId,
+            String ipAddress,
+            CanalVerificacion canal
     );
 
     record RegistroResultado(UUID usuarioId, String estado, VerificacionInfo verificacion) {

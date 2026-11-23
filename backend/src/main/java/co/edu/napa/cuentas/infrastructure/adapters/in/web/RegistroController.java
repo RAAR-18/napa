@@ -1,6 +1,7 @@
 package co.edu.napa.cuentas.infrastructure.adapters.in.web;
 
 import co.edu.napa.cuentas.application.ports.in.RegistrarCuentaPort;
+import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -43,7 +44,8 @@ public class RegistroController {
                 request.confirmPassword(),
                 request.rol(),
                 deviceId,
-                servletRequest.getRemoteAddr()
+                servletRequest.getRemoteAddr(),
+                request.canal()
         );
         RegistrarCuentaPort.VerificacionInfo verificacion = result.verificacion();
         return ResponseEntity.created(URI.create("/api/v1/usuarios/me"))
@@ -66,7 +68,9 @@ public class RegistroController {
             @Email @Size(max = 254) String correo,
             @NotNull String password,
             @NotNull String confirmPassword,
-            @NotNull RolUsuario rol
+            @NotNull RolUsuario rol,
+            /** SMS o CORREO; si se omite, SMS. */
+            CanalVerificacion canal
     ) {
     }
 

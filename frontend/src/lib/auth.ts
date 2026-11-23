@@ -1,6 +1,6 @@
 import { randomUUID } from './uuid';
 
-import { ApiError, apiBaseUrl, jsonHeaders, requestJson, requestVoid } from './api';
+import { ApiError, jsonHeaders, requestJson, requestVoid } from './api';
 import * as authStorage from './auth-storage';
 
 const AUTH_SESSION_KEY = 'napa.auth.session';
@@ -56,6 +56,7 @@ export type StoredSession = AuthTokens & {
 };
 
 export type VerificationPurpose = 'REGISTRO' | 'RECUPERACION_CONTRASENA';
+export type VerificationChannel = 'SMS' | 'CORREO';
 
 type RegistrationInput = {
   nombre: string;
@@ -64,6 +65,7 @@ type RegistrationInput = {
   password: string;
   confirmacionPassword: string;
   rol: UserRole;
+  canal: VerificationChannel;
 };
 
 function isStoredSession(value: unknown): value is StoredSession {
@@ -133,12 +135,12 @@ export async function clearSession(): Promise<void> {
   await authStorage.deleteItemAsync(AUTH_SESSION_KEY);
 }
 
-/** Devuelve el id del envío del código, para mostrarlo como imagen si el backend lo permite. */
+/** Devuelve el estado del envío del código: ENVIADO, o FALLIDO si el SMS o el correo no salió. */
 export async function register(input: RegistrationInput): Promise<string | null> {
   const { confirmacionPassword, ...registration } = input;
   const response = await requestJson<{
     usuarioId: string;
-    verificacion?: { mensajeId?: string | null } | null;
+    verificacion?: { estado?: string | null } | null;
   }>(`${AUTH_PATH}/register`, {
     method: 'POST',
     headers: jsonHeaders({
@@ -150,12 +152,7 @@ export async function register(input: RegistrationInput): Promise<string | null>
       confirmPassword: confirmacionPassword,
     }),
   });
-  return response.verificacion?.mensajeId ?? null;
-}
-
-/** Imagen con el código de registro mientras no haya SMS; el backend responde 404 si no aplica. */
-export function verificationCodeImageUrl(mensajeId: string): string {
-  return `${apiBaseUrl}${AUTH_PATH}/verify-phone/mensajes/${encodeURIComponent(mensajeId)}/imagen`;
+  return response.verificacion?.estado ?? null;
 }
 
 export async function login(
@@ -188,17 +185,17 @@ export async function confirmRegistration(
 export async function requestVerification(
   celular: string,
   proposito: VerificationPurpose,
-): Promise<string | null> {
+  canal: VerificationChannel = 'SMS',
+): Promise<void> {
   const path =
     proposito === 'REGISTRO'
       ? `${AUTH_PATH}/verify-phone/request`
       : `${AUTH_PATH}/password/recover/request`;
-  const response = await requestJson<{ mensajeId?: string | null } | null>(path, {
+  await requestJson(path, {
     method: 'POST',
     headers: jsonHeaders(),
-    body: JSON.stringify({ celular }),
+    body: JSON.stringify({ celular, canal }),
   });
-  return response?.mensajeId ?? null;
 }
 
 export async function resetPassword(

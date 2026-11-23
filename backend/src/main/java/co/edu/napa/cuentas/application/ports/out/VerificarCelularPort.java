@@ -9,6 +9,16 @@ public interface VerificarCelularPort {
     /** Pide al proveedor que genere y envíe un código; invalida el anterior del mismo celular y propósito. */
     EnvioVerificacion iniciar(String celular, PropositoVerificacion proposito, CanalVerificacion canal);
 
+    /** Igual que el anterior; {@code correo} es el destino cuando el canal es CORREO. */
+    default EnvioVerificacion iniciar(
+            String celular,
+            PropositoVerificacion proposito,
+            CanalVerificacion canal,
+            String correo
+    ) {
+        return iniciar(celular, proposito, canal);
+    }
+
     /** Compatibilidad con la versión anterior del dominio, que usaba EstadoVerificacion. */
     default void solicitar(String celular, Enum<?> estado, String ipAddress) {
         PropositoVerificacion proposito = estado instanceof PropositoVerificacion p

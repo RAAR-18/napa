@@ -12,6 +12,7 @@ import co.edu.napa.cuentas.domain.model.EstadoUsuario;
 import co.edu.napa.cuentas.domain.model.Mensaje;
 import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
+import co.edu.napa.cuentas.domain.model.Usuario;
 import co.edu.napa.shared.domain.DomainException;
 import org.springframework.stereotype.Component;
 
@@ -61,6 +62,14 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
         if (proposito == null || canal == null) {
             throw new DomainException("VALIDATION_ERROR", "El propósito y el canal son obligatorios.");
         }
+        if (proposito == PropositoVerificacion.CAMBIO && canal == CanalVerificacion.CORREO) {
+            // El código prueba que la persona tiene el celular nuevo; un correo no lo demuestra.
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "Para cambiar de celular el código debe llegar por SMS al número nuevo.",
+                    Map.of("field", "canal")
+            );
+        }
         // Los límites cuentan igual exista o no la cuenta, para no revelar cuáles existen.
         limitador.registrarEnvio(celular, ipAddress);
         if (proposito == PropositoVerificacion.CAMBIO && usuarios.existsByCelular(celular)) {
@@ -71,10 +80,24 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
             return new EnvioSolicitado(UUID.randomUUID(), canal, SEGUNDOS_ENTRE_ENVIOS);
         }
 
+        String correo = null;
+        if (canal == CanalVerificacion.CORREO) {
+            correo = usuarios.findByCelular(celular).map(Usuario::correo).orElse(null);
+            if (correo == null || correo.isBlank()) {
+                throw new DomainException(
+                        "VALIDATION_ERROR",
+                        "Tu cuenta no tiene correo registrado. Elige recibir el código por SMS.",
+                        Map.of("field", "canal")
+                );
+            }
+        }
+
         Instant now = Instant.now(clock);
         VerificarCelularPort.EnvioVerificacion envio;
         try {
-            envio = verificarCelular.iniciar(celular, proposito, canal);
+            envio = correo == null
+                    ? verificarCelular.iniciar(celular, proposito, canal)
+                    : verificarCelular.iniciar(celular, proposito, canal, correo);
         } catch (DomainException exception) {
             if (!"EXTERNAL_SERVICE_UNAVAILABLE".equals(exception.code())) {
                 throw exception;

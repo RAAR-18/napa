@@ -21,9 +21,10 @@ public class SolicitarRecuperacionUseCase implements SolicitarRecuperacionPort {
     }
 
     @Override
-    public void solicitar(String celular, String ipAddress) {
+    public void solicitar(String celular, CanalVerificacion canal, String ipAddress) {
         solicitarVerificacion.solicitar(
-                celular, PropositoVerificacion.RECUPERACION, CanalVerificacion.WHATSAPP, ipAddress
+                celular, PropositoVerificacion.RECUPERACION, canal == null ? CanalVerificacion.WHATSAPP : canal,
+                ipAddress
         );
     }
 }

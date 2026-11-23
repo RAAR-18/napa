@@ -44,17 +44,18 @@ class SmsReactorClientTest {
                 new AtomicReference<>());
         SmsReactorClient client = new SmsReactorClient(HttpClient.newHttpClient(), baseUrl, "skr_test", "");
 
-        SmsReactorClient.EnvioFallidoException exception = assertThrows(
-                SmsReactorClient.EnvioFallidoException.class,
+        EnvioFallidoException exception = assertThrows(
+                EnvioFallidoException.class,
                 () -> client.enviar("+573007080825", "hola")
         );
         assertTrue(exception.getMessage().contains("402"));
     }
 
     @Test
-    void requiresAnApiKey() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new SmsReactorClient(HttpClient.newHttpClient(), "http://localhost", " ", ""));
+    void failsWithoutCallingTheApiWhenTheKeyIsMissing() {
+        SmsReactorClient client = new SmsReactorClient(HttpClient.newHttpClient(), "http://localhost:1", " ", "");
+
+        assertThrows(EnvioFallidoException.class, () -> client.enviar("+573007080825", "hola"));
     }
 
     private String start(int status, String response, AtomicReference<String> body, AtomicReference<String> key)

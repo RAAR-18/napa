@@ -15,7 +15,7 @@ jest.mock('../../lib/auth', () => ({
 describe('RegisterScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(register).mockResolvedValue('mensaje-1');
+    jest.mocked(register).mockResolvedValue('ENVIADO');
   });
 
   it('submits the selected account details and opens phone verification', async () => {
@@ -45,13 +45,14 @@ describe('RegisterScreen', () => {
         password: 'clave-segura',
         confirmacionPassword: 'clave-segura',
         rol: 'VENDEDOR_AMBULANTE',
+        canal: 'SMS',
       });
       expect(router.push).toHaveBeenCalledWith({
         pathname: '/verify',
         params: {
           celular: '+573001234567',
           proposito: 'REGISTRO',
-          mensajeId: 'mensaje-1',
+          canal: 'SMS',
         },
       });
     });

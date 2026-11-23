@@ -54,10 +54,19 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
             String confirmacionPassword,
             RolUsuario rol,
             String deviceId,
-            String ipAddress
+            String ipAddress,
+            CanalVerificacion canalInput
     ) {
         String celular = Celular.desde(celularInput).valor();
         String correo = normalizarCorreo(correoInput);
+        CanalVerificacion canal = canalInput == null ? CanalVerificacion.WHATSAPP : canalInput;
+        if (canal == CanalVerificacion.CORREO && correo == null) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "Escribe tu correo para recibir el código por correo, o elige SMS.",
+                    Map.of("field", "correo")
+            );
+        }
         validarNombre(nombre);
         PasswordPolicy.validar(password);
         if (!Objects.equals(password, confirmacionPassword)) {
@@ -92,15 +101,15 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
                 now
         );
         usuarios.save(usuario);
-        VerificacionInfo verificacion = solicitarCodigo(celular, ipAddress);
+        VerificacionInfo verificacion = solicitarCodigo(celular, canal, ipAddress);
         return new RegistroResultado(usuario.id(), usuario.estado().name(), verificacion);
     }
 
     /** Si el proveedor falla, la cuenta se conserva y se informa el envío fallido (RF-07). */
-    private VerificacionInfo solicitarCodigo(String celular, String ipAddress) {
+    private VerificacionInfo solicitarCodigo(String celular, CanalVerificacion canal, String ipAddress) {
         try {
             SolicitarVerificacionPort.EnvioSolicitado envio = solicitarVerificacion.solicitar(
-                    celular, PropositoVerificacion.REGISTRO, CanalVerificacion.WHATSAPP, ipAddress
+                    celular, PropositoVerificacion.REGISTRO, canal, ipAddress
             );
             return new VerificacionInfo(
                     envio.mensajeId(), envio.canal().name(), envio.reenvioDisponibleEn(), "ENVIADO"
@@ -112,7 +121,7 @@ public class RegistrarCuentaUseCase implements RegistrarCuentaPort {
             Object mensajeId = exception.details().get("mensajeId");
             return new VerificacionInfo(
                     mensajeId == null ? null : UUID.fromString(mensajeId.toString()),
-                    CanalVerificacion.WHATSAPP.name(),
+                    canal.name(),
                     0,
                     "FALLIDO"
             );

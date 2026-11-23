@@ -36,6 +36,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class SolicitarVerificacionUseCaseTest {
@@ -77,6 +78,30 @@ class SolicitarVerificacionUseCaseTest {
         assertEquals(60, envio.reenvioDisponibleEn());
         verify(limitador).registrarEnvio(CELULAR, "127.0.0.1");
         verify(limitador).reiniciarIntentos(CELULAR, PropositoVerificacion.REGISTRO);
+    }
+
+    @Test
+    void sendsTheCodeToTheAccountEmailWhenTheUserChoosesEmail() {
+        when(usuarios.findByCelular(CELULAR))
+                .thenReturn(Optional.of(user(RolUsuario.CLIENTE, EstadoUsuario.PENDIENTE_VERIFICACION)));
+        when(verificarCelular.iniciar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.CORREO,
+                "ana@example.com")).thenReturn(new VerificarCelularPort.EnvioVerificacion("codigo-1"));
+        when(mensajes.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        useCase.solicitar(CELULAR, PropositoVerificacion.REGISTRO, CanalVerificacion.CORREO, "127.0.0.1");
+
+        ArgumentCaptor<Mensaje> guardado = ArgumentCaptor.forClass(Mensaje.class);
+        verify(mensajes).save(guardado.capture());
+        assertEquals(CanalVerificacion.CORREO, guardado.getValue().canal());
+    }
+
+    @Test
+    void neverSendsAPhoneChangeCodeByEmail() {
+        DomainException exception = assertThrows(DomainException.class, () -> useCase.solicitar(
+                CELULAR, PropositoVerificacion.CAMBIO, CanalVerificacion.CORREO, "127.0.0.1"));
+
+        assertEquals("VALIDATION_ERROR", exception.code());
+        verifyNoInteractions(verificarCelular);
     }
 
     @Test

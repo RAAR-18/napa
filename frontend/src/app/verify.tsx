@@ -1,6 +1,5 @@
 import { useLocalSearchParams, router } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -12,12 +11,16 @@ import {
   PrimaryButton,
   TextButton,
 } from '../components/AuthUI';
+import {
+  CanalVerificacionSelector,
+  describirCanal,
+} from '../components/CanalVerificacionSelector';
 import { ApiError } from '../lib/api';
 import {
   confirmRegistration,
   requestVerification,
   resetPassword,
-  verificationCodeImageUrl,
+  type VerificationChannel,
   type VerificationPurpose,
 } from '../lib/auth';
 
@@ -25,7 +28,8 @@ export default function VerifyScreen() {
   const params = useLocalSearchParams<{
     celular?: string;
     proposito?: string;
-    mensajeId?: string;
+    canal?: string;
+    envio?: string;
   }>();
   const celular = typeof params.celular === 'string' ? params.celular : '';
   const proposito: VerificationPurpose =
@@ -33,16 +37,20 @@ export default function VerifyScreen() {
       ? 'RECUPERACION_CONTRASENA'
       : 'REGISTRO';
   const isRecovery = proposito === 'RECUPERACION_CONTRASENA';
-  const [mensajeId, setMensajeId] = useState<string | null>(
-    typeof params.mensajeId === 'string' && params.mensajeId ? params.mensajeId : null,
+  const [canal, setCanal] = useState<VerificationChannel>(
+    params.canal === 'CORREO' ? 'CORREO' : 'SMS',
   );
-  const [imagenDisponible, setImagenDisponible] = useState(true);
+  const [canalEnviado, setCanalEnviado] = useState<VerificationChannel>(canal);
   const [codigo, setCodigo] = useState('');
   const [contrasenaNueva, setContrasenaNueva] = useState('');
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    params.envio === 'FALLIDO'
+      ? `No pudimos enviar el código por ${describirCanal(canal)}. Solicítalo de nuevo o elige el otro medio.`
+      : null,
+  );
 
   async function submit() {
     setError(null);
@@ -76,12 +84,9 @@ export default function VerifyScreen() {
     setMessage(null);
     setResending(true);
     try {
-      const nuevoMensajeId = await requestVerification(celular, proposito);
-      if (nuevoMensajeId) {
-        setMensajeId(nuevoMensajeId);
-        setImagenDisponible(true);
-      }
-      setMessage('Solicitamos un nuevo código para tu celular.');
+      await requestVerification(celular, proposito, canal);
+      setCanalEnviado(canal);
+      setMessage(`Te enviamos un código nuevo por ${describirCanal(canal)}.`);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -106,32 +111,22 @@ export default function VerifyScreen() {
     );
   }
 
+  const destino =
+    canalEnviado === 'CORREO' ? 'al correo de tu cuenta' : `por SMS al ${celular}`;
+
   return (
     <AuthPage>
       <PageHeading
-        eyebrow={isRecovery ? 'Recuperación segura' : 'Verifica tu celular'}
+        eyebrow={isRecovery ? 'Recuperación segura' : 'Verifica tu cuenta'}
         title={isRecovery ? 'Crea una contraseña nueva' : 'Ingresa tu código'}
         description={
           isRecovery
-            ? `Confirma el código enviado a ${celular} y elige una nueva contraseña.`
-            : `La cuenta quedará activa cuando confirmes el código enviado a ${celular}.`
+            ? `Escribe el código que enviamos ${destino} y elige una nueva contraseña.`
+            : `Tu cuenta quedará activa cuando escribas el código que enviamos ${destino}.`
         }
       />
       <ErrorBanner message={error} />
       {message ? <HelperText>{message}</HelperText> : null}
-      {!isRecovery && mensajeId && imagenDisponible ? (
-        <View style={styles.codigoImagen}>
-          <Text style={styles.codigoTitulo}>Digita este código para activar tu cuenta</Text>
-          <Image
-            accessibilityLabel="Imagen con el código de verificación"
-            key={mensajeId}
-            onError={() => setImagenDisponible(false)}
-            resizeMode="contain"
-            source={{ uri: verificationCodeImageUrl(mensajeId) }}
-            style={styles.imagen}
-          />
-        </View>
-      ) : null}
       <Field
         autoCapitalize="none"
         keyboardType="number-pad"
@@ -154,12 +149,7 @@ export default function VerifyScreen() {
           />
           <HelperText>Debe tener entre 8 y 128 caracteres.</HelperText>
         </>
-      ) : (
-        <HelperText>
-          Si no recibiste el mensaje, puedes solicitar otro código. La verificación
-          está limitada para proteger tu cuenta.
-        </HelperText>
-      )}
+      ) : null}
       <PrimaryButton
         busy={busy}
         disabled={
@@ -169,10 +159,18 @@ export default function VerifyScreen() {
         title={isRecovery ? 'Actualizar contraseña' : 'Verificar y continuar'}
         onPress={submit}
       />
+      <CanalVerificacionSelector
+        label="¿No te llegó? Pide otro código"
+        onChange={setCanal}
+        value={canal}
+      />
+      <HelperText>
+        Si eliges correo, el código llega al correo registrado en tu cuenta.
+      </HelperText>
       <FormFooter>
         <TextButton
           disabled={resending || busy}
-          title={resending ? 'Solicitando código…' : 'Solicitar otro código'}
+          title={resending ? 'Solicitando código…' : `Enviar otro código por ${describirCanal(canal)}`}
           onPress={resend}
         />
         <TextButton
@@ -183,25 +181,3 @@ export default function VerifyScreen() {
     </AuthPage>
   );
 }
-
-const styles = StyleSheet.create({
-  codigoImagen: {
-    alignItems: 'center',
-    borderColor: '#D0D7E2',
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 8,
-    marginBottom: 12,
-    padding: 12,
-  },
-  codigoTitulo: {
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  imagen: {
-    aspectRatio: 3,
-    maxWidth: 300,
-    width: '100%',
-  },
-});

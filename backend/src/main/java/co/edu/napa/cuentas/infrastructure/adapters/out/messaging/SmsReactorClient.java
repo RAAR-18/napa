@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  * El SMS sale por el celular Android conectado a la cuenta, con la app de SMSReactor abierta.
  */
 @Component
-@ConditionalOnProperty(name = "napa.verification.provider", havingValue = "smsreactor")
+@ConditionalOnProperty(name = "napa.verification.provider", havingValue = "sms-correo")
 public class SmsReactorClient {
     private static final Pattern OK = Pattern.compile("\"ok\"\\s*:\\s*true");
     private final HttpClient http;
@@ -37,18 +37,18 @@ public class SmsReactorClient {
     }
 
     SmsReactorClient(HttpClient http, String baseUrl, String apiKey, String phoneId) {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalArgumentException("NAPA_SMSREACTOR_API_KEY is required for the smsreactor provider");
-        }
         this.http = http;
         this.endpoint = URI.create(baseUrl.replaceAll("/+$", "") + "/smsapi/create-task");
-        this.apiKey = apiKey.trim();
+        this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.phoneId = phoneId == null || phoneId.isBlank() ? null : Integer.valueOf(phoneId.trim());
     }
 
     /** Pide el envío; lanza {@link EnvioFallidoException} si SMSReactor no lo acepta. */
     public void enviar(String celularE164, String mensaje) {
-        String body = "{\"recipient\":" + json(celularE164) + ",\"message\":" + json(mensaje)
+        if (apiKey.isEmpty()) {
+            throw new EnvioFallidoException("SMSReactor no está configurado (NAPA_SMSREACTOR_API_KEY)");
+        }
+        String body = "{\"recipient\":" + JsonTexto.de(celularE164) + ",\"message\":" + JsonTexto.de(mensaje)
                 + (phoneId == null ? "" : ",\"phone_id\":" + phoneId) + "}";
         HttpRequest request = HttpRequest.newBuilder(endpoint)
                 .timeout(Duration.ofSeconds(10))
@@ -69,33 +69,6 @@ public class SmsReactorClient {
             String detalle = response.body() == null ? "" : response.body();
             throw new EnvioFallidoException("HTTP " + response.statusCode() + " "
                     + detalle.substring(0, Math.min(200, detalle.length())));
-        }
-    }
-
-    static String json(String value) {
-        StringBuilder out = new StringBuilder("\"");
-        for (char c : value.toCharArray()) {
-            switch (c) {
-                case '"' -> out.append("\\\"");
-                case '\\' -> out.append("\\\\");
-                case '\n' -> out.append("\\n");
-                case '\r' -> out.append("\\r");
-                case '\t' -> out.append("\\t");
-                default -> {
-                    if (c < 0x20) {
-                        out.append("\\u%04x".formatted((int) c));
-                    } else {
-                        out.append(c);
-                    }
-                }
-            }
-        }
-        return out.append('"').toString();
-    }
-
-    public static class EnvioFallidoException extends RuntimeException {
-        public EnvioFallidoException(String message) {
-            super(message);
         }
     }
 }
