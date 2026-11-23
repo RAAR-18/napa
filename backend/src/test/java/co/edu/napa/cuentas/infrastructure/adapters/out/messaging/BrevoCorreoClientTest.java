@@ -37,6 +37,9 @@ class BrevoCorreoClientTest {
         assertTrue(body.get().startsWith(
                 "{\"sender\":{\"name\":\"Ñapa\",\"email\":\"napa@example.com\"},\"to\":[{\"email\":\"ana@example.com\"}]"));
         assertTrue(body.get().contains("\"subject\":\"Tu código de Ñapa: 481516\""));
+        // El HTML lleva charset y entidades para que "Ñapa" no llegue como "Ã‘apa".
+        assertTrue(body.get().contains("meta charset="));
+        assertTrue(body.get().contains("&Ntilde;apa"));
     }
 
     @Test
