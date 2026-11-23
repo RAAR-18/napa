@@ -39,7 +39,7 @@ describe('VerifyScreen', () => {
     await waitFor(() => {
       expect(requestVerification).toHaveBeenCalledWith('+573007080825', 'REGISTRO', 'CORREO');
       expect(getByText('Te enviamos un código por tu correo.')).toBeTruthy();
-      expect(getByText(/Podrás pedir otro código en 2:00/)).toBeTruthy();
+      expect(getByText(/Podrás pedir otro código por tu correo en 2:00/)).toBeTruthy();
     });
   });
 
@@ -77,6 +77,19 @@ describe('VerifyScreen', () => {
 
     await waitFor(() => {
       expect(requestVerification).toHaveBeenCalledWith('ana@gmail.com', 'REGISTRO', 'CORREO');
+    });
+  });
+
+  it('keeps a separate wait per channel so email can be requested right after SMS', async () => {
+    const { getByRole } = await render(<VerifyScreen />);
+
+    await fireEvent.press(getByRole('button', { name: 'Enviar código por SMS' }));
+    await waitFor(() => expect(requestVerification).toHaveBeenCalledTimes(1));
+    await fireEvent.press(getByRole('radio', { name: 'Por correo' }));
+    await fireEvent.press(getByRole('button', { name: 'Enviar otro código por tu correo' }));
+
+    await waitFor(() => {
+      expect(requestVerification).toHaveBeenLastCalledWith('+573007080825', 'REGISTRO', 'CORREO');
     });
   });
 });

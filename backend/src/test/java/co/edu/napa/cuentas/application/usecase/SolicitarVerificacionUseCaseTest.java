@@ -57,7 +57,7 @@ class SolicitarVerificacionUseCaseTest {
         useCase = new SolicitarVerificacionUseCase(
                 usuarios, verificarCelular, mensajes, limitador, espera, Clock.fixed(NOW, ZoneOffset.UTC)
         );
-        org.mockito.Mockito.lenient().when(espera.registrarEnvio(org.mockito.ArgumentMatchers.anyString()))
+        org.mockito.Mockito.lenient().when(espera.registrarEnvio(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(120L);
     }
 
@@ -211,7 +211,7 @@ class SolicitarVerificacionUseCaseTest {
         ));
 
         verify(limitador).liberarEnvio(CELULAR, "127.0.0.1");
-        verify(espera, never()).registrarEnvio(anyString());
+        verify(espera, never()).registrarEnvio(anyString(), any());
     }
 
     private Usuario user(RolUsuario rol, EstadoUsuario estado) {

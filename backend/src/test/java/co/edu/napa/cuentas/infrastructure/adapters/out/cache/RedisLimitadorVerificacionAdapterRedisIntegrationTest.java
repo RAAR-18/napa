@@ -54,28 +54,24 @@ class RedisLimitadorVerificacionAdapterRedisIntegrationTest {
     }
 
     @Test
-    void blocksASecondSendToTheSamePhoneWithinOneMinute() {
-        assertDoesNotThrow(() -> adapter.registrarEnvio("+573001234567", "192.0.2.10"));
+    void aFailedSendReturnedToTheLimiterDoesNotCount() {
+        String celular = "+573001234567";
+        String ip = "192.0.2.10";
+        for (int i = 0; i < 6; i++) {
+            assertDoesNotThrow(() -> adapter.registrarEnvio(celular, ip));
+            adapter.liberarEnvio(celular, ip);
+        }
 
-        DomainException exception = assertThrows(
-                DomainException.class,
-                () -> adapter.registrarEnvio("+573001234567", "192.0.2.10")
-        );
-
-        assertEquals("RATE_LIMITED", exception.code());
+        assertDoesNotThrow(() -> adapter.registrarEnvio(celular, ip));
     }
 
     @Test
-    void blocksTheSixthHourlySendToTheSamePhone() throws Exception {
+    void blocksTheSeventhHourlySendToTheSamePhone() {
         String celular = "+573001234568";
         String ip = "192.0.2.11";
-        String claveMinuto = "verif-rl:min:" + digest(celular);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             assertDoesNotThrow(() -> adapter.registrarEnvio(celular, ip));
-
-            // Simula el paso de un minuto sin esperar; conserva el contador horario.
-            redisTemplate.delete(claveMinuto);
         }
 
         DomainException exception = assertThrows(

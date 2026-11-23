@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  * Límites de RF-70 en Redis. Los celulares y las IP se guardan con hash para no dejar números en claro.
- * Envíos: 1 por minuto y 5 por hora por celular, y 20 por hora por IP.
+ * Envíos: 6 por hora por celular y 20 por hora por IP. La espera entre envíos la pone EsperaReenvioPort.
  */
 @Component
 public class RedisLimitadorVerificacionAdapter implements LimitadorVerificacionPort {
@@ -78,12 +78,10 @@ public class RedisLimitadorVerificacionAdapter implements LimitadorVerificacionP
             Long retryAfter = redisTemplate.execute(
                     REGISTRAR_ENVIO,
                     List.of(
-                            "verif-rl:min:" + digest(celular),
                             "verif-rl:hora:" + digest(celular),
                             "verif-rl:ip:" + digest(ipAddress == null ? "desconocida" : ipAddress)
                     ),
-                    "1", "60",
-                    "5", "3600",
+                    "6", "3600",
                     "20", "3600"
             );
             if (retryAfter != null && retryAfter > 0) {
@@ -104,7 +102,6 @@ public class RedisLimitadorVerificacionAdapter implements LimitadorVerificacionP
             redisTemplate.execute(
                     LIBERAR_ENVIO,
                     List.of(
-                            "verif-rl:min:" + digest(celular),
                             "verif-rl:hora:" + digest(celular),
                             "verif-rl:ip:" + digest(ipAddress == null ? "desconocida" : ipAddress)
                     )

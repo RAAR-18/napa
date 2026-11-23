@@ -75,7 +75,7 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
             );
         }
         // La espera y los límites cuentan igual exista o no la cuenta, para no revelar cuáles existen.
-        espera.exigirDisponible(celular);
+        espera.exigirDisponible(celular, canal);
         limitador.registrarEnvio(celular, ipAddress);
         try {
             return enviar(celular, proposito, canal);
@@ -92,7 +92,7 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
         }
         if (!puedeRecibirCodigo(celular, proposito)) {
             // Misma respuesta que un envío real, sin llamar al proveedor ni gastar un mensaje.
-            return new EnvioSolicitado(UUID.randomUUID(), canal, espera.registrarEnvio(celular));
+            return new EnvioSolicitado(UUID.randomUUID(), canal, espera.registrarEnvio(celular, canal));
         }
 
         String correo = null;
@@ -132,7 +132,7 @@ public class SolicitarVerificacionUseCase implements SolicitarVerificacionPort {
         Mensaje enviado = mensajes.save(
                 Mensaje.nuevo(canal, proposito, celular, EstadoMensaje.ENVIADO, envio.proveedorId(), now)
         );
-        return new EnvioSolicitado(enviado.id(), canal, espera.registrarEnvio(celular));
+        return new EnvioSolicitado(enviado.id(), canal, espera.registrarEnvio(celular, canal));
     }
 
     private boolean puedeRecibirCodigo(String celular, PropositoVerificacion proposito) {
