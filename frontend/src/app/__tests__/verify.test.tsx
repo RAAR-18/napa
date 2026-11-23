@@ -51,4 +51,17 @@ describe('VerifyScreen', () => {
 
     expect(getByText(/solo puede llegar por SMS/)).toBeTruthy();
   });
+
+  it('asks for the phone when opened from "problemas para iniciar sesión"', async () => {
+    delete mockParams.celular;
+    delete mockParams.tieneCorreo;
+    const { getByLabelText, getByRole } = await render(<VerifyScreen />);
+
+    await fireEvent.changeText(getByLabelText('Celular de tu cuenta'), '300 708 0825');
+    await fireEvent.press(getByRole('button', { name: 'Enviar código por SMS' }));
+
+    await waitFor(() => {
+      expect(requestVerification).toHaveBeenCalledWith('3007080825', 'REGISTRO', 'SMS');
+    });
+  });
 });

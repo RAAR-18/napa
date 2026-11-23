@@ -38,12 +38,16 @@ export default function VerifyScreen() {
     espera?: string;
     tieneCorreo?: string;
   }>();
-  const celular = typeof params.celular === 'string' ? params.celular : '';
+  // Sin celular en la ruta (botón "¿Tienes problemas para iniciar sesión?") se le pide aquí.
+  const celularRuta = typeof params.celular === 'string' ? params.celular : '';
+  const [celularEscrito, setCelularEscrito] = useState('');
+  const celular = celularRuta || celularEscrito.trim();
   const proposito: VerificationPurpose =
     params.proposito === 'RECUPERACION_CONTRASENA'
       ? 'RECUPERACION_CONTRASENA'
       : 'REGISTRO';
   const isRecovery = proposito === 'RECUPERACION_CONTRASENA';
+  // Si no se sabe, se ofrece el correo; el backend avisa si la cuenta no tiene uno.
   const tieneCorreo = params.tieneCorreo !== '0';
   const esperaInicial = Number(params.espera);
   // En la recuperación el código ya salió; en el registro primero se pregunta el medio.
@@ -127,19 +131,6 @@ export default function VerifyScreen() {
     }
   }
 
-  if (!celular) {
-    return (
-      <AuthPage>
-        <PageHeading
-          eyebrow="Verificación"
-          title="No encontramos el celular"
-          description="Vuelve al registro o a la recuperación para solicitar un código."
-        />
-        <TextButton title="Volver al inicio" onPress={() => router.replace('/')} />
-      </AuthPage>
-    );
-  }
-
   const selector = (
     <>
       <CanalVerificacionSelector
@@ -165,13 +156,30 @@ export default function VerifyScreen() {
         <PageHeading
           eyebrow="Verifica tu cuenta"
           title="¿Cómo quieres recibir tu código?"
-          description={`Tu cuenta quedó creada. Para activarla te enviaremos un código de 6 dígitos por SMS al ${celular} o a tu correo.`}
+          description={
+            celularRuta
+              ? `Tu cuenta quedó creada. Para activarla te enviaremos un código de 6 dígitos por SMS al ${celular} o a tu correo.`
+              : 'Escribe el celular con el que creaste tu cuenta y elige cómo recibir el código para activarla.'
+          }
         />
         <ErrorBanner message={error} />
+        {celularRuta ? null : (
+          <Field
+            autoCapitalize="none"
+            keyboardType="phone-pad"
+            label="Celular de tu cuenta"
+            maxLength={16}
+            onChangeText={(value) => setCelularEscrito(value.replace(/[^0-9+]/g, ''))}
+            placeholder="3001234567"
+            value={celularEscrito}
+          />
+        )}
         {selector}
         <PrimaryButton
           busy={sending}
-          disabled={espera > 0 || (canal === 'CORREO' && !tieneCorreo)}
+          disabled={
+            espera > 0 || celular.length < 10 || (canal === 'CORREO' && !tieneCorreo)
+          }
           title={
             espera > 0
               ? `Espera ${formatoEspera(espera)}`

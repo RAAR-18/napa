@@ -98,6 +98,10 @@ export default function LoginScreen() {
       />
       <FormFooter>
         <TextButton
+          title="¿Tienes problemas para iniciar sesión? Verifica tu cuenta aquí"
+          onPress={() => router.push({ pathname: '/verify', params: { proposito: 'REGISTRO' } })}
+        />
+        <TextButton
           title="¿Aún no tienes cuenta? Regístrate"
           onPress={() => router.push('/register')}
         />
