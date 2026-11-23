@@ -5,7 +5,6 @@ import co.edu.napa.cuentas.domain.model.CanalVerificacion;
 import co.edu.napa.cuentas.domain.model.RolUsuario;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -65,7 +64,8 @@ public class RegistroController {
     public record RegistroRequest(
             @NotBlank @Size(max = 120) String nombre,
             @NotBlank String celular,
-            @Email @Size(max = 254) String correo,
+            // El formato lo valida Correo, con un mensaje que explica el error (p. ej. "@gmail,com").
+            @Size(max = 254) String correo,
             @NotNull String password,
             @NotNull String confirmPassword,
             @NotNull RolUsuario rol,
