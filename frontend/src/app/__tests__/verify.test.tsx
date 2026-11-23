@@ -61,7 +61,22 @@ describe('VerifyScreen', () => {
     await fireEvent.press(getByRole('button', { name: 'Enviar código por SMS' }));
 
     await waitFor(() => {
-      expect(requestVerification).toHaveBeenCalledWith('3007080825', 'REGISTRO', 'SMS');
+      expect(requestVerification).toHaveBeenCalledWith('+573007080825', 'REGISTRO', 'SMS');
+    });
+  });
+
+  it('lets the account be found by its email when email is chosen', async () => {
+    delete mockParams.celular;
+    delete mockParams.tieneCorreo;
+    const { getByLabelText, getByRole, queryByLabelText } = await render(<VerifyScreen />);
+
+    await fireEvent.press(getByRole('radio', { name: 'Por correo' }));
+    expect(queryByLabelText('Celular de tu cuenta')).toBeNull();
+    await fireEvent.changeText(getByLabelText('Correo de tu cuenta'), 'Ana@Gmail.com');
+    await fireEvent.press(getByRole('button', { name: 'Enviar código por tu correo' }));
+
+    await waitFor(() => {
+      expect(requestVerification).toHaveBeenCalledWith('ana@gmail.com', 'REGISTRO', 'CORREO');
     });
   });
 });

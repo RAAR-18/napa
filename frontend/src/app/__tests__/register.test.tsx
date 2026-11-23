@@ -22,7 +22,7 @@ describe('RegisterScreen', () => {
     const { getByLabelText, getByRole } = await render(<RegisterScreen />);
 
     await fireEvent.changeText(getByLabelText('Nombre'), 'Ana Vendedora');
-    await fireEvent.changeText(getByLabelText('Celular'), '+573001234567');
+    await fireEvent.changeText(getByLabelText('Celular'), '300 123 4567');
     await fireEvent.changeText(
       getByLabelText('Correo (opcional)'),
       'ana@example.com',

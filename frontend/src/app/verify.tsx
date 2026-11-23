@@ -15,6 +15,7 @@ import {
   CanalVerificacionSelector,
   describirCanal,
 } from '../components/CanalVerificacionSelector';
+import { CelularField } from '../components/CelularField';
 import { ApiError } from '../lib/api';
 import {
   confirmRegistration,
@@ -23,6 +24,7 @@ import {
   type VerificationChannel,
   type VerificationPurpose,
 } from '../lib/auth';
+import { validarCorreo } from '../lib/correo';
 
 function formatoEspera(segundos: number): string {
   const minutos = Math.floor(segundos / 60);
@@ -41,7 +43,17 @@ export default function VerifyScreen() {
   // Sin celular en la ruta (botón "¿Tienes problemas para iniciar sesión?") se le pide aquí.
   const celularRuta = typeof params.celular === 'string' ? params.celular : '';
   const [celularEscrito, setCelularEscrito] = useState('');
-  const celular = celularRuta || celularEscrito.trim();
+  const [correoEscrito, setCorreoEscrito] = useState('');
+  const [canal, setCanal] = useState<VerificationChannel>(
+    params.canal === 'CORREO' ? 'CORREO' : 'SMS',
+  );
+  // Sin celular en la ruta y con "correo" elegido, la cuenta se identifica por su correo.
+  const porCorreo = !celularRuta && canal === 'CORREO';
+  // Tras el primer envío se usa siempre la misma cuenta, aunque luego cambie el medio elegido.
+  const [cuentaEnviada, setCuentaEnviada] = useState<string | null>(null);
+  const celular =
+    cuentaEnviada ??
+    (celularRuta || (porCorreo ? correoEscrito.trim().toLowerCase() : celularEscrito));
   const proposito: VerificationPurpose =
     params.proposito === 'RECUPERACION_CONTRASENA'
       ? 'RECUPERACION_CONTRASENA'
@@ -49,13 +61,11 @@ export default function VerifyScreen() {
   const isRecovery = proposito === 'RECUPERACION_CONTRASENA';
   // Si no se sabe, se ofrece el correo; el backend avisa si la cuenta no tiene uno.
   const tieneCorreo = params.tieneCorreo !== '0';
+  const errorCorreo = porCorreo ? validarCorreo(correoEscrito) : null;
   const esperaInicial = Number(params.espera);
   // En la recuperación el código ya salió; en el registro primero se pregunta el medio.
   const [canalEnviado, setCanalEnviado] = useState<VerificationChannel | null>(
     isRecovery ? (params.canal === 'CORREO' ? 'CORREO' : 'SMS') : null,
-  );
-  const [canal, setCanal] = useState<VerificationChannel>(
-    params.canal === 'CORREO' ? 'CORREO' : 'SMS',
   );
   const [espera, setEspera] = useState(
     Number.isFinite(esperaInicial) && esperaInicial > 0 ? Math.round(esperaInicial) : 0,
@@ -112,7 +122,11 @@ export default function VerifyScreen() {
     setSending(true);
     try {
       const segundos = await requestVerification(celular, proposito, canal);
-      setCanalEnviado(canal);
+      setCanalEnviado(celular.includes('@') ? 'CORREO' : canal);
+      if (celular.includes('@')) {
+        setCanal('CORREO');
+      }
+      setCuentaEnviada(celular);
       setEspera(segundos);
       setMessage(`Te enviamos un código por ${describirCanal(canal)}.`);
     } catch (cause) {
@@ -159,26 +173,33 @@ export default function VerifyScreen() {
           description={
             celularRuta
               ? `Tu cuenta quedó creada. Para activarla te enviaremos un código de 6 dígitos por SMS al ${celular} o a tu correo.`
-              : 'Escribe el celular con el que creaste tu cuenta y elige cómo recibir el código para activarla.'
+              : 'Elige cómo recibir el código y escribe el correo o el celular con el que creaste tu cuenta.'
           }
         />
         <ErrorBanner message={error} />
-        {celularRuta ? null : (
-          <Field
-            autoCapitalize="none"
-            keyboardType="phone-pad"
-            label="Celular de tu cuenta"
-            maxLength={16}
-            onChangeText={(value) => setCelularEscrito(value.replace(/[^0-9+]/g, ''))}
-            placeholder="3001234567"
-            value={celularEscrito}
-          />
-        )}
         {selector}
+        {celularRuta ? null : porCorreo ? (
+          <>
+            <Field
+              autoCapitalize="none"
+              keyboardType="email-address"
+              label="Correo de tu cuenta"
+              maxLength={254}
+              onChangeText={setCorreoEscrito}
+              placeholder="nombre@gmail.com"
+              value={correoEscrito}
+            />
+            {correoEscrito.trim() && errorCorreo ? <HelperText>{errorCorreo}</HelperText> : null}
+          </>
+        ) : (
+          <CelularField label="Celular de tu cuenta" onChange={setCelularEscrito} />
+        )}
         <PrimaryButton
           busy={sending}
           disabled={
-            espera > 0 || celular.length < 10 || (canal === 'CORREO' && !tieneCorreo)
+            espera > 0 ||
+            (porCorreo ? !correoEscrito.trim() || Boolean(errorCorreo) : celular.length < 10) ||
+            (canal === 'CORREO' && !tieneCorreo)
           }
           title={
             espera > 0
@@ -245,7 +266,7 @@ export default function VerifyScreen() {
         title={isRecovery ? 'Actualizar contraseña' : 'Verificar y continuar'}
         onPress={submit}
       />
-      {selector}
+      {celular.includes('@') ? null : selector}
       {espera > 0 ? (
         <HelperText>
           {`Podrás pedir otro código en ${formatoEspera(espera)}. Cada nuevo envío duplica la espera.`}

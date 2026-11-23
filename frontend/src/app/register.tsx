@@ -15,6 +15,7 @@ import {
   TextButton,
   palette,
 } from '../components/AuthUI';
+import { CelularField } from '../components/CelularField';
 import { register, type UserRole } from '../lib/auth';
 import { validarCorreo } from '../lib/correo';
 
@@ -87,18 +88,7 @@ export default function RegisterScreen() {
         placeholder="Tu nombre"
         value={nombre}
       />
-      <Field
-        autoCapitalize="none"
-        keyboardType="phone-pad"
-        label="Celular"
-        onChangeText={setCelular}
-        placeholder="+573001234567"
-        value={celular}
-      />
-      <HelperText>
-        Usa tu número de Colombia en formato internacional, por ejemplo
-        +573001234567.
-      </HelperText>
+      <CelularField label="Celular" onChange={setCelular} />
       <Field
         autoCapitalize="none"
         keyboardType="email-address"
