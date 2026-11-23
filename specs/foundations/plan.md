@@ -150,14 +150,14 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 **Phase F3 – Notificaciones (RF-38, RF-39)**
 - [x] F030 Tablas `Notificacion` y `PreferenciaNotificacion` en V4; `DispositivoToken` ya existe en V3. Esquema validado en PostgreSQL/PostGIS en CI: `NotificationSchemaIntegrationTest`, 2 pruebas aprobadas, sin omisiones.
-- [x] F031 Adaptador FCM opt-in (Firebase Admin), lotes máximos de 500, limpieza de tokens `UNREGISTERED` y resultado explícito de entrega. Pruebas unitarias pasan; pendiente validar con credenciales/entorno FCM real.
+- [x] F031 Adaptador FCM opt-in (Firebase Admin), lotes máximos de 500, limpieza de tokens `UNREGISTERED` y resultado explícito de entrega. Pruebas unitarias aprobadas. Entrega real con Firebase y disponibilidad del historial con FCM deshabilitado verificadas en F042.
 - [x] F032 Caso de uso, endpoints feed/detalle/preferencias, job de retención y manejador multi-evento para E01–E12, E14–E19 con deduplicación por destinatario. Pruebas unitarias pasan; el esquema quedó validado en CI mediante F030.
 - [ ] F033 Entidad `mensaje` y adaptador Twilio Verify de producción (RF-70); fuera del alcance aprobado para desarrollo, que mantiene OTP real deshabilitado.
 
 **Phase F4 – Frontend base**
 - [x] F040 Proyecto Expo con development build Android (`expo-dev-client` y perfil `development` en `frontend/eas.json`), navegación con Expo Router y cliente HTTP basado en `fetch` en `frontend/src/lib/api.ts`. APK instalada y cierre/nuevo inicio de sesión validados en Android físico.
 - [x] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`. Tabla `outbox_por_cuenta` en `napa.db` con clave única por usuario e `Idempotency-Key`; reenvío en orden con retroceso exponencial (5 s a 5 min); fallo de red, 401, 408, 429 y 5xx se reintentan (5xx hasta 8 veces); `CONFLICT` se conserva como fallida para revisión y reintento manual, sin asumir éxito; otro 4xx queda `FALLIDA` para reintentar o descartar. Se procesa al abrir la app, al volver a primer plano y cada minuto, y conserva las acciones por propietario al cerrar sesión. Usada por RF-01 (calificar) y RF-60 (reportar); pantalla "Pendientes de envío".
-- [ ] F042 Registro del token FCM nativo y pantalla de notificaciones; el frontend actual no tiene autenticación, navegación ni cliente HTTP.
+- [x] F042 Validar push real en Android físico. Con Firebase habilitado, el development build recibió el aviso de un pedido nuevo en segundo plano y abrió la pantalla de notificaciones al tocarlo. Con FCM deshabilitado, otro pedido quedó visible en el historial de la app.
 - [x] F043 Pruebas Jest de outbox (sin red, reintento, duplicado) en `frontend/src/database/outbox/outbox.test.ts` y `sqlite-store.test.ts`, más la pantalla de reporte sin conexión.
 
 **Decisión — cliente HTTP**: se conserva `fetch` centralizado en `frontend/src/lib/api.ts`, que ya maneja errores y cabeceras de autenticación e idempotencia. Sustituye la previsión inicial de Axios; no cambia los contratos de la API.
