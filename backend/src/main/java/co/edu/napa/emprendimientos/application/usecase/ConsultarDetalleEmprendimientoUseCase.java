@@ -71,7 +71,8 @@ public class ConsultarDetalleEmprendimientoUseCase implements ConsultarDetalleEm
                         LocalTime.now(clock.withZone(COLOMBIA_ZONE))),
                 new Ubicacion(ubicacion.latitud(), ubicacion.longitud(), ubicacion.direccion(), ubicacion.referencia()),
                 modalidades,
-                ofreceDomicilio
+                ofreceDomicilio,
+                emprendimiento.categoriaPersonalizada()
         );
     }
 

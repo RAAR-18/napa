@@ -41,6 +41,7 @@ export default function EmprendimientoScreen() {
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] =
     useState<CategoriaEmprendimiento>('OTROS');
+  const [categoriaPersonalizada, setCategoriaPersonalizada] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [horaApertura, setHoraApertura] = useState('');
   const [horaCierre, setHoraCierre] = useState('');
@@ -103,6 +104,7 @@ export default function EmprendimientoScreen() {
     const validTime = (value: string) =>
       /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.trim());
     if (
+      (categoria === 'OTROS' && categoriaPersonalizada.trim().length > 80) ||
       !nombre.trim() ||
       nombre.trim().length > 100 ||
       !descripcion.trim() ||
@@ -125,6 +127,8 @@ export default function EmprendimientoScreen() {
     return {
       nombre: nombre.trim(),
       categoria,
+      ...(categoria === 'OTROS' && categoriaPersonalizada.trim()
+        ? { categoriaPersonalizada: categoriaPersonalizada.trim() } : {}),
       descripcion: descripcion.trim(),
       horaApertura: horaApertura.trim(),
       horaCierre: horaCierre.trim(),
@@ -213,7 +217,7 @@ export default function EmprendimientoScreen() {
         <View style={styles.successCard}>
           <Text style={styles.successTitle}>Creación exitosa</Text>
           <Text style={styles.successText}>
-            Categoría: {categories.find((item) => item.value === created.categoria)?.label}
+            Categoría: {created.categoriaPersonalizada ?? categories.find((item) => item.value === created.categoria)?.label}
           </Text>
           <Text style={styles.successText}>Estado: {created.estado}</Text>
         </View>
@@ -256,6 +260,11 @@ export default function EmprendimientoScreen() {
           />
         ))}
       </View>
+      {categoria === 'OTROS' ? (
+        <Field label="Tipo de negocio (opcional)" value={categoriaPersonalizada}
+          onChangeText={setCategoriaPersonalizada} maxLength={80}
+          placeholder="Por ejemplo: Artesanías o repostería" />
+      ) : null}
       <Field
         label="Descripción"
         maxLength={500}

@@ -268,4 +268,21 @@ describe('EmprendimientoScreen', () => {
       ).toBeTruthy();
     });
   });
+  it('submits custom category text only when Other is selected', async () => {
+    const view = await render(<EmprendimientoScreen />);
+    await waitFor(() => expect(view.getByLabelText('Nombre del emprendimiento')).toBeTruthy());
+    await fireEvent.changeText(view.getByLabelText('Nombre del emprendimiento'), 'Artesanías de Ana');
+    await fireEvent.changeText(view.getByLabelText('Tipo de negocio (opcional)'), '  Artesanías  ');
+    await fireEvent.changeText(view.getByLabelText('Descripción'), 'Hecho a mano');
+    await fireEvent.changeText(view.getByLabelText('Hora de apertura'), '08:00');
+    await fireEvent.changeText(view.getByLabelText('Hora de cierre'), '18:00');
+    await fireEvent.changeText(view.getByLabelText('Latitud'), '11.24');
+    await fireEvent.changeText(view.getByLabelText('Longitud'), '-74.21');
+    await fireEvent.changeText(view.getByLabelText('Dirección del punto (obligatoria)'), 'Calle 1');
+    await fireEvent.press(view.getByRole('button', { name: 'Publicar emprendimiento' }));
+    await waitFor(() => expect(createEmprendimiento).toHaveBeenCalledWith(expect.objectContaining({
+      categoria: 'OTROS', categoriaPersonalizada: 'Artesanías',
+    })));
+  });
+
 });

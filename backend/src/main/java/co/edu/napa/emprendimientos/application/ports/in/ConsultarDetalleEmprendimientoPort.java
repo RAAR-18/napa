@@ -24,8 +24,13 @@ public interface ConsultarDetalleEmprendimientoPort {
             boolean abierto,
             Ubicacion ubicacion,
             List<String> modalidadesEntrega,
-            boolean ofreceDomicilio
+            boolean ofreceDomicilio,
+            String categoriaPersonalizada
     ) {
+        public Detalle(UUID id, String nombre, CategoriaEmprendimiento categoria, TipoVendedor tipoVendedor, String descripcion, String horaApertura, String horaCierre, boolean abierto, Ubicacion ubicacion, List<String> modalidadesEntrega, boolean ofreceDomicilio) {
+            this(id, nombre, categoria, tipoVendedor, descripcion, horaApertura, horaCierre, abierto, ubicacion, modalidadesEntrega, ofreceDomicilio, null);
+        }
+
         public Detalle {
             modalidadesEntrega = List.copyOf(modalidadesEntrega);
         }

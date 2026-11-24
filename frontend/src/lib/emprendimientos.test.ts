@@ -1,6 +1,8 @@
 import { jsonHeaders, requestJson } from './api';
 import {
   createEmprendimiento,
+  obtenerMiEmprendimiento,
+  editarMiEmprendimiento,
   listEmprendimientos,
   type Emprendimiento,
 } from './emprendimientos';
@@ -100,4 +102,13 @@ describe('listEmprendimientos', () => {
       expect.objectContaining({ method: 'GET' }),
     );
   });
+});
+
+
+it('does not read or move a business when the automatic update belongs to another account', async () => {
+  await expect(obtenerMiEmprendimiento('otra-cuenta')).rejects.toThrow('La sesión cambió.');
+  await expect(editarMiEmprendimiento({ ubicacion: {
+    latitud: 11.25, longitud: -74.2, direccion: null, referencia: null,
+  } }, 'otra-cuenta')).rejects.toThrow('La sesión cambió.');
+  expect(requestJson).not.toHaveBeenCalled();
 });

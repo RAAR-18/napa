@@ -70,3 +70,9 @@ Como vendedor, quiero editar la información de mi emprendimiento (ubicación, h
 
 - **SC-001**: Los cambios guardados sobre un emprendimiento se reflejan para los clientes en menos de 3 segundos.
 - **SC-002**: El 100% de los intentos de edición con datos inválidos son rechazados con un mensaje claro para el vendedor.
+
+## Actualización asistida de zona (P1-05, 2026-11-24)
+
+El ambulante puede activar o desactivar la actualización automática de su zona mientras Ñapa está abierta y en primer plano. Requiere una acción explícita y permiso de ubicación, está apagada por defecto, y la preferencia pertenece a la cuenta y al emprendimiento que la activaron. El punto fijo no dispone de esta opción. No sustituye la actualización manual de FR-004 ni modifica ubicaciones congeladas en pedidos existentes. Se pausa al cerrar sesión, cambiar de cuenta o pasar la app a segundo plano.
+
+El seguimiento con la aplicación cerrada o en segundo plano no está incluido en esta corrección y requiere una entrega específica con permisos y build nativos. La interfaz debe explicar el alcance real sin prometer ese seguimiento.

@@ -1,5 +1,7 @@
 # Mapa de conocimiento — Ñapa
 
+Estado vigente: leer primero `CONTINUIDAD.md` y `CORRECCIONES_AUDITORIA.md`. El mapa inferior conserva la revisión histórica del 13 de noviembre; no usar sus pendientes como estado actual.
+
 Revisión inicial: 13 de noviembre de 2026. Fuente: rama `main` del repositorio https://github.com/RAAR-18/napa, commit `704244f`. Es una inspección de documentación, estructura, configuración, rutas HTTP y archivos de implementación y pruebas; no una certificación de funcionamiento. No se ejecutaron pruebas ni servicios en esta revisión.
 
 ## Propósito y dominio
@@ -116,3 +118,11 @@ Actualizar este mapa cuando cambien arquitectura, rutas clave o alcance confirma
 - Base actual inspeccionada puntualmente: `35cc46d`, rama `fix/p0-01-outbox-web`. El cuerpo anterior conserva el mapa histórico del 13 de noviembre: no es un inventario actualizado de todos los módulos.
 - Se trabaja en las incidencias del informe técnico aportado por el usuario. Leer `docs/CONTINUIDAD.md` y `docs/CORRECCIONES_AUDITORIA.md` para conocer el avance actual.
 - El usuario autorizó edición directa y pruebas. Los commits y push continúan siendo manuales.
+
+
+## Rutas añadidas en el bloque posterior a a561f42
+
+- Categoría Otros personalizada: modelo `backend/src/main/java/co/edu/napa/emprendimientos/domain/model/Emprendimiento.java`, command/DTOs del mismo módulo, JPA y listado JDBC. Campo JSON `categoriaPersonalizada`, nullable, solo OTROS, hasta 80 caracteres.
+- Migración V21: `backend/src/main/resources/db/migration/V21__emprendimiento_categoria_personalizada.sql`. Se mantienen V1–V20; las pruebas usan PostgreSQL aislado.
+- Formulario y presentación: `frontend/src/app/emprendimiento.tsx`, `mi-emprendimiento.tsx`, `emprendimientos.tsx`, `emprendimiento-detalle.tsx`; tipos/API en `frontend/src/lib/emprendimientos.ts`.
+- Actualización voluntaria de zona: `frontend/src/lib/ubicacion-automatica.ts`, iniciada desde `_layout.tsx`, control en Mi emprendimiento. Expo Location existente, cada 2 min en primer plano, mínimo 100 m; preferencia por cuenta/negocio. No es seguimiento en segundo plano.

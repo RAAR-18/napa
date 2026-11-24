@@ -70,6 +70,25 @@ class EmprendimientoPersistenceIntegrationTest {
     private UbicacionRepositoryPort ubicaciones;
 
     @Test
+    void persistsAndListsTheCustomOtherCategoryWithADatabaseConstraint() {
+        UUID usuario = insertActiveSeller();
+        Instant now = Instant.now();
+        Ubicacion lugar = saveLocation(now);
+        var negocio = new Emprendimiento(UUID.randomUUID(), usuario, lugar.id(), "Artesanías de prueba",
+                CategoriaEmprendimiento.OTROS, "Hecho a mano", LocalTime.of(8, 0), LocalTime.of(18, 0),
+                EstadoEmprendimiento.ACTIVO, now, now, "  Artesanías  ");
+        var guardado = emprendimientos.save(negocio);
+        assertEquals("Artesanías", guardado.categoriaPersonalizada());
+        assertEquals("Artesanías", emprendimientos.findActiveById(guardado.id()).orElseThrow().categoriaPersonalizada());
+        var pagina = listarEmprendimientos.listar(new ListarEmprendimientosQuery(
+                filter(TipoVendedor.AMBULANTE, null, null, null, false), 0, 100));
+        assertEquals("Artesanías", pagina.content().stream().filter(item -> item.id().equals(guardado.id()))
+                .findFirst().orElseThrow().categoriaPersonalizada());
+        assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> jdbcTemplate.update(
+                "UPDATE emprendimiento SET categoria = 'SNACKS' WHERE id = ?", guardado.id()));
+    }
+
+    @Test
     void migrationAllowsAmbulantLocationsWithoutAddressAndPersistsAnActiveBusiness() {
         UUID userId = insertActiveSeller();
         Instant now = Instant.now();

@@ -16,6 +16,7 @@ export type CategoriaEmprendimiento =
 export type CrearEmprendimientoInput = {
   nombre: string;
   categoria: CategoriaEmprendimiento;
+  categoriaPersonalizada?: string | null;
   descripcion: string;
   horaApertura: string;
   horaCierre: string;
@@ -37,6 +38,7 @@ export type EmprendimientoListado = {
   id: string;
   nombre: string;
   categoria: CategoriaEmprendimiento;
+  categoriaPersonalizada?: string | null;
   tipoVendedor: TipoVendedor;
   abierto: boolean;
   horaApertura: string;
@@ -131,6 +133,7 @@ export type EmprendimientoDetalle = {
   id: string;
   nombre: string;
   categoria: CategoriaEmprendimiento;
+  categoriaPersonalizada?: string | null;
   tipoVendedor: TipoVendedor;
   descripcion: string;
   horaApertura: string;
@@ -158,23 +161,29 @@ export const categoriaNombres: Record<CategoriaEmprendimiento, string> = {
   OTROS: 'Otros',
 };
 
-export function obtenerMiEmprendimiento() {
-  return withValidSession((session) =>
-    requestJson<Emprendimiento>('/api/v1/emprendimientos/me', {
+export function obtenerMiEmprendimiento(usuarioEsperado?: string) {
+  return withValidSession((session) => {
+    if (usuarioEsperado && (session.usuarioId !== usuarioEsperado || session.rol !== 'VENDEDOR_AMBULANTE')) {
+      throw new Error('La sesión cambió.');
+    }
+    return requestJson<Emprendimiento>('/api/v1/emprendimientos/me', {
       method: 'GET',
       headers: jsonHeaders({ accessToken: session.accessToken }),
-    }),
-  );
+    });
+  });
 }
 
-export function editarMiEmprendimiento(input: EditarEmprendimientoInput) {
-  return withValidSession((session) =>
-    requestJson<Emprendimiento>('/api/v1/emprendimientos/me', {
+export function editarMiEmprendimiento(input: EditarEmprendimientoInput, usuarioEsperado?: string) {
+  return withValidSession((session) => {
+    if (usuarioEsperado && (session.usuarioId !== usuarioEsperado || session.rol !== 'VENDEDOR_AMBULANTE')) {
+      throw new Error('La sesión cambió.');
+    }
+    return requestJson<Emprendimiento>('/api/v1/emprendimientos/me', {
       method: 'PATCH',
       headers: jsonHeaders({ accessToken: session.accessToken }),
       body: JSON.stringify(input),
-    }),
-  );
+    });
+  });
 }
 
 export function eliminarMiEmprendimiento(idempotencyKey: string) {

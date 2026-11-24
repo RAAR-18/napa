@@ -1,40 +1,17 @@
-# Continuidad entre chats
+# Continuidad entre chats — Ñapa
 
 Actualizado: 24 de noviembre de 2026.
 
-- Carpeta real: `C:\Users\ESTUDIANTE\Documents\GitHub\napa`; no trabajar en la copia de `Documents\ChatGPT\napa`.
-- Rama: `fix/p0-01-outbox-web`; base `35cc46d`.
-- El usuario autorizó correcciones directas y pruebas; commits/push siguen siendo manuales.
-- Trabajo actual: correcciones del informe técnico. Mapas, navegación y optimización de varias entregas están pospuestos.
-- P0-01: adaptador web IndexedDB ya incorporado por el usuario; se añadió manejo de errores de apertura y cobertura de persistencia/concurrencia. Se mantiene SQLite nativo.
-- P0-03: nuevo `frontend/src/components/TimeField.tsx` y uso en creación/edición de emprendimiento para restringir y formatear horas.
-- Validación: 293 pruebas frontend/43 suites, sin fallos; typecheck y lint correctos. Prueba manual web con publicación, recarga offline y reconexión pendiente. No se ejecutaron pruebas backend, pues no hubo cambios allí.
-- Dependencia nueva de pruebas: `fake-indexeddb`. La instalación npm completó; Expo finalizó con un error de recarga de CLI durante la instalación. Las verificaciones posteriores de Jest, tipos y lint funcionaron.
-- No se migraron pendientes antiguos de SQLite web ni se cambiaron otras cachés SQLite. No borrar datos del navegador.
-- Próximo objetivo: P0-06, persistencia automática de carrito. Archivos clave: `frontend/src/components/PedidoCatalogo.tsx`, `frontend/src/lib/pedido-offline.ts` y pruebas del catálogo/productos.
-- No aplicar ciegamente los cambios de política de contraseñas, límites o inventario del informe: contrastar specs/planes.
-- Leer `docs/CORRECCIONES_AUDITORIA.md` para detalles y limitaciones. Los planes de fundaciones, RF-28 y RF-29 registran esta entrega.
-- No se creó commit ni push. La selección previa de archivos preparados se conservó.
-
-Comprobación final: exportación web de Expo correcta; adaptador IndexedDB presente en el bundle generado. La CLI funcionó tras terminar la instalación. Continúa pendiente únicamente el recorrido manual de esta entrega en navegador y la decisión de commit del usuario.
-
-## Segundo bloque y nueva forma de avanzar
-
-El usuario pidió corregir por bloques, con pruebas pertinentes y compilación, y delegó la validación funcional en el tester del grupo. No esperar pruebas manuales para seguir. Docker disponible si se necesitan integraciones.
-
-Aplicados: persistencia automática de carrito y última dirección (P0-06/P1-03), acceso a edición de negocio (P1-06), navegación móvil única (P2-03), aviso de éxito de pagos (P2-04), botón de calificar según opciones pendientes (P2-05), textos de registro y acceso unificado a cuenta (P3-01/P3-02). Validación de cantidades y feedback de contraseñas mejorados sin alterar decisiones funcionales (P0-02/P0-04 parciales).
-
-Archivos nuevos importantes: `frontend/src/lib/pedido-storage.ts`, `pedido-storage.web.ts`, `frontend/src/hooks/useCalificacionPendiente.ts`. `pedido-offline.ts` conserva la API pública y delega almacenamiento por plataforma. `PedidoCatalogo.tsx` gestiona recuperación, guardado serializado y limpieza de borrador. No se modificó el backend en este bloque.
-
-Siguiente trabajo: proveedor y recuperación de verificación P0-05, pagos de reservas P1-01 y restantes pendientes listados en `CORRECCIONES_AUDITORIA.md`. Mantener separados cambios funcionales propuestos por el informe de errores confirmados contra las specs. No se hicieron commits/push ni cambios en la selección de archivos del usuario.
-
-Validación final del segundo bloque: typecheck/lint correctos; exportación web correcta; 41 suites correctas en la comprobación general y las pruebas afectadas corregidas y verificadas en una repetición dirigida de 5 suites/55 pruebas. No repetir toda la suite sin nuevos cambios o fallos. El recorrido funcional queda a cargo del tester por instrucción del usuario.
-
-## Último bloque (reemplaza los próximos pasos anteriores)
-
-- Revisión solicitada del commit: todavía no existe un commit de estas correcciones; HEAD `35cc46d`. El usuario había preparado el bloque anterior. Git tiene autor configurado. Conservar su índice; no hacer commit/push.
-- Añadidos selector visual de reserva (P1-07), actualización visible cada 30 s de notificaciones/pedidos (P1-02, sondeo, no SSE) y mejoras de verificación por correo y bloqueo de operaciones concurrentes (P0-05 parcial).
-- Archivos nuevos: `frontend/src/components/ReservationDateTimeField.tsx`, su variante `.web.tsx`, `frontend/src/lib/reservation-date.ts` y `frontend/src/hooks/useAutoRefresh.ts` (con pruebas). Nuevo módulo compatible Expo: `@react-native-community/datetimepicker` 9.2.1; plugin en `frontend/app.config.js`. El build de desarrollo Android/iOS debe regenerarse para incorporar el módulo.
-- Comprobaciones: tipos/lint y exportación web correctos; pruebas afectadas de compra/pedidos correctas, más repetición dirigida final de 22 pruebas en 4 suites, sin fallos. No repetir toda la suite sin motivo. No hubo cambios backend ni mensajes externos.
-- Hallazgos del informe que contradicen decisiones vigentes: cobro de recogida/directa al entregar (RF-42 FR-002), límites acordados RF-45, y dirección opcional del ambulante RF-28 FR-005. No convertirlos en cambios de alcance automáticamente.
-- Pendientes: verificación real de configuración de proveedores por el equipo, ubicación periódica P1-05, y decidir el alcance de categoría personalizada P2-01 o SSE estricto. Mapas y optimización siguen pospuestos. Ver CORRECCIONES_AUDITORIA para estado completo.
+- Repositorio real: `C:\Users\ESTUDIANTE\Documents\GitHub\napa`. No trabajar en la copia de `Documents\ChatGPT\napa`.
+- Rama: `fix/p0-01-outbox-web`. Último commit confirmado del usuario: `a561f42` (`fix: corregir incidencias de auditoria del frontend`). La carpeta estaba limpia al empezar el bloque actual.
+- Autorización: edición directa y comprobaciones por bloques. El usuario hace commits/push y un tester del grupo verifica cumplimiento funcional. No detener el avance esperando pruebas manuales ni repetir suites correctas sin motivo.
+- El bloque anterior corrigió almacenamiento web, carrito/dirección, horarios, navegación, mensajes, calificaciones, selector de reserva y refresco de pantallas. Tipos/lint, pruebas afectadas y exportación web pasaron. El selector nativo de reserva requiere regenerar el build de desarrollo Android/iOS.
+- Trabajo actual: P2-01, texto personalizado opcional para OTROS, 1–80 caracteres, sin cambiar el enum; preservado al editar/eliminar y expuesto en las consultas. Se actualizó spec, plan, modelo compartido, requerimiento, HU-53 y trazabilidad.
+- Migración nueva `backend/src/main/resources/db/migration/V21__emprendimiento_categoria_personalizada.sql`. No se modificaron V1–V20 ni se ejecutó sobre la base local; las integraciones usan contenedores aislados.
+- Piezas backend: `emprendimientos/domain/model/Emprendimiento.java`, command/DTOs/puertos, casos de uso de crear/listar/detalle, JPA y proyección JDBC. Se mantienen constructores previos para compatibilidad de llamadas existentes.
+- Piezas frontend: `src/lib/emprendimientos.ts`, formulario de creación y consultas de negocio/listado/detalle. Campo visible solo en OTROS, opcional; categoría inmutable tras crear.
+- P1-05 parcial: nuevo `frontend/src/lib/ubicacion-automatica.ts`, iniciado desde `_layout.tsx` y activable/desactivable desde `mi-emprendimiento.tsx`. Usa expo-location existente; cada 2 min en primer plano, mínimo 100 m. Preferencia por cuenta/negocio en almacenamiento existente; verificaciones de rol/propietario/generación/permiso y llamadas serializadas. No se guardan coordenadas viejas para reintento.
+- El seguimiento en segundo plano NO está implementado ni se solicita su permiso. La interfaz explica el modo con Ñapa abierta. Este bloque no añade módulos nativos.
+- Comprobación inicial backend de emprendimientos y arquitectura: correcta, V21 cargada en PostgreSQL aislado sin omisiones. Pruebas finales nuevas: 11 backend correctas, sin errores/fallos/omisiones; 12 frontend en la repetición final correctas, más las pantallas de consulta que ya habían pasado. La prueba que agotó 5 s con Java en paralelo pasó aislada sin aumentar el timeout. Typecheck, lint y exportación web finales correctos.
+- Referencia vigente de incidencias: `docs/CORRECCIONES_AUDITORIA.md`. P1-01 de pagos y límites/contraseñas se contrastaron con specs y no se cambiaron silenciosamente. Mapas/rutas optimizadas siguen pospuestos.
+- No se hizo git add, commit, push ni cambio de rama en este bloque.

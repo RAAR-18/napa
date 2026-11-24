@@ -55,3 +55,9 @@ Como vendedor, quiero crear mi emprendimiento indicando nombre, categoría, ubic
 
 - **SC-001**: Un vendedor puede completar la creación de su emprendimiento en menos de 3 minutos.
 - **SC-002**: El 100% de los emprendimientos creados con datos válidos quedan visibles para los clientes de forma inmediata.
+
+## Aclaración de auditoría P2-01 (2026-11-24)
+
+FR-001 mantiene la lista fija de categorías. Si el vendedor elige OTROS, puede indicar opcionalmente `categoriaPersonalizada` (texto no vacío tras normalizar, de hasta 80 caracteres). El texto complementa OTROS; no crea un nuevo valor del catálogo y solo se admite con esa categoría. Las consultas de creación, negocio propio, listado y detalle muestran el texto cuando existe; los registros anteriores continúan mostrando Otros. El nombre y la categoría, incluido este complemento, siguen siendo inmutables tras crear el negocio según RF-29.
+
+Escenarios: OTROS con texto válido conserva y muestra su texto; OTROS sin complemento sigue siendo válido por compatibilidad; un complemento de más de 80 caracteres o enviado para otra categoría se rechaza con un error específico. Las ediciones de horario, descripción o ubicación no deben borrar el complemento.

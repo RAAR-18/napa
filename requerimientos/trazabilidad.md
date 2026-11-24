@@ -154,3 +154,4 @@ Diagrama: [`gestionar_usuarios.puml`](../casos%20de%20uso/gestionar_usuarios.pum
 | RF-67 | Edición de usuario por administrador | HU-100 | Administrador | Editar un usuario | [RF-67-edicion-de-usuario-por-administrador](../specs/RF-67-edicion-de-usuario-por-administrador/spec.md) |
 | RF-68 | Eliminación de usuario por administrador | HU-101 | Administrador | Eliminar un usuario | [RF-68-eliminacion-de-usuario-por-administrador](../specs/RF-68-eliminacion-de-usuario-por-administrador/spec.md) |
 | RF-69 | Listado de usuarios | HU-102 | Administrador | Listar todos los usuarios | [RF-69-listado-de-usuarios](../specs/RF-69-listado-de-usuarios/spec.md) |
+P2-01 (2026-11-24): el complemento opcional de categoría OTROS se traza por RF-28/HU-53 y se presenta en RF-31/RF-32; no crea un RF nuevo ni cambia la edición RF-29.

@@ -122,7 +122,7 @@
 
 | ID | Historia de usuario |
 |---|---|
-| HU-53 | Como vendedor, quiero crear mi emprendimiento indicando mi ubicación de venta, para ofrecer mis productos en la plataforma. |
+| HU-53 | Como vendedor, quiero crear mi emprendimiento indicando mi ubicación de venta y, si elijo Otros, un tipo de negocio personalizado opcional, para ofrecer mis productos en la plataforma. |
 | HU-54 | Como vendedor, quiero editar mi emprendimiento, para mantener actualizada su información (y mi ubicación, si vendo de forma ambulante). |
 | HU-55 | Como vendedor, quiero eliminar mi emprendimiento, para dejar de ofrecerlo en la plataforma. |
 | HU-56 | Como cliente, quiero listar los emprendimientos, para conocer las opciones disponibles cerca de mí. |

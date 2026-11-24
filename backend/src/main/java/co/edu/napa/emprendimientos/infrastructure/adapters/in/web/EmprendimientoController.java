@@ -92,7 +92,8 @@ public class EmprendimientoController {
                 request.ubicacion().latitud(),
                 request.ubicacion().longitud(),
                 request.ubicacion().direccion(),
-                request.ubicacion().referencia()
+                request.ubicacion().referencia(),
+                request.categoriaPersonalizada()
         ));
         return ResponseEntity.created(URI.create("/api/v1/emprendimientos/" + result.emprendimiento().id()))
                 .cacheControl(CacheControl.noStore())
@@ -237,8 +238,13 @@ public class EmprendimientoController {
             @NotBlank @Size(max = 500) String descripcion,
             @NotNull LocalTime horaApertura,
             @NotNull LocalTime horaCierre,
-            @NotNull @Valid UbicacionRequest ubicacion
+            @NotNull @Valid UbicacionRequest ubicacion,
+            String categoriaPersonalizada
     ) {
+        public CrearEmprendimientoRequest(@NotBlank @Size(max = 100) String nombre, @NotNull CategoriaEmprendimiento categoria, @NotBlank @Size(max = 500) String descripcion, @NotNull LocalTime horaApertura, @NotNull LocalTime horaCierre, @NotNull @Valid UbicacionRequest ubicacion) {
+            this(nombre, categoria, descripcion, horaApertura, horaCierre, ubicacion, null);
+        }
+
     }
 
     public record UbicacionRequest(
@@ -258,8 +264,13 @@ public class EmprendimientoController {
             LocalTime horaApertura,
             LocalTime horaCierre,
             String estado,
-            UbicacionResponse ubicacion
+            UbicacionResponse ubicacion,
+            String categoriaPersonalizada
     ) {
+        public EmprendimientoResponse(UUID id, String nombre, CategoriaEmprendimiento categoria, String descripcion, RolUsuario tipoVendedor, LocalTime horaApertura, LocalTime horaCierre, String estado, UbicacionResponse ubicacion) {
+            this(id, nombre, categoria, descripcion, tipoVendedor, horaApertura, horaCierre, estado, ubicacion, null);
+        }
+
         static EmprendimientoResponse from(CrearEmprendimientoResult result) {
             Emprendimiento emprendimiento = result.emprendimiento();
             Ubicacion ubicacion = result.ubicacion();
@@ -277,7 +288,8 @@ public class EmprendimientoController {
                             ubicacion.longitud(),
                             ubicacion.direccion(),
                             ubicacion.referencia()
-                    )
+                    ),
+                    emprendimiento.categoriaPersonalizada()
             );
         }
     }
