@@ -76,7 +76,7 @@ export default function RegisterScreen() {
     <AuthPage>
       <PageHeading
         eyebrow="Únete a Ñapa"
-        title="Crea tu cuenta"
+        title="Crear cuenta"
         description="Completa tus datos. Verificaremos tu celular antes de activar la cuenta."
       />
       <ErrorBanner message={error} />
@@ -101,7 +101,7 @@ export default function RegisterScreen() {
         <HelperText>{validarCorreo(correo)}</HelperText>
       ) : (
         <HelperText>
-          Con correo podrás elegir si verificas tu cuenta por SMS o por correo.
+          Recomendamos registrar un correo para verificar tu cuenta aunque el SMS no esté disponible.
         </HelperText>
       )}
       <Text style={styles.label}>¿Cómo usarás Ñapa?</Text>
@@ -136,12 +136,22 @@ export default function RegisterScreen() {
         value={confirmacionPassword}
       />
       <HelperText>La contraseña debe tener entre 8 y 128 caracteres.</HelperText>
+      {password ? (
+        <HelperText>{Array.from(password).length >= 8 && Array.from(password).length <= 128
+          ? 'La longitud de la contraseña es válida.'
+          : 'La contraseña todavía no cumple la longitud requerida.'}</HelperText>
+      ) : null}
+      {confirmacionPassword ? (
+        <HelperText>{password === confirmacionPassword
+          ? 'Las contraseñas coinciden.'
+          : 'Las contraseñas no coinciden.'}</HelperText>
+      ) : null}
       <PrimaryButton
         busy={busy}
         disabled={
           !nombre.trim() ||
           !celular.trim() ||
-          password.length < 8 ||
+          Array.from(password).length < 8 || Array.from(password).length > 128 || password !== confirmacionPassword ||
           !confirmacionPassword
         }
         title="Crear cuenta y verificar celular"

@@ -102,7 +102,7 @@ export default function LoginScreen() {
           onPress={() => router.push({ pathname: '/verify', params: { proposito: 'REGISTRO' } })}
         />
         <TextButton
-          title="¿Aún no tienes cuenta? Regístrate"
+          title="Crear cuenta"
           onPress={() => router.push('/register')}
         />
         <TextButton title="Volver" onPress={() => router.replace('/')} />

@@ -301,3 +301,7 @@ frontend/__tests__/emprendimientos/
 - La ubicación se actualiza en su misma fila (`ubicacion.id` se conserva). Los pedidos sin cerrar se cuentan con `ConsultarPedidosSinCerrarPort` del módulo `pedidos` (`PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER`, `EN_CAMINO`).
 - Sin control de versión: la última escritura gana; no hay `409 CONFLICT` por edición simultánea.
 - App: pantalla `mi-emprendimiento` con botón «Estoy aquí» (expo-location) y envío solo de los campos que cambiaron.
+
+## Corrección de auditoría P0-03 (2026-11-24)
+
+La edición y revisión de cambios pendientes reutilizan `TimeField`, igual que RF-28. Se conservan valores iniciales HH:mm, validación antes del envío y bloqueo por estado/operación en curso. No cambian contratos de API, horarios nocturnos, datos ni migraciones. Pruebas: `frontend/src/components/TimeField.test.tsx` y suites de creación/edición de emprendimientos.

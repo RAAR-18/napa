@@ -1,5 +1,5 @@
 import { useLocalSearchParams, router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   AuthPage,
@@ -46,7 +46,8 @@ export default function VerifyScreen() {
   const [celularEscrito, setCelularEscrito] = useState("");
   const [correoEscrito, setCorreoEscrito] = useState("");
   const [canal, setCanal] = useState<VerificationChannel>(
-    params.canal === "CORREO" ? "CORREO" : "SMS",
+    params.canal === "CORREO" || (params.canal !== "SMS" && params.tieneCorreo === "1")
+      ? "CORREO" : "SMS",
   );
   // Sin celular en la ruta y con "correo" elegido, la cuenta se identifica por su correo.
   const porCorreo = !celularRuta && canal === "CORREO";
@@ -92,6 +93,7 @@ export default function VerifyScreen() {
   }
   const [codigo, setCodigo] = useState("");
   const [contrasenaNueva, setContrasenaNueva] = useState("");
+  const operando = useRef(false);
   const [busy, setBusy] = useState(false);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -113,6 +115,8 @@ export default function VerifyScreen() {
   }, [esperas, hayEspera]);
 
   async function submit() {
+    if (operando.current) return;
+    operando.current = true;
     setError(null);
     setMessage(null);
     setBusy(true);
@@ -138,17 +142,20 @@ export default function VerifyScreen() {
           : "No se pudo verificar el código. Inténtalo de nuevo.",
       );
     } finally {
+      operando.current = false;
       setBusy(false);
     }
   }
 
   async function send() {
+    if (operando.current) return;
     if (canal === "CORREO" && !tieneCorreo) {
       setError("Tu cuenta no tiene correo. Elige recibir el código por SMS.");
       return;
     }
     setError(null);
     setMessage(null);
+    operando.current = true;
     setSending(true);
     try {
       const segundos = await requestVerification(celular, proposito, canal);
@@ -171,6 +178,7 @@ export default function VerifyScreen() {
         cause instanceof Error ? cause.message : "No se pudo enviar el código.",
       );
     } finally {
+      operando.current = false;
       setSending(false);
     }
   }
@@ -183,6 +191,7 @@ export default function VerifyScreen() {
             ? "¿No te llegó? Pide otro código"
             : "¿Prefieres verificar tu cuenta por SMS o por correo?"
         }
+        disabled={busy || sending}
         onChange={setCanal}
         value={canal}
       />
@@ -202,7 +211,9 @@ export default function VerifyScreen() {
           title="¿Cómo quieres recibir tu código?"
           description={
             celularRuta
-              ? `Tu cuenta quedó creada. Para activarla te enviaremos un código de 6 dígitos por SMS al ${celular} o a tu correo.`
+              ? tieneCorreo
+                ? `Tu cuenta quedó creada. Recomendamos verificar por correo; también puedes elegir SMS al ${celular}.`
+                : `Tu cuenta quedó creada. Te enviaremos el código por SMS al ${celular}.`
               : "Elige cómo recibir el código y escribe el correo o el celular con el que creaste tu cuenta."
           }
         />
@@ -295,7 +306,7 @@ export default function VerifyScreen() {
         </>
       ) : null}
       <PrimaryButton
-        busy={busy}
+        busy={busy || sending}
         disabled={
           codigo.length !== 6 || (isRecovery && contrasenaNueva.length < 8)
         }

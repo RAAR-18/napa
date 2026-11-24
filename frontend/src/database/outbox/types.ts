@@ -24,7 +24,11 @@ export type AccionPendiente = {
   createdAt: number;
 };
 
-/** Persistencia de la cola; la implementación real es SQLite y las pruebas usan memoria. */
+/**
+ * Persistencia de la cola:
+ * SQLite en Android/iOS e IndexedDB en web.
+ * Las pruebas pueden proporcionar un adaptador de memoria.
+ */
 export interface OutboxStore {
   insertar(accion: AccionPendiente): Promise<void>;
   /** Todas, de la más antigua a la más reciente. */

@@ -8,7 +8,7 @@ import NuevoProductoScreen from '../nuevo-producto';
 import EditarProductoScreen from '../editar-producto';
 import { ApiError, NetworkError } from '../../lib/api';
 import { clearSession, getValidSession, readSession } from '../../lib/auth';
-import { guardarBorradorPedido, guardarCarritoEncolado, leerCarritoEncolado, leerCotizacionOffline } from '../../lib/pedido-offline';
+import { guardarBorradorPedido, guardarCarritoEncolado, leerBorradorPedido, leerCarritoEncolado, leerCotizacionOffline } from '../../lib/pedido-offline';
 import { outbox, type AccionPendiente } from '../../database/outbox';
 import { cotizarPedido, crearPedido } from '../../lib/pedidos';
 import { borrarCatalogoGuardado, leerPaginaCatalogo, listarPaginasGuardadasCatalogo } from '../../lib/catalogo-cache';
@@ -54,6 +54,7 @@ jest.mock('../../lib/pedido-offline', () => ({
   guardarCotizacionOffline: jest.fn().mockResolvedValue(undefined),
   borrarCarritoEncolado: jest.fn().mockResolvedValue(undefined),
   leerBorradorPedido: jest.fn().mockResolvedValue(null),
+  leerUltimaDireccion: jest.fn().mockResolvedValue(null),
   borrarBorradorPedido: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../../lib/catalogo-cache', () => ({
@@ -408,10 +409,10 @@ it('saves a reservation as a draft even with a previously saved payment method',
   await fireEvent.press(view.getByRole('button', { name: 'Guardar borrador' }));
 
   await waitFor(() => expect(guardarBorradorPedido).toHaveBeenCalledWith(
-    'client-id', 'business-id', {
+    'client-id', 'business-id', expect.objectContaining({
       modalidad: 'ENTREGA_DIRECTA', reserva: true, fechaReserva: '2027-01-01T15:30',
       items: [{ producto: available, cantidad: 1 }],
-    },
+    }),
   ));
   expect(outbox.encolar).not.toHaveBeenCalled();
 }, 15000);
@@ -542,3 +543,29 @@ it('queues absolute stock from a saved product using the original version', asyn
   }));
   expect(updateInventario).not.toHaveBeenCalled();
 }, 60000);
+
+
+it('automatically saves the cart and restores it after returning to the catalog', async () => {
+  const cliente = { ...seller, rol: 'CLIENTE', usuarioId: 'client-id' };
+  jest.mocked(readSession).mockResolvedValue(cliente);
+  jest.mocked(getValidSession).mockResolvedValue(cliente);
+  const view = await render(<CatalogoScreen />);
+  await fireEvent.press(await view.findByRole('button', { name: 'Agregar Mango al pedido' }));
+  await waitFor(() => expect(guardarBorradorPedido).toHaveBeenCalledWith('client-id', 'business-id',
+    expect.objectContaining({ items: [expect.objectContaining({ cantidad: 1 })] })));
+  const ultimo = jest.mocked(guardarBorradorPedido).mock.calls.at(-1)![2];
+  await view.unmount();
+  jest.mocked(leerBorradorPedido).mockResolvedValueOnce(ultimo);
+  const nueva = await render(<CatalogoScreen />);
+  expect(await nueva.findByRole('button', { name: 'Quitar Mango' })).toBeTruthy();
+});
+
+
+jest.mock('../../components/ReservationDateTimeField', () => {
+  const { TextInput } = jest.requireActual('react-native');
+  return {
+    ReservationDateTimeField: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
+      <TextInput accessibilityLabel="Fecha y hora acordadas (AAAA-MM-DDTHH:mm)" value={value} onChangeText={onChange} />
+    ),
+  };
+});

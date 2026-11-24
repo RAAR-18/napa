@@ -290,3 +290,8 @@ frontend/__tests__/emprendimientos/crear.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+## Corrección de auditoría P0-03 (2026-11-24)
+
+- La creación usa el componente compartido `frontend/src/components/TimeField.tsx`: teclado numérico, separador automático, rechazo de letras y de horas fuera de 00:00 a 23:59, y aviso al abandonar una hora incompleta.
+- Se conserva la validación del formulario antes del envío y el contrato HH:mm. No se impone que apertura sea anterior a cierre: los horarios nocturnos no cambian de alcance.
+- La edición RF-29 reutiliza el mismo control. Se cubren medianoche, 23:59, pegado, borrado y valores inválidos mediante pruebas del componente y de ambas pantallas.

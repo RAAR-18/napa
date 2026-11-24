@@ -363,3 +363,8 @@ frontend/__tests__/auth/verificar-celular.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+## Tercer bloque: auditoría de verificación (P0-05, 2026-11-24)
+
+El código actual permite elegir SMS o correo; se conserva esa elección y el correo opcional. Al llegar desde un registro con correo conocido se recomienda CORREO, sin enviar automáticamente y manteniendo SMS como alternativa. Se evita disparar envío y confirmación simultáneos mediante un bloqueo compartido en la pantalla. Si no hay correo, se mantiene SMS. No se cambió el propósito CAMBIO de celular: sigue requiriendo demostrar acceso al número nuevo.
+
+La entrega externa sigue requiriendo configurar SMSReactor o Brevo. Ningún cambio de UI garantiza que un proveedor sin credenciales, cuota o dispositivo operativo envíe mensajes. No se enviaron mensajes reales ni se tocaron secretos. No se convierte la verificación por correo en prueba de posesión del celular; la sustitución de canales ya existía y debe revisarse como decisión de producto aparte.

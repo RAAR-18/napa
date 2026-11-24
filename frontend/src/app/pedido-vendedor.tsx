@@ -1,3 +1,4 @@
+import { useCalificacionPendiente } from '../hooks/useCalificacionPendiente';
 import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -140,6 +141,7 @@ export default function PedidoVendedorScreen() {
   const decisionAnterior = useRef<string | null>(null);
   const enviando = useRef(false);
   const [detail, setDetail] = useState<PedidoVendedorDetalle | null>(null);
+  const puedeCalificar = useCalificacionPendiente(detail?.id, detail?.estado === 'ENTREGADO');
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [respuestaPago, setRespuestaPago] = useState<PagoPedidoConfirmado | null>(null);
@@ -738,7 +740,7 @@ export default function PedidoVendedorScreen() {
           ) : null}
         </>
       ) : null}
-      {detail?.estado === 'ENTREGADO' ? (
+      {puedeCalificar && detail ? (
         <PrimaryButton
           title="Calificar al cliente"
           onPress={() => router.push({ pathname: '/calificar-pedido', params: { pedidoId: detail.id } })}

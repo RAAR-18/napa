@@ -202,3 +202,11 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 *  [ ] Checkpoint de la base verificado en un móvil de gama baja
 
 **idempotencia en curso:** `409 IDEMPOTENCY_IN_PROGRESS` conserva la acción pendiente y se reintenta con la misma clave y cuerpo usando retroceso exponencial (inicialmente 5 s). Los conflictos de negocio permanecen fallidos para revisión. La repetición de una operación terminada reproduce su respuesta guardada. Validación: 12 pruebas de idempotencia del backend aprobadas, incluidas 3 de integración con Redis; 33 suites y 212 pruebas del frontend aprobadas. En Android se comprobó que un reporte pendiente sobrevive al cierre completo de la app con el backend apagado y se envía al restablecerlo. El aislamiento entre cuentas cuenta con pruebas automatizadas; su comprobación manual sigue pendiente.
+
+## Corrección de auditoría P0-01 (2026-11-24)
+
+- F041 conserva SQLite en Android/iOS. En web se usa IndexedDB mediante `persistent-store.web.ts`, seleccionado por Metro; la cola y sus reintentos siguen dependiendo de `OutboxStore`.
+- La inserción, comprobación de conflictos y actualización condicional se realizan en una transacción; solo se informa éxito al completarla. Se mantienen propietario, clave de idempotencia y restricciones de decisiones por recurso.
+- No hay respaldo silencioso en memoria si el navegador bloquea almacenamiento. Se muestra un error y se permite reintentar la apertura.
+- `fake-indexeddb` es una dependencia exclusiva de desarrollo para verificar persistencia entre instancias, conflictos simultáneos, correcciones fallidas y rollback.
+- Esta entrega no migra pendientes previos de SQLite web ni cambia las cachés de lectura que aún usan SQLite. Antes de desplegar, sincronizar o recuperar esos pendientes; no borrar los datos del navegador.

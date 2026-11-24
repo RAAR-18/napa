@@ -13,7 +13,7 @@ import type { TransicionDomicilio } from '../../lib/domicilios';
 import { guardarConsultaPedidos, quitarDetalleVendedorGuardado } from '../../lib/pedidos-cliente-cache';
 import type { PagoPedidoConfirmado, PedidoCreado, PedidoEntregado } from '../../lib/pedidos';
 import { Outbox } from './outbox';
-import { SqliteOutboxStore } from './sqlite-store';
+import { PersistentOutboxStore } from './persistent-store';
 import type { AccionPendiente } from './types';
 
 export { Outbox } from './outbox';
@@ -91,7 +91,7 @@ async function enviarConSesion(accion: AccionPendiente): Promise<void> {
 
 /** La cola de la app (F041). */
 export const outbox = new Outbox({
-  store: new SqliteOutboxStore(),
+  store: new PersistentOutboxStore(),
   usuarioActual: async () => (await readSession())?.usuarioId ?? null,
   enviar: enviarConSesion,
   conservarReintentosServidor: (accion) => Boolean(

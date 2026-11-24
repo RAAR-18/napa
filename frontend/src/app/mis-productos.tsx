@@ -75,6 +75,9 @@ export default function MisProductosScreen() {
           />
         </>
       ) : null}
+      {data?.emprendimiento ? (
+        <TextButton title="Editar mi emprendimiento" onPress={() => router.push('/mi-emprendimiento')} />
+      ) : null}
       <OrdenProductosControl value={sort} onChange={changeSort} />
       {notice ? <Text aria-live="polite" style={productStyles.status}>{notice}</Text> : null}
       <ErrorBanner message={error} />

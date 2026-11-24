@@ -1,3 +1,4 @@
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
@@ -45,6 +46,8 @@ export default function NotificacionesScreen() {
   const solicitud = useRef(0);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
+  const automatico = useRef(false);
+  useAutoRefresh(() => { automatico.current = true; setAttempt((value) => value + 1); }, !loading);
   const [soloNoLeidas, setSoloNoLeidas] = useState(false);
   const [page, setPage] = useState(0);
   const [abierta, setAbierta] = useState<string | null>(null);
@@ -56,10 +59,11 @@ export default function NotificacionesScreen() {
     const vigente = () => active && generation === getSessionGeneration();
     solicitud.current += 1;
     async function load() {
+      const silencioso = automatico.current;
+      automatico.current = false;
       setLoading(true);
       setError(null);
-      setData(null);
-      setAbierta(null);
+      if (!silencioso) { setData(null); setAbierta(null); }
       setFechaCopia(null);
       setPaginasGuardadas([]);
       let cuenta: string | undefined;

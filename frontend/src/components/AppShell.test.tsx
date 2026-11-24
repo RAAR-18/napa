@@ -58,7 +58,9 @@ describe('Regresar desde la cabecera movil', () => {
   it('vuelve al inicio del rol cuando un enlace no tiene historial', async () => {
     jest.mocked(router.canGoBack).mockReturnValue(false);
     await renderPage('/pedido-vendedor', 'VENDEDOR_PUNTO_FIJO');
+    await fireEvent.press(screen.getByRole('button', { name: 'Abrir menú' }));
     await screen.findByRole('button', { name: 'Pedidos recibidos' });
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar menú de navegación' }));
     await fireEvent.press(screen.getByRole('button', { name: backLabel }));
 
     expect(router.replace).toHaveBeenCalledWith('/pedidos-vendedor');

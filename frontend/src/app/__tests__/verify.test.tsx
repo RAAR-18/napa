@@ -22,7 +22,7 @@ describe('VerifyScreen', () => {
     for (const key of Object.keys(mockParams)) {
       delete mockParams[key];
     }
-    Object.assign(mockParams, { celular: '+573007080825', proposito: 'REGISTRO', tieneCorreo: '1' });
+    Object.assign(mockParams, { celular: '+573007080825', proposito: 'REGISTRO', tieneCorreo: '1', canal: 'SMS' });
     jest.mocked(requestVerification).mockResolvedValue(120);
   });
 
@@ -92,4 +92,15 @@ describe('VerifyScreen', () => {
       expect(requestVerification).toHaveBeenLastCalledWith('+573007080825', 'REGISTRO', 'CORREO');
     });
   });
+});
+
+it('recommends email when the registered account has one and keeps SMS available', async () => {
+  jest.clearAllMocks();
+  for (const key of Object.keys(mockParams)) delete mockParams[key];
+  Object.assign(mockParams, { celular: '+573007080825', proposito: 'REGISTRO', tieneCorreo: '1' });
+  jest.mocked(requestVerification).mockResolvedValue(120);
+  const view = await render(<VerifyScreen />);
+  expect(view.getByRole('radio', { name: 'Por correo' }).props.accessibilityState.checked).toBe(true);
+  await fireEvent.press(view.getByRole('button', { name: 'Enviar código por tu correo' }));
+  await waitFor(() => expect(requestVerification).toHaveBeenCalledWith('+573007080825', 'REGISTRO', 'CORREO'));
 });

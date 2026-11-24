@@ -1,3 +1,4 @@
+import { ReservationDateTimeField } from './ReservationDateTimeField';
 import { fonts } from './theme';
 import { CardGrid, GridCard } from './NapaUI';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -22,7 +23,7 @@ import { outbox, type AccionPendiente } from '../database/outbox';
 import {
   borrarBorradorPedido, borrarCarritoEncolado, guardarBorradorPedido, guardarCarritoEncolado,
   guardarCotizacionOffline, leerBorradorPedido, leerCarritoEncolado, leerCotizacionOffline,
-  pedidoPendiente, prepararPedidoOffline, RUTA_CREACION_PEDIDO,
+  pedidoPendiente, prepararPedidoOffline, leerUltimaDireccion, RUTA_CREACION_PEDIDO,
   type CarritoPedido, type DatosCotizacionGuardada,
 } from '../lib/pedido-offline';
 import { requestDeviceLocation } from '../lib/location';
@@ -76,7 +77,7 @@ const paymentNames: Record<MedioPagoPedido, string> = {
 function futureReservation(value: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value.trim());
   if (!match) {
-    throw new Error('Usa fecha y hora en formato AAAA-MM-DDTHH:mm.');
+    throw new Error('Selecciona la fecha y la hora acordadas para la reserva.');
   }
   const [, yearText, monthText, dayText, hourText, minuteText] = match;
   const date = new Date(
@@ -110,7 +111,7 @@ function deliveryLocation(
   const lat = Number(latitude.trim().replace(',', '.'));
   const lng = Number(longitude.trim().replace(',', '.'));
   if (
-    !address.trim() ||
+    !address.trim() || !latitude.trim() || !longitude.trim() ||
     address.trim().length > 300 ||
     !Number.isFinite(lat) ||
     lat < -90 ||
@@ -187,6 +188,10 @@ export function PedidoCatalogo({
   const [enCola, setEnCola] = useState(false);
   const guardando = useRef(false);
   const carritoCargado = useRef(false);
+  const [borradorListo, setBorradorListo] = useState(false);
+  const generacionCarrito = useRef(getSessionGeneration());
+  const guardadoBorrador = useRef<Promise<void>>(Promise.resolve());
+  const borradorFinalizado = useRef(false);
   const pendingRequest = useRef<{ body: string; key: string } | null>(null);
 
   useEffect(() => {
@@ -213,6 +218,26 @@ export function PedidoCatalogo({
         setError('Este pedido ya no está disponible para revisión.');
         return;
       }
+      const ultimaDireccion = !carrito?.direccionBorrador && !pedido?.ubicacionEntrega
+        ? await leerUltimaDireccion(propietario).catch(() => null)
+        : null;
+      if (!active || generacion !== getSessionGeneration()) return;
+      generacionCarrito.current = generacion;
+      const direccionGuardada = carrito?.direccionBorrador;
+      if (direccionGuardada) {
+        setAddress(direccionGuardada.direccion);
+        setLatitude(direccionGuardada.latitud);
+        setLongitude(direccionGuardada.longitud);
+        setNeighborhood(direccionGuardada.barrio);
+        setReference(direccionGuardada.referencia);
+      } else if (ultimaDireccion) {
+        setAddress(ultimaDireccion.direccion);
+        setLatitude(String(ultimaDireccion.latitud));
+        setLongitude(String(ultimaDireccion.longitud));
+        setNeighborhood(ultimaDireccion.barrio ?? '');
+        setReference(ultimaDireccion.referencia ?? '');
+      }
+      setBorradorListo(true);
       if (!carrito) return;
       setCart((actual) => actual.length ? actual : carrito.items);
       setModalidad(carrito.modalidad);
@@ -246,7 +271,36 @@ export function PedidoCatalogo({
     return () => { active = false; };
   }, [cuenta, emprendimientoId, modalidad, offline]);
 
-  const carrito: CarritoPedido = { items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate };
+  const carrito: CarritoPedido = {
+    items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate,
+    direccionBorrador: { direccion: address, latitud: latitude, longitud: longitude,
+      barrio: neighborhood, referencia: reference },
+  };
+
+  useEffect(() => {
+    if (!borradorListo || !cuenta || pendienteId || borradorFinalizado.current) return;
+    const generacion = generacionCarrito.current;
+    const borrador: CarritoPedido = {
+      items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate,
+      direccionBorrador: { direccion: address, latitud: latitude, longitud: longitude,
+        barrio: neighborhood, referencia: reference },
+    };
+    guardadoBorrador.current = guardadoBorrador.current.catch(() => undefined).then(async () => {
+      if (generacion !== getSessionGeneration() || borradorFinalizado.current) return;
+      await guardarBorradorPedido(cuenta, emprendimientoId, borrador);
+    }).catch(() => {
+      if (generacion === getSessionGeneration()) {
+        setError('No se pudo guardar el carrito. Revisa el almacenamiento del dispositivo antes de salir.');
+      }
+    });
+  }, [borradorListo, cuenta, emprendimientoId, pendienteId, cart, modalidad, reserve,
+    reservationDate, address, latitude, longitude, neighborhood, reference]);
+
+  async function cerrarBorrador() {
+    borradorFinalizado.current = true;
+    await guardadoBorrador.current.catch(() => undefined);
+    if (cuenta) await borrarBorradorPedido(cuenta, emprendimientoId).catch(() => undefined);
+  }
   const medioOffline = paymentMethod && datosGuardados?.medios.includes(paymentMethod)
     ? paymentMethod
     : datosGuardados?.medios.length === 1 ? datosGuardados.medios[0] : null;
@@ -319,6 +373,15 @@ export function PedidoCatalogo({
   function quoteInput(): Parameters<typeof cotizarPedido>[0] {
     if (!emprendimientoId) {
       throw new Error('No se pudo identificar el emprendimiento.');
+    }
+    if (!reserve) {
+      const sinStock = cart.find(({ producto, cantidad }) => {
+        const vigente = productos.find((item) => item.id === producto.id) ?? producto;
+        return vigente.estado === 'AGOTADO' || cantidad > vigente.cantidadDisponible;
+      });
+      if (sinStock) {
+        throw new Error(`La cantidad de ${sinStock.producto.nombre} supera la disponibilidad. Reduce la cantidad o elige una reserva.`);
+      }
     }
     const input: Parameters<typeof cotizarPedido>[0] = {
       emprendimientoId,
@@ -430,7 +493,7 @@ export function PedidoCatalogo({
       const order = await crearPedido(input, pendingRequest.current.key);
       pendingRequest.current = null;
       setCreated(order);
-      if (cuenta) await borrarBorradorPedido(cuenta, emprendimientoId).catch(() => undefined);
+      await cerrarBorrador();
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 409) {
         setQuote(null);
@@ -466,7 +529,7 @@ export function PedidoCatalogo({
           throw cause;
         }
         setEnCola(true);
-        await borrarBorradorPedido(cuenta, emprendimientoId).catch(() => undefined);
+        await cerrarBorrador();
         void outbox.procesar().catch(() => undefined);
       } else {
         await guardarBorradorPedido(cuenta, emprendimientoId, carrito);
@@ -733,11 +796,10 @@ export function PedidoCatalogo({
               </View>
               {reserve ? (
                 <>
-                  <Field
-                    label="Fecha y hora acordadas (AAAA-MM-DDTHH:mm)"
-                    placeholder="2026-12-24T15:30"
+                  <ReservationDateTimeField
                     value={reservationDate}
-                    onChangeText={(value) => {
+                    disabled={creating || quoting}
+                    onChange={(value) => {
                       setReservationDate(value);
                       invalidateQuote();
                     }}

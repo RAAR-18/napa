@@ -1,3 +1,4 @@
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -140,6 +141,7 @@ export default function PedidosVendedorScreen() {
   const [fechaGuardada, setFechaGuardada] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  useAutoRefresh(() => setLoadAttempt((value) => value + 1), !loading);
   const [page, setPage] = useState(0);
   const [estado, setEstado] = useState<EstadoPedido | ''>('');
   const [modalidad, setModalidad] = useState<ModalidadPedido | ''>('');

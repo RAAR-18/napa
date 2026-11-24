@@ -1,3 +1,4 @@
+import { TimeField } from '../components/TimeField';
 import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
@@ -419,10 +420,10 @@ export default function MiEmprendimientoScreen() {
           }} editable={!busy && !bloqueado} multiline maxLength={500} />
           <View style={styles.row}>
             <View style={styles.half}>
-              <Field label="Abre (HH:mm)" value={apertura} onChangeText={(valor) => { borradorTocado.current = true; setApertura(valor); }} editable={!busy && !bloqueado} maxLength={5} />
+              <TimeField label="Abre (HH:mm)" value={apertura} onChangeText={(valor) => { borradorTocado.current = true; setApertura(valor); }} editable={!busy && !bloqueado} />
             </View>
             <View style={styles.half}>
-              <Field label="Cierra (HH:mm)" value={cierre} onChangeText={(valor) => { borradorTocado.current = true; setCierre(valor); }} editable={!busy && !bloqueado} maxLength={5} />
+              <TimeField label="Cierra (HH:mm)" value={cierre} onChangeText={(valor) => { borradorTocado.current = true; setCierre(valor); }} editable={!busy && !bloqueado} />
             </View>
           </View>
           {fechaCopia === null && !revisionId && !bloqueado ? (

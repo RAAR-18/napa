@@ -1,3 +1,4 @@
+import { useCalificacionPendiente } from '../hooks/useCalificacionPendiente';
 import { fonts } from '../components/theme';
 import { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -170,6 +171,7 @@ export default function PedidoClienteScreen() {
 
   const delivery = detail && 'domicilio' in detail ? detail.domicilio : null;
   const online = fechaCopia === null;
+  const puedeCalificar = useCalificacionPendiente(detail?.id, online && detail?.estado === 'ENTREGADO');
 
   return (
     <AuthPage>
@@ -283,7 +285,7 @@ export default function PedidoClienteScreen() {
           />
         </View>
       ) : null}
-      {online && detail?.estado === 'ENTREGADO' ? (
+      {puedeCalificar && detail ? (
         <PrimaryButton
           title="Calificar mi experiencia"
           onPress={() => router.push({ pathname: '/calificar-pedido', params: { pedidoId: detail.id } })}

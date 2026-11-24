@@ -117,12 +117,11 @@ const admin: NavItem[] = [
   },
 ];
 const account: NavItem[] = [
-  { label: 'Mi perfil', route: '/perfil', icon: 'user' },
   {
     label: 'Mi cuenta',
     route: '/session',
     icon: 'settings',
-    related: ['/change-password', '/pendientes-envio'],
+    related: ['/perfil', '/change-password', '/pendientes-envio'],
   },
 ];
 const roleNames: Record<string, string> = {
@@ -270,9 +269,6 @@ export function AppShell({ children }: PropsWithChildren) {
   const navigation = navigationFor(role);
   const allItems = [...navigation.items, ...navigation.secondary, ...account];
   const current = allItems.find((item) => item.route === path || item.related?.includes(path));
-  const bottomItems = [navigation.items[0], navigation.items[1], shared[0], account[0]].filter(
-    Boolean,
-  );
 
   function goBack() {
     if (menuOpen) {
@@ -392,42 +388,6 @@ export function AppShell({ children }: PropsWithChildren) {
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
-          {!desktop ? (
-            <View style={styles.bottomNav}>
-              {bottomItems.map((item) => {
-                const active = item.route === path || item.related?.includes(path);
-                return (
-                  <Pressable
-                    key={item.route}
-                    accessibilityRole="button"
-                    accessibilityLabel={item.label}
-                    onPress={() => router.push(item.route as never)}
-                    style={styles.bottomItem}
-                  >
-                    <Icon
-                      name={item.icon}
-                      size={20}
-                      color={active ? palette.coral : palette.muted}
-                    />
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.bottomLabel, active && { color: palette.coralDark }]}
-                    >
-                      {item.label === 'Domicilios disponibles'
-                        ? 'Disponibles'
-                        : item.label === 'Supervisar domicilios'
-                          ? 'Domicilios'
-                          : item.label === 'Pedidos recibidos'
-                            ? 'Pedidos'
-                            : item.label === 'Notificaciones'
-                              ? 'Avisos'
-                              : item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
         </View>
         {!desktop && menuOpen ? (
           <View style={styles.menuOverlay}>

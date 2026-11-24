@@ -339,3 +339,13 @@ it('displays friendly message when device location permission is denied for deli
   });
 });
 
+
+
+jest.mock('../../components/ReservationDateTimeField', () => {
+  const { TextInput } = jest.requireActual('react-native');
+  return {
+    ReservationDateTimeField: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
+      <TextInput accessibilityLabel="Fecha y hora acordadas (AAAA-MM-DDTHH:mm)" value={value} onChangeText={onChange} />
+    ),
+  };
+});

@@ -240,7 +240,11 @@ export default function ConfiguracionPagosScreen() {
               ? configuration.mediosHabilitados.join(', ')
               : 'ninguno'}
           </Text>
-          {notice ? <Text style={styles.success}>{notice}</Text> : null}
+          {notice ? (
+            <View accessibilityRole="alert" style={[styles.noticeCard, styles.successCard]}>
+              <Text style={styles.success}>{notice}</Text>
+            </View>
+          ) : null}
           {configuration?.cuentaBancaria ? (
             <TextButton
               disabled={saving}
@@ -300,6 +304,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
   },
+  successCard: { backgroundColor: '#EAF5EE', borderColor: palette.green },
   success: {
     color: palette.green,
     fontFamily: fonts.sans, fontSize: 14,
