@@ -5,6 +5,12 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/napa}
     username: ${DATABASE_USERNAME:napa}
     password: ${DATABASE_PASSWORD:${POSTGRES_PASSWORD:napa_local_dev_only}}
+    # Memoria: cada conexión es un proceso de PostgreSQL y memoria en la JVM. Hikari abría 10; con el tráfico
+    # real sobran 5, y las ociosas se cierran dejando 1. Ajustable con DB_POOL_MAX / DB_POOL_MIN_IDLE.
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:5}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
+      idle-timeout: 120000
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -22,6 +28,11 @@ spring:
 
 server:
   port: ${PORT:8080}
+  # Memoria: Tomcat mantenía 10 hilos de reserva y permitía 200 (cada uno con su pila). Ajustable por variable.
+  tomcat:
+    threads:
+      min-spare: ${TOMCAT_THREADS_MIN_SPARE:2}
+      max: ${TOMCAT_THREADS_MAX:50}
 
 management:
   endpoints:

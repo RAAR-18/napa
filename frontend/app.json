@@ -47,6 +47,15 @@
           "photosPermission": "Ñapa usa tus fotos solo para que elijas tu foto de perfil.",
           "cameraPermission": "Ñapa usa la cámara solo para que tomes tu foto de perfil."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false
+          }
+        }
       ]
     ],
     "extra": {
