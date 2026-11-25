@@ -20,7 +20,7 @@ import {
 } from '../lib/auth';
 import { useAccionesPendientes } from '../hooks/useOutbox';
 import { contarNoLeidas } from '../lib/notificaciones';
-import { darDeBajaPush, registrarPush } from '../lib/push';
+import { darDeBajaPush } from '../lib/push';
 import { borrarTodasLasRutas } from '../lib/ruta-cache';
 import { CardGrid, Icon, ShortcutCard, StatusBadge, type IconName } from '../components/NapaUI';
 
@@ -60,8 +60,6 @@ export default function SessionScreen() {
       .then((validSession) => {
         if (active) {
           setSession(validSession);
-          // El push es opcional: si no está disponible, la lista de notificaciones sigue funcionando.
-          void registrarPush();
           contarNoLeidas()
             .then((total) => {
               if (active) setNoLeidas(total);
