@@ -216,7 +216,8 @@ class TarifaMinimaIntegrationTest {
                 "celular", phone,
                 "rol", "CLIENTE",
                 "password", password,
-                "confirmPassword", password
+                "confirmPassword", password,
+                "canal", "SMS"
         ), key());
         assertEquals(201, registered.statusCode(), registered.body());
 

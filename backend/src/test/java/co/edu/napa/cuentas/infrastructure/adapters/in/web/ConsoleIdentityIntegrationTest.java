@@ -295,7 +295,8 @@ class ConsoleIdentityIntegrationTest {
     private Map<String, Object> registration(String phone) {
         return Map.of(
                 "nombre", "Console Integration", "celular", phone,
-                "password", "initial-password", "confirmPassword", "initial-password", "rol", "CLIENTE"
+                "password", "initial-password", "confirmPassword", "initial-password", "rol", "CLIENTE",
+                "canal", "SMS"
         );
     }
 
