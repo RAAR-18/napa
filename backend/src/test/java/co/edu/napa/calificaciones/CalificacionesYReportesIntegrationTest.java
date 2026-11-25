@@ -385,7 +385,7 @@ class CalificacionesYReportesIntegrationTest {
         String celular = "+573" + ThreadLocalRandom.current().nextLong(100_000_000, 1_000_000_000);
         HttpResponse<String> registro = enviar("POST", "/auth/register", null, Map.of(
                 "nombre", "Usuario " + rol, "celular", celular, "password", "initial-password",
-                "confirmPassword", "initial-password", "rol", rol));
+                "confirmPassword", "initial-password", "rol", rol, "canal", "SMS"));
         assertEquals(201, registro.statusCode(), registro.body());
         HttpResponse<String> verificado = enviar("POST", "/auth/verify-phone/confirm", null,
                 Map.of("celular", celular, "codigo", "654321"));

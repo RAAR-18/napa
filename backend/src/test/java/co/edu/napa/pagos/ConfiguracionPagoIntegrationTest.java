@@ -162,7 +162,8 @@ class ConfiguracionPagoIntegrationTest {
                 "celular", phone,
                 "password", "initial-password",
                 "confirmPassword", "initial-password",
-                "rol", role
+                "rol", role,
+                "canal", "SMS"
         ), deviceId);
         assertEquals(201, registration.statusCode(), registration.body());
 
