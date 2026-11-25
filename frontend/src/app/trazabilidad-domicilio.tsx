@@ -15,6 +15,7 @@ import {
 import MapaPunto from '../components/MapaPunto';
 import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
+import { usePantallaVisible } from '../hooks/usePantallaVisible';
 import {
   estadoDomicilioNombres,
   motivoCancelacionNombres,
@@ -41,6 +42,7 @@ export default function TrazabilidadDomicilioScreen() {
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const enCamino = data?.estado === 'EN_CAMINO';
+  const visible = usePantallaVisible();
 
   useEffect(() => {
     let active = true;
@@ -80,12 +82,14 @@ export default function TrazabilidadDomicilioScreen() {
       }
     }
     void load(false);
-    const timer = setInterval(() => void load(true), enCamino ? REFRESCO_EN_CAMINO_MS : REFRESCO_MS);
+    const timer = setInterval(() => {
+      if (visible()) void load(true);
+    }, enCamino ? REFRESCO_EN_CAMINO_MS : REFRESCO_MS);
     return () => {
       active = false;
       clearInterval(timer);
     };
-  }, [domicilioId, loadAttempt, enCamino]);
+  }, [domicilioId, loadAttempt, enCamino, visible]);
 
   return (
     <AuthPage>

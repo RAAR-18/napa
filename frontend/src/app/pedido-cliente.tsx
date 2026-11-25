@@ -19,6 +19,7 @@ import { ApiError } from '../lib/api';
 import { clearSession } from '../lib/auth';
 import type { DetallePedidoGuardado } from '../lib/pedidos-cliente-cache';
 import { consultarDetalleCliente } from '../lib/pedidos-cliente-consulta';
+import { usePantallaVisible } from '../hooks/usePantallaVisible';
 import {
   estadoDomicilioNombres,
   motivoCancelacionNombres,
@@ -95,6 +96,8 @@ export default function PedidoClienteScreen() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  const visible = usePantallaVisible();
+
   useEffect(() => {
     let active = true;
     let cargando = false;
@@ -162,12 +165,14 @@ export default function PedidoClienteScreen() {
       }
     }
     void load(false);
-    const timer = setInterval(() => void load(true), REFRESCO_MS);
+    const timer = setInterval(() => {
+      if (visible()) void load(true);
+    }, REFRESCO_MS);
     return () => {
       active = false;
       clearInterval(timer);
     };
-  }, [pedidoId, loadAttempt]);
+  }, [pedidoId, loadAttempt, visible]);
 
   const delivery = detail && 'domicilio' in detail ? detail.domicilio : null;
   const online = fechaCopia === null;

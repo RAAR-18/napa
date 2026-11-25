@@ -19,15 +19,15 @@ export const fonts = { display: 'NapaDisplay', sans: 'NapaSans', icons: 'NapaIco
 export const DESKTOP_BREAKPOINT = 1024;
 
 export const art = {
-  cliente: require('../../assets/illustrations/cliente.png'),
-  vendedor: require('../../assets/illustrations/vendedor.png'),
-  domiciliario: require('../../assets/illustrations/domiciliario.png'),
-  administrador: require('../../assets/illustrations/administrador.png'),
-  frutas: require('../../assets/illustrations/frutas.png'),
-  comida: require('../../assets/illustrations/comida.png'),
-  pescado: require('../../assets/illustrations/pescado.png'),
-  paquete: require('../../assets/illustrations/paquete.png'),
-  canasta: require('../../assets/illustrations/canasta.png'),
+  cliente: require('../../assets/illustrations/cliente.webp'),
+  vendedor: require('../../assets/illustrations/vendedor.webp'),
+  domiciliario: require('../../assets/illustrations/domiciliario.webp'),
+  administrador: require('../../assets/illustrations/administrador.webp'),
+  frutas: require('../../assets/illustrations/frutas.webp'),
+  comida: require('../../assets/illustrations/comida.webp'),
+  pescado: require('../../assets/illustrations/pescado.webp'),
+  paquete: require('../../assets/illustrations/paquete.webp'),
+  canasta: require('../../assets/illustrations/canasta.webp'),
 };
 
 export function categoryArt(category: string) {
