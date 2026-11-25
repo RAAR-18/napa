@@ -299,7 +299,6 @@ export default function PedidosVendedorScreen() {
           />
         </View>
       ) : null}
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

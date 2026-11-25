@@ -64,6 +64,7 @@ export default function ChangePasswordScreen() {
         onChangeText={setContrasenaActual}
         placeholder="Tu contraseña actual"
         secureTextEntry
+        showPasswordToggle
         value={contrasenaActual}
       />
       <Field
@@ -75,6 +76,7 @@ export default function ChangePasswordScreen() {
         placeholder="Mínimo 8 caracteres"
         returnKeyType="go"
         secureTextEntry
+        showPasswordToggle
         value={contrasenaNueva}
       />
       <HelperText>Debe tener entre 8 y 128 caracteres.</HelperText>

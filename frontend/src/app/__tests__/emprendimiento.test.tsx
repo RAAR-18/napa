@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { selectDateTime } from '../../test-utils/select-date-time';
 import { router } from 'expo-router';
 
 import EmprendimientoScreen from '../emprendimiento';
@@ -95,8 +96,8 @@ describe('EmprendimientoScreen', () => {
       getByLabelText('Descripción'),
       ' Frutas frescas. ',
     );
-    await fireEvent.changeText(getByLabelText('Hora de apertura'), '08:00');
-    await fireEvent.changeText(getByLabelText('Hora de cierre'), '18:00');
+    await selectDateTime({ getByRole }, 'Hora de apertura', '08:00');
+    await selectDateTime({ getByRole }, 'Hora de cierre', '18:00');
     await fireEvent.changeText(getByLabelText('Latitud'), '4.711');
     await fireEvent.changeText(getByLabelText('Longitud'), '-74.0721');
     await fireEvent.changeText(
@@ -134,8 +135,8 @@ describe('EmprendimientoScreen', () => {
     await waitFor(() => expect(getByLabelText('Nombre del emprendimiento')).toBeTruthy());
     await fireEvent.changeText(getByLabelText('Nombre del emprendimiento'), 'Mi negocio');
     await fireEvent.changeText(getByLabelText('Descripción'), 'Descripción válida');
-    await fireEvent.changeText(getByLabelText('Hora de apertura'), '08:00');
-    await fireEvent.changeText(getByLabelText('Hora de cierre'), '18:00');
+    await selectDateTime({ getByRole }, 'Hora de apertura', '08:00');
+    await selectDateTime({ getByRole }, 'Hora de cierre', '18:00');
     await fireEvent.changeText(getByLabelText('Latitud'), '4.711');
     await fireEvent.changeText(getByLabelText('Longitud'), '-74.0721');
     await fireEvent.changeText(
@@ -188,8 +189,8 @@ describe('EmprendimientoScreen', () => {
       getByLabelText('Descripción'),
       'Frutas recién cosechadas.',
     );
-    await fireEvent.changeText(getByLabelText('Hora de apertura'), '08:00');
-    await fireEvent.changeText(getByLabelText('Hora de cierre'), '18:00');
+    await selectDateTime({ getByRole }, 'Hora de apertura', '08:00');
+    await selectDateTime({ getByRole }, 'Hora de cierre', '18:00');
     await fireEvent.changeText(
       getByLabelText('Dirección del punto (obligatoria)'),
       'Carrera 7 # 10-20',

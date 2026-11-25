@@ -180,7 +180,6 @@ export default function ReporteAdminScreen() {
           )}
         </>
       ) : null}
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }

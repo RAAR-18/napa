@@ -7,6 +7,17 @@ import { AndroidImportance } from 'expo-notifications';
 
 import { ApiError } from './api';
 
+/** La web usa consulta periódica; en la app nativa actualizamos también al recibir push. */
+export function escucharNovedades(actualizar: () => void): () => void {
+  if (Platform.OS === 'web') return () => {};
+  try {
+    const subscription = Notifications.addNotificationReceivedListener(actualizar);
+    return () => subscription.remove();
+  } catch {
+    return () => {};
+  }
+}
+
 /** Con la app abierta el aviso también se muestra; la lista de la app es la fuente de verdad. */
 export function configurarAvisosEnPrimerPlano() {
   if (Platform.OS === 'web') return;
