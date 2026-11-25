@@ -33,6 +33,9 @@ public class EmprendimientoJpaEntity {
     @Column(nullable = false, length = 32)
     private CategoriaEmprendimiento categoria;
 
+    @Column(name = "categoria_personalizada", length = 80)
+    private String categoriaPersonalizada;
+
     @Column(nullable = false, length = 500)
     private String descripcion;
 
@@ -61,6 +64,7 @@ public class EmprendimientoJpaEntity {
         ubicacionId = emprendimiento.ubicacionId();
         nombre = emprendimiento.nombre();
         categoria = emprendimiento.categoria();
+        categoriaPersonalizada = emprendimiento.categoriaPersonalizada();
         descripcion = emprendimiento.descripcion();
         horaApertura = emprendimiento.horaApertura();
         horaCierre = emprendimiento.horaCierre();
@@ -81,7 +85,8 @@ public class EmprendimientoJpaEntity {
                 horaCierre,
                 estado,
                 createdAt,
-                updatedAt
+                updatedAt,
+                categoriaPersonalizada
         );
     }
 }

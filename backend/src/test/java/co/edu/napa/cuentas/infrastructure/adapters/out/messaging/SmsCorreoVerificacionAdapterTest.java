@@ -5,48 +5,37 @@ import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.shared.domain.DomainException;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-
-import java.util.Map;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+@SuppressWarnings("unchecked")
 class SmsCorreoVerificacionAdapterTest {
     private final StringRedisTemplate redis = mock(StringRedisTemplate.class);
-    @SuppressWarnings("unchecked")
-    private final HashOperations<String, Object, Object> hash = mock(HashOperations.class);
     private final SmsReactorClient sms = mock(SmsReactorClient.class);
     private final BrevoCorreoClient correo = mock(BrevoCorreoClient.class);
-    @SuppressWarnings("unchecked")
-    private final ValueOperations<String, String> values = mock(ValueOperations.class);
     private final SmsCorreoVerificacionAdapter adapter = new SmsCorreoVerificacionAdapter(
-            redis, sms, correo, 25, 300, Clock.fixed(Instant.parse("2026-11-22T15:00:00Z"), ZoneOffset.UTC));
+            redis, sms, correo, 25, 300,
+            Clock.fixed(Instant.parse("2026-11-22T15:00:00Z"), ZoneOffset.UTC));
 
     SmsCorreoVerificacionAdapterTest() {
-        when(redis.opsForHash()).thenReturn(hash);
-        when(redis.opsForValue()).thenReturn(values);
-        when(values.increment(anyString())).thenReturn(1L);
+        when(redis.execute(any(RedisScript.class), anyList(), anyString(), anyString())).thenReturn(1L);
+        when(redis.execute(any(RedisScript.class), anyList(), anyString(), anyString(), anyString())).thenReturn(1L);
     }
 
     @Test
-    void sendsTheCodeBySms() {
+    void sendsTheSameCodeThatIsStoredWithItsExpirationBySms() {
         adapter.iniciar("+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.SMS);
-
         String codigo = codigoGuardado();
         verify(sms).enviar(eq("+573007080825"), eq("Napa: tu codigo de verificacion es " + codigo
                 + ". Vence en 10 minutos. No lo compartas."));
@@ -56,49 +45,67 @@ class SmsCorreoVerificacionAdapterTest {
     @Test
     void sendsTheCodeByEmail() {
         adapter.iniciar("+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.CORREO, "ana@example.com");
-
         String codigo = codigoGuardado();
         verify(correo).enviarCodigo("ana@example.com", codigo);
         verifyNoInteractions(sms);
     }
 
     @Test
-    void doesNotStoreACodeThatCouldNotBeDelivered() {
+    void doesNotReplaceTheChallengeWhenDeliveryFails() {
         doThrow(new EnvioFallidoException("HTTP 400")).when(sms).enviar(anyString(), anyString());
-
-        DomainException exception = assertThrows(DomainException.class, () ->
+        DomainException error = assertThrows(DomainException.class, () ->
                 adapter.iniciar("+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.SMS));
-
-        assertEquals("EXTERNAL_SERVICE_UNAVAILABLE", exception.code());
-        verifyNoInteractions(hash);
+        assertEquals("EXTERNAL_SERVICE_UNAVAILABLE", error.code());
+        verify(redis, never()).execute(any(RedisScript.class), anyList(), anyString(), anyString(), anyString());
     }
 
     @Test
-    void stopsSendingSmsWhenTheDailyQuotaIsUsedUp() {
-        when(values.increment("auth:verification:codigo:cupo:sms:2026-11-22")).thenReturn(26L);
-
-        DomainException exception = assertThrows(DomainException.class, () ->
+    void stopsSendingWhenTheDailyQuotaIsUsedUpWithoutIncrementingIt() {
+        when(redis.execute(any(RedisScript.class), eq(List.of("auth:verification:codigo:cupo:sms:2026-11-22")),
+                eq("25"), eq("172800"))).thenReturn(0L);
+        DomainException error = assertThrows(DomainException.class, () ->
                 adapter.iniciar("+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.SMS));
-
-        assertTrue(exception.getMessage().contains("Pide el código por correo"));
+        assertTrue(error.getMessage().contains("Pide el código por correo"));
         verifyNoInteractions(sms);
-        verify(values).decrement("auth:verification:codigo:cupo:sms:2026-11-22");
+        verify(redis, never()).execute(any(RedisScript.class), anyList());
     }
 
     @Test
     void returnsTheQuotaWhenTheSendFails() {
         doThrow(new EnvioFallidoException("HTTP 500")).when(correo).enviarCodigo(anyString(), anyString());
-
         assertThrows(DomainException.class, () -> adapter.iniciar(
                 "+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.CORREO, "ana@example.com"));
-
-        verify(values).decrement("auth:verification:codigo:cupo:correo:2026-11-22");
+        verify(redis).execute(any(RedisScript.class), eq(List.of("auth:verification:codigo:cupo:correo:2026-11-22")));
     }
 
-    @SuppressWarnings("unchecked")
+    @Test
+    void doesNotContactProvidersWithoutAConfirmedQuotaReservation() {
+        when(redis.execute(any(RedisScript.class), anyList(), anyString(), anyString())).thenReturn(null);
+        DomainException error = assertThrows(DomainException.class, () ->
+                adapter.iniciar("+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.SMS));
+        assertEquals("EXTERNAL_SERVICE_UNAVAILABLE", error.code());
+        verifyNoInteractions(sms, correo);
+    }
+
+    @Test
+    void rejectsMissingEmailBeforeReservingQuota() {
+        DomainException error = assertThrows(DomainException.class, () -> adapter.iniciar(
+                "+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.CORREO, " "));
+        assertEquals("VALIDATION_ERROR", error.code());
+        verifyNoInteractions(redis, sms, correo);
+    }
+
+    @Test
+    void doesNotReportSuccessIfStorageIsNotConfirmed() {
+        when(redis.execute(any(RedisScript.class), anyList(), anyString(), anyString(), anyString())).thenReturn(null);
+        DomainException error = assertThrows(DomainException.class, () ->
+                adapter.iniciar("+573007080825", PropositoVerificacion.REGISTRO, CanalVerificacion.SMS));
+        assertEquals("EXTERNAL_SERVICE_UNAVAILABLE", error.code());
+    }
+
     private String codigoGuardado() {
-        ArgumentCaptor<Map<Object, Object>> captor = ArgumentCaptor.forClass(Map.class);
-        verify(hash).putAll(anyString(), captor.capture());
-        return captor.getValue().get("code").toString();
+        ArgumentCaptor<String> codigo = ArgumentCaptor.forClass(String.class);
+        verify(redis).execute(any(RedisScript.class), anyList(), codigo.capture(), eq("600"), anyString());
+        return codigo.getValue();
     }
 }

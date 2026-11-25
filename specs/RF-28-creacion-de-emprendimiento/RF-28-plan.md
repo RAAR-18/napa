@@ -290,3 +290,15 @@ frontend/__tests__/emprendimientos/crear.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+## Corrección de auditoría P0-03 (2026-11-24)
+
+- La creación usa el componente compartido `frontend/src/components/TimeField.tsx`: teclado numérico, separador automático, rechazo de letras y de horas fuera de 00:00 a 23:59, y aviso al abandonar una hora incompleta.
+- Se conserva la validación del formulario antes del envío y el contrato HH:mm. No se impone que apertura sea anterior a cierre: los horarios nocturnos no cambian de alcance.
+- La edición RF-29 reutiliza el mismo control. Se cubren medianoche, 23:59, pegado, borrado y valores inválidos mediante pruebas del componente y de ambas pantallas.
+
+## Categoría personalizada en Otros (P2-01, 2026-11-24)
+
+- Campo opcional `categoriaPersonalizada`, 1–80 caracteres tras strip, exclusivo de OTROS. Se conserva el enum y los contratos antiguos que omiten el campo.
+- Migración nueva V21 agrega `emprendimiento.categoria_personalizada`, nullable y con CHECK de coherencia; no modifica V1–V20. La validación de dominio impide combinaciones inválidas. JPA y la proyección JDBC conservan el campo; la API lo devuelve en creación/consulta propia/listado/detalle.
+- Frontend: campo condicional al crear y presentación en consultas, con fallback a Otros para registros y cachés previos. No se habilita edición de categoría.
+- Pruebas acotadas: dominio y preservación al editar; persistencia y listado con PostgreSQL/Testcontainers; formulario y regresiones del módulo. La migración se verifica en una base de prueba aislada, sin tocar la base local del usuario.

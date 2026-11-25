@@ -16,6 +16,11 @@ public record EmprendimientoListadoProjection(
         double latitud,
         double longitud,
         String direccion,
-        Double distanciaMetros
+        Double distanciaMetros,
+        String categoriaPersonalizada
 ) {
+    public EmprendimientoListadoProjection(UUID id, String nombre, CategoriaEmprendimiento categoria, TipoVendedor tipoVendedor, LocalTime horaApertura, LocalTime horaCierre, double latitud, double longitud, String direccion, Double distanciaMetros) {
+        this(id, nombre, categoria, tipoVendedor, horaApertura, horaCierre, latitud, longitud, direccion, distanciaMetros, null);
+    }
+
 }

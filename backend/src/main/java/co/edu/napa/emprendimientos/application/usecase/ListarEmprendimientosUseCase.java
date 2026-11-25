@@ -75,7 +75,8 @@ public class ListarEmprendimientosUseCase implements ListarEmprendimientosPort {
                         projection.latitud(),
                         projection.longitud(),
                         projection.direccion()
-                )
+                ),
+                projection.categoriaPersonalizada()
         );
     }
 

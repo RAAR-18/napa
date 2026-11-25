@@ -1,3 +1,4 @@
+import { useUbicacionAutomatica } from '../lib/ubicacion-automatica';
 import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
 import { Stack, router } from 'expo-router';
@@ -19,6 +20,7 @@ export default function RootLayout() {
   });
   // F041: las acciones guardadas sin conexión se envían solas cuando vuelve la señal.
   useProcesarOutbox();
+  useUbicacionAutomatica();
   useEffect(() => {
     if (Platform.OS === 'web') return undefined;
     // Tocar un aviso push abre la lista de notificaciones (RF-38).

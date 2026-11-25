@@ -43,6 +43,7 @@ public class EmprendimientoListadoPersistenceAdapter implements EmprendimientoLi
                 SELECT e.id,
                        e.nombre,
                        e.categoria,
+                       e.categoria_personalizada,
                        vendedor.rol AS rol_vendedor,
                        e.hora_apertura,
                        e.hora_cierre,
@@ -69,7 +70,8 @@ public class EmprendimientoListadoPersistenceAdapter implements EmprendimientoLi
                         result.getDouble("latitud"),
                         result.getDouble("longitud"),
                         result.getString("direccion"),
-                        result.getObject("distancia_metros", Double.class)
+                        result.getObject("distancia_metros", Double.class),
+                        result.getString("categoria_personalizada")
                 )
         );
     }

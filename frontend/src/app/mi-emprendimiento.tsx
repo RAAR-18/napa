@@ -1,3 +1,4 @@
+import { configurarUbicacionAutomatica, leerUbicacionAutomatica } from '../lib/ubicacion-automatica';
 import { fonts } from '../components/theme';
 import { DateTimeField } from '../components/DateTimeField';
 import { useEffect, useRef, useState } from 'react';
@@ -61,6 +62,9 @@ export default function MiEmprendimientoScreen() {
   const [referencia, setReferencia] = useState('');
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [ubicacionAutomatica, setUbicacionAutomatica] = useState(false);
+  const [configurandoUbicacion, setConfigurandoUbicacion] = useState(false);
+  const configuracionEnCurso = useRef(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -91,6 +95,34 @@ export default function MiEmprendimientoScreen() {
     }
   }, [pendientes.length]);
   const ambulante = role === 'VENDEDOR_AMBULANTE';
+
+  useEffect(() => {
+    let vigente = true;
+    if (!ambulante || !actual) return;
+    void leerUbicacionAutomatica().then((preferencia) => {
+      if (vigente) setUbicacionAutomatica(preferencia?.emprendimientoId === actual.id
+        && preferencia.usuarioId === sesionForm.current?.cuenta);
+    }).catch(() => undefined);
+    return () => { vigente = false; };
+  }, [ambulante, actual]);
+
+  async function cambiarUbicacionAutomatica() {
+    if (!actual || configuracionEnCurso.current) return;
+    configuracionEnCurso.current = true;
+    setConfigurandoUbicacion(true);
+    setError(null);
+    try {
+      const session = await getValidSession();
+      if (!session.usuarioId) throw new Error('Inicia sesión nuevamente para continuar.');
+      await configurarUbicacionAutomatica(session.usuarioId, actual.id, !ubicacionAutomatica);
+      setUbicacionAutomatica(!ubicacionAutomatica);
+      setNotice(!ubicacionAutomatica
+        ? 'Tu zona se actualizará mientras uses Ñapa y tengas conexión.'
+        : 'La ubicación automática quedó desactivada.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo cambiar la ubicación automática.');
+    } finally { configuracionEnCurso.current = false; setConfigurandoUbicacion(false); }
+  }
 
   function fill(value: Emprendimiento) {
     setActual(value);
@@ -363,7 +395,7 @@ export default function MiEmprendimientoScreen() {
         title={actual?.nombre ?? 'Mi emprendimiento'}
         description={
           actual
-            ? `${categoriaNombres[actual.categoria]}. El nombre y la categoría no se pueden cambiar.`
+            ? `${actual.categoriaPersonalizada ?? categoriaNombres[actual.categoria]}. El nombre y la categoría no se pueden cambiar.`
             : 'Administra el negocio que ven los clientes.'
         }
       />
@@ -434,6 +466,16 @@ export default function MiEmprendimientoScreen() {
           ) : (
             <HelperText>No podrás moverla mientras tengas pedidos sin cerrar.</HelperText>
           )}
+          {ambulante ? (
+            <>
+              <TextButton
+                title={ubicacionAutomatica ? 'Desactivar ubicación automática' : 'Activar ubicación automática'}
+                disabled={configurandoUbicacion || busy}
+                onPress={() => void cambiarUbicacionAutomatica()}
+              />
+              <HelperText>Actualiza tu zona cada dos minutos mientras usas Ñapa. Se pausa al salir de la app; puedes desactivarla cuando quieras.</HelperText>
+            </>
+          ) : null}
           <TextButton
             title={ambulante ? 'Estoy aquí' : 'Usar mi ubicación actual'}
             disabled={locating || busy}

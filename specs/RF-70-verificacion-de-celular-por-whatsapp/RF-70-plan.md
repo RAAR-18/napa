@@ -363,3 +363,16 @@ frontend/__tests__/auth/verificar-celular.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+## Tercer bloque: auditoría de verificación (P0-05, 2026-11-24)
+
+El código actual permite elegir SMS o correo; se conserva esa elección y el correo opcional. Al llegar desde un registro con correo conocido se recomienda CORREO, sin enviar automáticamente y manteniendo SMS como alternativa. Se evita disparar envío y confirmación simultáneos mediante un bloqueo compartido en la pantalla. Si no hay correo, se mantiene SMS. No se cambió el propósito CAMBIO de celular: sigue requiriendo demostrar acceso al número nuevo.
+
+La entrega externa sigue requiriendo configurar SMSReactor o Brevo. Ningún cambio de UI garantiza que un proveedor sin credenciales, cuota o dispositivo operativo envíe mensajes. No se enviaron mensajes reales ni se tocaron secretos. No se convierte la verificación por correo en prueba de posesión del celular; la sustitución de canales ya existía y debe revisarse como decisión de producto aparte.
+
+## Corrección de concurrencia y disponibilidad (P0-05, 2026-11-24)
+
+- Guardar código, contador, generación y TTL de diez minutos en un único script Redis tras el envío aceptado. Un envío fallido no reemplaza el desafío anterior. No se informa éxito si Redis no confirma la escritura.
+- Leer código/generación en un solo HMGET; conservar la comparación de código de tiempo constante en Java. Consumir o registrar fallo mediante compare-and-set Lua sobre ambos valores. Un código antiguo no puede borrar ni penalizar uno reenviado; las claves antiguas sin generación siguen funcionando hasta vencer.
+- Reservar cupo diario con incremento/TTL atómicos y sin incrementar cuando el cupo está agotado. Rechazar un resultado Redis nulo antes de llamar al proveedor. Liberación limitada a contadores positivos, sin crear cupos negativos.
+- Validar destino de correo antes de reservar cupo. No registrar cuerpos de error de proveedor, ya que podrían reflejar códigos o destinatarios.
+- Sin cambios de canales, obligatoriedad de correo, vigencia, intentos, proveedor predeterminado, contratos HTTP o esquema SQL. Pruebas con proveedores simulados y Redis Testcontainers aislado; no se envían SMS/correos reales.

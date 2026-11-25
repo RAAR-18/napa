@@ -78,7 +78,7 @@ const paymentNames: Record<MedioPagoPedido, string> = {
 function futureReservation(value: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value.trim());
   if (!match) {
-    throw new Error('Usa fecha y hora en formato AAAA-MM-DDTHH:mm.');
+    throw new Error('Selecciona la fecha y la hora acordadas para la reserva.');
   }
   const [, yearText, monthText, dayText, hourText, minuteText] = match;
   const date = new Date(
@@ -112,7 +112,7 @@ function deliveryLocation(
   const lat = Number(latitude.trim().replace(',', '.'));
   const lng = Number(longitude.trim().replace(',', '.'));
   if (
-    !address.trim() ||
+    !address.trim() || !latitude.trim() || !longitude.trim() ||
     address.trim().length > 300 ||
     !Number.isFinite(lat) ||
     lat < -90 ||
@@ -189,10 +189,13 @@ export function PedidoCatalogo({
   const [enCola, setEnCola] = useState(false);
   const guardando = useRef(false);
   const carritoCargado = useRef(false);
+  const [borradorListo, setBorradorListo] = useState(false);
+  const generacionCarrito = useRef(getSessionGeneration());
+  const guardadoBorrador = useRef<Promise<void>>(Promise.resolve());
+  const borradorFinalizado = useRef(false);
   const carritoEditado = useRef(false);
   const direccionEditada = useRef(false);
   const [direccionRecordada, setDireccionRecordada] = useState(false);
-  const [borradorListo, setBorradorListo] = useState(false);
   const pendingRequest = useRef<{ body: string; key: string } | null>(null);
 
   useEffect(() => {
@@ -213,9 +216,28 @@ export function PedidoCatalogo({
           ? await leerCarritoEncolado(propietario, accion.idempotencyKey)
           : null
         : await leerBorradorPedido(propietario, emprendimientoId);
-      const ultimaDireccion = !pendienteId ? await leerUltimaDireccion(propietario).catch(() => null) : null;
       if (!active || generacion !== getSessionGeneration()) return;
-      if (ultimaDireccion && !direccionEditada.current) {
+      carritoCargado.current = true;
+      setBorradorListo(true);
+      if (pendienteId && (!carrito || !accion || !pedido)) {
+        setError('Este pedido ya no está disponible para revisión.');
+        return;
+      }
+      const ultimaDireccion = !carrito?.direccionBorrador && !pedido?.ubicacionEntrega
+        ? await leerUltimaDireccion(propietario).catch(() => null)
+        : null;
+      if (!active || generacion !== getSessionGeneration()) return;
+      generacionCarrito.current = generacion;
+      const direccionGuardada = carrito?.direccionBorrador;
+      if (direccionEditada.current) {
+        // La persona ya escribió una dirección mientras cargaba: no se reemplaza.
+      } else if (direccionGuardada) {
+        setAddress(direccionGuardada.direccion);
+        setLatitude(direccionGuardada.latitud);
+        setLongitude(direccionGuardada.longitud);
+        setNeighborhood(direccionGuardada.barrio);
+        setReference(direccionGuardada.referencia);
+      } else if (ultimaDireccion) {
         setAddress(ultimaDireccion.direccion);
         setLatitude(String(ultimaDireccion.latitud));
         setLongitude(String(ultimaDireccion.longitud));
@@ -223,12 +245,7 @@ export function PedidoCatalogo({
         setReference(ultimaDireccion.referencia ?? '');
         setDireccionRecordada(true);
       }
-      carritoCargado.current = true;
       setBorradorListo(true);
-      if (pendienteId && (!carrito || !accion || !pedido)) {
-        setError('Este pedido ya no está disponible para revisión.');
-        return;
-      }
       if (!carrito) return;
       if (!carritoEditado.current) {
         setCart(carrito.items);
@@ -258,21 +275,6 @@ export function PedidoCatalogo({
   }, [emprendimientoId, enabled, pendienteId]);
 
   useEffect(() => {
-    if (!borradorListo || !cuenta || pendienteId || created || enCola) return;
-    const generacion = getSessionGeneration();
-    const guardado = cart.length
-      ? guardarBorradorPedido(cuenta, emprendimientoId, {
-        items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate,
-      })
-      : borrarBorradorPedido(cuenta, emprendimientoId);
-    void guardado.catch(() => {
-      if (generacion === getSessionGeneration()) {
-        setMensajeLocal('No se pudo guardar el carrito en este dispositivo. Intenta de nuevo antes de salir.');
-      }
-    });
-  }, [borradorListo, cuenta, emprendimientoId, cart, modalidad, reserve, reservationDate, pendienteId, created, enCola]);
-
-  useEffect(() => {
     if (!offline || !cuenta) return;
     let active = true;
     void leerCotizacionOffline(cuenta, emprendimientoId, modalidad)
@@ -281,7 +283,38 @@ export function PedidoCatalogo({
     return () => { active = false; };
   }, [cuenta, emprendimientoId, modalidad, offline]);
 
-  const carrito: CarritoPedido = { items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate };
+  const carrito: CarritoPedido = {
+    items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate,
+    direccionBorrador: { direccion: address, latitud: latitude, longitud: longitude,
+      barrio: neighborhood, referencia: reference },
+  };
+
+  useEffect(() => {
+    if (!borradorListo || !cuenta || pendienteId || created || enCola || borradorFinalizado.current) return;
+    const generacion = generacionCarrito.current;
+    const borrador: CarritoPedido = {
+      items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate,
+      direccionBorrador: { direccion: address, latitud: latitude, longitud: longitude,
+        barrio: neighborhood, referencia: reference },
+    };
+    guardadoBorrador.current = guardadoBorrador.current.catch(() => undefined).then(async () => {
+      if (generacion !== getSessionGeneration() || borradorFinalizado.current) return;
+      // Quitar el último producto descarta el borrador en lugar de guardar un carrito vacío.
+      if (borrador.items.length) await guardarBorradorPedido(cuenta, emprendimientoId, borrador);
+      else await borrarBorradorPedido(cuenta, emprendimientoId);
+    }).catch(() => {
+      if (generacion === getSessionGeneration()) {
+        setError('No se pudo guardar el carrito. Revisa el almacenamiento del dispositivo antes de salir.');
+      }
+    });
+  }, [borradorListo, cuenta, emprendimientoId, pendienteId, created, enCola, cart, modalidad, reserve,
+    reservationDate, address, latitude, longitude, neighborhood, reference]);
+
+  async function cerrarBorrador() {
+    borradorFinalizado.current = true;
+    await guardadoBorrador.current.catch(() => undefined);
+    if (cuenta) await borrarBorradorPedido(cuenta, emprendimientoId).catch(() => undefined);
+  }
   const medioOffline = paymentMethod && datosGuardados?.medios.includes(paymentMethod)
     ? paymentMethod
     : datosGuardados?.medios.length === 1 ? datosGuardados.medios[0] : null;
@@ -356,6 +389,15 @@ export function PedidoCatalogo({
   function quoteInput(): Parameters<typeof cotizarPedido>[0] {
     if (!emprendimientoId) {
       throw new Error('No se pudo identificar el emprendimiento.');
+    }
+    if (!reserve) {
+      const sinStock = cart.find(({ producto, cantidad }) => {
+        const vigente = productos.find((item) => item.id === producto.id) ?? producto;
+        return vigente.estado === 'AGOTADO' || cantidad > vigente.cantidadDisponible;
+      });
+      if (sinStock) {
+        throw new Error(`La cantidad de ${sinStock.producto.nombre} supera la disponibilidad. Reduce la cantidad o elige una reserva.`);
+      }
     }
     const input: Parameters<typeof cotizarPedido>[0] = {
       emprendimientoId,
@@ -470,7 +512,7 @@ export function PedidoCatalogo({
       const order = await crearPedido(input, pendingRequest.current.key);
       pendingRequest.current = null;
       setCreated(order);
-      if (cuenta) await borrarBorradorPedido(cuenta, emprendimientoId).catch(() => undefined);
+      await cerrarBorrador();
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 409) {
         setQuote(null);
@@ -506,7 +548,7 @@ export function PedidoCatalogo({
           throw cause;
         }
         setEnCola(true);
-        await borrarBorradorPedido(cuenta, emprendimientoId).catch(() => undefined);
+        await cerrarBorrador();
         void outbox.procesar().catch(() => undefined);
       } else {
         await guardarBorradorPedido(cuenta, emprendimientoId, carrito);
@@ -815,6 +857,7 @@ export function PedidoCatalogo({
                     label="Fecha y hora acordadas"
                     mode="datetime"
                     value={reservationDate}
+                    editable={!creating && !quoting}
                     onChangeText={(value) => {
                       setReservationDate(value);
                       invalidateQuote();

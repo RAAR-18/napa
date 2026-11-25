@@ -271,3 +271,12 @@ frontend/__tests__/domicilios/ruta.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+
+## Corrección P0-01: cachés de lectura en web (2026-11-24)
+
+Listado y rutas comparten `lib/cache-lectura-storage`: SQLite nativo conserva napa.db y cache_lectura; la variante web usa IndexedDB sin importar SQLite. Se conserva el formato serializado, fechas, eliminación selectiva de rutas y validación de datos de los consumidores. Las transacciones web solo confirman al completarse y un fallo permite reabrir. No se migran cachés antiguas del navegador; se regeneran con una consulta en línea. No se añaden mapas, proveedores, dependencias ni cambios de API. Validar almacenamiento web persistente, borrado selectivo, fallos de apertura y las pruebas existentes de listado, además de tipos/lint y exportación web.
+
+
+## Corrección de privacidad de caché (posterior a 3d5b535)
+
+Las claves de ruta incluyen cuenta y domicilio. Guardar/leer/borrar una ruta requiere propietario explícito; sin cuenta no se accede a almacenamiento. No recuperar ni asignar a una cuenta las claves históricas sin propietario. Se regeneran consultando en línea; la limpieza global de rutas mantiene su función al cerrar sesión. La pantalla captura cuenta/rol/generación antes de pedir GPS/API y verifica que siguen vigentes antes de mostrar, guardar o recuperar una copia. Al perder foco se invalida el ciclo. Borrar ruta al entregar afecta solo a la cuenta del detalle. Comprobar aislamiento A/B, rechazo de claves antiguas, sesión cambiada durante petición y retorno offline con cuenta vigente. Sin cambios de mapas, API o permisos.

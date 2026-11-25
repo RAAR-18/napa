@@ -202,3 +202,26 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 *  [ ] Checkpoint de la base verificado en un móvil de gama baja
 
 **idempotencia en curso:** `409 IDEMPOTENCY_IN_PROGRESS` conserva la acción pendiente y se reintenta con la misma clave y cuerpo usando retroceso exponencial (inicialmente 5 s). Los conflictos de negocio permanecen fallidos para revisión. La repetición de una operación terminada reproduce su respuesta guardada. Validación: 12 pruebas de idempotencia del backend aprobadas, incluidas 3 de integración con Redis; 33 suites y 212 pruebas del frontend aprobadas. En Android se comprobó que un reporte pendiente sobrevive al cierre completo de la app con el backend apagado y se envía al restablecerlo. El aislamiento entre cuentas cuenta con pruebas automatizadas; su comprobación manual sigue pendiente.
+
+## Corrección de auditoría P0-01 (2026-11-24)
+
+- F041 conserva SQLite en Android/iOS. En web se usa IndexedDB mediante `persistent-store.web.ts`, seleccionado por Metro; la cola y sus reintentos siguen dependiendo de `OutboxStore`.
+- La inserción, comprobación de conflictos y actualización condicional se realizan en una transacción; solo se informa éxito al completarla. Se mantienen propietario, clave de idempotencia y restricciones de decisiones por recurso.
+- No hay respaldo silencioso en memoria si el navegador bloquea almacenamiento. Se muestra un error y se permite reintentar la apertura.
+- `fake-indexeddb` es una dependencia exclusiva de desarrollo para verificar persistencia entre instancias, conflictos simultáneos, correcciones fallidas y rollback.
+- Esta entrega no migra pendientes previos de SQLite web ni cambia las cachés de lectura que aún usan SQLite. Antes de desplegar, sincronizar o recuperar esos pendientes; no borrar los datos del navegador.
+
+
+## Corrección P0-01: cachés de lectura en web (2026-11-24)
+
+Listado y rutas comparten `lib/cache-lectura-storage`: SQLite nativo conserva napa.db y cache_lectura; la variante web usa IndexedDB sin importar SQLite. Se conserva el formato serializado, fechas, eliminación selectiva de rutas y validación de datos de los consumidores. Las transacciones web solo confirman al completarse y un fallo permite reabrir. No se migran cachés antiguas del navegador; se regeneran con una consulta en línea. No se añaden mapas, proveedores, dependencias ni cambios de API. Validar almacenamiento web persistente, borrado selectivo, fallos de apertura y las pruebas existentes de listado, además de tipos/lint y exportación web.
+
+
+## P0-01: cachés por cuenta en web (posterior a 180109b)
+
+Agregar variantes .web.ts para perfil, negocio propio, catálogo, inventario, notificaciones y consultas de pedidos. Un almacenamiento IndexedDB común `cache-cuenta.web.ts` separa cuenta y espacio mediante índice compuesto. Cada cambio lee y escribe dentro de una sola transacción; los callbacks son síncronos y el éxito se confirma únicamente al commit. Revalidar sesión dentro de la transacción, conservar siete días y límites de 50 por cuenta/espacio (pedidos por tipo). Preservar minimización de perfil/notificaciones, descarte de inventario de otro negocio y eliminación atómica de detalle/listados de pedidos. No modificar implementaciones SQLite nativas, API ni dependencias. Las cachés web previas se regeneran en línea; no migrar datos transitorios. Comprobar aislamiento, concurrencia, invalidación, vencimiento, límites y variantes con pruebas IndexedDB, tipos/lint y exportación web.
+
+
+## Revisión de dependencias tras integrar main (base 0ed05bf)
+
+Tras npm ci: 28 alertas (27 moderadas y 1 alta). La alta GHSA-mrhx-c7xc-m3w5 corresponde a zod 3.25.76, dependencia de eslint-plugin-react-hooks 7.1.1. Tanto ese plugin como el peer de zod-validation-error 4.0.2 admiten ^3.25.0 || ^4.0.0. Actualizar solo la resolución transitiva zod a una versión corregida >=4.6.6 dentro de esos rangos mediante npm update zod, sin agregarla como dependencia directa ni cambiar Expo/Jest. Comprobar diff del lock, npm ls, audit, lint, tipos y una prueba de hooks. Las moderadas de glob/minimatch requieren versiones principales transitivas; no usar audit fix --force ni overrides globales para aparentar cero alertas. Mantenerlas documentadas para actualización compatible de sus consumidores. No cambia código funcional ni se añade un proveedor.

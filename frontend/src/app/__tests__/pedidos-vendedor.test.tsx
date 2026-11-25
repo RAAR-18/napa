@@ -18,6 +18,10 @@ import {
 } from '../../lib/pedidos';
 
 jest.mock('expo-router', () => ({
+  useFocusEffect: (effect: () => void | (() => void)) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    React.useEffect(effect, [effect]);
+  },
   router: { push: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: () => ({ pedidoId: 'order-id' }),
 }));

@@ -84,7 +84,8 @@ public class CrearEmprendimientoUseCase implements CrearEmprendimientoPort {
                 command.horaCierre(),
                 EstadoEmprendimiento.ACTIVO,
                 now,
-                now
+                now,
+                command.categoriaPersonalizada()
         );
 
         if (emprendimientos.existsActiveByUsuarioId(command.usuarioId())) {

@@ -16,6 +16,7 @@ module.exports = ({ config }) => {
     },
     plugins: [
       ...(config.plugins ?? []),
+      '@react-native-community/datetimepicker',
       ['react-native-maps', mapsKey ? { androidGoogleMapsApiKey: mapsKey } : {}],
     ],
     extra: {

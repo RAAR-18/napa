@@ -59,7 +59,7 @@ No se guardan datos de tarjetas ni billeteras electrónicas de terceros.
 
 ## Stack previsto
 
-Backend: Java 21, Spring Boot 4.1.x, Spring Security, JPA + Hibernate Spatial, PostgreSQL 16 + PostGIS, Redis 7, Firebase Admin (FCM), Twilio Verify (verificación del celular por WhatsApp o SMS). Frontend: React Native + Expo (development build), expo-sqlite. Detalle y decisiones en [`specs/foundations/plan.md`](specs/foundations/plan.md).
+Backend: Java 21, Spring Boot 4.1.x, Spring Security, JPA + Hibernate Spatial, PostgreSQL 16 + PostGIS, Redis 7, Firebase Admin (FCM), SMSReactor (SMS) y Brevo (correo) para verificación, con adaptador de consola para desarrollo. Frontend: React Native + Expo (development build), expo-sqlite. Detalle y decisiones en [`specs/foundations/plan.md`](specs/foundations/plan.md).
 
 ## Desarrollo local
 
@@ -93,9 +93,23 @@ El backend expone `POST /api/v1/pedidos/cotizacion` para clientes. Calcula preci
 
 El backend también requiere `NAPA_PAYMENT_ACCOUNT_ENCRYPTION_KEY`: una clave aleatoria de 32 bytes codificada en Base64 para cifrar cuentas bancarias con AES-GCM. Guárdala en el gestor de secretos del entorno y nunca en Git. La clave cifra los datos en `configuracion_pago`; antes de rotarla habrá que descifrar y volver a cifrar todas las configuraciones y copias vigentes de domicilios con la clave nueva.
 
-El perfil `otp-console` selecciona el único adaptador de consola, `ConsolaVerificacionAdapter`. El código se configura con `NAPA_OTP_CONSOLE_CODE` y debe tener exactamente seis dígitos; no hay un código predeterminado y la API rechaza el arranque de ese perfil si falta o es inválido. El adaptador no envía mensajes ni guarda o imprime el código: mantiene en Redis el estado de verificación durante 10 minutos, con un máximo de 5 intentos y consumo único al acertar. Los límites de envío son 1 por minuto y 5 por hora por celular, y 20 por hora por IP.
+El perfil `otp-console` selecciona el único adaptador de consola, `ConsolaVerificacionAdapter`. El código se configura con `NAPA_OTP_CONSOLE_CODE` y debe tener exactamente seis dígitos; no hay un código predeterminado y la API rechaza el arranque de ese perfil si falta o es inválido. El adaptador no envía mensajes ni guarda o imprime el código: mantiene en Redis el estado de verificación durante 10 minutos, con un máximo de 5 intentos y consumo único al acertar. El backend aplica límites por celular e IP y una espera de reenvío independiente por canal, informada en la respuesta de la API.
 
-Este perfil es exclusivo para desarrollo/pruebas y no puede combinarse con `prod`. Por defecto se selecciona el proveedor `unavailable`: solicitar o confirmar un código responde `503` y no se contacta a Twilio. El registro conserva la cuenta pendiente y devuelve `verificacion.estado = FALLIDO` si el envío no está disponible, para permitir reintentarlo después.
+Este perfil es exclusivo para desarrollo/pruebas y no puede combinarse con `prod`. Por defecto se selecciona el proveedor `unavailable`: no se envían mensajes externos y las solicitudes que necesitan el proveedor no pueden completar la verificación. El registro desde la app crea la cuenta pendiente sin enviar un código automáticamente; después se elige el canal y se solicita el código. Si el envío falla, se conserva la cuenta para reintentarlo o elegir el otro medio disponible.
+
+### Verificación con SMS o correo reales
+
+Para usar los proveedores reales, inicia la API sin `otp-console` y configura `NAPA_VERIFICATION_PROVIDER=sms-correo` junto con las variables del canal que vayas a utilizar, en el entorno del backend:
+
+| Canal | Configuración |
+|---|---|
+| SMS | `NAPA_SMSREACTOR_API_KEY`; opcionalmente `NAPA_SMSREACTOR_PHONE_ID`. La pasarela del equipo debe estar operativa. |
+| Correo | `NAPA_BREVO_API_KEY`, `NAPA_BREVO_SENDER_EMAIL`; opcionalmente `NAPA_BREVO_SENDER_NAME`. |
+| Cupos diarios | `NAPA_LIMITE_DIARIO_SMS` y `NAPA_LIMITE_DIARIO_CORREO`, según la configuración del equipo. |
+
+Las claves no se guardan en Git ni deben pegarse en chats. Una cuenta que tenga correo puede elegirlo sin depender de la pasarela SMS; si no tiene correo, necesitará un canal SMS operativo. Los cambios de código no sustituyen esa configuración.
+
+El código mantiene diez minutos de vigencia y cinco intentos. Redis guarda código y vencimiento en una operación atómica y distingue cada reenvío: una confirmación antigua no elimina ni consume intentos del código nuevo. Si el reenvío falla, se conserva el desafío anterior hasta su vencimiento. Los cupos no se superan por envíos simultáneos. Las pruebas de regresión usan proveedores simulados y un Redis aislado; no generan mensajes reales.
 
 Si el arranque falla con `Migration checksum mismatch`, compara primero `flyway_schema_history` con los archivos de `backend/src/main/resources/db/migration`. Una base creada desde otra rama puede tener migraciones distintas con los mismos números. En el entorno local revisado, la base `napa` contenía V4 `emprendimiento`, V5 `producto` y V6 `imagen_emprendimiento`, mientras que esta versión contiene V4 `notifications`, V5 `mensaje` y V6 `emprendimiento`. Modificar solo el historial con `repair` no adapta esas tablas.
 

@@ -371,7 +371,7 @@ export default function EmprendimientosScreen() {
                       {item.nombre}
                     </Text>
                     <Text style={styles.detail}>
-                      {categoryNames[item.categoria] ?? item.categoria} ·{' '}
+                      {item.categoriaPersonalizada ?? categoryNames[item.categoria] ?? item.categoria} ·{' '}
                       {item.tipoVendedor === 'AMBULANTE' ? 'Ambulante' : 'Punto fijo'}
                     </Text>
                     <DetailLine icon="map-pin">

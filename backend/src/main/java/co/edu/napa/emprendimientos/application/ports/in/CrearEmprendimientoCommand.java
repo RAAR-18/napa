@@ -17,6 +17,11 @@ public record CrearEmprendimientoCommand(
         Double latitud,
         Double longitud,
         String direccion,
-        String referencia
+        String referencia,
+        String categoriaPersonalizada
 ) {
+    public CrearEmprendimientoCommand(UUID usuarioId, RolUsuario rolUsuario, String nombre, CategoriaEmprendimiento categoria, String descripcion, LocalTime horaApertura, LocalTime horaCierre, Double latitud, Double longitud, String direccion, String referencia) {
+        this(usuarioId, rolUsuario, nombre, categoria, descripcion, horaApertura, horaCierre, latitud, longitud, direccion, referencia, null);
+    }
+
 }

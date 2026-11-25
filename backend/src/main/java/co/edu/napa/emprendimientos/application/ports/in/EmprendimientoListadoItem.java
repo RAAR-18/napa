@@ -14,8 +14,13 @@ public record EmprendimientoListadoItem(
         String horaApertura,
         String horaCierre,
         Double distanciaMetros,
-        UbicacionListado ubicacion
+        UbicacionListado ubicacion,
+        String categoriaPersonalizada
 ) {
+    public EmprendimientoListadoItem(UUID id, String nombre, CategoriaEmprendimiento categoria, TipoVendedor tipoVendedor, boolean abierto, String horaApertura, String horaCierre, Double distanciaMetros, UbicacionListado ubicacion) {
+        this(id, nombre, categoria, tipoVendedor, abierto, horaApertura, horaCierre, distanciaMetros, ubicacion, null);
+    }
+
     public record UbicacionListado(double latitud, double longitud, String direccion) {
     }
 }

@@ -38,6 +38,10 @@ jest.mock('react-native-maps', () => {
   return { __esModule: true, default: MapView, Marker };
 });
 jest.mock('expo-router', () => ({
+  useFocusEffect: (effect: () => void | (() => void)) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    React.useEffect(effect, [effect]);
+  },
   router: { back: jest.fn(), push: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: () => ({ domicilioId: 'delivery-id', pedidoId: 'order-id' }),
 }));

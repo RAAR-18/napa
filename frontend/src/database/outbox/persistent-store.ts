@@ -1,0 +1,1 @@
+export { SqliteOutboxStore as PersistentOutboxStore } from './sqlite-store';

@@ -411,3 +411,16 @@ frontend/__tests__/pedidos/realizar.test.tsx
 - `[USn]` en cada tarea enlaza con su historia de usuario.
 - Hacer commit por tarea o grupo lógico.
 - Evitar tareas vagas y conflictos en un mismo archivo.
+## Bloque de correcciones de auditoría (2026-11-24)
+
+- P0-06: guardado automático del carrito, modalidad, reserva y dirección del borrador al cambiar el formulario. La recuperación termina antes de habilitar el guardado para no sobrescribir un borrador con el estado inicial vacío. Se serializan las escrituras; al confirmar o encolar el pedido se espera la escritura pendiente y se elimina el borrador, evitando que reaparezca.
+- P1-03: se conserva la última dirección cotizada por cuenta y se propone al abrir un carrito sin dirección propia. La dirección permanece editable; no se confirma ni envía un pedido automáticamente.
+- `pedido-storage.ts` conserva SQLite nativo y la tabla existente; `pedido-storage.web.ts` usa IndexedDB para borradores, carritos encolados y cotizaciones. No se agregan migraciones del servidor ni se migran datos antiguos del navegador en esta entrega.
+- P0-02 (validación de interfaz): antes de cotizar un pedido inmediato, se comprueba la disponibilidad conocida. El backend sigue siendo la autoridad; las reservas y el descuento al aceptar mantienen su comportamiento. Se rechazan coordenadas vacías antes de convertirlas a número.
+- No se cambian los límites acordados de 20 productos/20 unidades ni se reserva inventario al crear el pedido: son decisiones funcionales explícitas del plan actual, no errores de implementación a sustituir automáticamente.
+
+## Selector visual de reserva (P1-07, 2026-11-24)
+
+Se reemplaza el campo de texto ISO por `ReservationDateTimeField`. Android/iOS usan `@react-native-community/datetimepicker` 9.2.1, instalado mediante Expo para SDK 58, y web usa el control `datetime-local` del navegador. La representación interna del borrador continúa en hora local YYYY-MM-DDTHH:mm; al cotizar se valida fecha real/futura y se convierte a UTC como antes. No se cambia el contrato del backend ni se añaden migraciones.
+
+El plugin queda declarado en `frontend/app.config.js`. Los builds de desarrollo nativos deben regenerarse una vez para incorporar el módulo; no se modifican ios/android manualmente. Se valida cancelación, selección de fecha/hora local y rechazo de fechas inexistentes con pruebas de componente/helpers, y se mantienen las pruebas de compra en el contrato del pedido.

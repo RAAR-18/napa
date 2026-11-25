@@ -301,3 +301,13 @@ frontend/__tests__/emprendimientos/
 - La ubicación se actualiza en su misma fila (`ubicacion.id` se conserva). Los pedidos sin cerrar se cuentan con `ConsultarPedidosSinCerrarPort` del módulo `pedidos` (`PENDIENTE`, `ACEPTADO`, `LISTO_PARA_RECOGER`, `EN_CAMINO`).
 - Sin control de versión: la última escritura gana; no hay `409 CONFLICT` por edición simultánea.
 - App: pantalla `mi-emprendimiento` con botón «Estoy aquí» (expo-location) y envío solo de los campos que cambiaron.
+
+## Corrección de auditoría P0-03 (2026-11-24)
+
+La edición y revisión de cambios pendientes reutilizan `TimeField`, igual que RF-28. Se conservan valores iniciales HH:mm, validación antes del envío y bloqueo por estado/operación en curso. No cambian contratos de API, horarios nocturnos, datos ni migraciones. Pruebas: `frontend/src/components/TimeField.test.tsx` y suites de creación/edición de emprendimientos.
+
+## Actualización de zona en primer plano (P1-05 parcial, 2026-11-24)
+
+Se reutiliza expo-location sin dependencias o permisos de segundo plano nuevos. `ubicacion-automatica.ts` guarda una preferencia por cuenta/negocio mediante el almacenamiento multiplataforma existente, toma una posición cada dos minutos en primer plano y envía solo la ubicación si cambió al menos 100 m. Conserva dirección/referencia y no edita horario/descripción. La API sigue siendo PATCH /emprendimientos/me.
+
+Los helpers aceptan propietario esperado opcional y lo comprueban contra la sesión justo antes de cada petición. Se comprueban generación de sesión, rol, negocio, preferencia vigente y permiso antes de enviar. Las llamadas se serializan; al fallar la red no se encolan coordenadas viejas. La raíz de la app inicia/limpia el proceso; Mi emprendimiento ofrece activación/desactivación explícita. El GPS no se consulta si no hay preferencia activa de la cuenta actual. Se pausa fuera de primer plano.

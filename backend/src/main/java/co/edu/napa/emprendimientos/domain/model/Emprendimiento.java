@@ -18,8 +18,13 @@ public record Emprendimiento(
         LocalTime horaCierre,
         EstadoEmprendimiento estado,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String categoriaPersonalizada
 ) {
+    public Emprendimiento(UUID id, UUID usuarioId, UUID ubicacionId, String nombre, CategoriaEmprendimiento categoria, String descripcion, LocalTime horaApertura, LocalTime horaCierre, EstadoEmprendimiento estado, Instant createdAt, Instant updatedAt) {
+        this(id, usuarioId, ubicacionId, nombre, categoria, descripcion, horaApertura, horaCierre, estado, createdAt, updatedAt, null);
+    }
+
     public Emprendimiento {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(usuarioId, "usuarioId");
@@ -27,6 +32,14 @@ public record Emprendimiento(
         validateText(nombre, "nombre", 100);
         if (categoria == null) {
             throw validationError("categoria", "La categoría es obligatoria.");
+        }
+        if (categoriaPersonalizada != null) {
+            categoriaPersonalizada = categoriaPersonalizada.strip();
+            if (categoriaPersonalizada.isEmpty()) categoriaPersonalizada = null;
+            if (categoriaPersonalizada != null && (categoria != CategoriaEmprendimiento.OTROS
+                    || categoriaPersonalizada.length() > 80)) {
+                throw validationError("categoriaPersonalizada", "La categoría personalizada solo se admite en Otros y debe tener hasta 80 caracteres.");
+            }
         }
         validateText(descripcion, "descripcion", 500);
         if (horaApertura == null) {
@@ -50,14 +63,14 @@ public record Emprendimiento(
                 nuevaDescripcion == null ? descripcion : nuevaDescripcion.strip(),
                 nuevaApertura == null ? horaApertura : nuevaApertura,
                 nuevoCierre == null ? horaCierre : nuevoCierre,
-                estado, createdAt, Objects.requireNonNull(now, "now"));
+                estado, createdAt, Objects.requireNonNull(now, "now"), categoriaPersonalizada);
     }
 
     /** RF-30: borrado lógico; el historial de pedidos y los productos se conservan. */
     public Emprendimiento eliminar(Instant now) {
         requireActivo();
         return new Emprendimiento(id, usuarioId, ubicacionId, nombre, categoria, descripcion, horaApertura,
-                horaCierre, EstadoEmprendimiento.ELIMINADO, createdAt, Objects.requireNonNull(now, "now"));
+                horaCierre, EstadoEmprendimiento.ELIMINADO, createdAt, Objects.requireNonNull(now, "now"), categoriaPersonalizada);
     }
 
     private void requireActivo() {

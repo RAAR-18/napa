@@ -82,7 +82,7 @@ export default function EmprendimientoDetalleScreen() {
   return (
     <AuthPage>
       <PageHeading
-        eyebrow={detalle ? categoriaNombres[detalle.categoria] : 'Emprendimiento'}
+        eyebrow={detalle ? detalle.categoriaPersonalizada ?? categoriaNombres[detalle.categoria] : 'Emprendimiento'}
         title={detalle?.nombre ?? 'Detalle del emprendimiento'}
         description={detalle?.descripcion ?? 'Consulta dónde está, su horario y cómo entrega.'}
       />

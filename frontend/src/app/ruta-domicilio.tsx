@@ -1,7 +1,7 @@
 import { fonts } from '../components/theme';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import * as Location from 'expo-location';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -15,7 +15,7 @@ import {
 } from '../components/AuthUI';
 import MapaRutaDomicilio from '../components/MapaRutaDomicilio';
 import { ApiError } from '../lib/api';
-import { clearSession } from '../lib/auth';
+import { clearSession, getSessionGeneration, readSession } from '../lib/auth';
 import {
   estadoDomicilioNombres,
   formatearDistancia,
@@ -66,28 +66,47 @@ export default function RutaDomicilioScreen() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [guardadaAt, setGuardadaAt] = useState<string | null>(null);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true;
+    const generacion = getSessionGeneration();
+    const vigente = () => active && generacion === getSessionGeneration();
+    let cuenta: string | null = null;
+    async function mismaCuenta() {
+      if (!vigente()) return false;
+      const actual = await readSession().catch(() => null);
+      return vigente() && actual?.usuarioId === cuenta && actual?.rol === 'DOMICILIARIO';
+    }
     async function load() {
       setLoading(true);
       setError(null);
+      setRuta(null);
+      setGuardadaAt(null);
+      setPosicion(null);
+      setAviso(null);
       if (!domicilioId) {
         setError('No se indicó el domicilio.');
         setLoading(false);
         return;
       }
-      const lectura = await leerPosicion();
-      if (!active) return;
-      setPosicion(lectura.posicion);
-      setAviso(lectura.aviso);
       try {
+        const session = await readSession();
+        if (!vigente()) return;
+        if (!session?.usuarioId || session.rol !== 'DOMICILIARIO') {
+          setError('Inicia sesión con la cuenta de domiciliario asignada para consultar esta ruta.');
+          return;
+        }
+        cuenta = session.usuarioId;
+        const lectura = await leerPosicion();
+        if (!(await mismaCuenta())) return;
+        setPosicion(lectura.posicion);
+        setAviso(lectura.aviso);
         const response = await obtenerRutaDomicilio(domicilioId, lectura.posicion);
-        if (!active) return;
+        if (!(await mismaCuenta())) return;
         setRuta(response);
         setGuardadaAt(null);
-        void guardarRuta(response).catch(() => undefined);
+        void guardarRuta(response, cuenta).catch(() => undefined);
       } catch (cause) {
-        if (!active) return;
+        if (!vigente() || (cuenta && !(await mismaCuenta()))) return;
         if (cause instanceof ApiError) {
           if (cause.status === 401) {
             await clearSession();
@@ -95,7 +114,7 @@ export default function RutaDomicilioScreen() {
             return;
           }
           if ([403, 404, 409].includes(cause.status)) {
-            void borrarRuta(domicilioId).catch(() => undefined);
+            void borrarRuta(domicilioId, cuenta ?? '').catch(() => undefined);
             setRuta(null);
             setError(
               cause.status === 409
@@ -108,8 +127,8 @@ export default function RutaDomicilioScreen() {
           }
         }
         // Sin conexión o error del servidor: la última ruta guardada sigue sirviendo.
-        const guardada = await leerRuta(domicilioId).catch(() => null);
-        if (!active) return;
+        const guardada = cuenta ? await leerRuta(domicilioId, cuenta).catch(() => null) : null;
+        if (cuenta && !(await mismaCuenta())) return;
         if (guardada) {
           setRuta(guardada.ruta);
           setGuardadaAt(guardada.updatedAt);
@@ -117,14 +136,15 @@ export default function RutaDomicilioScreen() {
           setError(cause instanceof Error ? cause.message : 'No se pudo cargar la ruta.');
         }
       } finally {
-        if (active) setLoading(false);
+        if (vigente()) setLoading(false);
       }
     }
     void load();
     return () => {
       active = false;
     };
-  }, [domicilioId, attempt]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- attempt invalida el ciclo cuando el usuario actualiza la ruta.
+  }, [domicilioId, attempt]));
 
   return (
     <AuthPage>

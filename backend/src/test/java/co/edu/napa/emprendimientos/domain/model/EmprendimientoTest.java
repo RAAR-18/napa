@@ -62,6 +62,28 @@ class EmprendimientoTest {
         assertEquals("VALIDATION_ERROR", longName.code());
     }
 
+    @Test
+    void normalizesTheOtherCategoryAndPreservesItWhenEditingOrDeleting() {
+        var original = personalizado(CategoriaEmprendimiento.OTROS, "  Artesanías  ");
+        assertEquals("Artesanías", original.categoriaPersonalizada());
+        assertEquals("Artesanías", original.editar("Nueva descripción", null, null, NOW.plusSeconds(1)).categoriaPersonalizada());
+        assertEquals("Artesanías", original.eliminar(NOW.plusSeconds(1)).categoriaPersonalizada());
+    }
+
+    @Test
+    void rejectsCustomTextOutsideOtherOrAboveTheLimitAndKeepsOldRecordsValid() {
+        assertThrows(DomainException.class, () -> personalizado(CategoriaEmprendimiento.SNACKS, "Artesanías"));
+        assertThrows(DomainException.class, () -> personalizado(CategoriaEmprendimiento.OTROS, "x".repeat(81)));
+        assertEquals(null, personalizado(CategoriaEmprendimiento.OTROS, "  ").categoriaPersonalizada());
+        assertEquals(null, create("Negocio", "Descripción").categoriaPersonalizada());
+    }
+
+    private Emprendimiento personalizado(CategoriaEmprendimiento categoria, String texto) {
+        return new Emprendimiento(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "Negocio", categoria, "Descripción", LocalTime.of(8, 0), LocalTime.of(17, 0),
+                EstadoEmprendimiento.ACTIVO, NOW, NOW, texto);
+    }
+
     private Emprendimiento create(String nombre, String descripcion) {
         return new Emprendimiento(
                 UUID.randomUUID(),

@@ -1,6 +1,6 @@
 import { fonts } from '../components/theme';
-import { useEffect, useRef, useState } from 'react';
-import { router } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { ActivityIndicator, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -107,7 +107,7 @@ export default function MisPedidosScreen() {
     anteriores.current = pendientesActivos;
   }, [pendientesActivos]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true;
     const generation = getSessionGeneration();
     const vigente = () => active && generation === getSessionGeneration();
@@ -173,7 +173,8 @@ export default function MisPedidosScreen() {
       dejarDeEscuchar();
       if (Platform.OS === 'web' && typeof window !== 'undefined') window.removeEventListener('focus', actualizar);
     };
-  }, [estado, page, loadAttempt]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAttempt invalida el ciclo al actualizar manual o automáticamente.
+  }, [estado, page, loadAttempt]));
 
   const totalPages = data ? Math.ceil(data.totalElements / data.size) : 0;
   const anterior = paginasGuardadas.filter((numero) => numero < page).at(-1);

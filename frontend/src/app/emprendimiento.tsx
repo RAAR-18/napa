@@ -39,6 +39,7 @@ export default function EmprendimientoScreen() {
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] =
     useState<CategoriaEmprendimiento>('OTROS');
+  const [categoriaPersonalizada, setCategoriaPersonalizada] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [horaApertura, setHoraApertura] = useState('');
   const [horaCierre, setHoraCierre] = useState('');
@@ -49,6 +50,7 @@ export default function EmprendimientoScreen() {
   const [locationBusy, setLocationBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [yaExiste, setYaExiste] = useState(false);
   const [created, setCreated] = useState<Emprendimiento | null>(null);
 
   const isFixedVendor = session?.rol === 'VENDEDOR_PUNTO_FIJO';
@@ -100,6 +102,7 @@ export default function EmprendimientoScreen() {
     const validTime = (value: string) =>
       /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.trim());
     if (
+      (categoria === 'OTROS' && categoriaPersonalizada.trim().length > 80) ||
       !nombre.trim() ||
       nombre.trim().length > 100 ||
       !descripcion.trim() ||
@@ -122,6 +125,8 @@ export default function EmprendimientoScreen() {
     return {
       nombre: nombre.trim(),
       categoria,
+      ...(categoria === 'OTROS' && categoriaPersonalizada.trim()
+        ? { categoriaPersonalizada: categoriaPersonalizada.trim() } : {}),
       descripcion: descripcion.trim(),
       horaApertura: horaApertura.trim(),
       horaCierre: horaCierre.trim(),
@@ -152,6 +157,7 @@ export default function EmprendimientoScreen() {
     try {
       setCreated(await createEmprendimiento(input));
     } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 409) setYaExiste(true);
       if (cause instanceof ApiError && cause.status === 401) {
         await clearSession();
         router.replace('/login');
@@ -209,7 +215,7 @@ export default function EmprendimientoScreen() {
         <View style={styles.successCard}>
           <Text style={styles.successTitle}>Creación exitosa</Text>
           <Text style={styles.successText}>
-            Categoría: {categories.find((item) => item.value === created.categoria)?.label}
+            Categoría: {created.categoriaPersonalizada ?? categories.find((item) => item.value === created.categoria)?.label}
           </Text>
           <Text style={styles.successText}>Estado: {created.estado}</Text>
         </View>
@@ -229,6 +235,7 @@ export default function EmprendimientoScreen() {
         description="Completa los datos para publicar tu negocio en Ñapa."
       />
       <ErrorBanner message={error} />
+      {yaExiste ? <PrimaryButton title="Editar mi emprendimiento" onPress={() => router.replace('/mi-emprendimiento')} /> : null}
       <Field
         label="Nombre del emprendimiento"
         maxLength={100}
@@ -247,6 +254,11 @@ export default function EmprendimientoScreen() {
           />
         ))}
       </View>
+      {categoria === 'OTROS' ? (
+        <Field label="Tipo de negocio (opcional)" value={categoriaPersonalizada}
+          onChangeText={setCategoriaPersonalizada} maxLength={80}
+          placeholder="Por ejemplo: Artesanías o repostería" />
+      ) : null}
       <Field
         label="Descripción"
         maxLength={500}

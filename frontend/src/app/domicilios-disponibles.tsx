@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { router } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -147,11 +147,14 @@ export default function DomiciliosDisponiblesScreen() {
     };
   }, [locationAttempt]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!posicion) return undefined;
     const here = posicion;
     let active = true;
+    let cargando = false;
     async function load(silent: boolean) {
+      if (!active || cargando || (AppState.currentState && AppState.currentState !== 'active')) return;
+      cargando = true;
       if (!silent) {
         setLoading(true);
         setError(null);
@@ -171,6 +174,7 @@ export default function DomiciliosDisponiblesScreen() {
         });
         if (active) setData(pageData);
       } catch (cause) {
+        if (!active) return;
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
@@ -182,16 +186,22 @@ export default function DomiciliosDisponiblesScreen() {
           );
         }
       } finally {
+        cargando = false;
         if (active && !silent) setLoading(false);
       }
     }
     void load(false);
     const timer = setInterval(() => void load(true), REFRESCO_MS);
+    const listener = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') void load(false);
+    });
     return () => {
       active = false;
       clearInterval(timer);
+      listener.remove();
     };
-  }, [orden, posicion, page, loadAttempt]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAttempt invalida el ciclo al actualizar manual o automáticamente.
+  }, [orden, posicion, page, loadAttempt]));
 
   function changeOrden(next: OrdenDisponibles) {
     setPage(0);

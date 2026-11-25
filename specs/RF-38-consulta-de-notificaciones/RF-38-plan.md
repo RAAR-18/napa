@@ -318,3 +318,14 @@ frontend/__tests__/notificaciones/
 **Evidencia Android (2026-11-19, #56).** Los avisos de los pedidos pendientes aparecieron en la bandeja tras corregir el mapeo de fechas del relay del outbox y reiniciar el backend. Con el backend detenido y Metro activo, el vendedor reabrió la app y vio «Datos guardados» con la fecha original. Al expandir un aviso vio el mensaje y conservó la marca de sin leer, con el enlace oculto. El filtro No leídas mostró el aviso de página sin descargar. Al restablecer el backend y actualizar la bandeja, la notificación seguía sin leer.
 
 **Verificación local.** TypeScript y ESLint pasaron. Las 18 pruebas de notificaciones y sesión pasaron al repetirlas con un límite de espera mayor. Pasaron también las 5 pruebas del backend, incluida la regresión del relay con PostgreSQL.
+
+## Actualización automática de interfaz (P1-02, 2026-11-24)
+
+La bandeja y los pedidos recibidos incorporan `useAutoRefresh`: consulta cada 30 segundos mientras la ruta está enfocada, detiene el intervalo al salir y no solicita mientras la pantalla está cargando; al volver la app a primer plano permite refrescar. Conserva filtros y paginación y no cierra el aviso expandido en un refresco automático. La lectura de notificaciones sigue siendo una acción explícita del usuario.
+
+Es sondeo periódico, no SSE/WebSocket. No requiere permisos, proveedor ni infraestructura adicionales. Push nativo mantiene la configuración existente. La actualización estrictamente instantánea o con la aplicación cerrada no está garantizada por este sondeo.
+
+
+## P1-02: actualización de listados cliente/domiciliario (posterior a 9800874)
+
+Mis pedidos y domicilios en curso se cargan al enfocar y se refrescan cada 30 s con el hook existente, sin consultas automáticas mientras cargan o la app está inactiva. Domicilios disponibles conserva 15 s, pero su ciclo pertenece al foco: limpia intervalo/listener al salir, omite consultas en segundo plano, impide solicitudes superpuestas y descarta respuestas/errores del ciclo anterior. Al volver a primer plano consulta sin esperar el siguiente intervalo. Se conservan permisos, ubicación, filtros, paginación y cachés. No cambia API, notificaciones leídas, push ni añade SSE. Validar foco, reanudación, concurrencia y refresco de las tres pantallas, más tipos/lint.

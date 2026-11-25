@@ -335,3 +335,6 @@ Distancia y duración vienen de `RoutingPort` (ruta A→B). Si el servicio falla
 
 ## 5. Eventos
 El catálogo completo está en [eventos.md](eventos.md).
+### Complemento de categoría de emprendimiento (2026-11-24)
+
+`emprendimiento.categoria_personalizada`: VARCHAR(80) nullable, exclusivo de categoria=OTROS, texto sin espacios exteriores y de 1 a 80 caracteres si existe. En JSON: `categoriaPersonalizada`. No altera filtros, enumeraciones ni la inmutabilidad de categoría de RF-29. Migración V21. Negocios/cachés anteriores sin complemento siguen siendo válidos.

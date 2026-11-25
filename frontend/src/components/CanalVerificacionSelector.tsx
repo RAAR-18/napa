@@ -13,8 +13,10 @@ export function CanalVerificacionSelector({
   label = '¿Cómo quieres recibir el código?',
   value,
   onChange,
+  disabled = false,
 }: {
   label?: string;
+  disabled?: boolean;
   value: VerificationChannel;
   onChange: (canal: VerificationChannel) => void;
 }) {
@@ -26,7 +28,7 @@ export function CanalVerificacionSelector({
           <OptionButton
             key={opcion.value}
             label={opcion.label}
-            onPress={() => onChange(opcion.value)}
+            onPress={() => { if (!disabled) onChange(opcion.value); }}
             selected={value === opcion.value}
           />
         ))}
