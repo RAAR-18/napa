@@ -276,7 +276,7 @@ export default function DomicilioDomiciliarioScreen() {
     try {
       // Una clave por intento: con la misma clave el servidor repetiría la respuesta anterior.
       await confirmarEntrega(domicilioId, codigo, randomUUID());
-      void borrarRuta(domicilioId).catch(() => undefined);
+      if (cuenta) void borrarRuta(domicilioId, cuenta).catch(() => undefined);
       setCodigo('');
       setNotice('¡Entrega confirmada! El vendedor debe pagarte la tarifa.');
       setLoadAttempt((attempt) => attempt + 1);

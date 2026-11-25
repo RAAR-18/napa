@@ -1,11 +1,11 @@
 # Continuidad entre chats — Ñapa
 
-Actualizado: 24 de noviembre de 2026.
+Actualizado: 25 de noviembre de 2026.
 
 ## Repositorio y colaboración
 
 - Carpeta real: `C:\Users\ESTUDIANTE\Documents\GitHub\napa`. No modificar la copia Documents/ChatGPT.
-- Rama `fix/p0-01-outbox-web`; último commit confirmado `0ed05bf`, integración local de origin/main sobre la rama de correcciones. Carpeta limpia al iniciar este bloque.
+- Rama `fix/p0-01-outbox-web`; último commit confirmado `3d5b535`, corrección de Zod posterior al merge local de main 0ed05bf. Carpeta limpia al iniciar este bloque.
 - Edición directa y comprobaciones autorizadas. Trabajar por bloques, repetir solo lo afectado por cambios/fallos. El tester valida recorridos funcionales.
 - Git manual: entregar siempre el bloque completo de Git Bash al recomendar commit, con archivos explícitos. No ejecutar add/commit/push ni gestionar ramas por iniciativa propia. Preferencia guardada en AGENTS.md.
 
@@ -44,11 +44,21 @@ Actualizado: 24 de noviembre de 2026.
 - No se añaden SSE, push, permisos, dependencias ni mapas. Revisión funcional por roles pendiente para el tester. El usuario hace commit/push; entregar bloque completo Git Bash al cerrar.
 
 
-## Trabajo vigente: revisión de dependencias tras integrar main
+## Revisión de dependencias integrada en 3d5b535
 
 - Main quedó integrado mediante 0ed05bf sin conflictos. Se conservaron los cambios del equipo: pools backend y expo-build-properties para APK Android, junto con nuestras dependencias. El usuario completó npm ci, tipos y lint. No publicar ni integrar nuestra rama hacia main todavía; continuar corrigiendo localmente.
 - npm audit reprodujo 28 alertas: 27 moderadas y 1 alta. La alta es GHSA-mrhx-c7xc-m3w5 en zod 3.25.76, consumido por eslint-plugin-react-hooks y zod-validation-error.
 - Corrección puntual: npm update zod --ignore-scripts --no-audit --no-fund, sin agregar dependencia directa. El lock resuelve zod 4.6.7; ambos consumidores admiten ^3.25.0 || ^4.0.0. También se deduplicó @expo/env 2.6.0, manteniendo su versión raíz idéntica. package.json y versiones Expo/React Native/Jest intactos.
 - Archivos afectados: frontend/package-lock.json, specs/foundations/plan.md y documentación de continuidad/auditoría. Sin cambios de código funcional, API, datos, permisos o builds nativos.
-- Validación final: tipos y lint correctos, 1 prueba del hook correcta, npm ls zod sin conflictos. Auditoría final: 27 moderadas, 0 altas, 0 críticas (antes 28, incluida 1 alta). No se repitieron suites completas ni exportación: no cambia código de la app. Este bloque sigue sin commit; entregar comandos completos para Git Bash, sin push.
+- Validación final: tipos y lint correctos, 1 prueba del hook correcta, npm ls zod sin conflictos. Auditoría final: 27 moderadas, 0 altas, 0 críticas (antes 28, incluida 1 alta). No se repitieron suites completas ni exportación: no cambia código de la app. Este bloque quedó integrado en 3d5b535; no hacer push por iniciativa propia.
 - Moderadas pendientes: glob/minimatch en herramientas Expo/Jest/ESLint. La solución automática propone retroceder Expo/Jest o cambiar versiones principales transitivas; no aplicar audit fix --force ni overrides globales. Esperar actualización compatible de consumidores o planificar cambio separado. No afirmar cero vulnerabilidades.
+
+
+## Trabajo vigente sin commit: privacidad de rutas guardadas (25 de noviembre)
+
+- `frontend/src/lib/ruta-cache.ts`: guardar/leer/borrar requieren cuenta explícita; clave compuesta cuenta/domicilio. Sin cuenta no accede al almacenamiento. La lectura comprueba que coincide el domicilio. No adopta claves antiguas sin propietario: abrir una vez la ruta con conexión para regenerarla por cuenta.
+- `frontend/src/app/ruta-domicilio.tsx`: captura cuenta/rol/generación antes del GPS y API. Comprueba vigencia antes de mostrar, guardar o recuperar copias y descarta errores de sesiones anteriores. El ciclo termina al perder foco. Limpia la vista al iniciar una nueva consulta.
+- `domicilio-domiciliario.tsx`: al entregar borra solo la ruta de la cuenta del detalle. La limpieza global existente al cerrar sesión mantiene su contrato.
+- Pruebas: ruta-cache.web.test.ts, ruta-domicilio.test.tsx; también se revisaron ejecucion-domicilio.test.tsx y domiciliario.test.tsx. El simulador antiguo de domiciliario necesitaba useFocusEffect y AppState activo, coherentes con el bloque P1-02 anterior; se actualiza sin relajar aserciones.
+- Validación final: 40 pruebas dirigidas correctas (16 caché/pantalla de ruta, 15 ejecución de domicilios y 9 domiciliario). Repetición de las 6 de caché y de las 9 de domiciliario tras ajustes, correctas. Tipos correctos; lint final de archivos afectados sin errores ni advertencias. No se repitió backend o exportación: no cambian API, dependencias ni selección de plataforma. La revisión funcional queda al tester.
+- Plan RF-22 y seguimiento actualizados. No hay mapas nuevos, cambios API, migraciones, permisos o dependencias. Mantener la rama local, sin push ni integración hacia main.

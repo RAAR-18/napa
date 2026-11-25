@@ -21,19 +21,39 @@ const ruta: RutaDomicilio = {
   tramos: [],
 };
 it('recovers a saved route and removes it when the delivery ends', async () => {
-  await guardarRuta(ruta);
-  expect(await leerRuta(ruta.domicilioId)).toEqual({ ruta, updatedAt: expect.any(String) });
-  await borrarRuta(ruta.domicilioId);
-  expect(await leerRuta(ruta.domicilioId)).toBeNull();
+  await guardarRuta(ruta, 'cuenta-A');
+  expect(await leerRuta(ruta.domicilioId, 'cuenta-A')).toEqual({ ruta, updatedAt: expect.any(String) });
+  await borrarRuta(ruta.domicilioId, 'cuenta-A');
+  expect(await leerRuta(ruta.domicilioId, 'cuenta-A')).toBeNull();
 });
 it('clears cached customer addresses while keeping the business listing', async () => {
-  await guardarRuta(ruta);
+  await guardarRuta(ruta, 'cuenta-A');
   await guardarLectura('emprendimientos-listado:prueba', 'listado');
   await borrarTodasLasRutas();
-  expect(await leerRuta(ruta.domicilioId)).toBeNull();
+  expect(await leerRuta(ruta.domicilioId, 'cuenta-A')).toBeNull();
   expect((await leerLectura('emprendimientos-listado:prueba'))?.contenido).toBe('listado');
 });
 it('does not expose malformed cached route data', async () => {
-  await guardarLectura('ruta-domicilio:invalida', '{invalid');
-  expect(await leerRuta('invalida')).toBeNull();
+  await guardarLectura('ruta-domicilio:' + JSON.stringify(['cuenta-A', 'invalida']), '{invalid');
+  expect(await leerRuta('invalida', 'cuenta-A')).toBeNull();
+});
+
+it('isolates routes between accounts and deletes only the specified owner', async () => {
+  await guardarRuta(ruta, 'cuenta-A');
+  expect(await leerRuta(ruta.domicilioId, 'cuenta-B')).toBeNull();
+  await guardarRuta({ ...ruta, destino: { ...ruta.destino, direccion: 'Otra copia de prueba' } }, 'cuenta-B');
+  await borrarRuta(ruta.domicilioId, 'cuenta-A');
+  expect(await leerRuta(ruta.domicilioId, 'cuenta-A')).toBeNull();
+  expect((await leerRuta(ruta.domicilioId, 'cuenta-B'))?.ruta.destino.direccion).toBe('Otra copia de prueba');
+});
+it('does not adopt historical routes without an owner or read without an account', async () => {
+  await guardarLectura('ruta-domicilio:' + ruta.domicilioId, JSON.stringify(ruta));
+  expect(await leerRuta(ruta.domicilioId, 'cuenta-C')).toBeNull();
+  expect(await leerRuta(ruta.domicilioId, '')).toBeNull();
+  await guardarRuta(ruta, '');
+  expect(await leerRuta(ruta.domicilioId, '')).toBeNull();
+});
+it('rejects a route stored under a different delivery id', async () => {
+  await guardarLectura('ruta-domicilio:' + JSON.stringify(['cuenta-A', 'otro']), JSON.stringify(ruta));
+  expect(await leerRuta('otro', 'cuenta-A')).toBeNull();
 });

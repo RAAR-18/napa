@@ -1,5 +1,6 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 
 import DomicilioDomiciliarioScreen from '../domicilio-domiciliario';
@@ -17,6 +18,10 @@ import {
 } from '../../lib/domicilios';
 
 jest.mock('expo-router', () => ({
+  useFocusEffect: (effect: () => void | (() => void)) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    React.useEffect(effect, [effect]);
+  },
   router: { push: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: () => ({ domicilioId: 'delivery-id' }),
 }));
@@ -65,7 +70,13 @@ const available: DomicilioDomiciliarioDetalle = {
   asignadoAt: null,
 };
 
+const estadoOriginal = AppState.currentState;
+afterEach(() => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: estadoOriginal });
+});
+
 beforeEach(() => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
   jest.clearAllMocks();
   jest.mocked(getValidSession).mockResolvedValue(courier);
   jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({ status: 'granted' } as never);

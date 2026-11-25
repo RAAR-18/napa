@@ -105,3 +105,12 @@ Main quedó integrado en la rama de correcciones. El usuario completó npm ci/ti
 La revisión npm audit confirmó 28 alertas (27 moderadas, 1 alta). La alta [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) corresponde a Zod; el proveedor publica versión corregida desde 4.6.6. Se resolvió la dependencia transitiva a 4.6.7, compatible con los rangos declarados de eslint-plugin-react-hooks 7.1.1 y zod-validation-error 4.0.2. Se modifica solo el lock y se deduplica @expo/env 2.6.0 sin cambiar su versión. No se modifica package.json ni se actualiza Expo, React Native o Jest.
 
 Las moderadas de glob/minimatch y sus consumidores quedan pendientes de una actualización compatible. No se fuerza un cambio de major transitivo ni un retroceso del SDK para reducir artificialmente el conteo. Validación final: tipos y lint correctos; 1 prueba del hook correcta; npm ls zod sin conflictos. Auditoría final: 27 moderadas, 0 altas y 0 críticas. No se ejecutó nuevamente la suite completa ni exportación porque no cambia código de la aplicación.
+
+
+## Privacidad de rutas guardadas (25 de noviembre, posterior a 3d5b535)
+
+Se detectó que la clave de caché de ruta solo contenía el domicilio y podía recuperarse como respaldo ante un error de red desde otra cuenta. Se cambia a clave compuesta cuenta/domicilio, con propietario obligatorio y rechazo de claves antiguas sin propietario. Las copias se regeneran al consultar con conexión; no se eliminan pedidos ni se modifican rutas del servidor.
+
+La pantalla valida cuenta, rol y generación antes de pedir GPS/API y antes de mostrar/guardar/recuperar datos, invalidando su ciclo al perder foco. Al entregar se borra la copia de la cuenta del detalle. Esto corrige almacenamiento y privacidad existentes; no inicia la fase de mapas o rutas optimizadas.
+
+Pruebas dirigidas: aislamiento A/B, borrado por propietario, clave antigua, contenido inválido, domicilio discordante, uso offline autorizado, cambio de sesión durante consulta y error antiguo tras salir. Se actualizaron los simuladores de navegación/AppState de la suite antigua de domiciliario sin cambiar sus expectativas. Validación final: 40 pruebas dirigidas correctas, tipos correctos y lint final de archivos afectados sin errores ni advertencias. No se repitió backend ni exportación porque no cambian API, dependencias o selección de plataforma. Revisión funcional por el tester pendiente.

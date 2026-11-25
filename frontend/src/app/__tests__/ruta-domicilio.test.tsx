@@ -1,12 +1,21 @@
 import * as Location from 'expo-location';
-import { render, waitFor } from '@testing-library/react-native';
+import { act, render, waitFor } from '@testing-library/react-native';
 
 import RutaDomicilioScreen from '../ruta-domicilio';
 import { ApiError } from '../../lib/api';
+import { readSession, clearSession } from '../../lib/auth';
+import { router } from 'expo-router';
+
 import { decodificarPolilinea, obtenerRutaDomicilio, type RutaDomicilio } from '../../lib/domicilios';
 import { borrarRuta, guardarRuta, leerRuta } from '../../lib/ruta-cache';
 
+let mockGeneracion = 1;
+
 jest.mock('expo-router', () => ({
+  useFocusEffect: (effect: () => void | (() => void)) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    React.useEffect(effect, [effect]);
+  },
   router: { push: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: () => ({ domicilioId: 'delivery-id' }),
 }));
@@ -26,7 +35,8 @@ jest.mock('react-native-maps', () => {
   );
   return { __esModule: true, default: MapView, Marker, Polyline };
 });
-jest.mock('../../lib/auth', () => ({ clearSession: jest.fn(), getValidSession: jest.fn() }));
+jest.mock('../../lib/auth', () => ({ clearSession: jest.fn(), getValidSession: jest.fn(),
+  readSession: jest.fn(), getSessionGeneration: () => mockGeneracion }));
 jest.mock('../../lib/domicilios', () => ({
   ...jest.requireActual('../../lib/domicilios'),
   obtenerRutaDomicilio: jest.fn(),
@@ -56,6 +66,9 @@ const ruta: RutaDomicilio = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockGeneracion = 1;
+  jest.mocked(readSession).mockResolvedValue({ usuarioId: 'cuenta-A', rol: 'DOMICILIARIO',
+    accessToken: 'test', refreshToken: 'test', tokenType: 'Bearer', expiresIn: 900, expiresAt: Date.now() + 900000 });
   jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({ status: 'granted' } as never);
   jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue(
     { coords: { latitude: 11.235, longitude: -74.215 } } as never,
@@ -85,7 +98,7 @@ it('shows the map with the courier, both points, the route and the addresses', a
   expect(view.getByText(/Hacia la entrega \(B\): 2,1 km \(aproximado, en línea recta\)/)).toBeTruthy();
   expect(view.getByText('Calle 15 # 3-20')).toBeTruthy();
   expect(view.getByText('Referencia: Casa azul')).toBeTruthy();
-  expect(guardarRuta).toHaveBeenCalledWith(ruta);
+  expect(guardarRuta).toHaveBeenCalledWith(ruta, 'cuenta-A');
 });
 
 it('works without location permission, with points and addresses', async () => {
@@ -113,7 +126,7 @@ it('explains when the delivery already finished and forgets the saved route', as
   const view = await render(<RutaDomicilioScreen />);
 
   await waitFor(() => expect(view.getByText('Este domicilio ya terminó; no hay ruta que seguir.')).toBeTruthy());
-  expect(borrarRuta).toHaveBeenCalledWith('delivery-id');
+  expect(borrarRuta).toHaveBeenCalledWith('delivery-id', 'cuenta-A');
   expect(view.queryByLabelText('Mapa de la ruta del domicilio')).toBeNull();
 });
 
@@ -122,4 +135,44 @@ it('denies the route of another courier', async () => {
   const view = await render(<RutaDomicilioScreen />);
 
   await waitFor(() => expect(view.getByText('No tienes acceso a la ruta de este domicilio.')).toBeTruthy());
+});
+
+it('does not request location or route without an identified courier account', async () => {
+  jest.mocked(readSession).mockResolvedValue(null);
+  const view = await render(<RutaDomicilioScreen />);
+  await waitFor(() => expect(view.getByText(/Inicia sesión con la cuenta de domiciliario asignada/)).toBeTruthy());
+  expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+  expect(obtenerRutaDomicilio).not.toHaveBeenCalled();
+  expect(leerRuta).not.toHaveBeenCalled();
+});
+it('discards a response that finishes after the session changes', async () => {
+  let resolver!: (value: RutaDomicilio) => void;
+  jest.mocked(obtenerRutaDomicilio).mockReturnValueOnce(new Promise((resolve) => { resolver = resolve; }));
+  const view = await render(<RutaDomicilioScreen />);
+  await waitFor(() => expect(obtenerRutaDomicilio).toHaveBeenCalledTimes(1));
+  mockGeneracion += 1;
+  await act(async () => { resolver(ruta); });
+  expect(view.queryByText('Calle 15 # 3-20')).toBeNull();
+  expect(guardarRuta).not.toHaveBeenCalled();
+});
+it('does not read another account cache after an offline response', async () => {
+  let rechazar!: (error: Error) => void;
+  jest.mocked(obtenerRutaDomicilio).mockReturnValueOnce(new Promise((_resolve, reject) => { rechazar = reject; }));
+  const view = await render(<RutaDomicilioScreen />);
+  await waitFor(() => expect(obtenerRutaDomicilio).toHaveBeenCalledTimes(1));
+  jest.mocked(readSession).mockResolvedValue({ usuarioId: 'cuenta-B', rol: 'DOMICILIARIO',
+    accessToken: 'test', refreshToken: 'test', tokenType: 'Bearer', expiresIn: 900, expiresAt: Date.now() + 900000 });
+  await act(async () => { rechazar(new Error('Sin conexión')); });
+  expect(leerRuta).not.toHaveBeenCalled();
+  expect(view.queryByText('Calle 15 # 3-20')).toBeNull();
+});
+it('ignores an old unauthorized response after leaving the route', async () => {
+  let rechazar!: (error: Error) => void;
+  jest.mocked(obtenerRutaDomicilio).mockReturnValueOnce(new Promise((_resolve, reject) => { rechazar = reject; }));
+  const view = await render(<RutaDomicilioScreen />);
+  await waitFor(() => expect(obtenerRutaDomicilio).toHaveBeenCalledTimes(1));
+  await view.unmount();
+  await act(async () => { rechazar(new ApiError('Sesión anterior', 401, 'UNAUTHORIZED')); });
+  expect(clearSession).not.toHaveBeenCalled();
+  expect(router.replace).not.toHaveBeenCalled();
 });

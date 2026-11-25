@@ -141,3 +141,8 @@ El adaptador `cuentas/infrastructure/adapters/out/messaging/SmsCorreoVerificacio
 ## Actualización de listados posterior a 9800874
 
 Mis pedidos y Domicilios en curso usan useAutoRefresh y recarga al enfocar. Domicilios disponibles conserva 15 s mediante un ciclo ligado al foco y AppState con exclusión de solicitudes superpuestas. Plan RF-38 y seguimiento P1-02 contienen los límites: sondeo visible, sin SSE ni entrega garantizada con app cerrada.
+
+
+## Privacidad de rutas guardadas (2026-11-25)
+
+`lib/ruta-cache.ts` exige cuenta explícita en guardar/leer/borrar; las claves incluyen cuenta y domicilio y no se recuperan claves históricas sin propietario. `app/ruta-domicilio.tsx` verifica rol/cuenta/generación antes del GPS y de usar resultados o copias. `domicilio-domiciliario.tsx` pasa la cuenta del detalle al borrar tras entregar. Plan RF-22 y seguimiento documentan regeneración de caché en línea y validación; no hay mapas nuevos.

@@ -20,18 +20,25 @@ function isRuta(value: unknown): value is RutaDomicilio {
   );
 }
 
-export async function guardarRuta(ruta: RutaDomicilio): Promise<void> {
-  await guardarLectura(PREFIX + ruta.domicilioId, JSON.stringify(ruta));
+function claveCuenta(usuarioId: string, domicilioId: string): string {
+  return PREFIX + JSON.stringify([usuarioId, domicilioId]);
+}
+
+export async function guardarRuta(ruta: RutaDomicilio, usuarioId: string): Promise<void> {
+  if (!usuarioId) return;
+  await guardarLectura(claveCuenta(usuarioId, ruta.domicilioId), JSON.stringify(ruta));
 }
 
 export async function leerRuta(
   domicilioId: string,
+  usuarioId: string,
 ): Promise<{ ruta: RutaDomicilio; updatedAt: string } | null> {
-  const row = await leerLectura(PREFIX + domicilioId);
+  if (!usuarioId) return null;
+  const row = await leerLectura(claveCuenta(usuarioId, domicilioId));
   if (!row) return null;
   try {
     const ruta: unknown = JSON.parse(row.contenido);
-    return isRuta(ruta) ? { ruta, updatedAt: row.actualizado_at } : null;
+    return isRuta(ruta) && ruta.domicilioId === domicilioId ? { ruta, updatedAt: row.actualizado_at } : null;
   } catch {
     return null;
   }
@@ -42,6 +49,7 @@ export async function borrarTodasLasRutas(): Promise<void> {
   await borrarRutasGuardadas();
 }
 
-export async function borrarRuta(domicilioId: string): Promise<void> {
-  await borrarLectura(PREFIX + domicilioId);
+export async function borrarRuta(domicilioId: string, usuarioId: string): Promise<void> {
+  if (!usuarioId) return;
+  await borrarLectura(claveCuenta(usuarioId, domicilioId));
 }
