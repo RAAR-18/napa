@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 
 import { useProcesarOutbox } from '../hooks/useOutbox';
+import { useRegistroPush } from '../hooks/useRegistroPush';
 import { configurarAvisosEnPrimerPlano } from '../lib/push';
 import { NapaNavigationProvider } from '../components/AppShell';
 
@@ -21,6 +22,8 @@ export default function RootLayout() {
   // F041: las acciones guardadas sin conexión se envían solas cuando vuelve la señal.
   useProcesarOutbox();
   useUbicacionAutomatica();
+  // RF-38: el celular queda registrado para push en cuanto hay sesión, en cualquier pantalla.
+  useRegistroPush();
   useEffect(() => {
     if (Platform.OS === 'web') return undefined;
     // Tocar un aviso push abre la lista de notificaciones (RF-38).

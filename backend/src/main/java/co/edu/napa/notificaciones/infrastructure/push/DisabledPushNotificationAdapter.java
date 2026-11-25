@@ -19,6 +19,11 @@ import java.util.List;
 public class DisabledPushNotificationAdapter implements PushNotificationPort {
     private static final Logger log = LoggerFactory.getLogger(DisabledPushNotificationAdapter.class);
 
+    public DisabledPushNotificationAdapter() {
+        log.warn("FCM push is disabled: notifications stay in the in-app inbox only. "
+                + "Set NAPA_NOTIFICATIONS_FCM_ENABLED=true and the Firebase credentials to send them to phones.");
+    }
+
     @Override
     public PushDeliveryResult send(List<String> tokens, String title, String body) {
         if (tokens.isEmpty()) {

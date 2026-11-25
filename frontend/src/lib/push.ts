@@ -73,9 +73,10 @@ async function tokenDelDispositivo(pedirPermiso: boolean): Promise<string | null
   }
 }
 
-export async function registrarPush(): Promise<boolean> {
+/** Sin pedir permiso solo registra si la persona ya lo concedió (por ejemplo, desde los ajustes). */
+export async function registrarPush(pedirPermiso = true): Promise<boolean> {
   const tipo = plataforma();
-  const token = await tokenDelDispositivo(true);
+  const token = await tokenDelDispositivo(pedirPermiso);
   if (!tipo || !token) return false;
 
   try {

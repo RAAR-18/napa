@@ -140,6 +140,15 @@ $env:GOOGLE_APPLICATION_CREDENTIALS = "C:\ruta\fuera-del-repo\firebase-service-a
 $env:NAPA_NOTIFICATIONS_FCM_ENABLED = "true"
 ```
 
+En un servidor desplegado, donde subir un archivo suele ser incómodo, puedes pasar el contenido del JSON (tal cual o en base64) en lugar de la ruta:
+
+| Variable | Valor |
+|---|---|
+| `NAPA_NOTIFICATIONS_FCM_ENABLED` | `true` |
+| `NAPA_NOTIFICATIONS_FCM_CREDENTIALS_JSON` | Contenido del JSON de la cuenta de servicio de Firebase (o su base64). Si está, tiene prioridad sobre `GOOGLE_APPLICATION_CREDENTIALS` |
+
+La cuenta de servicio debe ser del mismo proyecto de Firebase que el `google-services.json` con el que se compiló el APK. Al arrancar, el log indica si el push quedó activo (`FCM push enabled ...`) o apagado (`FCM push is disabled ...`).
+
 ### Android físico: development build 
 
 El proyecto usa Expo SDK 58, Expo Router y un cliente HTTP centralizado con `fetch` en `frontend/src/lib/api.ts`. No requiere Axios. La aplicación Android tiene identificador `co.edu.napa.app` y está vinculada al [proyecto Expo del equipo](https://expo.dev/accounts/raar-18/projects/napa).
