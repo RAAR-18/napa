@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite';
+import { guardarLectura, leerLectura } from './cache-lectura-storage';
 
 import type {
   EmprendimientoListado,
@@ -6,32 +6,7 @@ import type {
   EmprendimientosPage,
 } from './emprendimientos';
 
-const DATABASE_NAME = 'napa.db';
 const CACHE_KEY = 'emprendimientos-listado';
-
-let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
-
-async function database(): Promise<SQLite.SQLiteDatabase> {
-  if (!databasePromise) {
-    databasePromise = (async () => {
-      const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
-      await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS cache_lectura (
-          clave TEXT PRIMARY KEY NOT NULL,
-          contenido TEXT NOT NULL,
-          actualizado_at TEXT NOT NULL
-        );
-      `);
-      return db;
-    })();
-  }
-  try {
-    return await databasePromise;
-  } catch (cause) {
-    databasePromise = null;
-    throw cause;
-  }
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -78,31 +53,17 @@ export async function saveEmprendimientosPage(
   filter: EmprendimientosFilter,
   page: EmprendimientosPage,
 ): Promise<void> {
-  const db = await database();
   const content = page.content.map((item) => ({
     ...item,
     distanciaMetros: null,
   }));
-  await db.runAsync(
-    `INSERT INTO cache_lectura (clave, contenido, actualizado_at)
-     VALUES (?, ?, ?)
-     ON CONFLICT(clave) DO UPDATE SET
-       contenido = excluded.contenido,
-       actualizado_at = excluded.actualizado_at`,
-    cacheKey(filter),
-    JSON.stringify({ ...page, content }),
-    new Date().toISOString(),
-  );
+  await guardarLectura(cacheKey(filter), JSON.stringify({ ...page, content }));
 }
 
 export async function readEmprendimientosPage(
   filter: EmprendimientosFilter,
 ): Promise<{ page: EmprendimientosPage; updatedAt: string } | null> {
-  const db = await database();
-  const cached = await db.getFirstAsync<{ contenido: string; actualizado_at: string }>(
-    'SELECT contenido, actualizado_at FROM cache_lectura WHERE clave = ?',
-    cacheKey(filter),
-  );
+  const cached = await leerLectura(cacheKey(filter));
   if (!cached) {
     return null;
   }

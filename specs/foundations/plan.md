@@ -210,3 +210,8 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - No hay respaldo silencioso en memoria si el navegador bloquea almacenamiento. Se muestra un error y se permite reintentar la apertura.
 - `fake-indexeddb` es una dependencia exclusiva de desarrollo para verificar persistencia entre instancias, conflictos simultáneos, correcciones fallidas y rollback.
 - Esta entrega no migra pendientes previos de SQLite web ni cambia las cachés de lectura que aún usan SQLite. Antes de desplegar, sincronizar o recuperar esos pendientes; no borrar los datos del navegador.
+
+
+## Corrección P0-01: cachés de lectura en web (2026-11-24)
+
+Listado y rutas comparten `lib/cache-lectura-storage`: SQLite nativo conserva napa.db y cache_lectura; la variante web usa IndexedDB sin importar SQLite. Se conserva el formato serializado, fechas, eliminación selectiva de rutas y validación de datos de los consumidores. Las transacciones web solo confirman al completarse y un fallo permite reabrir. No se migran cachés antiguas del navegador; se regeneran con una consulta en línea. No se añaden mapas, proveedores, dependencias ni cambios de API. Validar almacenamiento web persistente, borrado selectivo, fallos de apertura y las pruebas existentes de listado, además de tipos/lint y exportación web.

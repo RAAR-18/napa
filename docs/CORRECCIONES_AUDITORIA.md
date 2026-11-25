@@ -1,12 +1,12 @@
 # Seguimiento de correcciones de auditoría — Ñapa
 
-Actualizado: 24 de noviembre de 2026. Base del bloque actual: `b8a8cc4`, rama `fix/p0-01-outbox-web`.
+Actualizado: 24 de noviembre de 2026. Base del bloque actual: `817acbe`, rama `fix/p0-01-outbox-web`.
 
 ## Estado vigente
 
 | Incidencia | Resultado |
 |---|---|
-| P0-01 | Cola web en IndexedDB; SQLite conservado en Android/iOS. Errores claros, persistencia y concurrencia verificadas. No migra pendientes antiguos ni sustituye todas las cachés SQLite. |
+| P0-01 | Cola web en IndexedDB; SQLite conservado en Android/iOS. Errores claros, persistencia y concurrencia verificadas. Listado de negocios y rutas guardadas también usan IndexedDB en web. No migra pendientes antiguos; otras cachés SQLite siguen pendientes. |
 | P0-02 | Validación de disponibilidad conocida antes de cotizar. El backend valida y descuenta al aceptar; no se reserva inventario al crear, según RF-45. |
 | P0-03 | Entrada de horario compartida, numérica, HH:mm, validación de rango y de hora incompleta. |
 | P0-04 | Feedback de longitud/coincidencia y bloqueo ante contraseñas distintas. Se conserva D14: 8–128 caracteres, sin composición obligatoria. |
@@ -65,3 +65,13 @@ Git: el commit `b8a8cc4` sí quedó creado por el usuario y la carpeta estaba li
 Comprobación: 18 pruebas unitarias/de caso de uso y 7 de integración Redis correctas, sin fallos, errores u omisiones. Backend compilado. No se ejecutaron pruebas frontend porque no hubo cambios allí. No se enviaron mensajes reales, no hubo migraciones ni cambios de configuración local y no se repitieron las suites no afectadas.
 
 Siguen pendientes la configuración operativa de proveedores por el equipo, el seguimiento en segundo plano y la decisión sobre SSE estricto. Los cambios de reglas de pagos, límites y contraseñas no se tratan como fallos sin cambiar primero el acuerdo. Mapas y rutas optimizadas siguen pospuestos hasta cerrar esta etapa con el usuario.
+
+
+## Bloque posterior a 817acbe: cachés de listado y rutas (P0-01)
+
+- `frontend/src/lib/cache-lectura-storage.ts` conserva napa.db, tabla cache_lectura, claves y datos existentes en Android/iOS.
+- `cache-lectura-storage.web.ts` usa IndexedDB en web y confirma al completar la transacción; permite reintentar si el navegador bloquea almacenamiento.
+- `emprendimientos-cache.ts` y `ruta-cache.ts` delegan al almacenamiento seleccionado por plataforma. Conservan validaciones, fechas y eliminación de rutas; borrar direcciones de rutas no elimina el listado de negocios.
+- No hay migración de cachés SQLite antiguas del navegador: se regeneran consultando en línea. No se instalaron dependencias ni se cambiaron API, proveedores o funcionalidad de mapas.
+- Pruebas observadas: 9 de almacenamiento/consumidores y 12 de las pantallas de listado/ruta, correctas. Exportación web correcta. Comprobación de tipos y lint finales correctos, sin errores ni advertencias.
+- Siguiente bloque concreto: perfil-cache.ts, emprendimiento-propio-cache.ts, inventario-cache.ts, catalogo-cache.ts, notificaciones-cache.ts y pedidos-cliente-cache.ts aún importan SQLite sin variante web. Conservar aislamiento por cuenta, vencimiento, límites y orden de escrituras al corregirlos. P0-01 no está cerrado para toda la app.

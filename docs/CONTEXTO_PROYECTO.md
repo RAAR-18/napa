@@ -131,3 +131,8 @@ Actualizar este mapa cuando cambien arquitectura, rutas clave o alcance confirma
 ## Corrección de verificación posterior a b8a8cc4
 
 El adaptador `cuentas/infrastructure/adapters/out/messaging/SmsCorreoVerificacionAdapter.java` usa scripts Redis para guardar código/generación/TTL, consumir el desafío correcto, contabilizar intentos y reservar/liberar cupos. Pruebas específicas de unidad e integración Redis junto al adaptador. El README describe los proveedores SMSReactor/Brevo actuales; el proveedor predeterminado sigue siendo unavailable y la configuración real del equipo es independiente de la corrección. No se enviaron mensajes externos.
+
+
+## Cachés de listado y rutas posteriores a 817acbe
+
+`frontend/src/lib/cache-lectura-storage.ts` centraliza cache_lectura nativa y su variante `.web.ts` usa IndexedDB. Los consumidores son `emprendimientos-cache.ts` y `ruta-cache.ts`. Otras cachés de perfil/negocio/inventario/catálogo/notificaciones/pedidos aún requieren corrección web; consultar el seguimiento P0-01. No hay migración de cachés antiguas del navegador.
