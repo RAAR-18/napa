@@ -1,6 +1,6 @@
 # Seguimiento de correcciones de auditoría — Ñapa
 
-Actualizado: 24 de noviembre de 2026. Base del bloque actual: `a561f42`, rama `fix/p0-01-outbox-web`.
+Actualizado: 24 de noviembre de 2026. Base del bloque actual: `b8a8cc4`, rama `fix/p0-01-outbox-web`.
 
 ## Estado vigente
 
@@ -10,7 +10,7 @@ Actualizado: 24 de noviembre de 2026. Base del bloque actual: `a561f42`, rama `f
 | P0-02 | Validación de disponibilidad conocida antes de cotizar. El backend valida y descuenta al aceptar; no se reserva inventario al crear, según RF-45. |
 | P0-03 | Entrada de horario compartida, numérica, HH:mm, validación de rango y de hora incompleta. |
 | P0-04 | Feedback de longitud/coincidencia y bloqueo ante contraseñas distintas. Se conserva D14: 8–128 caracteres, sin composición obligatoria. |
-| P0-05 | Correo recomendado si está registrado, SMS alternativo y bloqueo de envío/confirmación simultáneos. La entrega real depende de la configuración de los proveedores. |
+| P0-05 | Correo recomendado y SMS alternativo; confirmación/reenvío protegidos por generación y operaciones Redis atómicas; TTL y cupos garantizados dentro de Redis. La entrega real depende de la configuración de proveedores. |
 | P0-06 | Guardado automático del carrito por cuenta/negocio, restauración y limpieza coordinada tras enviar. |
 | P1-01 | Revisado contra RF-42 FR-002: directa/recogida cobran al entregar/retirar, también en reservas; domicilio permite anticipo. No se cambia esta regla solo por el informe. |
 | P1-02 | Refresco de notificaciones/pedidos recibidos cada 30 s mientras su pantalla está visible. No es SSE/WebSocket ni promete avisos con la app cerrada; push conserva su configuración. |
@@ -27,7 +27,7 @@ Actualizado: 24 de noviembre de 2026. Base del bloque actual: `a561f42`, rama `f
 | P3-01 | Crear cuenta unificado en entrada, login y título de registro. |
 | P3-02 | Un único acceso Mi cuenta en navegación; perfil conservado dentro de la cuenta. |
 
-## Bloque actual: categoría y actualización de zona
+## Bloque anterior: categoría y actualización de zona (commit b8a8cc4)
 
 La categoría sigue siendo un enum fijo. `categoriaPersonalizada` complementa únicamente OTROS; un texto vacío se normaliza a ausencia, más de 80 caracteres o combinado con otra categoría se rechaza. El nombre/categoría siguen siendo inmutables tras crear. Las ediciones y eliminaciones conservan el complemento.
 
@@ -50,4 +50,18 @@ El selector de reservas incorporó `@react-native-community/datetimepicker` 9.2.
 - Decidir si se necesita SSE/WebSocket estricto además del sondeo y push existentes.
 - Cambios de política de pagos, stock, límites o contraseñas requieren reflejar el nuevo acuerdo en specs; el informe no sustituye esas reglas por sí solo.
 
-Git: el commit `a561f42` sí quedó creado por el usuario y la carpeta estaba limpia antes de este bloque. No se ejecutaron git add/commit/push ni cambios de rama.
+Git: el commit `b8a8cc4` sí quedó creado por el usuario y la carpeta estaba limpia antes del bloque de verificación. No se ejecutaron git add/commit/push ni cambios de rama.
+
+
+## Bloque actual: fiabilidad de verificación (P0-05)
+
+- Código, contador de intentos, generación y TTL se guardan juntos; no queda un código nuevo sin vencimiento por un fallo entre escrituras.
+- La confirmación lee un desafío coherente y compara su generación antes de consumirlo o descontar intentos. Un reenvío concurrente no se elimina ni recibe intentos del código anterior.
+- Se mantienen diez minutos, cinco intentos, consumo único y compatibilidad con desafíos anteriores que aún tengan vencimiento. Una clave sin vencimiento se invalida.
+- Cupo diario reservado atómicamente; los envíos simultáneos no sobrepasan el último cupo. Si Redis no confirma la reserva, no se contacta al proveedor. Una liberación no crea contadores negativos.
+- Un correo faltante se rechaza antes de consumir cupo. Los errores de proveedor no se registran con su cuerpo, que podría reflejar códigos o destinatarios.
+- README actualizado: los proveedores implementados son SMSReactor/Brevo y el registro desde la app solicita el código después de crear la cuenta. Se documentan los nombres de variables, sin credenciales ni cambios de entorno.
+
+Comprobación: 18 pruebas unitarias/de caso de uso y 7 de integración Redis correctas, sin fallos, errores u omisiones. Backend compilado. No se ejecutaron pruebas frontend porque no hubo cambios allí. No se enviaron mensajes reales, no hubo migraciones ni cambios de configuración local y no se repitieron las suites no afectadas.
+
+Siguen pendientes la configuración operativa de proveedores por el equipo, el seguimiento en segundo plano y la decisión sobre SSE estricto. Los cambios de reglas de pagos, límites y contraseñas no se tratan como fallos sin cambiar primero el acuerdo. Mapas y rutas optimizadas siguen pospuestos hasta cerrar esta etapa con el usuario.

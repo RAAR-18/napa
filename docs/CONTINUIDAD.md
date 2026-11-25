@@ -2,16 +2,15 @@
 
 Actualizado: 24 de noviembre de 2026.
 
-- Repositorio real: `C:\Users\ESTUDIANTE\Documents\GitHub\napa`. No trabajar en la copia de `Documents\ChatGPT\napa`.
-- Rama: `fix/p0-01-outbox-web`. Último commit confirmado del usuario: `a561f42` (`fix: corregir incidencias de auditoria del frontend`). La carpeta estaba limpia al empezar el bloque actual.
-- Autorización: edición directa y comprobaciones por bloques. El usuario hace commits/push y un tester del grupo verifica cumplimiento funcional. No detener el avance esperando pruebas manuales ni repetir suites correctas sin motivo.
-- El bloque anterior corrigió almacenamiento web, carrito/dirección, horarios, navegación, mensajes, calificaciones, selector de reserva y refresco de pantallas. Tipos/lint, pruebas afectadas y exportación web pasaron. El selector nativo de reserva requiere regenerar el build de desarrollo Android/iOS.
-- Trabajo actual: P2-01, texto personalizado opcional para OTROS, 1–80 caracteres, sin cambiar el enum; preservado al editar/eliminar y expuesto en las consultas. Se actualizó spec, plan, modelo compartido, requerimiento, HU-53 y trazabilidad.
-- Migración nueva `backend/src/main/resources/db/migration/V21__emprendimiento_categoria_personalizada.sql`. No se modificaron V1–V20 ni se ejecutó sobre la base local; las integraciones usan contenedores aislados.
-- Piezas backend: `emprendimientos/domain/model/Emprendimiento.java`, command/DTOs/puertos, casos de uso de crear/listar/detalle, JPA y proyección JDBC. Se mantienen constructores previos para compatibilidad de llamadas existentes.
-- Piezas frontend: `src/lib/emprendimientos.ts`, formulario de creación y consultas de negocio/listado/detalle. Campo visible solo en OTROS, opcional; categoría inmutable tras crear.
-- P1-05 parcial: nuevo `frontend/src/lib/ubicacion-automatica.ts`, iniciado desde `_layout.tsx` y activable/desactivable desde `mi-emprendimiento.tsx`. Usa expo-location existente; cada 2 min en primer plano, mínimo 100 m. Preferencia por cuenta/negocio en almacenamiento existente; verificaciones de rol/propietario/generación/permiso y llamadas serializadas. No se guardan coordenadas viejas para reintento.
-- El seguimiento en segundo plano NO está implementado ni se solicita su permiso. La interfaz explica el modo con Ñapa abierta. Este bloque no añade módulos nativos.
-- Comprobación inicial backend de emprendimientos y arquitectura: correcta, V21 cargada en PostgreSQL aislado sin omisiones. Pruebas finales nuevas: 11 backend correctas, sin errores/fallos/omisiones; 12 frontend en la repetición final correctas, más las pantallas de consulta que ya habían pasado. La prueba que agotó 5 s con Java en paralelo pasó aislada sin aumentar el timeout. Typecheck, lint y exportación web finales correctos.
-- Referencia vigente de incidencias: `docs/CORRECCIONES_AUDITORIA.md`. P1-01 de pagos y límites/contraseñas se contrastaron con specs y no se cambiaron silenciosamente. Mapas/rutas optimizadas siguen pospuestos.
-- No se hizo git add, commit, push ni cambio de rama en este bloque.
+- Carpeta real: `C:\Users\ESTUDIANTE\Documents\GitHub\napa`. No usar la copia de Documents/ChatGPT.
+- Rama: `fix/p0-01-outbox-web`. Último commit confirmado: `b8a8cc4` (categorías y ubicación automática). La carpeta estaba limpia al iniciar el bloque de verificación.
+- Modo autorizado: editar y verificar directamente por bloques; el usuario realiza commits/push y el tester del grupo comprueba recorridos funcionales. No repetir suites correctas sin motivo ni esperar pruebas manuales para avanzar en correcciones autorizadas.
+- Bloques ya integrados: almacenamiento web/carrito, direcciones, horarios, navegación, calificaciones, selector de reserva, refresco visible de notificaciones/pedidos, Otros personalizado (V21) y ubicación voluntaria del ambulante en primer plano.
+- Trabajo actual P0-05: `backend/src/main/java/co/edu/napa/cuentas/infrastructure/adapters/out/messaging/SmsCorreoVerificacionAdapter.java` corregido. Redis guarda código/intentos/generación/TTL atómicamente; confirma y registra intentos mediante CAS sobre el desafío leído, para no borrar ni penalizar un reenvío concurrente. Reserva/liberación de cupo atómicas y sin envíos si Redis no confirma. No se cambia el canal elegido ni la vigencia/intentos.
+- Pruebas: `SmsCorreoVerificacionAdapterTest`, `SolicitarVerificacionUseCaseTest` y nueva `SmsCorreoVerificacionAdapterRedisIntegrationTest`. Pasaron 18 pruebas unitarias/de caso de uso y 7 de Redis aislado; cero fallos/errores/omisiones. Backend compilado. No hubo cambios frontend ni se repitieron sus pruebas.
+- README corregido para SMSReactor/Brevo, registro sin envío inicial automático y variables de entorno del proveedor. No se inspeccionaron ni modificaron secretos, no se enviaron mensajes reales y no hubo migraciones nuevas en este bloque.
+- Detalles y estado por incidencia: `docs/CORRECCIONES_AUDITORIA.md`; diseño de la corrección en el plan RF-70.
+- Pendientes externos/de alcance: proveedores operativos en el entorno del equipo; ubicación en segundo plano (el modo actual solo funciona con Ñapa abierta); decidir SSE estricto. No retirar límites o cambiar pagos/contraseñas contra las specs por iniciativa propia.
+- Mapas, selección visual de ubicaciones y rutas optimizadas continúan pospuestos por el usuario. No pasar a esa fase sin cerrar los pendientes de auditoría y confirmar el siguiente alcance.
+- El build de desarrollo Android/iOS debe incorporar el selector nativo de reserva añadido en un bloque anterior. No se añadieron dependencias nativas en la corrección actual.
+- No se ejecutaron git add/commit/push ni cambios de rama. El bloque actual sigue sin commit.

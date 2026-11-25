@@ -126,3 +126,8 @@ Actualizar este mapa cuando cambien arquitectura, rutas clave o alcance confirma
 - Migración V21: `backend/src/main/resources/db/migration/V21__emprendimiento_categoria_personalizada.sql`. Se mantienen V1–V20; las pruebas usan PostgreSQL aislado.
 - Formulario y presentación: `frontend/src/app/emprendimiento.tsx`, `mi-emprendimiento.tsx`, `emprendimientos.tsx`, `emprendimiento-detalle.tsx`; tipos/API en `frontend/src/lib/emprendimientos.ts`.
 - Actualización voluntaria de zona: `frontend/src/lib/ubicacion-automatica.ts`, iniciada desde `_layout.tsx`, control en Mi emprendimiento. Expo Location existente, cada 2 min en primer plano, mínimo 100 m; preferencia por cuenta/negocio. No es seguimiento en segundo plano.
+
+
+## Corrección de verificación posterior a b8a8cc4
+
+El adaptador `cuentas/infrastructure/adapters/out/messaging/SmsCorreoVerificacionAdapter.java` usa scripts Redis para guardar código/generación/TTL, consumir el desafío correcto, contabilizar intentos y reservar/liberar cupos. Pruebas específicas de unidad e integración Redis junto al adaptador. El README describe los proveedores SMSReactor/Brevo actuales; el proveedor predeterminado sigue siendo unavailable y la configuración real del equipo es independiente de la corrección. No se enviaron mensajes externos.

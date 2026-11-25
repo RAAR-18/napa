@@ -26,7 +26,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -41,18 +40,46 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
     private static final Duration CODE_TTL = Duration.ofMinutes(10);
     private static final String PREFIX = "auth:verification:codigo:";
     private static final ZoneId ZONA = ZoneId.of("America/Bogota");
+    private static final RedisScript<Long> SAVE_CODE = new DefaultRedisScript<>(
+            """
+            redis.call('DEL', KEYS[1])
+            redis.call('HSET', KEYS[1], 'code', ARGV[1], 'attempts', '0', 'generation', ARGV[3])
+            redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2]))
+            return 1
+            """, Long.class);
+    private static final RedisScript<Long> CONSUME_CODE = new DefaultRedisScript<>(
+            """
+            if redis.call('TTL', KEYS[1]) < 0 then redis.call('DEL', KEYS[1]); return 0 end
+            if redis.call('HGET', KEYS[1], 'code') ~= ARGV[1] then return 0 end
+            if (redis.call('HGET', KEYS[1], 'generation') or '') ~= ARGV[2] then return 0 end
+            return redis.call('DEL', KEYS[1])
+            """, Long.class);
     private static final RedisScript<Long> RECORD_FAILURE = new DefaultRedisScript<>(
             """
-            if redis.call('EXISTS', KEYS[1]) == 0 then return -1 end
+            if redis.call('TTL', KEYS[1]) < 0 then redis.call('DEL', KEYS[1]); return -1 end
+            if redis.call('HGET', KEYS[1], 'code') ~= ARGV[2] then return -1 end
+            if (redis.call('HGET', KEYS[1], 'generation') or '') ~= ARGV[3] then return -1 end
             local attempts = redis.call('HINCRBY', KEYS[1], 'attempts', 1)
             if attempts >= tonumber(ARGV[1]) then
                 redis.call('DEL', KEYS[1])
                 return 0
             end
             return tonumber(ARGV[1]) - attempts
-            """,
-            Long.class
-    );
+            """, Long.class);
+    private static final RedisScript<Long> RESERVE_QUOTA = new DefaultRedisScript<>(
+            """
+            local usados = tonumber(redis.call('GET', KEYS[1]) or '0')
+            if usados >= tonumber(ARGV[1]) then return 0 end
+            local nuevo = redis.call('INCR', KEYS[1])
+            if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2])) end
+            return nuevo
+            """, Long.class);
+    private static final RedisScript<Long> RELEASE_QUOTA = new DefaultRedisScript<>(
+            """
+            local usados = tonumber(redis.call('GET', KEYS[1]) or '0')
+            if usados > 0 then return redis.call('DECR', KEYS[1]) end
+            return 0
+            """, Long.class);
 
     private final StringRedisTemplate redisTemplate;
     private final SmsReactorClient sms;
@@ -106,9 +133,11 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
         String proveedorId = "codigo-" + UUID.randomUUID();
         String key = key(celular, proposito);
         try {
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, Map.of("code", codigo, "attempts", "0"));
-            redisTemplate.expire(key, CODE_TTL);
+            Long guardado = redisTemplate.execute(SAVE_CODE, List.of(key), codigo,
+                    Long.toString(CODE_TTL.toSeconds()), proveedorId);
+            if (!Long.valueOf(1).equals(guardado)) {
+                throw unavailable(new IllegalStateException("Redis did not confirm verification storage"));
+            }
             return new EnvioVerificacion(proveedorId);
         } catch (DataAccessException exception) {
             throw unavailable(exception);
@@ -117,13 +146,13 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
 
     private void entregar(String celular, CanalVerificacion canal, String destinoCorreo, String codigo) {
         boolean porCorreo = canal == CanalVerificacion.CORREO;
+        if (porCorreo && (destinoCorreo == null || destinoCorreo.isBlank())) {
+            throw new DomainException("VALIDATION_ERROR", "No hay un correo al cual enviar el código.");
+        }
         String cupo = PREFIX + "cupo:" + (porCorreo ? "correo:" : "sms:") + LocalDate.now(clock);
         reservarCupo(cupo, porCorreo ? limiteDiarioCorreo : limiteDiarioSms, porCorreo);
         try {
             if (canal == CanalVerificacion.CORREO) {
-                if (destinoCorreo == null || destinoCorreo.isBlank()) {
-                    throw new DomainException("VALIDATION_ERROR", "No hay un correo al cual enviar el código.");
-                }
                 correo.enviarCodigo(destinoCorreo, codigo);
             } else {
                 // Sin tildes ni Ñ: así cabe en un solo SMS (GSM-7) y cuesta un crédito.
@@ -135,7 +164,7 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
             if (exception instanceof DomainException domain) {
                 throw domain;
             }
-            log.error("Código de verificación no enviado por {}: {}", canal, exception.getMessage());
+            log.warn("Código de verificación no enviado por {}", canal);
             throw new DomainException(
                     "EXTERNAL_SERVICE_UNAVAILABLE",
                     canal == CanalVerificacion.CORREO
@@ -149,13 +178,15 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
     private void reservarCupo(String key, int limite, boolean porCorreo) {
         Long usados;
         try {
-            usados = redisTemplate.opsForValue().increment(key);
-            redisTemplate.expire(key, Duration.ofHours(48));
+            usados = redisTemplate.execute(RESERVE_QUOTA, List.of(key),
+                    Integer.toString(limite), Long.toString(Duration.ofHours(48).toSeconds()));
+            if (usados == null) {
+                throw unavailable(new IllegalStateException("Redis did not confirm provider quota reservation"));
+            }
         } catch (DataAccessException exception) {
             throw unavailable(exception);
         }
-        if (usados != null && usados > limite) {
-            liberarCupo(key);
+        if (usados <= 0) {
             log.warn("Se agotó el cupo diario de {} ({})", porCorreo ? "correos" : "SMS", limite);
             throw new DomainException(
                     "EXTERNAL_SERVICE_UNAVAILABLE",
@@ -168,7 +199,7 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
 
     private void liberarCupo(String key) {
         try {
-            redisTemplate.opsForValue().decrement(key);
+            redisTemplate.execute(RELEASE_QUOTA, List.of(key));
         } catch (DataAccessException exception) {
             log.warn("No se pudo devolver el cupo diario {}", key, exception);
         }
@@ -194,7 +225,12 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
     ) {
         String key = key(celular, proposito);
         try {
-            Object expected = redisTemplate.opsForHash().get(key, "code");
+            List<Object> desafio = redisTemplate.opsForHash().multiGet(key, List.of("code", "generation"));
+            if (desafio == null) {
+                throw unavailable(new IllegalStateException("Redis returned no verification challenge"));
+            }
+            Object expected = desafio.isEmpty() ? null : desafio.getFirst();
+            String generacion = desafio.size() < 2 || desafio.get(1) == null ? "" : desafio.get(1).toString();
             if (expected == null) {
                 return new VerificacionResultado(VerificacionResultado.Estado.VENCIDA, 0);
             }
@@ -202,14 +238,15 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
                     expected.toString().getBytes(StandardCharsets.UTF_8),
                     codigo.getBytes(StandardCharsets.UTF_8)
             )) {
+                Long consumido = redisTemplate.execute(CONSUME_CODE, List.of(key), expected.toString(), generacion);
+                if (consumido == null) {
+                    throw unavailable(new IllegalStateException("Redis did not confirm verification consumption"));
+                }
                 return new VerificacionResultado(
-                        Boolean.TRUE.equals(redisTemplate.delete(key))
-                                ? VerificacionResultado.Estado.APROBADA
-                                : VerificacionResultado.Estado.VENCIDA,
-                        0
-                );
+                        consumido == 1 ? VerificacionResultado.Estado.APROBADA : VerificacionResultado.Estado.VENCIDA, 0);
+
             }
-            Long remaining = redisTemplate.execute(RECORD_FAILURE, List.of(key), Integer.toString(MAX_ATTEMPTS));
+            Long remaining = redisTemplate.execute(RECORD_FAILURE, List.of(key), Integer.toString(MAX_ATTEMPTS), expected.toString(), generacion);
             if (remaining == null) {
                 throw unavailable(new IllegalStateException("Redis returned no verification attempt result"));
             }
