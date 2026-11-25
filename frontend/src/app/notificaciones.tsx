@@ -1,8 +1,7 @@
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -15,6 +14,8 @@ import {
   palette,
 } from '../components/AuthUI';
 import { ApiError, NetworkError } from '../lib/api';
+import { Icon } from '../components/NapaUI';
+import { escucharNovedades } from '../lib/push';
 import { clearSession, getSessionGeneration, getValidSession, readSession } from '../lib/auth';
 import {
   borrarNotificacionesGuardadas,
@@ -32,6 +33,7 @@ import {
 } from '../lib/notificaciones';
 
 const PAGE_SIZE = 20;
+export const REFRESCO_NOTIFICACIONES_MS = 15_000;
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
@@ -46,8 +48,6 @@ export default function NotificacionesScreen() {
   const solicitud = useRef(0);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
-  const automatico = useRef(false);
-  useAutoRefresh(() => { automatico.current = true; setAttempt((value) => value + 1); }, !loading);
   const [soloNoLeidas, setSoloNoLeidas] = useState(false);
   const [page, setPage] = useState(0);
   const [abierta, setAbierta] = useState<string | null>(null);
@@ -58,14 +58,19 @@ export default function NotificacionesScreen() {
     const generation = getSessionGeneration();
     const vigente = () => active && generation === getSessionGeneration();
     solicitud.current += 1;
-    async function load() {
-      const silencioso = automatico.current;
-      automatico.current = false;
-      setLoading(true);
-      setError(null);
-      if (!silencioso) { setData(null); setAbierta(null); }
-      setFechaCopia(null);
-      setPaginasGuardadas([]);
+    let consultando = false;
+    async function load(silencioso = false) {
+      if (consultando || !vigente()) return;
+      consultando = true;
+      const lectura = solicitud.current;
+      if (!silencioso) {
+        setLoading(true);
+        setError(null);
+        setData(null);
+        setAbierta(null);
+        setFechaCopia(null);
+        setPaginasGuardadas([]);
+      }
       let cuenta: string | undefined;
       try {
         cuenta = (await readSession())?.usuarioId;
@@ -77,14 +82,20 @@ export default function NotificacionesScreen() {
           size: PAGE_SIZE,
           ...(soloNoLeidas ? { leida: false } : {}),
         });
-        if (!vigente()) return;
+        if (!vigente() || lectura !== solicitud.current) return;
         if (session.usuarioId) {
           await guardarPaginaNotificaciones(session.usuarioId, soloNoLeidas, response, vigente)
             .catch((error: unknown) => console.warn('No se pudo guardar la bandeja.', error));
         }
-        if (vigente()) setData(response);
+        if (vigente() && lectura === solicitud.current) {
+          setData(response);
+          setFechaCopia(null);
+          setError(null);
+          setPaginasGuardadas([]);
+        }
       } catch (cause) {
         if (!vigente()) return;
+        if (silencioso && !(cause instanceof ApiError && (cause.status === 401 || cause.status === 403))) return;
         if (cuenta && cause instanceof NetworkError) {
           try {
             const copia = await leerPaginaNotificaciones(cuenta, soloNoLeidas, page);
@@ -115,20 +126,36 @@ export default function NotificacionesScreen() {
         }
         if (active) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar tus notificaciones.');
       } finally {
-        if (active) setLoading(false);
+        consultando = false;
+        if (active && !silencioso) setLoading(false);
       }
     }
     void load();
+    const actualizar = () => {
+      if (AppState.currentState === 'background' || AppState.currentState === 'inactive') return;
+      if (Platform.OS === 'web' && typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      void load(true);
+    };
+    const timer = setInterval(actualizar, REFRESCO_NOTIFICACIONES_MS);
+    const appState = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') actualizar();
+    });
+    const dejarDeEscuchar = escucharNovedades(actualizar);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') window.addEventListener('focus', actualizar);
     return () => {
       active = false;
       solicitud.current += 1;
+      clearInterval(timer);
+      appState.remove();
+      dejarDeEscuchar();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.removeEventListener('focus', actualizar);
     };
   }, [soloNoLeidas, page, attempt]);
 
   async function abrir(notificacion: NotificacionGuardada) {
     setAbierta(abierta === notificacion.id ? null : notificacion.id);
     if (fechaCopia !== null || notificacion.leida) return;
-    const actual = solicitud.current;
+    const actual = ++solicitud.current;
     const generation = getSessionGeneration();
     const vigente = () => actual === solicitud.current && generation === getSessionGeneration();
     try {
@@ -232,19 +259,45 @@ export default function NotificacionesScreen() {
       {!loading && !data && siguiente !== undefined ? (
         <TextButton title="Página guardada siguiente" onPress={() => setPage(siguiente)} />
       ) : null}
-      {data ? (
-        <TextButton title="Actualizar" disabled={loading} onPress={() => setAttempt((value) => value + 1)} />
-      ) : null}
-      <TextButton
-        title="Elegir qué notificaciones recibo"
-        onPress={() => router.push('/preferencias-notificaciones')}
-      />
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Elegir qué notificaciones recibo"
+          onPress={() => router.push('/preferencias-notificaciones')}
+          style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+            styles.action,
+            hovered && styles.actionHovered,
+            pressed && styles.actionPressed,
+          ]}
+        >
+          <View style={styles.actionIcon}><Icon name="sliders" color={palette.coralDark} size={19} /></View>
+          <View style={styles.actionCopy}>
+            <Text style={styles.actionTitle}>Elegir qué notificaciones recibo</Text>
+            <Text style={styles.actionHint}>Personaliza tus avisos</Text>
+          </View>
+          <Icon name="chevron-right" color={palette.coralDark} size={18} />
+        </Pressable>
+      </View>
     </AuthPage>
   );
 }
 
 const styles = StyleSheet.create({
+  actions: { marginTop: 44, gap: 10, width: '86%', maxWidth: 360, alignSelf: 'center' },
+  action: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#FFF0E5', borderColor: '#F1B69D', borderWidth: 1,
+    borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, minHeight: 56,
+  },
+  actionHovered: { backgroundColor: palette.peach, borderColor: palette.coral },
+  actionPressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  actionIcon: {
+    width: 30, height: 30, borderRadius: 9, backgroundColor: '#E95F3D16',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionCopy: { flex: 1, minWidth: 0, gap: 2 },
+  actionTitle: { color: palette.coralDark, fontFamily: fonts.sans, fontSize: 13, lineHeight: 18, fontWeight: '800' },
+  actionHint: { color: palette.muted, fontFamily: fonts.sans, fontSize: 11, lineHeight: 16 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 6 },
   card: {
     backgroundColor: palette.white,

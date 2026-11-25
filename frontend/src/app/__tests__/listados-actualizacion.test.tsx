@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import Disponibles from '../domicilios-disponibles';
 import EnCurso from '../domicilios-en-curso';
-import MisPedidos from '../mis-pedidos';
+import MisPedidos, { REFRESCO_MIS_PEDIDOS_MS } from '../mis-pedidos';
 import { ApiError } from '../../lib/api';
 import { clearSession, getValidSession } from '../../lib/auth';
 import { listarDomiciliosDisponibles, listarDomiciliosEnCurso } from '../../lib/domicilios';
@@ -22,8 +22,11 @@ jest.mock('expo-router', () => ({
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 }, requestForegroundPermissionsAsync: jest.fn(), getCurrentPositionAsync: jest.fn(),
 }));
-jest.mock('../../lib/auth', () => ({ clearSession: jest.fn(), getValidSession: jest.fn(), readSession: jest.fn(async () => null) }));
+jest.mock('../../lib/auth', () => ({
+  clearSession: jest.fn(), getValidSession: jest.fn(), readSession: jest.fn(async () => null), getSessionGeneration: () => 0,
+}));
 jest.mock('../../hooks/useOutbox', () => ({ useAccionesPendientes: () => [] }));
+jest.mock('../../lib/push', () => ({ escucharNovedades: () => () => undefined }));
 jest.mock('../../lib/pedidos-cliente-consulta', () => ({ consultarListadoCliente: jest.fn() }));
 jest.mock('../../lib/pedidos-cliente-cache', () => ({ guardarConsultaPedidos: jest.fn(async () => undefined), leerConsultaPedidos: jest.fn(async () => null) }));
 jest.mock('../../lib/domicilios', () => ({
@@ -99,12 +102,12 @@ it('ignores an old unauthorized response after leaving available deliveries', as
   expect(router.replace).not.toHaveBeenCalled();
 });
 it.each([
-  ['client orders', MisPedidos, () => jest.mocked(consultarListadoCliente)],
-  ['active deliveries', EnCurso, () => jest.mocked(listarDomiciliosEnCurso)],
-] as const)('refreshes %s and reloads on returning to the screen', async (_nombre, Screen, consulta) => {
+  ['client orders', MisPedidos, () => jest.mocked(consultarListadoCliente), REFRESCO_MIS_PEDIDOS_MS],
+  ['active deliveries', EnCurso, () => jest.mocked(listarDomiciliosEnCurso), 30000],
+] as const)('refreshes %s and reloads on returning to the screen', async (_nombre, Screen, consulta, intervalo) => {
   const view = await render(<Screen />);
   await waitFor(() => expect(consulta()).toHaveBeenCalledTimes(1));
-  await avanzar(30000);
+  await avanzar(intervalo);
   await waitFor(() => expect(consulta()).toHaveBeenCalledTimes(2));
   mockEnfocada = false;
   await view.rerender(<Screen />);

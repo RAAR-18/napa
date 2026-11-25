@@ -288,16 +288,36 @@ export default function DomiciliosDisponiblesScreen() {
           />
         </View>
       ) : null}
-      <TextButton
-        title="Mis domicilios en curso"
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Mis domicilios en curso"
         onPress={() => router.push('/domicilios-en-curso')}
-      />
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
+        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+          styles.inProgressButton,
+          hovered && { backgroundColor: palette.peach, borderColor: palette.coral },
+          pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+        ]}
+      >
+        <View style={styles.inProgressIcon}><Icon name="truck" size={20} color={palette.coralDark} /></View>
+        <Text style={styles.inProgressLabel}>Mis domicilios en curso</Text>
+        <Icon name="chevron-right" size={18} color={palette.coralDark} />
+      </Pressable>
     </AuthPage>
   );
 }
 
 const styles = StyleSheet.create({
+  inProgressButton: {
+    width: '86%', maxWidth: 360, alignSelf: 'center', marginTop: 32,
+    minHeight: 56, paddingVertical: 10, paddingHorizontal: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: '#FFF0E5', borderColor: '#F1B69D', borderWidth: 1, borderRadius: 13,
+  },
+  inProgressIcon: {
+    width: 32, height: 32, borderRadius: 10, backgroundColor: '#E95F3D16',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  inProgressLabel: { flex: 1, fontFamily: fonts.sans, fontSize: 14, lineHeight: 20, fontWeight: '800', color: palette.coralDark },
   filterTitle: { color: palette.dark, fontSize: 14, fontWeight: '800', marginTop: 4 },
   options: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
   card: {

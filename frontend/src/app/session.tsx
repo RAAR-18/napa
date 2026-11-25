@@ -1,15 +1,13 @@
 import { fonts } from '../components/theme';
 import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
   ErrorBanner,
-  FormFooter,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import { ApiError, NetworkError } from '../lib/api';
@@ -24,7 +22,7 @@ import { useAccionesPendientes } from '../hooks/useOutbox';
 import { contarNoLeidas } from '../lib/notificaciones';
 import { darDeBajaPush, registrarPush } from '../lib/push';
 import { borrarTodasLasRutas } from '../lib/ruta-cache';
-import { CardGrid, ShortcutCard, StatusBadge, type IconName } from '../components/NapaUI';
+import { CardGrid, Icon, ShortcutCard, StatusBadge, type IconName } from '../components/NapaUI';
 
 const roleNames: Record<string, string> = {
   CLIENTE: 'Cliente',
@@ -272,16 +270,49 @@ export default function SessionScreen() {
       <ErrorBanner message={error} />
       {error ? <PrimaryButton busy={busy} title="Reintentar" onPress={() => void retry()} /> : null}
       <View style={styles.accountActions}>
-        <TextButton title="Mi perfil" onPress={() => router.push('/perfil')} />
-        <TextButton title="Cambiar contraseña" onPress={() => router.push('/change-password')} />
-      </View>
-      <FormFooter>
-        <TextButton
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Cambiar contraseña"
           disabled={busy}
-          title={busy ? 'Cerrando sesión…' : 'Cerrar sesión'}
-          onPress={signOut}
-        />
-      </FormFooter>
+          onPress={() => router.push('/change-password')}
+          style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+            styles.accountAction,
+            styles.passwordAction,
+            hovered && { backgroundColor: palette.coralDark },
+            pressed && styles.actionPressed,
+            busy && styles.actionDisabled,
+          ]}
+        >
+          <View style={styles.passwordIcon}><Icon name="lock" size={23} color="#FFFFFF" /></View>
+          <View style={styles.actionCopy}>
+            <Text style={styles.passwordLabel}>Cambiar contraseña</Text>
+            <Text style={styles.passwordHint}>Cuida el acceso a tu cuenta</Text>
+          </View>
+          <Icon name="chevron-right" color="#FFFFFF" size={20} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={busy ? 'Cerrando sesión…' : 'Cerrar sesión'}
+          accessibilityState={{ busy, disabled: busy }}
+          disabled={busy}
+          onPress={() => void signOut()}
+          style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+            styles.accountAction,
+            styles.logoutAction,
+            hovered && { backgroundColor: '#FCE1D9' },
+            pressed && styles.actionPressed,
+            busy && styles.actionDisabled,
+          ]}
+        >
+          <View style={styles.logoutIcon}>
+            {busy ? <ActivityIndicator color={palette.error} /> : <Icon name="log-out" size={23} color={palette.error} />}
+          </View>
+          <View style={styles.actionCopy}>
+            <Text style={styles.logoutLabel}>{busy ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
+            <Text style={styles.logoutHint}>Sal de tu cuenta en este dispositivo</Text>
+          </View>
+        </Pressable>
+      </View>
     </AuthPage>
   );
 }
@@ -303,13 +334,45 @@ const styles = StyleSheet.create({
   accountActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 16,
+    gap: 12,
     borderTopWidth: 1,
     borderColor: palette.border,
     marginTop: 30,
     paddingTop: 18,
   },
+  accountAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexBasis: 250,
+    flexGrow: 1,
+    flexShrink: 1,
+    gap: 12,
+    padding: 16,
+    minHeight: 84,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  passwordAction: {
+    backgroundColor: palette.coral,
+    borderColor: palette.coral,
+    boxShadow: '0px 3px 8px rgba(200, 69, 41, 0.15)',
+  },
+  logoutAction: { backgroundColor: '#FFF0E9', borderColor: '#EDC4B8' },
+  passwordIcon: {
+    width: 44, height: 44, borderRadius: 13, backgroundColor: '#FFFFFF26',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  logoutIcon: {
+    width: 44, height: 44, borderRadius: 13, backgroundColor: '#AC352C0D',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionCopy: { flex: 1, minWidth: 0, gap: 4 },
+  passwordLabel: { fontFamily: fonts.sans, fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  passwordHint: { fontFamily: fonts.sans, fontSize: 12, lineHeight: 17, color: '#FFF2E9' },
+  logoutLabel: { fontFamily: fonts.sans, fontSize: 16, fontWeight: '800', color: palette.error },
+  logoutHint: { fontFamily: fonts.sans, fontSize: 12, lineHeight: 17, color: palette.muted },
+  actionPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  actionDisabled: { opacity: 0.6 },
   label: {
     color: palette.muted,
     fontFamily: fonts.sans,

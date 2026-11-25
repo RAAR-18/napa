@@ -1,6 +1,6 @@
 import { configurarUbicacionAutomatica, leerUbicacionAutomatica } from '../lib/ubicacion-automatica';
-import { TimeField } from '../components/TimeField';
 import { fonts } from '../components/theme';
+import { DateTimeField } from '../components/DateTimeField';
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
 import * as Location from 'expo-location';
@@ -452,10 +452,10 @@ export default function MiEmprendimientoScreen() {
           }} editable={!busy && !bloqueado} multiline maxLength={500} />
           <View style={styles.row}>
             <View style={styles.half}>
-              <TimeField label="Abre (HH:mm)" value={apertura} onChangeText={(valor) => { borradorTocado.current = true; setApertura(valor); }} editable={!busy && !bloqueado} />
+              <DateTimeField mode="time" label="Hora de apertura" value={apertura} onChangeText={(valor) => { borradorTocado.current = true; setApertura(valor); }} editable={!busy && !bloqueado} />
             </View>
             <View style={styles.half}>
-              <TimeField label="Cierra (HH:mm)" value={cierre} onChangeText={(valor) => { borradorTocado.current = true; setCierre(valor); }} editable={!busy && !bloqueado} />
+              <DateTimeField mode="time" label="Hora de cierre" value={cierre} onChangeText={(valor) => { borradorTocado.current = true; setCierre(valor); }} editable={!busy && !bloqueado} />
             </View>
           </View>
           {fechaCopia === null && !revisionId && !bloqueado ? (

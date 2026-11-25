@@ -128,8 +128,9 @@ export default function VerifyScreen() {
           params: { passwordReset: "true" },
         });
       } else {
-        await confirmRegistration(celular, codigo);
-        router.replace("/session");
+        const session = await confirmRegistration(celular, codigo);
+        const esVendedor = session.rol === "VENDEDOR_PUNTO_FIJO" || session.rol === "VENDEDOR_AMBULANTE";
+        router.replace(esVendedor ? "/emprendimiento" : "/session");
       }
     } catch (cause) {
       const attempts =
@@ -300,6 +301,7 @@ export default function VerifyScreen() {
             onChangeText={setContrasenaNueva}
             placeholder="Mínimo 8 caracteres"
             secureTextEntry
+            showPasswordToggle
             value={contrasenaNueva}
           />
           <HelperText>Debe tener entre 8 y 128 caracteres.</HelperText>

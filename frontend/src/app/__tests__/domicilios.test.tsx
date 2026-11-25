@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { selectDateTime } from '../../test-utils/select-date-time';
 import { router } from 'expo-router';
 import * as Crypto from 'expo-crypto';
 
@@ -183,17 +184,19 @@ it('validates dates and distinguishes an empty list from a filter without result
   const view = await render(<DomiciliosVendedorScreen />);
 
   await waitFor(() => expect(view.getByText('Aún no tienes domicilios.')).toBeTruthy());
-  await fireEvent.changeText(view.getByLabelText('Desde (AAAA-MM-DD)'), '13/11/2026');
+  await selectDateTime(view, 'Desde', '2026-11-13');
+  await selectDateTime(view, 'Hasta', '2026-11-01');
   await fireEvent.press(view.getByRole('button', { name: 'Aplicar fechas' }));
-  await waitFor(() => expect(view.getByText('Escribe las fechas con el formato AAAA-MM-DD.')).toBeTruthy());
+  await waitFor(() => expect(view.getByText('La fecha inicial no puede ser posterior a la final.')).toBeTruthy());
   expect(listarDomiciliosVendedor).toHaveBeenCalledTimes(1);
 
-  await fireEvent.changeText(view.getByLabelText('Desde (AAAA-MM-DD)'), '2026-11-01');
+  await selectDateTime(view, 'Desde', '2026-11-01');
   await fireEvent.press(view.getByRole('button', { name: 'Aplicar fechas' }));
   await waitFor(() => expect(listarDomiciliosVendedor).toHaveBeenLastCalledWith({
     page: 0,
     size: 20,
     desde: '2026-11-01',
+    hasta: '2026-11-01',
   }));
   await waitFor(() => expect(view.getByText('Sin resultados.')).toBeTruthy());
   await fireEvent.press(view.getByRole('button', { name: 'Limpiar filtros' }));

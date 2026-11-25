@@ -1,4 +1,5 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { selectDateTime } from '../../test-utils/select-date-time';
 import { router, useLocalSearchParams } from 'expo-router';
 import { AppState, type AppStateStatus } from 'react-native';
 
@@ -402,9 +403,7 @@ it('saves a reservation as a draft even with a previously saved payment method',
   await fireEvent.press(await view.findByRole('button', { name: 'Agregar Mango al pedido' }));
   await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
   await fireEvent.press(view.getByRole('radio', { name: 'Reserva' }));
-  await fireEvent.changeText(
-    view.getByLabelText('Fecha y hora acordadas (AAAA-MM-DDTHH:mm)'), '2027-01-01T15:30',
-  );
+  await selectDateTime(view, 'Fecha y hora acordadas', '2027-01-01T15:30');
   expect(view.queryByRole('button', { name: 'Confirmar y guardar pedido pendiente' })).toBeNull();
   await fireEvent.press(view.getByRole('button', { name: 'Guardar borrador' }));
 

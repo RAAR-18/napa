@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator } from 'react-native';
 
 import { AuthPage, ErrorBanner, HelperText, PageHeading, TextButton, palette } from '../components/AuthUI';
@@ -67,7 +67,6 @@ export default function CatalogoScreen() {
         <TextButton title="Página guardada siguiente" onPress={() => setPage(siguienteGuardada)} />
       ) : null}
       <TextButton title="Actualizar catálogo" disabled={busy} onPress={refresh} />
-      <TextButton title="Volver a emprendimientos" onPress={() => router.replace('/emprendimientos')} />
     </AuthPage>
   );
 }

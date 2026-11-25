@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { selectDateTime } from '../../test-utils/select-date-time';
 import * as Crypto from 'expo-crypto';
 import * as Location from 'expo-location';
 
@@ -186,10 +187,7 @@ it('includes a future reservation and accepts an exhausted product for server qu
   await fireEvent.press(view.getByRole('button', { name: 'Continuar con la entrega' }));
   await fireEvent.press(view.getByRole('radio', { name: 'Pedido inmediato' }));
   await fireEvent.press(view.getByRole('radio', { name: 'Reserva' }));
-  await fireEvent.changeText(
-    view.getByLabelText('Fecha y hora acordadas (AAAA-MM-DDTHH:mm)'),
-    futureLocalDateTime(),
-  );
+  await selectDateTime(view, 'Fecha y hora acordadas', futureLocalDateTime());
   await fireEvent.press(view.getByRole('button', { name: 'Cotizar pedido' }));
 
   await waitFor(() => {
@@ -295,7 +293,7 @@ it('requests device location on demand for delivery and quotes the order', async
   await waitFor(() => {
     expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalled();
     expect(Location.getCurrentPositionAsync).toHaveBeenCalled();
-    expect(view.getByText(/✓ Ubicación del dispositivo obtenida/)).toBeTruthy();
+    expect(view.getByText(/✓ Punto de entrega/)).toBeTruthy();
     expect(view.getByLabelText('Latitud').props.value).toBe('4.711');
     expect(view.getByLabelText('Longitud').props.value).toBe('-74.0721');
   });

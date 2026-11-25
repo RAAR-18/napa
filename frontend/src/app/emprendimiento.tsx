@@ -1,5 +1,5 @@
-import { TimeField } from '../components/TimeField';
 import { fonts } from '../components/theme';
+import { DateTimeField } from '../components/DateTimeField';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -8,12 +8,10 @@ import {
   AuthPage,
   ErrorBanner,
   Field,
-  FormFooter,
   HelperText,
   OptionButton,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import { ApiError } from '../lib/api';
@@ -225,10 +223,6 @@ export default function EmprendimientoScreen() {
           title="Agregar mis productos"
           onPress={() => router.replace('/mis-productos')}
         />
-        <TextButton
-          title="Volver a mi cuenta"
-          onPress={() => router.replace('/session')}
-        />
       </AuthPage>
     );
   }
@@ -275,23 +269,23 @@ export default function EmprendimientoScreen() {
       />
       <View style={styles.row}>
         <View style={styles.column}>
-          <TimeField
+          <DateTimeField
             label="Hora de apertura"
+            mode="time"
             onChangeText={setHoraApertura}
-            placeholder="08:00"
             value={horaApertura}
           />
         </View>
         <View style={styles.column}>
-          <TimeField
+          <DateTimeField
             label="Hora de cierre"
+            mode="time"
             onChangeText={setHoraCierre}
-            placeholder="18:00"
             value={horaCierre}
           />
         </View>
       </View>
-      <HelperText>Usa el formato de 24 horas HH:mm.</HelperText>
+      <HelperText>Selecciona el horario de atención en formato de 24 horas.</HelperText>
       <Text style={styles.label}>Ubicación</Text>
       <PrimaryButton
         busy={locationBusy}
@@ -359,12 +353,6 @@ export default function EmprendimientoScreen() {
         title="Publicar emprendimiento"
         onPress={submit}
       />
-      <FormFooter>
-        <TextButton
-          title="Volver a mi cuenta"
-          onPress={() => router.replace('/session')}
-        />
-      </FormFooter>
     </AuthPage>
   );
 }

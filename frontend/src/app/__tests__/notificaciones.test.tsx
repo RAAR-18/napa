@@ -1,9 +1,9 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { Platform } from 'react-native';
 
-import NotificacionesScreen from '../notificaciones';
+import NotificacionesScreen, { REFRESCO_NOTIFICACIONES_MS } from '../notificaciones';
 import PreferenciasNotificacionesScreen from '../preferencias-notificaciones';
 import { NetworkError } from '../../lib/api';
 import { getValidSession, readSession } from '../../lib/auth';
@@ -33,6 +33,7 @@ jest.mock('expo-notifications', () => ({
   getDevicePushTokenAsync: jest.fn(),
   setNotificationHandler: jest.fn(),
   setNotificationChannelAsync: jest.fn(),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   AndroidImportance: { DEFAULT: 3 },
 }));
 jest.mock('../../lib/auth', () => ({
@@ -91,6 +92,48 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.mocked(getValidSession).mockResolvedValue(session('CLIENTE'));
   jest.mocked(readSession).mockResolvedValue(null);
+});
+
+it('actualiza silenciosamente la bandeja y deja de consultar al salir', async () => {
+  jest.useFakeTimers();
+  try {
+    jest.mocked(listarNotificaciones).mockResolvedValue({ content: [sinLeer], page: 0, size: 20, totalElements: 1 });
+    jest.mocked(abrirNotificacion).mockResolvedValue({ ...sinLeer, leida: true });
+    const vista = await render(<NotificacionesScreen />);
+    await vista.findByRole('button', { name: 'Sin leer: Pedido aceptado' });
+    await fireEvent.press(vista.getByRole('button', { name: 'Sin leer: Pedido aceptado' }));
+    await vista.findByText(sinLeer.cuerpo);
+    jest.mocked(listarNotificaciones).mockResolvedValue({
+      content: [{ ...leida, titulo: 'Aviso nuevo' }, { ...sinLeer, leida: true }], page: 0, size: 20, totalElements: 2,
+    });
+    await act(async () => { jest.advanceTimersByTime(REFRESCO_NOTIFICACIONES_MS); });
+    expect(vista.getByText('Aviso nuevo')).toBeTruthy();
+    expect(vista.getByText(sinLeer.cuerpo)).toBeTruthy();
+    expect(vista.queryByLabelText('Cargando notificaciones')).toBeNull();
+
+    jest.mocked(listarNotificaciones).mockRejectedValueOnce(new NetworkError('Sin conexión'));
+    await act(async () => { jest.advanceTimersByTime(REFRESCO_NOTIFICACIONES_MS); });
+    expect(vista.getByText('Aviso nuevo')).toBeTruthy();
+    await vista.unmount();
+    const consultas = jest.mocked(listarNotificaciones).mock.calls.length;
+    await act(async () => { jest.advanceTimersByTime(REFRESCO_NOTIFICACIONES_MS * 2); });
+    expect(listarNotificaciones).toHaveBeenCalledTimes(consultas);
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+it('consulta al recibir un push y conserva el filtro de no leídas', async () => {
+  jest.mocked(listarNotificaciones).mockResolvedValue({ content: [], page: 0, size: 20, totalElements: 0 });
+  const vista = await render(<NotificacionesScreen />);
+  await vista.findByText('No tienes notificaciones.');
+  await fireEvent.press(vista.getByRole('radio', { name: 'No leídas' }));
+  await vista.findByText('No tienes notificaciones sin leer.');
+  jest.mocked(listarNotificaciones).mockResolvedValue({ content: [sinLeer], page: 0, size: 20, totalElements: 1 });
+  const listener = jest.mocked(Notifications.addNotificationReceivedListener).mock.calls.at(-1)![0];
+  await act(async () => { listener({} as Notifications.Notification); });
+  await vista.findByRole('button', { name: 'Sin leer: Pedido aceptado' });
+  expect(listarNotificaciones).toHaveBeenLastCalledWith({ page: 0, size: 20, leida: false });
 });
 
 describe('notificaciones (RF-38)', () => {

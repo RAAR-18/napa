@@ -1,4 +1,5 @@
 import { fonts } from '../components/theme';
+import { DateTimeField } from '../components/DateTimeField';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -6,7 +7,6 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import {
   AuthPage,
   ErrorBanner,
-  Field,
   HelperText,
   OptionButton,
   PageHeading,
@@ -182,19 +182,17 @@ export default function DomiciliosVendedorScreen() {
           />
         ))}
       </View>
-      <Field
-        label="Desde (AAAA-MM-DD)"
+      <DateTimeField
+        label="Desde"
+        mode="date"
         value={desdeInput}
         onChangeText={setDesdeInput}
-        placeholder="2026-11-01"
-        autoCapitalize="none"
       />
-      <Field
-        label="Hasta (AAAA-MM-DD)"
+      <DateTimeField
+        label="Hasta"
+        mode="date"
         value={hastaInput}
         onChangeText={setHastaInput}
-        placeholder="2026-11-30"
-        autoCapitalize="none"
       />
       <ErrorBanner message={dateError} />
       <TextButton title="Aplicar fechas" disabled={loading} onPress={applyDates} />

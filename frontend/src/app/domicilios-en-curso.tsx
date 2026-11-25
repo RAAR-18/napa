@@ -10,7 +10,6 @@ import {
   HelperText,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import { guardarConsultaPedidos, leerConsultaPedidos } from '../lib/pedidos-cliente-cache';
@@ -123,8 +122,6 @@ export default function DomiciliosEnCursoScreen() {
           ))
         : null}
       <PrimaryButton title="Actualizar" disabled={loading} onPress={() => setLoadAttempt((a) => a + 1)} />
-      <TextButton title="Ver domicilios disponibles" onPress={() => router.replace('/domicilios-disponibles')} />
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

@@ -1,7 +1,8 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
 import VerifyScreen from '../verify';
-import { requestVerification } from '../../lib/auth';
+import { confirmRegistration, requestVerification } from '../../lib/auth';
 
 const mockParams: Record<string, string> = {};
 
@@ -25,6 +26,23 @@ describe('VerifyScreen', () => {
     Object.assign(mockParams, { celular: '+573007080825', proposito: 'REGISTRO', tieneCorreo: '1', canal: 'SMS' });
     jest.mocked(requestVerification).mockResolvedValue(120);
   });
+
+  it.each(['VENDEDOR_PUNTO_FIJO', 'VENDEDOR_AMBULANTE', 'CLIENTE', 'DOMICILIARIO'])(
+    'dirige el registro verificado de %s al siguiente paso correspondiente', async (rol) => {
+      jest.mocked(confirmRegistration).mockResolvedValue({
+        rol, accessToken: 'access', refreshToken: 'refresh', tokenType: 'Bearer',
+        expiresIn: 900, expiresAt: Date.now() + 900000,
+      });
+      const view = await render(<VerifyScreen />);
+      await fireEvent.press(view.getByRole('button', { name: 'Enviar código por SMS' }));
+      await fireEvent.changeText(await view.findByLabelText('Código de verificación'), '123456');
+      await fireEvent.press(view.getByRole('button', { name: 'Verificar y continuar' }));
+      await waitFor(() => expect(router.replace).toHaveBeenCalledWith(
+        rol.startsWith('VENDEDOR') ? '/emprendimiento' : '/session',
+      ));
+      expect(confirmRegistration).toHaveBeenCalledWith('+573007080825', '123456');
+    },
+  );
 
   it('asks for the channel before sending and then waits two minutes to resend', async () => {
     const { getByRole, getByText, queryByLabelText } = await render(<VerifyScreen />);

@@ -1,9 +1,9 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import * as Crypto from 'expo-crypto';
 
 import DomicilioDomiciliarioScreen from '../domicilio-domiciliario';
-import MisPedidosScreen from '../mis-pedidos';
+import MisPedidosScreen, { REFRESCO_MIS_PEDIDOS_MS } from '../mis-pedidos';
 import PedidoClienteScreen from '../pedido-cliente';
 import PedidoVendedorScreen from '../pedido-vendedor';
 import TrazabilidadDomicilioScreen from '../trazabilidad-domicilio';
@@ -46,6 +46,9 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ domicilioId: 'delivery-id', pedidoId: 'order-id' }),
 }));
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn() }));
+jest.mock('expo-notifications', () => ({
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+}));
 jest.mock('../../lib/auth', () => ({
   clearSession: jest.fn(),
   getValidSession: jest.fn(),
@@ -268,6 +271,40 @@ describe('vendedor', () => {
 describe('cliente', () => {
   beforeEach(() => {
     jest.mocked(getValidSession).mockResolvedValue(session('CLIENTE'));
+  });
+
+  it('actualiza estados automáticamente sin vaciar la lista, mantiene filtros y cancela al salir', async () => {
+    jest.useFakeTimers();
+    try {
+      const pagina = {
+        content: [{ id: 'order-id', emprendimiento: { id: 'business-id', nombre: 'Tienda de prueba' },
+          modalidad: 'DOMICILIO' as const, createdAt: '2026-11-25T12:00:00Z',
+          estado: 'PENDIENTE' as const, reserva: null, total: 10500 }],
+        page: 0, size: 20, totalElements: 1,
+      };
+      jest.mocked(listarPedidosCliente).mockResolvedValue(pagina);
+      const vista = await render(<MisPedidosScreen />);
+      await vista.findByRole('button', { name: 'Ver pedido a Tienda de prueba, Pendiente' });
+      jest.mocked(listarPedidosCliente).mockResolvedValue({ ...pagina,
+        content: [{ ...pagina.content[0], estado: 'EN_CAMINO' }],
+      });
+      await act(async () => { jest.advanceTimersByTime(REFRESCO_MIS_PEDIDOS_MS); });
+      expect(vista.getByRole('button', { name: 'Ver pedido a Tienda de prueba, En camino' })).toBeTruthy();
+      expect(vista.queryByLabelText('Cargando pedidos')).toBeNull();
+      await fireEvent.press(vista.getByRole('radio', { name: 'En camino' }));
+      await vista.findByRole('button', { name: 'Ver pedido a Tienda de prueba, En camino' });
+      await act(async () => { jest.advanceTimersByTime(REFRESCO_MIS_PEDIDOS_MS); });
+      expect(listarPedidosCliente).toHaveBeenLastCalledWith({ estado: 'EN_CAMINO', page: 0, size: 20 });
+      jest.mocked(listarPedidosCliente).mockRejectedValueOnce(new NetworkError('Sin conexión'));
+      await act(async () => { jest.advanceTimersByTime(REFRESCO_MIS_PEDIDOS_MS); });
+      expect(vista.getByText('Tienda de prueba')).toBeTruthy();
+      await vista.unmount();
+      const consultas = jest.mocked(listarPedidosCliente).mock.calls.length;
+      await act(async () => { jest.advanceTimersByTime(REFRESCO_MIS_PEDIDOS_MS * 2); });
+      expect(listarPedidosCliente).toHaveBeenCalledTimes(consultas);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('lists the orders and opens one', async () => {

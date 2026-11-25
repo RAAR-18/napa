@@ -179,7 +179,6 @@ export default function MisProductosScreen() {
       </CardGrid>
       {data ? <ProductosPagination data={data} busy={busy} onPage={setPage} /> : null}
       <TextButton title="Actualizar listado" disabled={busy} onPress={refresh} />
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

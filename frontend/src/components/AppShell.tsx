@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
 import { router, usePathname } from 'expo-router';
 import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -117,11 +120,12 @@ const admin: NavItem[] = [
   },
 ];
 const account: NavItem[] = [
+  { label: 'Mi perfil', route: '/perfil', icon: 'user' },
   {
     label: 'Mi cuenta',
     route: '/session',
     icon: 'settings',
-    related: ['/perfil', '/change-password', '/pendientes-envio'],
+    related: ['/change-password', '/pendientes-envio'],
   },
 ];
 const roleNames: Record<string, string> = {
@@ -183,9 +187,30 @@ export function Brand({ light = false, large = false }: { light?: boolean; large
   );
 }
 
-function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+function HomeLink({ children, onNavigate }: PropsWithChildren<{ onNavigate?: () => void }>) {
+  const { role } = useNapaNavigation();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Ñapa, ir a mi inicio"
+      disabled={!role}
+      onPress={() => {
+        if (!role) return;
+        Keyboard.dismiss();
+        onNavigate?.();
+        router.replace(homeForRole(role));
+      }}
+      style={({ pressed }) => [styles.homeLink, pressed && { opacity: 0.7 }]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
+function Sidebar({ onNavigate, showProfile = true }: { onNavigate?: () => void; showProfile?: boolean }) {
   const { path, role } = useNapaNavigation();
   const navigation = navigationFor(role);
+  const accountActive = path === '/session' || account[1].related?.includes(path);
   const navItem = (item: NavItem) => {
     const active = path === item.route || item.related?.includes(path);
     return (
@@ -214,7 +239,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <View style={styles.sidebar}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sidebarInner}>
         <View style={styles.logoBlock}>
-          <Brand light large />
+          <HomeLink onNavigate={onNavigate}><Brand light large /></HomeLink>
           <Text style={styles.tagline}>Tu barrio, conectado.</Text>
           <View style={styles.brandUnderline} />
         </View>
@@ -224,11 +249,27 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         {navigation.secondary.length ? (
           <View style={styles.navSecondary}>{navigation.secondary.map(navItem)}</View>
         ) : null}
-        <View style={styles.accountLinks}>
-          <Text style={styles.navHeading}>TU CUENTA</Text>
-          {account.map(navItem)}
-        </View>
-        <View style={styles.userBlock}>
+        {showProfile ? (
+          <View style={styles.accountLinks}>
+            <Text style={styles.navHeading}>TU CUENTA</Text>
+            {navItem(account[0])}
+          </View>
+        ) : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Mi cuenta"
+          accessibilityHint="Abre las opciones de tu cuenta"
+          accessibilityState={{ selected: Boolean(accountActive) }}
+          onPress={() => {
+            onNavigate?.();
+            router.push('/session');
+          }}
+          style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+            styles.userBlock,
+            (accountActive || hovered) && styles.userBlockHighlighted,
+            pressed && { opacity: 0.72 },
+          ]}
+        >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
               {(roleNames[role ?? 'CLIENTE'] ?? 'Mi cuenta').slice(0, 1)}
@@ -236,9 +277,10 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.userRole}>{roleNames[role ?? 'CLIENTE'] ?? 'Mi cuenta'}</Text>
-            <Text style={styles.userHint}>Tu espacio en Ñapa</Text>
+            <Text style={styles.userHint}>Ver mi cuenta</Text>
           </View>
-        </View>
+          <Icon name="chevron-right" size={18} color="#DCCCD7" />
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -257,6 +299,61 @@ const formRoutes = [
   '/calificar-pedido',
   '/preferencias-notificaciones',
 ];
+
+function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [progress] = useState(() => new Animated.Value(0));
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      if (active) setReduceMotion(enabled);
+    });
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => { if (active) setReduceMotion(enabled); })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const animation = Animated.timing(progress, {
+      toValue: open ? 1 : 0,
+      duration: reduceMotion ? 0 : open ? 280 : 220,
+      easing: open ? Easing.out(Easing.cubic) : Easing.inOut(Easing.quad),
+      useNativeDriver: Platform.OS !== 'web',
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [open, progress, reduceMotion]);
+
+  return (
+    <View
+      style={styles.menuOverlay}
+      pointerEvents={open ? 'auto' : 'none'}
+      accessibilityElementsHidden={!open}
+      importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
+    >
+      <Animated.View style={[styles.menuScrim, { opacity: progress }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar menú de navegación"
+          onPress={onClose}
+          style={styles.flex}
+        />
+      </Animated.View>
+      <Animated.View
+        style={{
+          transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-244, 0] }) }],
+        }}
+      >
+        <Sidebar onNavigate={onClose} showProfile={false} />
+      </Animated.View>
+    </View>
+  );
+}
 
 export function AppShell({ children }: PropsWithChildren) {
   const { path, role } = useNapaNavigation();
@@ -336,13 +433,14 @@ export function AppShell({ children }: PropsWithChildren) {
             <View style={styles.mobileHeader}>
               <View style={styles.mobileHeaderLeft}>
                 {showBack ? backButton : null}
-                <Brand />
+                <HomeLink onNavigate={() => setMenuOpen(false)}><Brand /></HomeLink>
               </View>
               {width >= (showBack ? 480 : 360) ? <Text style={styles.mobileMotto}>COMERCIO LOCAL</Text> : null}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
-                onPress={() => setMenuOpen(!menuOpen)}
+                accessibilityState={{ expanded: menuOpen }}
+                onPress={() => setMenuOpen((open) => !open)}
                 style={styles.menuButton}
               >
                 <Icon name={menuOpen ? 'x' : 'menu'} />
@@ -360,7 +458,7 @@ export function AppShell({ children }: PropsWithChildren) {
               {desktop ? (
                 <View style={styles.breadcrumb}>
                   <View style={styles.crumbTrail}>
-                    <Text style={styles.crumbBrand}>Ñapa</Text>
+                    <HomeLink><Text style={styles.crumbBrand}>Ñapa</Text></HomeLink>
                     <Text style={styles.crumbSlash}>/</Text>
                     {role && role !== 'CLIENTE' ? (
                       <>
@@ -389,16 +487,8 @@ export function AppShell({ children }: PropsWithChildren) {
             </ScrollView>
           </KeyboardAvoidingView>
         </View>
-        {!desktop && menuOpen ? (
-          <View style={styles.menuOverlay}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar menú de navegación"
-              onPress={() => setMenuOpen(false)}
-              style={styles.menuScrim}
-            />
-            <Sidebar onNavigate={() => setMenuOpen(false)} />
-          </View>
+        {!desktop ? (
+          <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
         ) : null}
       </View>
     </SafeAreaView>
@@ -407,6 +497,7 @@ export function AppShell({ children }: PropsWithChildren) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  homeLink: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   safeArea: { flex: 1, backgroundColor: palette.background },
   layout: { flex: 1, flexDirection: 'row' },
   main: { flex: 1, minWidth: 0 },
@@ -472,9 +563,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingTop: 16,
+    paddingBottom: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
     marginTop: 16,
-    marginHorizontal: 8,
   },
+  userBlockHighlighted: { backgroundColor: '#50364F' },
   avatar: {
     width: 44,
     height: 44,
@@ -591,6 +685,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     flexDirection: 'row',
     zIndex: 20,
+    overflow: 'hidden',
   },
   menuScrim: {
     position: 'absolute',

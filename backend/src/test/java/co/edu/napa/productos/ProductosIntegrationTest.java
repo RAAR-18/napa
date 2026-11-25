@@ -1246,7 +1246,7 @@ class ProductosIntegrationTest {
     private String account(String role) throws Exception {
         String phone = "+573" + ThreadLocalRandom.current().nextLong(100_000_000, 1_000_000_000);
         var registered = request("POST", "/auth/register", null, Map.of("nombre", "Producto Test", "celular", phone,
-                "rol", role, "password", "test-password", "confirmPassword", "test-password"), key());
+                "rol", role, "password", "test-password", "confirmPassword", "test-password", "canal", "SMS"), key());
         assertEquals(201, registered.statusCode(), registered.body());
         var verified = request("POST", "/auth/verify-phone/confirm", null, Map.of("celular", phone, "codigo", "654321"), null);
         assertEquals(200, verified.statusCode(), verified.body());
