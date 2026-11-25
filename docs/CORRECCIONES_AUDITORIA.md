@@ -1,12 +1,12 @@
 # Seguimiento de correcciones de auditoría — Ñapa
 
-Actualizado: 24 de noviembre de 2026. Base del bloque actual: `817acbe`, rama `fix/p0-01-outbox-web`.
+Actualizado: 24 de noviembre de 2026. Base del bloque actual: `180109b`, rama `fix/p0-01-outbox-web`.
 
 ## Estado vigente
 
 | Incidencia | Resultado |
 |---|---|
-| P0-01 | Cola web en IndexedDB; SQLite conservado en Android/iOS. Errores claros, persistencia y concurrencia verificadas. Listado de negocios y rutas guardadas también usan IndexedDB en web. No migra pendientes antiguos; otras cachés SQLite siguen pendientes. |
+| P0-01 | Cola web en IndexedDB; SQLite conservado en Android/iOS. Errores claros, persistencia y concurrencia verificadas. Las cachés de lectura también tienen variantes IndexedDB: listado/rutas, perfil, negocio propio, inventario, catálogo, notificaciones y pedidos. No migra pendientes ni cachés antiguas de SQLite web; validación funcional del tester pendiente. |
 | P0-02 | Validación de disponibilidad conocida antes de cotizar. El backend valida y descuenta al aceptar; no se reserva inventario al crear, según RF-45. |
 | P0-03 | Entrada de horario compartida, numérica, HH:mm, validación de rango y de hora incompleta. |
 | P0-04 | Feedback de longitud/coincidencia y bloqueo ante contraseñas distintas. Se conserva D14: 8–128 caracteres, sin composición obligatoria. |
@@ -75,3 +75,15 @@ Siguen pendientes la configuración operativa de proveedores por el equipo, el s
 - No hay migración de cachés SQLite antiguas del navegador: se regeneran consultando en línea. No se instalaron dependencias ni se cambiaron API, proveedores o funcionalidad de mapas.
 - Pruebas observadas: 9 de almacenamiento/consumidores y 12 de las pantallas de listado/ruta, correctas. Exportación web correcta. Comprobación de tipos y lint finales correctos, sin errores ni advertencias.
 - Siguiente bloque concreto: perfil-cache.ts, emprendimiento-propio-cache.ts, inventario-cache.ts, catalogo-cache.ts, notificaciones-cache.ts y pedidos-cliente-cache.ts aún importan SQLite sin variante web. Conservar aislamiento por cuenta, vencimiento, límites y orden de escrituras al corregirlos. P0-01 no está cerrado para toda la app.
+
+
+## Bloque posterior a 180109b: seis cachés web por cuenta
+
+- Se agregan `perfil-cache.web.ts`, `emprendimiento-propio-cache.web.ts`, `inventario-cache.web.ts`, `catalogo-cache.web.ts`, `notificaciones-cache.web.ts` y `pedidos-cliente-cache.web.ts`.
+- Almacenamiento compartido en `cache-cuenta.web.ts`: cuenta y espacio separados mediante índice compuesto; lectura/modificación/borrado dentro de una transacción. Confirmación únicamente al completarse; sesión revalidada antes de escribir.
+- Se conservan siete días, 50 páginas por cuenta para catálogo/inventario/notificaciones y 50 registros por tipo de consulta de pedidos. Perfil y negocio propio conservan una copia por cuenta.
+- Perfil no agrega coordenadas/referencia/foto y las notificaciones no guardan referencias de navegación. Inventario descarta el negocio anterior; cancelación de pedido elimina detalle y presencia en listados atómicamente.
+- SQLite nativo no se modifica. Sin dependencias, cambios de API ni migración de datos del navegador. Las cachés se regeneran consultando en línea; los pendientes antiguos de outbox requieren sincronizarse antes de desplegar, según el bloque original.
+- Exportación web correcta: el listado de recursos generado ya no incluye el motor WASM ni el worker de SQLite. Esto verifica la selección de variantes, sin sustituir la revisión funcional del tester.
+- Preferencia del usuario guardada en AGENTS.md: cada recomendación de commit incluye el bloque completo para Git Bash; Git sigue siendo manual.
+- Validación: 12 pruebas web nuevas correctas y 3 de perfil nativo correctas; lint completo y revisión dirigida final sin errores ni advertencias. Exportación web correcta. Comprobación de tipos final correcta.

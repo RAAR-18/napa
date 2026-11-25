@@ -53,3 +53,7 @@ El usuario autorizó trabajar directamente corrigiendo errores en `C:\Users\ESTU
 ## Ritmo de corrección acordado (2026-11-24)
 
 Priorizar corregir incidencias por bloques y mantener el proyecto compilando y las pruebas pertinentes pasando. Ejecutar una comprobación conjunta y repetir solo lo afectado por fallos o cambios posteriores. Evitar ampliar la revisión funcional o repetir comprobaciones correctas sin motivo. El tester del grupo valida los recorridos y el cumplimiento funcional. Docker está disponible si se necesitan integraciones backend. No detener el avance esperando pruebas manuales del tester ni prometer que ya se realizaron.
+
+## Formato de commits solicitado
+
+Siempre que se recomiende un commit, entregar el bloque completo para pegar en Git Bash: ruta real del repositorio, git add con archivos explícitos, revisión de lo preparado, git commit con mensaje y git status. No ejecutar esas operaciones por el usuario ni incluir push automáticamente.

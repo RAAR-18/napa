@@ -215,3 +215,8 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 ## Corrección P0-01: cachés de lectura en web (2026-11-24)
 
 Listado y rutas comparten `lib/cache-lectura-storage`: SQLite nativo conserva napa.db y cache_lectura; la variante web usa IndexedDB sin importar SQLite. Se conserva el formato serializado, fechas, eliminación selectiva de rutas y validación de datos de los consumidores. Las transacciones web solo confirman al completarse y un fallo permite reabrir. No se migran cachés antiguas del navegador; se regeneran con una consulta en línea. No se añaden mapas, proveedores, dependencias ni cambios de API. Validar almacenamiento web persistente, borrado selectivo, fallos de apertura y las pruebas existentes de listado, además de tipos/lint y exportación web.
+
+
+## P0-01: cachés por cuenta en web (posterior a 180109b)
+
+Agregar variantes .web.ts para perfil, negocio propio, catálogo, inventario, notificaciones y consultas de pedidos. Un almacenamiento IndexedDB común `cache-cuenta.web.ts` separa cuenta y espacio mediante índice compuesto. Cada cambio lee y escribe dentro de una sola transacción; los callbacks son síncronos y el éxito se confirma únicamente al commit. Revalidar sesión dentro de la transacción, conservar siete días y límites de 50 por cuenta/espacio (pedidos por tipo). Preservar minimización de perfil/notificaciones, descarte de inventario de otro negocio y eliminación atómica de detalle/listados de pedidos. No modificar implementaciones SQLite nativas, API ni dependencias. Las cachés web previas se regeneran en línea; no migrar datos transitorios. Comprobar aislamiento, concurrencia, invalidación, vencimiento, límites y variantes con pruebas IndexedDB, tipos/lint y exportación web.
