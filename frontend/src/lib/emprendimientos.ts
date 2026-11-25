@@ -173,11 +173,12 @@ export function obtenerMiEmprendimiento(usuarioEsperado?: string) {
   });
 }
 
-export function editarMiEmprendimiento(input: EditarEmprendimientoInput, usuarioEsperado?: string) {
-  return withValidSession((session) => {
+export function editarMiEmprendimiento(input: EditarEmprendimientoInput, usuarioEsperado?: string, vigente?: () => Promise<boolean>) {
+  return withValidSession(async (session) => {
     if (usuarioEsperado && (session.usuarioId !== usuarioEsperado || session.rol !== 'VENDEDOR_AMBULANTE')) {
       throw new Error('La sesión cambió.');
     }
+    if (vigente && !(await vigente())) throw new Error('La ubicación se desactivó o cambió la sesión.');
     return requestJson<Emprendimiento>('/api/v1/emprendimientos/me', {
       method: 'PATCH',
       headers: jsonHeaders({ accessToken: session.accessToken }),

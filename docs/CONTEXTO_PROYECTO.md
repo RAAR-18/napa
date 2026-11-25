@@ -155,3 +155,11 @@ Mis pedidos y Domicilios en curso usan useAutoRefresh y recarga al enfocar. Domi
 - Anticipos: `pedidos/.../ConfirmarPagoDomicilioUseCase.java` admite reserva aceptada por transferencia y `pagos/.../ConfirmarPagoPedidoUseCase.java` reutiliza pago confirmado al entregar sin duplicarlo. No procesa dinero.
 - Avisos: `components/AvisosNovedades.tsx` en _layout, sondeo 15 s activo y listener push, Toast informativo; no marca leída ni mezcla cuentas. Sin nuevas dependencias ni configuración Firebase para el aviso interno.
 - Las specs/planes RF28/38/42/45 y requerimientos registran que este acuerdo reemplaza conservar 20 y cobrar reservas solo al entregar. Ver seguimiento y continuidad para validación.
+
+
+## Seguimiento nativo voluntario en segundo plano (2026-11-25)
+
+- `lib/ubicacion-segundo-plano.ts` define la tarea global y el servicio nativo visible; `.web.ts` mantiene solo foreground. Se importa desde _layout antes de montar React.
+- `ubicacion-preferencia.ts` almacena consentimiento y paradas; `ubicacion-publicacion.ts` valida/publica sin React; `ubicacion-automatica.ts` mantiene controles/foreground. Mi emprendimiento permite activar background y pausar.
+- Auth revoca consentimiento y detiene tareas al cambiar/cerrar sesión. SecureStore adapta sesión/preferencia al primer desbloqueo y serializa escrituras.
+- Configuración en app.json + expo-task-manager SDK58; requiere nuevo build. No garantiza forzar cierre ni guarda historial diario. Plan/spec RF28 y foundations describen permisos y comprobaciones.

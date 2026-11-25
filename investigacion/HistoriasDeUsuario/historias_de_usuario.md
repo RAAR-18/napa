@@ -274,3 +274,6 @@
 - HU-63 / RF-38: novedades muestran aviso flotante mientras se usa Ñapa, sin marcar leída la notificación ni avisar por todo el historial al iniciar. Las notificaciones con app cerrada mantienen sus requisitos push.
 
 Este acuerdo reemplaza criterios anteriores incompatibles sobre límite de 20, ubicación fija del ambulante y confirmación de reservas solo al entregar. Planes y specs RF-28/38/42/45 contienen los detalles y límites de esta entrega.
+
+
+HU-53 / RF-28 (2026-11-25): el ambulante puede activar explícitamente ubicación nativa en segundo plano y detenerla cuando quiera. El alta no concede ese consentimiento; se explican permisos y se muestra notificación/indicador. Pausa, cierre de sesión y revocación detienen el seguimiento; no se guarda un historial de rutas ni se promete sobrevivir a forzar detención. Requiere build nativo y aceptación en dispositivo.

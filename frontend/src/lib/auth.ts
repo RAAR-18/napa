@@ -1,3 +1,4 @@
+import { UBICACION_KEY, oyentesUbicacion, detenerTareasUbicacion } from './ubicacion-preferencia';
 import { randomUUID } from './uuid';
 
 import { ApiError, jsonHeaders, requestJson, requestVoid } from './api';
@@ -96,8 +97,19 @@ async function deviceId(): Promise<string> {
   return newId;
 }
 
+async function detenerUbicacionDeSesion(): Promise<void> {
+  try {
+    try { await authStorage.deleteItemAsync(UBICACION_KEY); }
+    finally {
+      oyentesUbicacion.forEach((oyente) => oyente());
+      await detenerTareasUbicacion();
+    }
+  } catch { console.warn('No se pudo completar la parada de ubicación.'); }
+}
+
 export async function saveSession(tokens: AuthTokens): Promise<StoredSession> {
   sessionGeneration += 1;
+  await detenerUbicacionDeSesion();
   return storeSession(tokens);
 }
 
@@ -131,7 +143,8 @@ export async function readSession(): Promise<StoredSession | null> {
 
 export async function clearSession(): Promise<void> {
   sessionGeneration += 1;
-  await authStorage.deleteItemAsync(AUTH_SESSION_KEY);
+  try { await authStorage.deleteItemAsync(AUTH_SESSION_KEY); }
+  finally { await detenerUbicacionDeSesion(); }
 }
 
 /** Crea la cuenta sin enviar código: después la app pregunta si prefiere SMS o correo. */

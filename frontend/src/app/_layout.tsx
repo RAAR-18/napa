@@ -1,3 +1,4 @@
+import '../lib/ubicacion-segundo-plano';
 import { AvisosNovedades } from '../components/AvisosNovedades';
 import { useUbicacionAutomatica } from '../lib/ubicacion-automatica';
 import { useEffect } from 'react';

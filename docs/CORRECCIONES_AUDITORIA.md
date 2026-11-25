@@ -16,7 +16,7 @@ Actualizado: 24 de noviembre de 2026. Base del bloque actual: `9800874`, rama `f
 | P1-02 | Aviso flotante global por novedades de la bandeja cada 15 s/push con app abierta, sin marcar lectura ni alertar historial inicial. Las pantallas conservan sus refrescos; push cerrado requiere Firebase/build. |
 | P1-03 | Dirección automática por prioridad: borrador no vacío, última entrega y perfil de la cuenta. No pisa escritura manual ni usa GPS para decidir el destino del cliente. |
 | P1-04 | Se eliminó el límite comercial de 20 productos/unidades por acuerdo del 25/11. Se conservan stock, cantidades positivas y precisión NUMERIC(10,2); migración V22 nueva. |
-| P1-05 | Posición GPS del ambulante cada 15 s y desplazamiento mínimo de 25 m mientras usa la app, con permiso y control de pausa. No hay seguimiento con app cerrada ni historial diario. |
+| P1-05 | Implementado segundo plano nativo opcional con consentimiento separado, control de pausa, servicio/notificación Android e indicador iOS. Requiere nuevo APK/build y prueba física del tester. Web solo primer plano; forzar detención puede parar el servicio. |
 | P1-06 | Acceso a editar negocio desde Mis productos y guía a edición ante conflicto de creación. |
 | P1-07 | Selector visual de reserva del sistema en móvil y del navegador en web; validación de fecha real y futura. |
 | P2-01 | Otros admite texto personalizado opcional de hasta 80 caracteres, persistido y mostrado en creación, consulta propia, listado y detalle. Migración nueva V21. |
@@ -134,3 +134,12 @@ Los resultados nuevos del tester son un cambio de alcance autorizado: reemplazan
 - Aviso flotante global desde la bandeja (sondeo 15 s/push en primer plano), sin marcar lectura ni mostrar historial inicial como novedad. Firebase no es necesario para este aviso interno, pero sí para push con app cerrada.
 
 Validación final: backend y arquitectura correctos; 13 pruebas dirigidas incluyendo V22 con PostgreSQL aislado (sin omisiones), más repetición de las 2 pruebas de pago tras el cambio final. Frontend: la corrida completa inicial tuvo 7 fallos; se corrigió el bloqueo de recuperación de carrito y se repitieron solo los afectados. Repetición final de 4 archivos: 33 pruebas correctas. Los avisos y DateTime ya habían pasado en la repetición anterior; GPS pasó sus 3 pruebas finales. Tipos, lint y exportación web correctos. No se volvió a ejecutar toda la suite ni se probaron APK, push real o cobros reales. No hubo dependencias nuevas. Antes del testing del límite, reiniciar la API para aplicar V22; no se migró la base local del usuario desde el asistente.
+
+
+## Ubicación voluntaria en segundo plano (2026-11-25, base 4130e4a)
+
+Se añade expo-task-manager compatible y tarea global, con modo web separado. El alta del negocio no activa este modo por sí sola: se solicita desde Mi emprendimiento y puede apagarse manteniendo solo foreground o detener todos los envíos. Android mantiene una notificación e iOS un indicador visible. El sistema controla intervalos y supervivencia; forzar detención/cierre o restricciones del fabricante pueden detenerlo.
+
+La tarea no registra rutas: usa el punto fresco más reciente, revalida cuenta/rol/negocio/consentimiento y no encola historial sin conexión. Pausar invalida primero la preferencia; logout/login y eliminación detienen el seguimiento. Permiso revocado o autorización perdida detiene background. SecureStore cifrado adapta sesión/preferencia para pantalla bloqueada tras primer desbloqueo; escrituras serializadas.
+
+Se verificaron permisos/modos mediante introspección sin generar carpetas nativas, las pruebas dirigidas y exportación web. Tipos/lint finales correctos, sin errores ni advertencias. Las ejecuciones dirigidas cubrieron 62 casos distintos en 9 archivos; el único timeout de creación se repitió correctamente sin aumentar su límite. No se construyó ni instaló APK ni se probaron lecturas GPS reales en segundo plano. El equipo debe generar un nuevo build e instalarlo para la aceptación funcional.
