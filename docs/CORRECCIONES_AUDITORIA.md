@@ -114,3 +114,10 @@ Se detectó que la clave de caché de ruta solo contenía el domicilio y podía 
 La pantalla valida cuenta, rol y generación antes de pedir GPS/API y antes de mostrar/guardar/recuperar datos, invalidando su ciclo al perder foco. Al entregar se borra la copia de la cuenta del detalle. Esto corrige almacenamiento y privacidad existentes; no inicia la fase de mapas o rutas optimizadas.
 
 Pruebas dirigidas: aislamiento A/B, borrado por propietario, clave antigua, contenido inválido, domicilio discordante, uso offline autorizado, cambio de sesión durante consulta y error antiguo tras salir. Se actualizaron los simuladores de navegación/AppState de la suite antigua de domiciliario sin cambiar sus expectativas. Validación final: 40 pruebas dirigidas correctas, tipos correctos y lint final de archivos afectados sin errores ni advertencias. No se repitió backend ni exportación porque no cambian API, dependencias o selección de plataforma. Revisión funcional por el tester pendiente.
+
+
+## Comprobación conjunta de frontend (2026-11-25, base 0e05de7)
+
+Se ejecutó una vez la suite completa tras integrar todos los bloques: **51 suites y 337 pruebas correctas**, cero fallos. No se modificó código de aplicación ni hubo necesidad de repetir archivos aislados. Tipos/lint ya habían pasado en el último bloque y no se repitieron sin cambios.
+
+Esta evidencia corresponde a Jest, no al recorrido funcional del tester ni al arranque de un APK. Permanecen pendientes la aceptación por roles, configuración real de proveedores, build nativo y decisiones de alcance ya registradas (segundo plano, SSE estricto, mapas posteriores). Las 27 alertas moderadas de herramientas no se ocultan ni se fuerzan cambios incompatibles para eliminarlas. No se ejecutaron commits, push o merges en esta comprobación.

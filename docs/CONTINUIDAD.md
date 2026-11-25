@@ -5,7 +5,7 @@ Actualizado: 25 de noviembre de 2026.
 ## Repositorio y colaboración
 
 - Carpeta real: `C:\Users\ESTUDIANTE\Documents\GitHub\napa`. No modificar la copia Documents/ChatGPT.
-- Rama `fix/p0-01-outbox-web`; último commit confirmado `3d5b535`, corrección de Zod posterior al merge local de main 0ed05bf. Carpeta limpia al iniciar este bloque.
+- Rama `fix/p0-01-outbox-web`; último commit confirmado `0e05de7`, privacidad de rutas guardadas. Main quedó integrado localmente en 0ed05bf; aún no publicar nuestra rama ni integrarla hacia main. Carpeta limpia al iniciar este bloque.
 - Edición directa y comprobaciones autorizadas. Trabajar por bloques, repetir solo lo afectado por cambios/fallos. El tester valida recorridos funcionales.
 - Git manual: entregar siempre el bloque completo de Git Bash al recomendar commit, con archivos explícitos. No ejecutar add/commit/push ni gestionar ramas por iniciativa propia. Preferencia guardada en AGENTS.md.
 
@@ -54,7 +54,7 @@ Actualizado: 25 de noviembre de 2026.
 - Moderadas pendientes: glob/minimatch en herramientas Expo/Jest/ESLint. La solución automática propone retroceder Expo/Jest o cambiar versiones principales transitivas; no aplicar audit fix --force ni overrides globales. Esperar actualización compatible de consumidores o planificar cambio separado. No afirmar cero vulnerabilidades.
 
 
-## Trabajo vigente sin commit: privacidad de rutas guardadas (25 de noviembre)
+## Privacidad de rutas integrada en 0e05de7 (25 de noviembre)
 
 - `frontend/src/lib/ruta-cache.ts`: guardar/leer/borrar requieren cuenta explícita; clave compuesta cuenta/domicilio. Sin cuenta no accede al almacenamiento. La lectura comprueba que coincide el domicilio. No adopta claves antiguas sin propietario: abrir una vez la ruta con conexión para regenerarla por cuenta.
 - `frontend/src/app/ruta-domicilio.tsx`: captura cuenta/rol/generación antes del GPS y API. Comprueba vigencia antes de mostrar, guardar o recuperar copias y descarta errores de sesiones anteriores. El ciclo termina al perder foco. Limpia la vista al iniciar una nueva consulta.
@@ -62,3 +62,13 @@ Actualizado: 25 de noviembre de 2026.
 - Pruebas: ruta-cache.web.test.ts, ruta-domicilio.test.tsx; también se revisaron ejecucion-domicilio.test.tsx y domiciliario.test.tsx. El simulador antiguo de domiciliario necesitaba useFocusEffect y AppState activo, coherentes con el bloque P1-02 anterior; se actualiza sin relajar aserciones.
 - Validación final: 40 pruebas dirigidas correctas (16 caché/pantalla de ruta, 15 ejecución de domicilios y 9 domiciliario). Repetición de las 6 de caché y de las 9 de domiciliario tras ajustes, correctas. Tipos correctos; lint final de archivos afectados sin errores ni advertencias. No se repitió backend o exportación: no cambian API, dependencias ni selección de plataforma. La revisión funcional queda al tester.
 - Plan RF-22 y seguimiento actualizados. No hay mapas nuevos, cambios API, migraciones, permisos o dependencias. Mantener la rama local, sin push ni integración hacia main.
+
+
+## Comprobación conjunta de cierre (2026-11-25)
+
+- Carpeta limpia al comenzar. Se ejecutó una vez la suite completa frontend después de todos los bloques: 51 suites y 337 pruebas correctas, cero fallos. No aparecieron archivos de pruebas que requirieran correcciones. No se modificó código de aplicación ni se repitieron comprobaciones individuales.
+- Tipos y lint del bloque anterior ya estaban correctos; no se repitieron porque el código no cambió. No presentar la suite Jest como una prueba funcional manual ni de arranque Android/iOS.
+- En esta comprobación solo se actualizan CONTINUIDAD.md y CORRECCIONES_AUDITORIA.md para guardar evidencia. Se pueden incluir con el siguiente cambio; no se ejecutó Git de escritura.
+- Próximo paso: el tester aporta fallos reproducibles por rol/pantalla. No fabricar incidencias ni extender funcionalidades para mantener una cadena de commits.
+- Pendientes externos/de alcance: SMSReactor/Brevo operativos, prueba del build nativo (incluye selector de reservas y corrección del APK del equipo), aceptación funcional de auditoría, decisión de segundo plano/SSE y las 27 alertas moderadas de herramientas pendientes de actualización compatible. Sin alertas altas en el último audit observado.
+- Mapas visuales y rutas optimizadas permanecen fuera de esta etapa hasta que el usuario indique pasar a esa funcionalidad. No cambiar reglas de pagos, límites de productos o contraseñas sin acordar sus specs.
