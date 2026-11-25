@@ -5,7 +5,7 @@ Actualizado: 24 de noviembre de 2026.
 ## Repositorio y colaboración
 
 - Carpeta real: `C:\Users\ESTUDIANTE\Documents\GitHub\napa`. No modificar la copia Documents/ChatGPT.
-- Rama `fix/p0-01-outbox-web`; último commit confirmado `9800874`, seis cachés web por cuenta. Carpeta limpia al iniciar este bloque.
+- Rama `fix/p0-01-outbox-web`; último commit confirmado `0ed05bf`, integración local de origin/main sobre la rama de correcciones. Carpeta limpia al iniciar este bloque.
 - Edición directa y comprobaciones autorizadas. Trabajar por bloques, repetir solo lo afectado por cambios/fallos. El tester valida recorridos funcionales.
 - Git manual: entregar siempre el bloque completo de Git Bash al recomendar commit, con archivos explícitos. No ejecutar add/commit/push ni gestionar ramas por iniciativa propia. Preferencia guardada en AGENTS.md.
 
@@ -36,9 +36,19 @@ Actualizado: 24 de noviembre de 2026.
 - Selector nativo de reserva de un bloque anterior requiere regenerar el build Android/iOS; este bloque no añade dependencias nativas.
 
 
-## Trabajo vigente sin commit: actualización de listados (P1-02)
+## Actualización de listados integrada en c60d6ab (P1-02)
 
 - `frontend/src/app/domicilios-disponibles.tsx`: consulta enfocada cada 15 s, pausa automática con app inactiva, reanudación al volver, sin consultas superpuestas por ciclo y sin respuestas/errores antiguos al salir. Usa useFocusEffect y AppState existentes.
 - `frontend/src/app/mis-pedidos.tsx` y `domicilios-en-curso.tsx`: carga al enfocar y useAutoRefresh cada 30 s cuando no carga y app activa. Conservan filtros y cachés. El cierre de ciclo invalida respuestas.
 - Pruebas `frontend/src/app/__tests__/listados-actualizacion.test.tsx` y prueba existente `hooks/useAutoRefresh.test.ts`; plan RF-38 actualizado. Validación: 5 pruebas nuevas de pantallas y 1 del hook existente correctas; repetición de las 5 nuevas tras corregir el 401 de prueba, correcta. Tipos y lint dirigido finales correctos, sin errores/advertencias. No hubo cambios backend/dependencias ni se repitió la exportación web.
 - No se añaden SSE, push, permisos, dependencias ni mapas. Revisión funcional por roles pendiente para el tester. El usuario hace commit/push; entregar bloque completo Git Bash al cerrar.
+
+
+## Trabajo vigente: revisión de dependencias tras integrar main
+
+- Main quedó integrado mediante 0ed05bf sin conflictos. Se conservaron los cambios del equipo: pools backend y expo-build-properties para APK Android, junto con nuestras dependencias. El usuario completó npm ci, tipos y lint. No publicar ni integrar nuestra rama hacia main todavía; continuar corrigiendo localmente.
+- npm audit reprodujo 28 alertas: 27 moderadas y 1 alta. La alta es GHSA-mrhx-c7xc-m3w5 en zod 3.25.76, consumido por eslint-plugin-react-hooks y zod-validation-error.
+- Corrección puntual: npm update zod --ignore-scripts --no-audit --no-fund, sin agregar dependencia directa. El lock resuelve zod 4.6.7; ambos consumidores admiten ^3.25.0 || ^4.0.0. También se deduplicó @expo/env 2.6.0, manteniendo su versión raíz idéntica. package.json y versiones Expo/React Native/Jest intactos.
+- Archivos afectados: frontend/package-lock.json, specs/foundations/plan.md y documentación de continuidad/auditoría. Sin cambios de código funcional, API, datos, permisos o builds nativos.
+- Validación final: tipos y lint correctos, 1 prueba del hook correcta, npm ls zod sin conflictos. Auditoría final: 27 moderadas, 0 altas, 0 críticas (antes 28, incluida 1 alta). No se repitieron suites completas ni exportación: no cambia código de la app. Este bloque sigue sin commit; entregar comandos completos para Git Bash, sin push.
+- Moderadas pendientes: glob/minimatch en herramientas Expo/Jest/ESLint. La solución automática propone retroceder Expo/Jest o cambiar versiones principales transitivas; no aplicar audit fix --force ni overrides globales. Esperar actualización compatible de consumidores o planificar cambio separado. No afirmar cero vulnerabilidades.

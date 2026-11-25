@@ -96,3 +96,12 @@ Siguen pendientes la configuración operativa de proveedores por el equipo, el s
 - Un 401 antiguo de Disponibles no limpia la sesión ni redirige después de salir; Domicilios en curso también descarta errores de un ciclo que perdió el foco.
 - Pruebas nuevas `frontend/src/app/__tests__/listados-actualizacion.test.tsx`. Plan RF-38 actualizado. No hay SSE, nuevos permisos, dependencias, cambios backend o proveedores.
 - Validación: 5 pruebas nuevas de pantallas y 1 del hook existente correctas. Repetición dirigida final de las 5 pantallas/casos correcta tras ajustar el 401 de la muestra. Typecheck final y lint dirigido final sin errores ni advertencias. No se repitió backend ni exportación: no cambian API, dependencias o resolución de plataforma. La prueba funcional por roles sigue a cargo del tester.
+
+
+## Dependencias después del merge local 0ed05bf
+
+Main quedó integrado en la rama de correcciones. El usuario completó npm ci/tipos/lint sin errores y pidió mantener el trabajo local sin push ni integración de nuestra rama a main.
+
+La revisión npm audit confirmó 28 alertas (27 moderadas, 1 alta). La alta [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) corresponde a Zod; el proveedor publica versión corregida desde 4.6.6. Se resolvió la dependencia transitiva a 4.6.7, compatible con los rangos declarados de eslint-plugin-react-hooks 7.1.1 y zod-validation-error 4.0.2. Se modifica solo el lock y se deduplica @expo/env 2.6.0 sin cambiar su versión. No se modifica package.json ni se actualiza Expo, React Native o Jest.
+
+Las moderadas de glob/minimatch y sus consumidores quedan pendientes de una actualización compatible. No se fuerza un cambio de major transitivo ni un retroceso del SDK para reducir artificialmente el conteo. Validación final: tipos y lint correctos; 1 prueba del hook correcta; npm ls zod sin conflictos. Auditoría final: 27 moderadas, 0 altas y 0 críticas. No se ejecutó nuevamente la suite completa ni exportación porque no cambia código de la aplicación.
