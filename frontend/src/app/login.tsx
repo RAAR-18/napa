@@ -84,6 +84,7 @@ export default function LoginScreen() {
         placeholder="Tu contraseña"
         returnKeyType="go"
         secureTextEntry
+        showPasswordToggle
         value={password}
       />
       <TextButton

@@ -1,7 +1,7 @@
 import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -15,7 +15,8 @@ import {
 import { useAccionesPendientes } from '../hooks/useOutbox';
 import { paramsRevisionPedido, pedidoPendiente } from '../lib/pedido-offline';
 import { ApiError } from '../lib/api';
-import { clearSession } from '../lib/auth';
+import { clearSession, getSessionGeneration } from '../lib/auth';
+import { escucharNovedades } from '../lib/push';
 import { consultarListadoCliente } from '../lib/pedidos-cliente-consulta';
 import { FilterPanel, FilterRow, Icon, RefreshButton, StatusBadge } from '../components/NapaUI';
 import {
@@ -27,6 +28,7 @@ import {
 } from '../lib/pedidos';
 
 const PAGE_SIZE = 20;
+export const REFRESCO_MIS_PEDIDOS_MS = 15_000;
 const filtrosEstado: { value: EstadoPedido | null; label: string }[] = [
   { value: null, label: 'Todos' },
   { value: 'PENDIENTE', label: 'Pendientes' },
@@ -107,20 +109,28 @@ export default function MisPedidosScreen() {
 
   useEffect(() => {
     let active = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      setData(null);
-      setFechaCopia(null);
-      setPaginasGuardadas([]);
+    const generation = getSessionGeneration();
+    const vigente = () => active && generation === getSessionGeneration();
+    let consultando = false;
+    async function load(silencioso = false) {
+      if (consultando || !vigente()) return;
+      consultando = true;
+      if (!silencioso) {
+        setLoading(true);
+        setError(null);
+        setData(null);
+        setFechaCopia(null);
+        setPaginasGuardadas([]);
+      }
       try {
         const resultado = await consultarListadoCliente(
           estado ?? undefined,
           page,
           PAGE_SIZE,
-          () => active,
+          vigente,
         );
-        if (!active || !resultado) return;
+        if (!vigente() || !resultado) return;
+        if (silencioso && resultado.origen !== 'servidor') return;
         if (resultado.origen === 'sin-copia') {
           setPaginasGuardadas(resultado.paginas);
           setError('No hay datos descargados para esta consulta.');
@@ -128,22 +138,40 @@ export default function MisPedidosScreen() {
         }
         setData(resultado.data);
         setFechaCopia(resultado.origen === 'copia' ? resultado.fecha : null);
+        setError(null);
+        setPaginasGuardadas([]);
       } catch (cause) {
-        if (!active) return;
+        if (!vigente()) return;
         if (cause instanceof ApiError && cause.status === 401) {
           await clearSession();
           router.replace('/login');
           return;
         }
-        if (active)
+        if (!silencioso)
           setError(cause instanceof Error ? cause.message : 'No se pudieron cargar tus pedidos.');
       } finally {
-        if (active) setLoading(false);
+        consultando = false;
+        if (active && !silencioso) setLoading(false);
       }
     }
     void load();
+    const actualizar = () => {
+      if (AppState.currentState === 'background' || AppState.currentState === 'inactive') return;
+      if (Platform.OS === 'web' && typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      void load(true);
+    };
+    const timer = setInterval(actualizar, REFRESCO_MIS_PEDIDOS_MS);
+    const subscription = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') actualizar();
+    });
+    const dejarDeEscuchar = escucharNovedades(actualizar);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') window.addEventListener('focus', actualizar);
     return () => {
       active = false;
+      clearInterval(timer);
+      subscription.remove();
+      dejarDeEscuchar();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.removeEventListener('focus', actualizar);
     };
   }, [estado, page, loadAttempt]);
 
@@ -231,11 +259,6 @@ export default function MisPedidosScreen() {
       {!loading && !data && siguiente !== undefined ? (
         <TextButton title="Página guardada siguiente" onPress={() => setPage(siguiente)} />
       ) : null}
-      <TextButton
-        title="Explorar emprendimientos"
-        onPress={() => router.push('/emprendimientos')}
-      />
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

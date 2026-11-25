@@ -1,9 +1,9 @@
 import { fonts } from './theme';
-import { CardGrid, GridCard } from './NapaUI';
+import { CardGrid, GridCard, Icon } from './NapaUI';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
 import { router } from 'expo-router';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   ErrorBanner,
@@ -15,6 +15,7 @@ import {
   palette,
 } from './AuthUI';
 import { ProductoCard, ProductosPagination } from './ProductosUI';
+import { DateTimeField } from './DateTimeField';
 import { useResumenesCalificacion } from '../hooks/useResumenesCalificacion';
 import { ApiError, NetworkError } from '../lib/api';
 import { getSessionGeneration, readSession } from '../lib/auth';
@@ -22,6 +23,7 @@ import { outbox, type AccionPendiente } from '../database/outbox';
 import {
   borrarBorradorPedido, borrarCarritoEncolado, guardarBorradorPedido, guardarCarritoEncolado,
   guardarCotizacionOffline, leerBorradorPedido, leerCarritoEncolado, leerCotizacionOffline,
+  guardarUltimaDireccion, leerUltimaDireccion,
   pedidoPendiente, prepararPedidoOffline, RUTA_CREACION_PEDIDO,
   type CarritoPedido, type DatosCotizacionGuardada,
 } from '../lib/pedido-offline';
@@ -187,6 +189,10 @@ export function PedidoCatalogo({
   const [enCola, setEnCola] = useState(false);
   const guardando = useRef(false);
   const carritoCargado = useRef(false);
+  const carritoEditado = useRef(false);
+  const direccionEditada = useRef(false);
+  const [direccionRecordada, setDireccionRecordada] = useState(false);
+  const [borradorListo, setBorradorListo] = useState(false);
   const pendingRequest = useRef<{ body: string; key: string } | null>(null);
 
   useEffect(() => {
@@ -207,17 +213,29 @@ export function PedidoCatalogo({
           ? await leerCarritoEncolado(propietario, accion.idempotencyKey)
           : null
         : await leerBorradorPedido(propietario, emprendimientoId);
+      const ultimaDireccion = !pendienteId ? await leerUltimaDireccion(propietario).catch(() => null) : null;
       if (!active || generacion !== getSessionGeneration()) return;
+      if (ultimaDireccion && !direccionEditada.current) {
+        setAddress(ultimaDireccion.direccion);
+        setLatitude(String(ultimaDireccion.latitud));
+        setLongitude(String(ultimaDireccion.longitud));
+        setNeighborhood(ultimaDireccion.barrio ?? '');
+        setReference(ultimaDireccion.referencia ?? '');
+        setDireccionRecordada(true);
+      }
       carritoCargado.current = true;
+      setBorradorListo(true);
       if (pendienteId && (!carrito || !accion || !pedido)) {
         setError('Este pedido ya no está disponible para revisión.');
         return;
       }
       if (!carrito) return;
-      setCart((actual) => actual.length ? actual : carrito.items);
-      setModalidad(carrito.modalidad);
-      setReserve(carrito.reserva);
-      setReservationDate(carrito.fechaReserva);
+      if (!carritoEditado.current) {
+        setCart(carrito.items);
+        setModalidad(carrito.modalidad);
+        setReserve(carrito.reserva);
+        setReservationDate(carrito.fechaReserva);
+      }
       if (accion) {
         setRevision(accion);
         setMensajeLocal(accion.lastError ?? 'Requiere revisión. Vuelve a cotizar el pedido.');
@@ -232,10 +250,27 @@ export function PedidoCatalogo({
       }
     }
     void cargar().catch(() => {
-      if (active && pendienteId) setError('No se pudo recuperar el carrito del pedido.');
+      if (!active) return;
+      if (pendienteId) setError('No se pudo recuperar el carrito del pedido.');
+      else setMensajeLocal('No se pudo recuperar el carrito guardado. Reabre el catálogo para intentar de nuevo.');
     });
     return () => { active = false; };
   }, [emprendimientoId, enabled, pendienteId]);
+
+  useEffect(() => {
+    if (!borradorListo || !cuenta || pendienteId || created || enCola) return;
+    const generacion = getSessionGeneration();
+    const guardado = cart.length
+      ? guardarBorradorPedido(cuenta, emprendimientoId, {
+        items: cart, modalidad, reserva: reserve, fechaReserva: reservationDate,
+      })
+      : borrarBorradorPedido(cuenta, emprendimientoId);
+    void guardado.catch(() => {
+      if (generacion === getSessionGeneration()) {
+        setMensajeLocal('No se pudo guardar el carrito en este dispositivo. Intenta de nuevo antes de salir.');
+      }
+    });
+  }, [borradorListo, cuenta, emprendimientoId, cart, modalidad, reserve, reservationDate, pendienteId, created, enCola]);
 
   useEffect(() => {
     if (!offline || !cuenta) return;
@@ -295,6 +330,7 @@ export function PedidoCatalogo({
       setError('Un pedido puede incluir como máximo 20 productos distintos.');
       return;
     }
+    carritoEditado.current = true;
     setCart((current) => [
       ...current.filter((item) => item.producto.id !== producto.id),
       { producto, cantidad },
@@ -303,6 +339,7 @@ export function PedidoCatalogo({
   }
 
   function removeProduct(productId: string) {
+    carritoEditado.current = true;
     setCart((current) => current.filter((item) => item.producto.id !== productId));
     invalidateQuote();
   }
@@ -352,6 +389,9 @@ export function PedidoCatalogo({
       const input = quoteInput();
       const propietario = (await readSession())?.usuarioId;
       const result = await cotizarPedido(input);
+      if (propietario && input.ubicacionEntrega && (await readSession())?.usuarioId === propietario) {
+        await guardarUltimaDireccion(propietario, input.ubicacionEntrega).catch(() => undefined);
+      }
       if (propietario && (await readSession())?.usuarioId === propietario && input.modalidad !== 'DOMICILIO') {
         await guardarCotizacionOffline(propietario, emprendimientoId, input.modalidad, {
           medios: result.mediosPagoDisponibles,
@@ -481,6 +521,8 @@ export function PedidoCatalogo({
   }
 
   async function locateDevice() {
+    direccionEditada.current = true;
+    setDireccionRecordada(false);
     setError(null);
     setLocationBusy(true);
     try {
@@ -557,10 +599,25 @@ export function PedidoCatalogo({
                       }))
                     }
                   />
-                  <TextButton
-                    title={`Agregar ${producto.nombre} al pedido`}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Agregar ${producto.nombre} al pedido`}
                     onPress={() => addProduct(producto)}
-                  />
+                    style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                      styles.addProductButton,
+                      hovered && styles.addProductHovered,
+                      pressed && styles.addProductPressed,
+                    ]}
+                  >
+                    <View style={styles.addProductIcon}>
+                      <Icon name="shopping-bag" size={22} color="#FFFFFF" />
+                    </View>
+                    <View style={styles.addProductCopy}>
+                      <Text style={styles.addProductTitle}>Agregar al pedido</Text>
+                      <Text style={styles.addProductSubtitle}>{producto.nombre}</Text>
+                    </View>
+                    <Icon name="plus" size={22} color="#FFFFFF" />
+                  </Pressable>
                 </View>
               </GridCard>
             ))}
@@ -571,15 +628,30 @@ export function PedidoCatalogo({
           {cart.length > 0 ? (
             <View style={styles.card}>
               <Text style={styles.subheading}>Tu selección</Text>
+              <HelperText>
+                Tu carrito se conserva en este dispositivo para esta tienda. Puedes explorar otros negocios y volver.
+                Los precios y la disponibilidad se revisan antes de confirmar.
+              </HelperText>
               {cart.map(({ producto, cantidad }) => (
                 <View key={producto.id} style={styles.cartRow}>
-                  <Text style={styles.detail}>
+                  <Text style={[styles.detail, styles.cartProductName]}>
                     {cantidad.toLocaleString('es-CO')} · {producto.nombre}
                   </Text>
-                  <TextButton
-                    title={`Quitar ${producto.nombre}`}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Quitar ${producto.nombre}`}
                     onPress={() => removeProduct(producto.id)}
-                  />
+                    style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                      styles.removeProductButton,
+                      hovered && styles.removeProductHovered,
+                      pressed && styles.removeProductPressed,
+                    ]}
+                  >
+                    <View style={styles.removeProductIcon}>
+                      <Icon name="trash-2" size={18} color={palette.coralDark} />
+                    </View>
+                    <Text style={styles.removeProductLabel}>Quitar</Text>
+                  </Pressable>
                 </View>
               ))}
               <Text style={styles.total}>
@@ -631,6 +703,7 @@ export function PedidoCatalogo({
           ) : modalidad !== 'RECOGIDA' ? (
             <>
               <Text style={styles.subheading}>Ubicación de entrega</Text>
+              {direccionRecordada ? <HelperText>Completamos tu última dirección de entrega. Revísala y cámbiala si lo necesitas.</HelperText> : null}
               <HelperText>
                 La ubicación se enviará al vendedor para calcular la entrega y llevar tu pedido.
               </HelperText>
@@ -646,7 +719,7 @@ export function PedidoCatalogo({
               {latitude && longitude ? (
                 <View style={styles.locationBadge}>
                   <Text style={styles.locationBadgeText}>
-                    ✓ Ubicación del dispositivo obtenida ({Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)})
+                    ✓ Punto de entrega ({Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)})
                   </Text>
                 </View>
               ) : null}
@@ -655,6 +728,7 @@ export function PedidoCatalogo({
                 maxLength={300}
                 value={address}
                 onChangeText={(value) => {
+                  direccionEditada.current = true;
                   setAddress(value);
                   invalidateQuote();
                 }}
@@ -664,6 +738,7 @@ export function PedidoCatalogo({
                 maxLength={100}
                 value={neighborhood}
                 onChangeText={(value) => {
+                  direccionEditada.current = true;
                   setNeighborhood(value);
                   invalidateQuote();
                 }}
@@ -673,6 +748,7 @@ export function PedidoCatalogo({
                 maxLength={300}
                 value={reference}
                 onChangeText={(value) => {
+                  direccionEditada.current = true;
                   setReference(value);
                   invalidateQuote();
                 }}
@@ -684,6 +760,7 @@ export function PedidoCatalogo({
                     keyboardType="decimal-pad"
                     value={latitude}
                     onChangeText={(value) => {
+                      direccionEditada.current = true;
                       setLatitude(value);
                       invalidateQuote();
                     }}
@@ -695,6 +772,7 @@ export function PedidoCatalogo({
                     keyboardType="decimal-pad"
                     value={longitude}
                     onChangeText={(value) => {
+                      direccionEditada.current = true;
                       setLongitude(value);
                       invalidateQuote();
                     }}
@@ -712,7 +790,7 @@ export function PedidoCatalogo({
 
           {!revision ? (
             <>
-              <Text style={styles.subheading}>¿Es una reserva?</Text>
+              <Text style={styles.subheading}>Tipo de pedido</Text>
               <View style={styles.options}>
                 <OptionButton
                   label="Pedido inmediato"
@@ -733,9 +811,9 @@ export function PedidoCatalogo({
               </View>
               {reserve ? (
                 <>
-                  <Field
-                    label="Fecha y hora acordadas (AAAA-MM-DDTHH:mm)"
-                    placeholder="2026-12-24T15:30"
+                  <DateTimeField
+                    label="Fecha y hora acordadas"
+                    mode="datetime"
                     value={reservationDate}
                     onChangeText={(value) => {
                       setReservationDate(value);
@@ -906,6 +984,37 @@ const styles = StyleSheet.create({
   product: {
     marginBottom: 8,
   },
+  addProductButton: {
+    backgroundColor: palette.coral,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DD5030',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 72,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 4,
+    boxShadow: '0px 4px 10px rgba(200, 69, 41, 0.18)',
+  },
+  addProductHovered: { backgroundColor: '#DE5232' },
+  addProductPressed: {
+    backgroundColor: palette.coralDark,
+    transform: [{ scale: 0.98 }],
+    boxShadow: '0px 1px 3px rgba(200, 69, 41, 0.12)',
+  },
+  addProductIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF26',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addProductCopy: { flex: 1, minWidth: 0, gap: 3 },
+  addProductTitle: { fontFamily: fonts.sans, fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  addProductSubtitle: { fontFamily: fonts.sans, fontSize: 12, lineHeight: 17, color: '#FFF2E9' },
   card: {
     backgroundColor: palette.background,
     borderColor: palette.border,
@@ -917,8 +1026,39 @@ const styles = StyleSheet.create({
   cartRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
   },
+  cartProductName: { flexGrow: 1, flexShrink: 1, flexBasis: 140, marginBottom: 0 },
+  removeProductButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 48,
+    paddingVertical: 7,
+    paddingLeft: 8,
+    paddingRight: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#F1B69D',
+    backgroundColor: '#FFF0E5',
+    boxShadow: '0px 2px 5px rgba(200, 69, 41, 0.08)',
+  },
+  removeProductHovered: { backgroundColor: palette.peach, borderColor: palette.coral },
+  removeProductPressed: { backgroundColor: '#FAD1BC', transform: [{ scale: 0.96 }] },
+  removeProductIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#E95F3D16',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeProductLabel: { fontFamily: fonts.sans, fontSize: 14, fontWeight: '800', color: palette.coralDark },
   summaryRow: {
     borderBottomColor: palette.border,
     borderBottomWidth: 1,

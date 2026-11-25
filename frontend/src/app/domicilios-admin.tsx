@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
+import { DateTimeField } from '../components/DateTimeField';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
   ErrorBanner,
-  Field,
   HelperText,
   OptionButton,
   PageHeading,
@@ -288,21 +288,19 @@ export default function DomiciliosAdminScreen() {
           style={[styles.dateFilters, wide && { flexDirection: 'row', alignItems: 'flex-end' }]}
         >
           <View style={{ flex: 1 }}>
-            <Field
-              label="Desde (AAAA-MM-DD)"
+            <DateTimeField
+              label="Desde"
+              mode="date"
               value={desdeInput}
               onChangeText={setDesdeInput}
-              placeholder="AAAA-MM-DD"
-              autoCapitalize="none"
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Field
-              label="Hasta (AAAA-MM-DD)"
+            <DateTimeField
+              label="Hasta"
+              mode="date"
               value={hastaInput}
               onChangeText={setHastaInput}
-              placeholder="AAAA-MM-DD"
-              autoCapitalize="none"
             />
           </View>
           <View style={{ marginBottom: 18 }}>
@@ -348,7 +346,6 @@ export default function DomiciliosAdminScreen() {
           />
         </View>
       ) : null}
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

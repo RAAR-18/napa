@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -16,6 +16,7 @@ import {
   palette,
 } from '../components/AuthUI';
 import FotoPerfil from '../components/FotoPerfil';
+import { Icon } from '../components/NapaUI';
 import { ApiError, NetworkError } from '../lib/api';
 import { clearSession, getSessionGeneration, readSession } from '../lib/auth';
 import { manejarError, mensajeDeCampo } from '../lib/errores';
@@ -138,7 +139,6 @@ export default function PerfilScreen() {
       {!loading && (copia || error) ? (
         <TextButton title="Actualizar perfil" onPress={() => setIntento((actual) => actual + 1)} />
       ) : null}
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }
@@ -329,7 +329,20 @@ function EliminarCuenta({ cuentaId }: { cuentaId: string }) {
     <View style={[styles.card, styles.danger]}>
       <Text style={styles.section}>Eliminar mi cuenta</Text>
       {!confirmando ? (
-        <TextButton title="Quiero eliminar mi cuenta" onPress={() => setConfirmando(true)} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Quiero eliminar mi cuenta"
+          onPress={() => setConfirmando(true)}
+          style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+            styles.deleteButton,
+            hovered && { backgroundColor: '#FCE1D9', borderColor: palette.error },
+            pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+          ]}
+        >
+          <View style={styles.deleteIcon}><Icon name="trash-2" color={palette.error} size={22} /></View>
+          <Text style={styles.deleteLabel}>Quiero eliminar mi cuenta</Text>
+          <Icon name="chevron-right" color={palette.error} size={18} />
+        </Pressable>
       ) : (
         <>
           <HelperText>
@@ -356,7 +369,17 @@ const styles = StyleSheet.create({
     marginVertical: 7,
     padding: 16,
   },
-  danger: { borderColor: palette.error },
+  danger: { borderColor: '#EBC1B7' },
+  deleteButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#FFF0EC', borderColor: '#EBC1B7', borderWidth: 1,
+    borderRadius: 14, padding: 12, minHeight: 64, marginTop: 10,
+  },
+  deleteIcon: {
+    width: 38, height: 38, borderRadius: 11, backgroundColor: '#AC352C0D',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  deleteLabel: { flex: 1, fontFamily: fonts.sans, fontSize: 14, lineHeight: 20, fontWeight: '800', color: palette.error },
   section: { color: palette.dark, fontFamily: fonts.sans, fontSize: 16, fontWeight: '800', marginBottom: 6 },
   spaced: { marginTop: 12 },
   detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },

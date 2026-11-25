@@ -1,7 +1,7 @@
 import { art, fonts } from './theme';
 import { useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   ErrorBanner,
@@ -13,7 +13,7 @@ import {
   palette,
 } from './AuthUI';
 import { textoPromedio, type ResumenCalificaciones } from '../lib/calificaciones';
-import { Illustration, StatusBadge } from './NapaUI';
+import { Icon, Illustration, StatusBadge, type IconName } from './NapaUI';
 import { outbox } from '../database/outbox';
 import { getSessionGeneration, readSession } from '../lib/auth';
 import { rutaAjusteInventario } from '../lib/productos-pendientes';
@@ -28,6 +28,45 @@ import {
   type Producto,
   type ProductosPage,
 } from '../lib/productos';
+
+function ProductAction({ title, label, icon, tone, disabled, busy = false, onPress }: {
+  title: string;
+  label: string;
+  icon: IconName;
+  tone: 'edit' | 'save' | 'exhausted' | 'delete';
+  disabled?: boolean;
+  busy?: boolean;
+  onPress: () => void;
+}) {
+  const colors = {
+    edit: { backgroundColor: '#FFF0E5', borderColor: '#F1B69D', color: palette.coralDark },
+    save: { backgroundColor: '#EEF3E4', borderColor: '#C8D6B0', color: '#496538' },
+    exhausted: { backgroundColor: '#FFF5DC', borderColor: '#EAD39B', color: '#86510F' },
+    delete: { backgroundColor: '#FFF0EC', borderColor: '#EBC1B7', color: palette.error },
+  }[tone];
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ busy, disabled: Boolean(disabled || busy) }}
+      disabled={disabled || busy}
+      onPress={onPress}
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+        productStyles.action,
+        { backgroundColor: colors.backgroundColor, borderColor: colors.borderColor },
+        hovered && !disabled && !busy && { borderColor: colors.color },
+        pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+        (disabled || busy) && { opacity: 0.45 },
+      ]}
+    >
+      <View style={[productStyles.actionIcon, { backgroundColor: `${colors.color}12` }]}>
+        {busy ? <ActivityIndicator size="small" color={colors.color} /> : <Icon name={icon} size={20} color={colors.color} />}
+      </View>
+      <Text style={[productStyles.actionLabel, { color: colors.color }]}>{label}</Text>
+      {tone === 'edit' ? <Icon name="chevron-right" size={18} color={colors.color} /> : null}
+    </Pressable>
+  );
+}
 
 export function ProductoCard({
   producto,
@@ -187,8 +226,11 @@ export function ProductoCard({
               </>
             ) : (
               <>
-                <TextButton
+                <ProductAction
                   title={`Editar ${producto.nombre}`}
+                  label="Editar producto"
+                  icon="edit-3"
+                  tone="edit"
                   disabled={busy || edicionBloqueada}
                   onPress={() =>
                     router.push({
@@ -205,22 +247,31 @@ export function ProductoCard({
                   editable={!busy && !edicionBloqueada}
                   maxLength={12}
                 />
-                <PrimaryButton
+                <ProductAction
                   title={`Guardar inventario de ${producto.nombre}`}
+                  label={busy ? 'Guardando inventario…' : 'Guardar inventario'}
+                  icon="save"
+                  tone="save"
                   busy={busy}
                   disabled={edicionBloqueada}
                   onPress={() => void update()}
                 />
                 {!producto.soloReserva ? (
-                  <TextButton
+                  <ProductAction
                     title={`Marcar ${producto.nombre} como agotado`}
+                    label="Marcar como agotado"
+                    icon="archive"
+                    tone="exhausted"
                     disabled={busy || edicionBloqueada}
                     onPress={() => void update(true)}
                   />
                 ) : null}
                 {!offline ? (
-                  <TextButton
+                  <ProductAction
                     title={`Eliminar ${producto.nombre}`}
+                    label="Eliminar producto"
+                    icon="trash-2"
+                    tone="delete"
                     disabled={busy}
                     onPress={() => {
                       setConfirmingDelete(true);
@@ -306,6 +357,19 @@ export const productStyles = StyleSheet.create({
     marginVertical: 8,
   },
   body: { padding: 18 },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 54,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginVertical: 6,
+    borderWidth: 1,
+    borderRadius: 14,
+  },
+  actionIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  actionLabel: { flex: 1, fontFamily: fonts.sans, fontSize: 14, lineHeight: 20, fontWeight: '800' },
   name: {
     color: palette.dark,
     fontFamily: fonts.display,

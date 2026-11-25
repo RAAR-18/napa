@@ -96,7 +96,6 @@ export default function ReportesAdminScreen() {
           <TextButton title="Siguiente" disabled={page + 1 >= totalPaginas} onPress={() => setPage((p) => p + 1)} />
         </View>
       ) : null}
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }

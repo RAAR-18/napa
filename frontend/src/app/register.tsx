@@ -122,6 +122,7 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
         placeholder="Mínimo 8 caracteres"
         secureTextEntry
+        showPasswordToggle
         value={password}
       />
       <Field
@@ -133,6 +134,7 @@ export default function RegisterScreen() {
         placeholder="Escribe de nuevo tu contraseña"
         returnKeyType="go"
         secureTextEntry
+        showPasswordToggle
         value={confirmacionPassword}
       />
       <HelperText>La contraseña debe tener entre 8 y 128 caracteres.</HelperText>

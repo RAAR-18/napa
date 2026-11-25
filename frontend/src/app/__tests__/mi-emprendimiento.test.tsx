@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { selectDateTime } from '../../test-utils/select-date-time';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -95,8 +96,8 @@ describe('mi emprendimiento (RF-29, RF-30)', () => {
     jest.mocked(editarMiEmprendimiento).mockResolvedValue({ ...mine, horaCierre: '19:30:00' });
     const view = await render(<MiEmprendimientoScreen />);
 
-    await waitFor(() => expect(view.getByLabelText('Cierra (HH:mm)').props.value).toBe('18:00'));
-    await fireEvent.changeText(view.getByLabelText('Cierra (HH:mm)'), '19:30');
+    await waitFor(() => expect(view.getByRole('button', { name: 'Hora de cierre' }).props.accessibilityValue.text).toBe('18:00'));
+    await selectDateTime(view, 'Hora de cierre', '19:30');
     await fireEvent.press(view.getByText('Guardar cambios'));
 
     expect(editarMiEmprendimiento).toHaveBeenCalledWith({ horaCierre: '19:30' });
@@ -248,7 +249,7 @@ it('queues basic business changes with their original values from a saved copy',
   await waitFor(() => expect(view.getByText(/Datos guardados/)).toBeTruthy());
   expect(view.queryByLabelText('Latitud')).toBeNull();
 
-  await fireEvent.changeText(view.getByLabelText('Cierra (HH:mm)'), '19:30');
+  await selectDateTime(view, 'Hora de cierre', '19:30');
   await fireEvent.press(view.getByText('Guardar cambios'));
   await waitFor(() => expect(outbox.encolar).toHaveBeenCalledWith(expect.objectContaining({
     usuarioId: 'vendedor', method: 'PATCH', path: '/api/v1/emprendimientos/me',

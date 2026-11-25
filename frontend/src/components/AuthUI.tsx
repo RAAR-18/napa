@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { AppShell, Brand, useNapaNavigation } from './AppShell';
-import { Hero, SectionHeading, heroContent } from './NapaUI';
+import { Hero, Icon, SectionHeading, heroContent } from './NapaUI';
 import { fonts, palette } from './theme';
 import { Toast } from './Toast';
 
@@ -62,26 +62,57 @@ export function Field({
   style,
   onFocus,
   onBlur,
+  secureTextEntry,
+  showPasswordToggle = false,
   ...props
-}: TextInputProps & { label: string }) {
+}: TextInputProps & { label: string; showPasswordToggle?: boolean }) {
   const [focused, setFocused] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const canTogglePassword = showPasswordToggle && secureTextEntry;
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        placeholderTextColor="#A29289"
-        {...props}
-        onFocus={(event) => {
-          setFocused(true);
-          onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setFocused(false);
-          onBlur?.(event);
-        }}
-        style={[styles.input, focused && styles.inputFocused, style]}
-      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          accessibilityLabel={label}
+          placeholderTextColor="#A29289"
+          {...props}
+          secureTextEntry={canTogglePassword ? !passwordVisible : secureTextEntry}
+          autoCorrect={canTogglePassword ? false : props.autoCorrect}
+          spellCheck={canTogglePassword ? false : props.spellCheck}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          style={[
+            styles.input,
+            focused && styles.inputFocused,
+            style,
+            canTogglePassword && styles.passwordInput,
+          ]}
+        />
+        {canTogglePassword ? (
+          <Pressable
+            accessibilityLabel={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            accessibilityHint={`Campo: ${label}`}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: props.editable === false }}
+            disabled={props.editable === false}
+            onPress={() => setPasswordVisible((visible) => !visible)}
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+              styles.passwordToggle,
+              (pressed || hovered) && { backgroundColor: '#F2E7DE' },
+              props.editable === false && { opacity: 0.4 },
+            ]}
+          >
+            <Icon name={passwordVisible ? 'eye-off' : 'eye'} size={21} color={palette.coralDark} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -218,6 +249,19 @@ const styles = StyleSheet.create({
     maxWidth: 750,
   },
   field: { marginBottom: 18, flexShrink: 1 },
+  inputContainer: { position: 'relative' },
+  passwordInput: { paddingRight: 62 },
+  passwordToggle: {
+    position: 'absolute',
+    right: 4,
+    top: 3,
+    bottom: 3,
+    width: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+  },
   label: {
     color: palette.dark,
     fontFamily: fonts.sans,

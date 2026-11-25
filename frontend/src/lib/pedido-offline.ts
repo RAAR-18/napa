@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
 import type { AccionPendiente } from '../database/outbox/types';
 import type { CrearPedidoInput, MedioPagoPedido, ModalidadPedido, UbicacionEntregaInput } from './pedidos';
@@ -64,12 +65,59 @@ async function borrar(cuenta: string, clave: string) {
   await db.runAsync('DELETE FROM pedido_offline WHERE cuenta = ? AND clave = ?', cuenta, clave);
 }
 
+// Una navegación rápida debe leer después del último guardado, y una confirmación
+// debe borrar después de los guardados pendientes para no recuperar un pedido enviado.
+let borradoresPendientes: Promise<unknown> = Promise.resolve();
+function ordenarBorrador<T>(operacion: () => Promise<T>): Promise<T> {
+  const resultado = borradoresPendientes.then(operacion);
+  borradoresPendientes = resultado.catch(() => undefined);
+  return resultado;
+}
+
+const claveCarritoWeb = (cuenta: string, negocio: string) => `napa:carrito:${JSON.stringify([cuenta, negocio])}`;
+
 export const guardarBorradorPedido = (cuenta: string, negocio: string, carrito: CarritoPedido) =>
-  guardar(cuenta, `borrador:${negocio}`, carrito);
+  ordenarBorrador(async () => {
+    // Funciona también en Safari por HTTP local, donde SQLite/WASM requiere
+    // funciones del navegador que solo están disponibles en contextos seguros.
+    if (Platform.OS === 'web') {
+      window.localStorage.setItem(claveCarritoWeb(cuenta, negocio), JSON.stringify(carrito));
+      return;
+    }
+    await guardar(cuenta, `borrador:${negocio}`, carrito);
+  });
 export const leerBorradorPedido = (cuenta: string, negocio: string) =>
-  leer<CarritoPedido>(cuenta, `borrador:${negocio}`);
+  ordenarBorrador(async () => {
+    if (Platform.OS === 'web') {
+      const contenido = window.localStorage.getItem(claveCarritoWeb(cuenta, negocio));
+      return contenido ? JSON.parse(contenido) as CarritoPedido : null;
+    }
+    return leer<CarritoPedido>(cuenta, `borrador:${negocio}`);
+  });
 export const borrarBorradorPedido = (cuenta: string, negocio: string) =>
-  borrar(cuenta, `borrador:${negocio}`);
+  ordenarBorrador(async () => {
+    if (Platform.OS === 'web') {
+      window.localStorage.removeItem(claveCarritoWeb(cuenta, negocio));
+      return;
+    }
+    await borrar(cuenta, `borrador:${negocio}`);
+  });
+
+export async function guardarUltimaDireccion(cuenta: string, direccion: UbicacionEntregaInput) {
+  if (Platform.OS === 'web') {
+    window.localStorage.setItem(`napa:direccion:${cuenta}`, JSON.stringify(direccion));
+    return;
+  }
+  await guardar(cuenta, 'ultima-direccion', direccion);
+}
+
+export async function leerUltimaDireccion(cuenta: string): Promise<UbicacionEntregaInput | null> {
+  if (Platform.OS === 'web') {
+    const contenido = window.localStorage.getItem(`napa:direccion:${cuenta}`);
+    return contenido ? JSON.parse(contenido) as UbicacionEntregaInput : null;
+  }
+  return leer<UbicacionEntregaInput>(cuenta, 'ultima-direccion');
+}
 
 export const guardarCarritoEncolado = (cuenta: string, clave: string, carrito: CarritoPedido) =>
   guardar(cuenta, `envio:${clave}`, carrito);
