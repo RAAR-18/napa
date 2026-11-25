@@ -4,6 +4,8 @@ import co.edu.napa.pagos.application.ports.in.ConfirmarPagoPedidoPort;
 import co.edu.napa.pagos.application.ports.in.ConfirmarPagoPedidoPort.PagoConfirmado;
 import co.edu.napa.pagos.application.ports.out.PagoRepositoryPort;
 import co.edu.napa.pagos.domain.event.PagoPedidoConfirmadoEvent;
+import co.edu.napa.pagos.domain.model.EstadoPago;
+import co.edu.napa.pagos.domain.model.TipoPago;
 import co.edu.napa.shared.application.ports.out.EventPublisherPort;
 import co.edu.napa.shared.domain.DomainException;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +40,11 @@ public class ConfirmarPagoPedidoUseCase implements ConfirmarPagoPedidoPort {
             throw new IllegalStateException("El pago no corresponde al comprador y vendedor del pedido.");
         }
 
+        // Una reserva puede haberse pagado antes. La entrega reutiliza su confirmación sin emitir E09 dos veces.
+        if (pago.estado() == EstadoPago.CONFIRMADO && pago.tipo() == TipoPago.PEDIDO) {
+            return new PagoConfirmado(pago.id(), pago.estado().name(), pago.medio().name(),
+                    pago.monto(), pago.confirmadoAt());
+        }
         Instant now = Instant.now(clock);
         var confirmado = pago.confirmar(now);
         pagos.actualizar(confirmado);

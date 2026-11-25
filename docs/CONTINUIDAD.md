@@ -31,7 +31,7 @@ Actualizado: 25 de noviembre de 2026.
 - Detalle de todas las incidencias: `docs/CORRECCIONES_AUDITORIA.md`. Las variantes web completan la separación de almacenamiento de las cachés identificadas; P0-01 queda implementado, pendiente de aceptación funcional.
 - Proveedores SMSReactor/Brevo requieren configuración operativa del equipo. No solicitar secretos completos ni enviar mensajes reales sin necesidad autorizada.
 - Ubicación automática ambulante solo en primer plano; segundo plano requiere alcance/build/permisos específicos. Notificaciones usan sondeo visible/push, no SSE estricto.
-- Pagos anticipados, límite de 20 y composición de contraseña dependen de specs; el informe no redefine sus acuerdos.
+- El acuerdo de testing en vivo del 25/11 autoriza cambiar anticipos y límite de 20; ver el bloque vigente y sus specs. La política de contraseña D14 no cambia.
 - Mapas visuales y rutas optimizadas siguen pospuestos hasta cerrar auditoría y confirmar alcance.
 - Selector nativo de reserva de un bloque anterior requiere regenerar el build Android/iOS; este bloque no añade dependencias nativas.
 
@@ -72,3 +72,16 @@ Actualizado: 25 de noviembre de 2026.
 - Próximo paso: el tester aporta fallos reproducibles por rol/pantalla. No fabricar incidencias ni extender funcionalidades para mantener una cadena de commits.
 - Pendientes externos/de alcance: SMSReactor/Brevo operativos, prueba del build nativo (incluye selector de reservas y corrección del APK del equipo), aceptación funcional de auditoría, decisión de segundo plano/SSE y las 27 alertas moderadas de herramientas pendientes de actualización compatible. Sin alertas altas en el último audit observado.
 - Mapas visuales y rutas optimizadas permanecen fuera de esta etapa hasta que el usuario indique pasar a esa funcionalidad. No cambiar reglas de pagos, límites de productos o contraseñas sin acordar sus specs.
+
+
+## Nuevo bloque autorizado por testing en vivo (2026-11-25, base c26bf01)
+
+El equipo ya integró cambios nuevos (PR89 de usabilidad, PR90 con las correcciones anteriores, PR91 de push y mejoras APK). El usuario actualizó nuestra rama y pidió atender estos cinco resultados, reemplazando las decisiones anteriores incompatibles:
+
+1. Ambulante: creación obtiene GPS con permiso, sin dirección/referencia/coordenadas manuales. Activa seguimiento voluntario del negocio por cuenta; consulta posición cada 15 s y publica al desplazarse >=25 m mientras la app está activa. Puede pausar desde Mi emprendimiento. No se almacena ruta diaria ni se promete actualización con la app cerrada; background/historial siguen fuera de esta implementación.
+2. Carrito: se elimina 20 como límite comercial de ítems/unidades, conservando stock, productos únicos, cantidad positiva, dos decimales y precisión real NUMERIC(10,2). V22 nueva elimina CHECK cantidad<=20; no reescribir V11. No se aplicó a la base local del usuario.
+3. Dirección: borrador no vacío > última entrega > perfil de la misma cuenta. No sustituir texto editado ni obtener automáticamente la ubicación GPS del cliente. La consulta del perfil es opcional y no bloquea restauración/guardado de carrito. Barrio se completa manualmente si el perfil no lo tiene.
+4. Anticipo: vendedor puede confirmar una transferencia de reserva aceptada antes de entregar/retirar. Pagos reutiliza la confirmación ya existente sin actualizar ni emitir E09 otra vez al entregar. No procesa dinero. Reservas en efectivo conservan pago presencial. Si se cancela una reserva pagada, la devolución se coordina fuera de Ñapa; no simular un reembolso.
+5. Avisos: AvisosNovedades global en _layout usa bandeja cada 15 s en primer plano y escucha push. Muestra Toast informativo sin marcar lectura, no alerta por historial inicial y descarta sesiones anteriores. No requiere Firebase para los avisos dentro de app; push con app cerrada conserva requisitos del equipo.
+
+Specs/planes RF28/RF38/RF42/RF45, requerimientos y trazabilidad actualizados antes de implementar. Nuevos archivos: V22, PedidoCantidadMigrationIntegrationTest, AvisosNovedades y su prueba. Validación observada: backend compiló y pasaron cotización, pagos, entregas y ArchUnit. Las 13 pruebas de la segunda comprobación incluyeron V22 en PostgreSQL aislado (1 prueba, sin omisiones); repetición final de las 2 de reutilización de pago correcta tras el último cambio. Frontend conjunto inicial: 55 suites, 359 casos, 352 correctos y 7 fallos (3 de recuperación de carrito ya corregidos y 4 timeouts bajo carga). Repetición dirigida de 5 archivos: pasaron avisos y DateTime; luego repetición final de 4 archivos: 33 casos correctos, incluidos los timeouts previos y los casos nuevos. GPS: 3 pruebas finales correctas. Tipos y lint final correctos, exportación web correcta. No afirmar que se volvió a ejecutar toda la suite en una sola corrida verde. No hay pruebas de APK ni envíos/transacciones reales. No se añadieron dependencias. Reiniciar backend para aplicar V22 antes de probar >20 unidades. Las verificaciones funcionales corresponden al tester. No crear commit ni push por el usuario; al cerrar dar el bloque completo de Git Bash.

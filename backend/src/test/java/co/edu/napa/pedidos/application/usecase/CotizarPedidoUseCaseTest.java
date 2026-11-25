@@ -105,6 +105,26 @@ class CotizarPedidoUseCaseTest {
         assertEquals("VALIDATION_ERROR", reservationError.code());
     }
 
+    @Test
+    void acceptsMoreThanTwentyUnitsWhenStockIsAvailable() {
+        var quote = useCase(false, false, List.of("EFECTIVO"), List.of(product("DISPONIBLE", "50")))
+                .cotizar(request(ModalidadEntrega.ENTREGA_DIRECTA, "25", null, DESTINATION));
+        assertEquals(87_500, quote.total());
+    }
+
+    @Test
+    void acceptsMoreThanTwentyDistinctProducts() {
+        var disponibles = java.util.stream.IntStream.range(0, 25).mapToObj(i -> {
+            var base = product("DISPONIBLE", "50");
+            return new ProductoDisponible(UUID.randomUUID(), base.nombre(), base.unidad(), base.precio(),
+                    base.cantidadDisponible(), base.estadoProducto());
+        }).toList();
+        var solicitud = new Solicitud(BUSINESS_ID, ModalidadEntrega.ENTREGA_DIRECTA,
+                disponibles.stream().map(p -> new ItemSolicitud(p.productoId(), BigDecimal.ONE)).toList(), DESTINATION, null);
+        var quote = useCase(false, false, List.of("EFECTIVO"), disponibles).cotizar(solicitud);
+        assertEquals(25, quote.items().size());
+    }
+
     private static CotizarPedidoUseCase useCase(
             boolean puntoFijo,
             boolean domicilioDisponible,

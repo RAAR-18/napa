@@ -225,3 +225,8 @@ Agregar variantes .web.ts para perfil, negocio propio, catálogo, inventario, no
 ## Revisión de dependencias tras integrar main (base 0ed05bf)
 
 Tras npm ci: 28 alertas (27 moderadas y 1 alta). La alta GHSA-mrhx-c7xc-m3w5 corresponde a zod 3.25.76, dependencia de eslint-plugin-react-hooks 7.1.1. Tanto ese plugin como el peer de zod-validation-error 4.0.2 admiten ^3.25.0 || ^4.0.0. Actualizar solo la resolución transitiva zod a una versión corregida >=4.6.6 dentro de esos rangos mediante npm update zod, sin agregarla como dependencia directa ni cambiar Expo/Jest. Comprobar diff del lock, npm ls, audit, lint, tipos y una prueba de hooks. Las moderadas de glob/minimatch requieren versiones principales transitivas; no usar audit fix --force ni overrides globales para aparentar cero alertas. Mantenerlas documentadas para actualización compatible de sus consumidores. No cambia código funcional ni se añade un proveedor.
+
+
+## Implementación del acuerdo de testing en vivo (2026-11-25)
+
+Se conservan puertos entre pedidos y pagos; confirmar un pago existente es reutilizable sin actualizarlo ni publicar E09 de nuevo. V22 retira solo la restricción comercial cantidad<=20 de item_pedido, manteniendo NUMERIC(10,2) y cantidad positiva. AvisosNovedades en la raíz consulta la bandeja en primer plano con identidad/generación de sesión y usa Toast informativo sin efectos de lectura. GPS del ambulante es voluntario, por cuenta y en primer plano (15 s/25 m), sin historial ni nuevas dependencias. Specs y planes RF-28/38/42/45 definen los contratos y pruebas.

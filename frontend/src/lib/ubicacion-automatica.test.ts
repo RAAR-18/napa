@@ -35,11 +35,11 @@ it('does not read GPS without explicit activation or while the app is inactive',
   expect(Location.getCurrentPositionAsync).not.toHaveBeenCalled();
 });
 
-it('updates only the expected account and preserves the zone reference', async () => {
+it('updates only the expected account and clears fixed address data', async () => {
   await configurarUbicacionAutomatica('A', 'negocio', true);
   await actualizarZonaAutomatica();
   expect(editarMiEmprendimiento).toHaveBeenCalledWith({ ubicacion: {
-    latitud: 11.25, longitud: -74.20, direccion: null, referencia: 'Frente al parque',
+    latitud: 11.25, longitud: -74.20, direccion: null, referencia: null,
   } }, 'A');
   jest.mocked(readSession).mockResolvedValue({ usuarioId: 'B', rol: 'VENDEDOR_AMBULANTE' } as never);
   jest.mocked(editarMiEmprendimiento).mockClear();

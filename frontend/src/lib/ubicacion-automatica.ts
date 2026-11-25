@@ -7,7 +7,7 @@ import { getSessionGeneration, readSession } from './auth';
 import { editarMiEmprendimiento, obtenerMiEmprendimiento } from './emprendimientos';
 
 const KEY = 'napa.ubicacion-automatica';
-export const INTERVALO_UBICACION_MS = 120_000;
+export const INTERVALO_UBICACION_MS = 15_000;
 type Preferencia = { usuarioId: string; emprendimientoId: string };
 const oyentes = new Set<() => void>();
 
@@ -73,10 +73,11 @@ export async function actualizarZonaAutomatica(vigente: () => boolean = () => tr
   const actual = await leerUbicacionAutomatica();
   if (!vigente() || generacion !== getSessionGeneration() || negocio.id !== preferencia.emprendimientoId
     || actual?.usuarioId !== preferencia.usuarioId || actual.emprendimientoId !== preferencia.emprendimientoId) return;
-  if (distanciaMetros(negocio.ubicacion, posicion.coords) < 100) return;
+  if (distanciaMetros(negocio.ubicacion, posicion.coords) < 25
+    && !negocio.ubicacion.direccion && !negocio.ubicacion.referencia) return;
   await editarMiEmprendimiento({ ubicacion: {
     latitud: latitude, longitud: longitude,
-    direccion: negocio.ubicacion.direccion, referencia: negocio.ubicacion.referencia,
+    direccion: null, referencia: null,
   } }, preferencia.usuarioId);
 }
 

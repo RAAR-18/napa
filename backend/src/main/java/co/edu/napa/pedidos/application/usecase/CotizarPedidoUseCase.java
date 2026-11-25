@@ -29,7 +29,7 @@ import java.util.UUID;
 
 @Component
 public class CotizarPedidoUseCase implements CotizarPedidoPort {
-    private static final BigDecimal MAX_CANTIDAD = BigDecimal.valueOf(20);
+    private static final BigDecimal MAX_CANTIDAD = new BigDecimal("99999999.99");
 
     private final ConsultarEmprendimientoParaPedidoPort emprendimientos;
     private final ConsultarDisponibilidadPort productos;
@@ -119,8 +119,8 @@ public class CotizarPedidoUseCase implements CotizarPedidoPort {
             throw invalid("emprendimientoId", "Selecciona un emprendimiento disponible.");
         }
         if (solicitud.modalidad() == null) throw invalid("modalidad", "Selecciona una modalidad de entrega.");
-        if (solicitud.items() == null || solicitud.items().isEmpty() || solicitud.items().size() > 20) {
-            throw invalid("items", "El pedido debe tener entre 1 y 20 productos distintos.");
+        if (solicitud.items() == null || solicitud.items().isEmpty()) {
+            throw invalid("items", "El pedido debe tener al menos un producto distinto.");
         }
         Set<UUID> ids = new HashSet<>();
         for (var item : solicitud.items()) {
@@ -131,7 +131,7 @@ public class CotizarPedidoUseCase implements CotizarPedidoPort {
             if (item.cantidad() == null || item.cantidad().signum() <= 0
                     || item.cantidad().compareTo(MAX_CANTIDAD) > 0
                     || item.cantidad().stripTrailingZeros().scale() > 2) {
-                throw invalid("items", "Cada producto debe tener una cantidad entre 0 y 20, con hasta dos decimales.");
+                throw invalid("items", "Cada producto debe tener una cantidad positiva y representable con ocho enteros y dos decimales.");
             }
         }
     }

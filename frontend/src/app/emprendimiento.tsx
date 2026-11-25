@@ -21,8 +21,9 @@ import {
   type CrearEmprendimientoInput,
   type Emprendimiento,
 } from '../lib/emprendimientos';
-import { clearSession, getValidSession, type StoredSession } from '../lib/auth';
+import { clearSession, getValidSession, getSessionGeneration, readSession, type StoredSession } from '../lib/auth';
 import { requestDeviceLocation } from '../lib/location';
+import { configurarUbicacionAutomatica } from '../lib/ubicacion-automatica';
 
 const categories: { value: CategoriaEmprendimiento; label: string }[] = [
   { value: 'FRUTAS_VERDURAS', label: 'Frutas y verduras' },
@@ -96,9 +97,9 @@ export default function EmprendimientoScreen() {
     };
   }, []);
 
-  function formInput(): CrearEmprendimientoInput | null {
-    const latitude = Number(latitud.trim().replace(',', '.'));
-    const longitude = Number(longitud.trim().replace(',', '.'));
+  function formInput(posicion?: { latitude: number; longitude: number }): CrearEmprendimientoInput | null {
+    const latitude = posicion?.latitude ?? Number(latitud.trim().replace(',', '.'));
+    const longitude = posicion?.longitude ?? Number(longitud.trim().replace(',', '.'));
     const validTime = (value: string) =>
       /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.trim());
     if (
@@ -109,8 +110,7 @@ export default function EmprendimientoScreen() {
       descripcion.trim().length > 500 ||
       !validTime(horaApertura) ||
       !validTime(horaCierre) ||
-      !latitud.trim() ||
-      !longitud.trim() ||
+      (isFixedVendor && (!latitud.trim() || !longitud.trim())) ||
       !Number.isFinite(latitude) ||
       latitude < -90 ||
       latitude > 90 ||
@@ -133,8 +133,8 @@ export default function EmprendimientoScreen() {
       ubicacion: {
         latitud: latitude,
         longitud: longitude,
-        direccion: direccion.trim() || null,
-        referencia: referencia.trim() || null,
+        direccion: isFixedVendor ? direccion.trim() || null : null,
+        referencia: isFixedVendor ? referencia.trim() || null : null,
       },
     };
   }
@@ -145,17 +145,24 @@ export default function EmprendimientoScreen() {
       setError('Inicia sesión con una cuenta de vendedor para continuar.');
       return;
     }
-    const input = formInput();
-    if (!input) {
-      setError(
-        'Revisa los campos obligatorios, el horario en formato HH:mm y las coordenadas válidas.',
-      );
-      return;
-    }
-
+    if (busy) return;
+    const generacion = getSessionGeneration();
     setBusy(true);
     try {
-      setCreated(await createEmprendimiento(input));
+      const posicion = isFixedVendor ? undefined : await requestDeviceLocation();
+      if (generacion !== getSessionGeneration() || (session.usuarioId && (await readSession())?.usuarioId !== session.usuarioId)) throw new Error('La sesión cambió. Vuelve a abrir el formulario.');
+      const input = formInput(posicion);
+      if (!input) {
+        setError('Revisa los campos obligatorios y el horario en formato HH:mm.');
+        return;
+      }
+      const negocio = await createEmprendimiento(input);
+      setCreated(negocio);
+      if (!isFixedVendor && session.usuarioId) {
+        await configurarUbicacionAutomatica(session.usuarioId, negocio.id, true).catch(() => {
+          setError('El negocio se creó, pero debes activar la ubicación en vivo desde Mi emprendimiento.');
+        });
+      }
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 409) setYaExiste(true);
       if (cause instanceof ApiError && cause.status === 401) {
@@ -165,7 +172,9 @@ export default function EmprendimientoScreen() {
       }
       setError(
         cause instanceof Error
-          ? cause.message
+          ? !isFixedVendor && cause.name === 'LocationPermissionDeniedError'
+            ? 'Permite la ubicación para publicar tu negocio móvil. No necesitas una dirección fija.'
+            : cause.message
           : 'No se pudo crear el emprendimiento. Inténtalo de nuevo.',
       );
     } finally {
@@ -212,6 +221,7 @@ export default function EmprendimientoScreen() {
           title={created.nombre}
           description="Tu emprendimiento quedó activo y disponible para los clientes."
         />
+        <ErrorBanner message={error} />
         <View style={styles.successCard}>
           <Text style={styles.successTitle}>Creación exitosa</Text>
           <Text style={styles.successText}>
@@ -286,6 +296,8 @@ export default function EmprendimientoScreen() {
         </View>
       </View>
       <HelperText>Selecciona el horario de atención en formato de 24 horas.</HelperText>
+      {isFixedVendor ? (
+        <>
       <Text style={styles.label}>Ubicación</Text>
       <PrimaryButton
         busy={locationBusy}
@@ -346,6 +358,10 @@ export default function EmprendimientoScreen() {
           Como vendedor ambulante puedes usar una ubicación aproximada y no
           necesitas registrar una dirección.
         </HelperText>
+      )}
+        </>
+      ) : (
+        <HelperText>Tu negocio se mueve contigo. Al publicar pediremos permiso para usar tu posición GPS y actualizarla mientras usas Ñapa. No necesitas dirección fija, referencia ni coordenadas. Puedes pausar la ubicación desde Mi emprendimiento.</HelperText>
       )}
       <PrimaryButton
         busy={busy}

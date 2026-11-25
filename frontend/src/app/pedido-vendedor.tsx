@@ -184,8 +184,8 @@ export default function PedidoVendedorScreen() {
   const activeDelivery =
     detail?.domicilio && detail.domicilio.estado !== 'CANCELADO' ? detail.domicilio : null;
   const pagoDomicilioPendiente =
-    userRole === 'VENDEDOR_PUNTO_FIJO' && detail?.estado === 'ACEPTADO' &&
-    detail.modalidad === 'DOMICILIO' && estadoPago === 'PENDIENTE_CONFIRMACION';
+    sellerRoles.includes(userRole ?? '') && detail?.estado === 'ACEPTADO' &&
+    (detail.modalidad === 'DOMICILIO' || Boolean(detail.reserva)) && estadoPago === 'PENDIENTE_CONFIRMACION';
   const datosTransferencia = !!detail && Number.isFinite(detail.total) && detail.total >= 0 &&
     detail.medioPago === 'CUENTA_BANCARIA';
   const canConfirmPayment = pagoDomicilioPendiente && datosTransferencia && !pago.pendiente && !pagoConfirmado;
@@ -352,7 +352,7 @@ export default function PedidoVendedorScreen() {
         const resultado = await confirmarPagoPedido(pedidoId, idempotencyKey);
         setRespuestaPago(resultado);
         await pago.registrar(resultado).catch(() => undefined);
-        setNotice('Pago confirmado. Ya puedes publicar el domicilio.');
+        setNotice(detail?.modalidad === 'DOMICILIO' ? 'Pago confirmado. Ya puedes publicar el domicilio.' : 'Anticipo de la reserva confirmado. No vuelvas a cobrar al entregar.');
       } else if (action === 'startDelivery') {
         await iniciarEntregaDirecta(pedidoId, idempotencyKey);
         setNotice('Entrega iniciada. Avisamos al cliente que vas en camino.');
@@ -615,6 +615,7 @@ export default function PedidoVendedorScreen() {
           {pagoDomicilioPendiente && !datosTransferencia && !loading ? (
             <HelperText>Conéctate para actualizar el total y el medio de pago antes de confirmar.</HelperText>
           ) : null}
+          {detail.reserva && estadoPago === 'CONFIRMADO' ? <HelperText>Esta reserva ya está pagada. Confirma la entrega cuando corresponda, sin volver a cobrar.</HelperText> : null}
           {canConfirmPayment && !decision && !pendingAction && !loading ? (
             <>
               <HelperText>

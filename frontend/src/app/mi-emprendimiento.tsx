@@ -240,7 +240,7 @@ export default function MiEmprendimientoScreen() {
       lng !== actual.ubicacion.longitud ||
       direccion.trim() !== (actual.ubicacion.direccion ?? '') ||
       referencia.trim() !== (actual.ubicacion.referencia ?? '');
-    if (ubicacionCambio) {
+    if (ubicacionCambio && !ambulante) {
       if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
         return 'Revisa las coordenadas de la ubicación.';
       }
@@ -462,7 +462,7 @@ export default function MiEmprendimientoScreen() {
           <>
           <Text style={styles.section}>{ambulante ? 'Zona de venta' : 'Ubicación del punto'}</Text>
           {ambulante ? (
-            <HelperText>Cuando cambies de zona durante el día, toca «Estoy aquí» y guarda.</HelperText>
+            <HelperText>Tu negocio usa tu posición GPS mientras usas Ñapa. No tiene dirección fija; activa la ubicación en vivo para que se mueva contigo.</HelperText>
           ) : (
             <HelperText>No podrás moverla mientras tengas pedidos sin cerrar.</HelperText>
           )}
@@ -473,9 +473,11 @@ export default function MiEmprendimientoScreen() {
                 disabled={configurandoUbicacion || busy}
                 onPress={() => void cambiarUbicacionAutomatica()}
               />
-              <HelperText>Actualiza tu zona cada dos minutos mientras usas Ñapa. Se pausa al salir de la app; puedes desactivarla cuando quieras.</HelperText>
+              <HelperText>Actualiza tu posición cada 15 segundos al desplazarte mientras usas Ñapa. Se pausa al salir de la app; puedes desactivarla cuando quieras.</HelperText>
             </>
           ) : null}
+          {!ambulante ? (
+            <>
           <TextButton
             title={ambulante ? 'Estoy aquí' : 'Usar mi ubicación actual'}
             disabled={locating || busy}
@@ -496,6 +498,8 @@ export default function MiEmprendimientoScreen() {
             maxLength={300}
           />
           <Field label="Referencia (opcional)" value={referencia} onChangeText={setReferencia} maxLength={300} />
+            </>
+          ) : null}
           </>
           ) : null}
           <PrimaryButton title={revisionId ? 'Confirmar y reenviar' : 'Guardar cambios'} busy={busy && !confirmDelete}

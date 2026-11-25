@@ -12,15 +12,15 @@ Actualizado: 24 de noviembre de 2026. Base del bloque actual: `9800874`, rama `f
 | P0-04 | Feedback de longitud/coincidencia y bloqueo ante contraseñas distintas. Se conserva D14: 8–128 caracteres, sin composición obligatoria. |
 | P0-05 | Correo recomendado y SMS alternativo; confirmación/reenvío protegidos por generación y operaciones Redis atómicas; TTL y cupos garantizados dentro de Redis. La entrega real depende de la configuración de proveedores. |
 | P0-06 | Guardado automático del carrito por cuenta/negocio, restauración y limpieza coordinada tras enviar. |
-| P1-01 | Revisado contra RF-42 FR-002: directa/recogida cobran al entregar/retirar, también en reservas; domicilio permite anticipo. No se cambia esta regla solo por el informe. |
-| P1-02 | Refresco de notificaciones/pedidos recibidos, Mis pedidos y Domicilios en curso cada 30 s mientras su pantalla está visible. Disponibles conserva 15 s, sin solicitudes superpuestas ni consultas periódicas al salir o en segundo plano. No es SSE/WebSocket ni promete avisos con la app cerrada; push conserva su configuración. |
-| P1-03 | Borrador conserva dirección/referencia y se propone la última dirección cotizada por cuenta. No modifica el perfil del servidor. |
-| P1-04 | El límite de 20 ítems/20 unidades es un acuerdo explícito de RF-45. No se elimina silenciosamente. |
-| P1-05 | Implementada actualización automática opcional del ambulante cada 2 min en primer plano y a partir de 100 m de desplazamiento. No incluye seguimiento en segundo plano. |
+| P1-01 | Anticipos habilitados para reservas aceptadas por transferencia; confirma el vendedor. Al entregar no se duplica el pago ni el evento. Efectivo se conserva presencial. |
+| P1-02 | Aviso flotante global por novedades de la bandeja cada 15 s/push con app abierta, sin marcar lectura ni alertar historial inicial. Las pantallas conservan sus refrescos; push cerrado requiere Firebase/build. |
+| P1-03 | Dirección automática por prioridad: borrador no vacío, última entrega y perfil de la cuenta. No pisa escritura manual ni usa GPS para decidir el destino del cliente. |
+| P1-04 | Se eliminó el límite comercial de 20 productos/unidades por acuerdo del 25/11. Se conservan stock, cantidades positivas y precisión NUMERIC(10,2); migración V22 nueva. |
+| P1-05 | Posición GPS del ambulante cada 15 s y desplazamiento mínimo de 25 m mientras usa la app, con permiso y control de pausa. No hay seguimiento con app cerrada ni historial diario. |
 | P1-06 | Acceso a editar negocio desde Mis productos y guía a edición ante conflicto de creación. |
 | P1-07 | Selector visual de reserva del sistema en móvil y del navegador en web; validación de fecha real y futura. |
 | P2-01 | Otros admite texto personalizado opcional de hasta 80 caracteres, persistido y mostrado en creación, consulta propia, listado y detalle. Migración nueva V21. |
-| P2-02 | El formulario ya distingue la dirección fija obligatoria de la zona ambulante con referencia/dirección opcional (RF-28 FR-005). Quitar toda coordenada cambia el alcance; mapa visual pospuesto. |
+| P2-02 | Ambulante sin dirección/referencia/coordenadas manuales: GPS al publicar. Punto fijo conserva sus datos de ubicación; mapa visual sigue pospuesto. |
 | P2-03 | Menú móvil único; se retiró la barra inferior que duplicaba destinos. |
 | P2-04 | Confirmación de métodos de pago en un aviso de éxito; disponibilidad de domicilio conserva su estilo informativo. |
 | P2-05 | Botón de calificación según opciones pendientes; se actualiza al volver a la pantalla. |
@@ -121,3 +121,16 @@ Pruebas dirigidas: aislamiento A/B, borrado por propietario, clave antigua, cont
 Se ejecutó una vez la suite completa tras integrar todos los bloques: **51 suites y 337 pruebas correctas**, cero fallos. No se modificó código de aplicación ni hubo necesidad de repetir archivos aislados. Tipos/lint ya habían pasado en el último bloque y no se repitieron sin cambios.
 
 Esta evidencia corresponde a Jest, no al recorrido funcional del tester ni al arranque de un APK. Permanecen pendientes la aceptación por roles, configuración real de proveedores, build nativo y decisiones de alcance ya registradas (segundo plano, SSE estricto, mapas posteriores). Las 27 alertas moderadas de herramientas no se ocultan ni se fuerzan cambios incompatibles para eliminarlas. No se ejecutaron commits, push o merges en esta comprobación.
+
+
+## Reapertura por testing en vivo (2026-11-25, base c26bf01)
+
+Los resultados nuevos del tester son un cambio de alcance autorizado: reemplazan la conservación previa de límites de 20 y cobro exclusivo al entregar reservas. Se actualizan RF28/38/42/45 y trazabilidad.
+
+- Ambulante sin campos de dirección fija: GPS al publicar y actualización en primer plano cada 15 s con mínimo 25 m, permiso explícito y pausa voluntaria. No se implementa historial de ruta diaria ni seguimiento con app cerrada.
+- Carrito sin límite comercial 20: frontend, HTTP, cotización y dominio coherentes. V22 nueva retira el CHECK <=20; mantiene precisión numérica y cantidad positiva. No se migra la base local manualmente.
+- Dirección: recupera perfil cuando no hay borrador no vacío/última entrega; no pisa datos escritos y el perfil no bloquea el guardado del carrito.
+- Reserva aceptada por transferencia: confirmación anticipada del vendedor; al entregar se reutiliza el pago confirmado sin repetir evento/cobro. No hay procesamiento de dinero ni reembolsos automáticos.
+- Aviso flotante global desde la bandeja (sondeo 15 s/push en primer plano), sin marcar lectura ni mostrar historial inicial como novedad. Firebase no es necesario para este aviso interno, pero sí para push con app cerrada.
+
+Validación final: backend y arquitectura correctos; 13 pruebas dirigidas incluyendo V22 con PostgreSQL aislado (sin omisiones), más repetición de las 2 pruebas de pago tras el cambio final. Frontend: la corrida completa inicial tuvo 7 fallos; se corrigió el bloqueo de recuperación de carrito y se repitieron solo los afectados. Repetición final de 4 archivos: 33 pruebas correctas. Los avisos y DateTime ya habían pasado en la repetición anterior; GPS pasó sus 3 pruebas finales. Tipos, lint y exportación web correctos. No se volvió a ejecutar toda la suite ni se probaron APK, push real o cobros reales. No hubo dependencias nuevas. Antes del testing del límite, reiniciar la API para aplicar V22; no se migró la base local del usuario desde el asistente.
