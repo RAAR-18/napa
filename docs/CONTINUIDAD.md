@@ -5,7 +5,7 @@ Actualizado: 24 de noviembre de 2026.
 ## Repositorio y colaboración
 
 - Carpeta real: `C:\Users\ESTUDIANTE\Documents\GitHub\napa`. No modificar la copia Documents/ChatGPT.
-- Rama `fix/p0-01-outbox-web`; último commit confirmado `180109b`, cachés web de listado/rutas. Carpeta limpia al iniciar este bloque.
+- Rama `fix/p0-01-outbox-web`; último commit confirmado `9800874`, seis cachés web por cuenta. Carpeta limpia al iniciar este bloque.
 - Edición directa y comprobaciones autorizadas. Trabajar por bloques, repetir solo lo afectado por cambios/fallos. El tester valida recorridos funcionales.
 - Git manual: entregar siempre el bloque completo de Git Bash al recomendar commit, con archivos explícitos. No ejecutar add/commit/push ni gestionar ramas por iniciativa propia. Preferencia guardada en AGENTS.md.
 
@@ -16,7 +16,7 @@ Actualizado: 24 de noviembre de 2026.
 - Verificación SMS/correo con concurrencia y cupos Redis: commit 817acbe; 18 pruebas unitarias/caso de uso y 7 Redis aislado correctas. Sin envíos reales ni secretos modificados.
 - Listado/rutas con almacenamiento separado por plataforma: commit 180109b; 21 pruebas dirigidas, tipos/lint/exportación web correctos.
 
-## Bloque actual sin commit: seis cachés web por cuenta (P0-01)
+## Bloque integrado en 9800874: seis cachés web por cuenta (P0-01)
 
 - Nuevas variantes `.web.ts`: perfil-cache, emprendimiento-propio-cache, inventario-cache, catalogo-cache, notificaciones-cache y pedidos-cliente-cache.
 - Motor común `frontend/src/lib/cache-cuenta.web.ts`: transacciones IndexedDB completas, índice cuenta/espacio, vigencia siete días. Límites de 50 páginas por cuenta; consultas de pedidos por tipo. Perfil/negocio una copia. Sesión revalidada al escribir. El error revierte el cambio completo.
@@ -27,10 +27,18 @@ Actualizado: 24 de noviembre de 2026.
 
 ## Pendientes y próximo paso
 
-- Terminar comprobaciones del bloque y entregar los comandos de commit al usuario. La revisión funcional en navegador/móvil la realiza el tester; no afirmar que se hizo.
+- El bloque de cachés quedó integrado; el trabajo vigente es la actualización de listados descrita abajo. La revisión funcional en navegador/móvil la realiza el tester; no afirmar que se hizo.
 - Detalle de todas las incidencias: `docs/CORRECCIONES_AUDITORIA.md`. Las variantes web completan la separación de almacenamiento de las cachés identificadas; P0-01 queda implementado, pendiente de aceptación funcional.
 - Proveedores SMSReactor/Brevo requieren configuración operativa del equipo. No solicitar secretos completos ni enviar mensajes reales sin necesidad autorizada.
 - Ubicación automática ambulante solo en primer plano; segundo plano requiere alcance/build/permisos específicos. Notificaciones usan sondeo visible/push, no SSE estricto.
 - Pagos anticipados, límite de 20 y composición de contraseña dependen de specs; el informe no redefine sus acuerdos.
 - Mapas visuales y rutas optimizadas siguen pospuestos hasta cerrar auditoría y confirmar alcance.
 - Selector nativo de reserva de un bloque anterior requiere regenerar el build Android/iOS; este bloque no añade dependencias nativas.
+
+
+## Trabajo vigente sin commit: actualización de listados (P1-02)
+
+- `frontend/src/app/domicilios-disponibles.tsx`: consulta enfocada cada 15 s, pausa automática con app inactiva, reanudación al volver, sin consultas superpuestas por ciclo y sin respuestas/errores antiguos al salir. Usa useFocusEffect y AppState existentes.
+- `frontend/src/app/mis-pedidos.tsx` y `domicilios-en-curso.tsx`: carga al enfocar y useAutoRefresh cada 30 s cuando no carga y app activa. Conservan filtros y cachés. El cierre de ciclo invalida respuestas.
+- Pruebas `frontend/src/app/__tests__/listados-actualizacion.test.tsx` y prueba existente `hooks/useAutoRefresh.test.ts`; plan RF-38 actualizado. Validación: 5 pruebas nuevas de pantallas y 1 del hook existente correctas; repetición de las 5 nuevas tras corregir el 401 de prueba, correcta. Tipos y lint dirigido finales correctos, sin errores/advertencias. No hubo cambios backend/dependencias ni se repitió la exportación web.
+- No se añaden SSE, push, permisos, dependencias ni mapas. Revisión funcional por roles pendiente para el tester. El usuario hace commit/push; entregar bloque completo Git Bash al cerrar.

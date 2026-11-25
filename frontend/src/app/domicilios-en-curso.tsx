@@ -1,6 +1,7 @@
 import { fonts } from '../components/theme';
-import { useEffect, useState } from 'react';
-import { router } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
 import {
@@ -30,7 +31,9 @@ export default function DomiciliosEnCursoScreen() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  useAutoRefresh(() => setLoadAttempt((intento) => intento + 1), !loading);
+
+  useFocusEffect(useCallback(() => {
     let active = true;
     async function load() {
       setLoading(true);
@@ -55,6 +58,7 @@ export default function DomiciliosEnCursoScreen() {
             .catch(() => undefined);
         }
       } catch (cause) {
+        if (!active) return;
         if (cause instanceof NetworkError && local?.rol === 'DOMICILIARIO' && local.usuarioId) {
           const copia = await leerConsultaPedidos<DomicilioEnCursoGuardado[]>(
             local.usuarioId, 'listado-domiciliario', 'en-curso',
@@ -83,7 +87,8 @@ export default function DomiciliosEnCursoScreen() {
     return () => {
       active = false;
     };
-  }, [loadAttempt]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAttempt invalida el ciclo al actualizar manual o automáticamente.
+  }, [loadAttempt]));
 
   return (
     <AuthPage>

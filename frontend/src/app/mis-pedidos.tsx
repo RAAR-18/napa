@@ -1,6 +1,7 @@
 import { fonts } from '../components/theme';
-import { useEffect, useRef, useState } from 'react';
-import { router } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -105,7 +106,9 @@ export default function MisPedidosScreen() {
     anteriores.current = pendientesActivos;
   }, [pendientesActivos]);
 
-  useEffect(() => {
+  useAutoRefresh(() => setLoadAttempt((intento) => intento + 1), !loading);
+
+  useFocusEffect(useCallback(() => {
     let active = true;
     async function load() {
       setLoading(true);
@@ -145,7 +148,8 @@ export default function MisPedidosScreen() {
     return () => {
       active = false;
     };
-  }, [estado, page, loadAttempt]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAttempt invalida el ciclo al actualizar manual o automáticamente.
+  }, [estado, page, loadAttempt]));
 
   const totalPages = data ? Math.ceil(data.totalElements / data.size) : 0;
   const anterior = paginasGuardadas.filter((numero) => numero < page).at(-1);

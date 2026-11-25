@@ -1,6 +1,6 @@
 # Seguimiento de correcciones de auditoría — Ñapa
 
-Actualizado: 24 de noviembre de 2026. Base del bloque actual: `180109b`, rama `fix/p0-01-outbox-web`.
+Actualizado: 24 de noviembre de 2026. Base del bloque actual: `9800874`, rama `fix/p0-01-outbox-web`.
 
 ## Estado vigente
 
@@ -13,7 +13,7 @@ Actualizado: 24 de noviembre de 2026. Base del bloque actual: `180109b`, rama `f
 | P0-05 | Correo recomendado y SMS alternativo; confirmación/reenvío protegidos por generación y operaciones Redis atómicas; TTL y cupos garantizados dentro de Redis. La entrega real depende de la configuración de proveedores. |
 | P0-06 | Guardado automático del carrito por cuenta/negocio, restauración y limpieza coordinada tras enviar. |
 | P1-01 | Revisado contra RF-42 FR-002: directa/recogida cobran al entregar/retirar, también en reservas; domicilio permite anticipo. No se cambia esta regla solo por el informe. |
-| P1-02 | Refresco de notificaciones/pedidos recibidos cada 30 s mientras su pantalla está visible. No es SSE/WebSocket ni promete avisos con la app cerrada; push conserva su configuración. |
+| P1-02 | Refresco de notificaciones/pedidos recibidos, Mis pedidos y Domicilios en curso cada 30 s mientras su pantalla está visible. Disponibles conserva 15 s, sin solicitudes superpuestas ni consultas periódicas al salir o en segundo plano. No es SSE/WebSocket ni promete avisos con la app cerrada; push conserva su configuración. |
 | P1-03 | Borrador conserva dirección/referencia y se propone la última dirección cotizada por cuenta. No modifica el perfil del servidor. |
 | P1-04 | El límite de 20 ítems/20 unidades es un acuerdo explícito de RF-45. No se elimina silenciosamente. |
 | P1-05 | Implementada actualización automática opcional del ambulante cada 2 min en primer plano y a partir de 100 m de desplazamiento. No incluye seguimiento en segundo plano. |
@@ -87,3 +87,12 @@ Siguen pendientes la configuración operativa de proveedores por el equipo, el s
 - Exportación web correcta: el listado de recursos generado ya no incluye el motor WASM ni el worker de SQLite. Esto verifica la selección de variantes, sin sustituir la revisión funcional del tester.
 - Preferencia del usuario guardada en AGENTS.md: cada recomendación de commit incluye el bloque completo para Git Bash; Git sigue siendo manual.
 - Validación: 12 pruebas web nuevas correctas y 3 de perfil nativo correctas; lint completo y revisión dirigida final sin errores ni advertencias. Exportación web correcta. Comprobación de tipos final correcta.
+
+
+## Bloque posterior a 9800874: actualización de listados (P1-02)
+
+- `domicilios-disponibles.tsx`: el ciclo de consulta depende del foco; cancela temporizador/listener al salir y descarta respuestas y errores antiguos. Conserva 15 s. No inicia nuevas solicitudes periódicas con la app inactiva y no superpone consultas de un mismo ciclo. Consulta al reanudar la app.
+- `mis-pedidos.tsx` y `domicilios-en-curso.tsx`: recargan al volver a la pantalla y usan el hook existente de 30 s, deshabilitado durante carga y con app inactiva. Conservan filtros, paginación y acceso a copias offline.
+- Un 401 antiguo de Disponibles no limpia la sesión ni redirige después de salir; Domicilios en curso también descarta errores de un ciclo que perdió el foco.
+- Pruebas nuevas `frontend/src/app/__tests__/listados-actualizacion.test.tsx`. Plan RF-38 actualizado. No hay SSE, nuevos permisos, dependencias, cambios backend o proveedores.
+- Validación: 5 pruebas nuevas de pantallas y 1 del hook existente correctas. Repetición dirigida final de las 5 pantallas/casos correcta tras ajustar el 401 de la muestra. Typecheck final y lint dirigido final sin errores ni advertencias. No se repitió backend ni exportación: no cambian API, dependencias o resolución de plataforma. La prueba funcional por roles sigue a cargo del tester.

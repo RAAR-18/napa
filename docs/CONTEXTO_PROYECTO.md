@@ -136,3 +136,8 @@ El adaptador `cuentas/infrastructure/adapters/out/messaging/SmsCorreoVerificacio
 ## Cachés de listado y rutas posteriores a 817acbe
 
 `frontend/src/lib/cache-lectura-storage.ts` centraliza cache_lectura nativa y su variante `.web.ts` usa IndexedDB. Los consumidores son `emprendimientos-cache.ts` y `ruta-cache.ts`. Las seis cachés de perfil/negocio/inventario/catálogo/notificaciones/pedidos ya tienen variantes `.web.ts` mediante `cache-cuenta.web.ts`; consultar el seguimiento P0-01 para validación y límites. No hay migración de cachés antiguas del navegador.
+
+
+## Actualización de listados posterior a 9800874
+
+Mis pedidos y Domicilios en curso usan useAutoRefresh y recarga al enfocar. Domicilios disponibles conserva 15 s mediante un ciclo ligado al foco y AppState con exclusión de solicitudes superpuestas. Plan RF-38 y seguimiento P1-02 contienen los límites: sondeo visible, sin SSE ni entrega garantizada con app cerrada.
