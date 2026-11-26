@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class SmsReactorClientTest {
+class SmsGateClientTest {
     private HttpServer server;
 
     @AfterEach
@@ -25,35 +25,35 @@ class SmsReactorClientTest {
     }
 
     @Test
-    void sendsTheTaskWithTheApiKeyHeader() throws IOException {
+    void queuesTheMessageWithBasicAuthentication() throws IOException {
         AtomicReference<String> body = new AtomicReference<>();
         AtomicReference<String> key = new AtomicReference<>();
-        String baseUrl = start(201, "{\"ok\": true, \"id\": 7, \"status\": \"pending\"}", body, key);
+        String baseUrl = start(202, "{\"state\":\"Pending\"}", body, key);
 
-        new SmsReactorClient(HttpClient.newHttpClient(), baseUrl, "skr_test", "3")
+        new SmsGateClient(HttpClient.newHttpClient(), baseUrl, "test", "secret")
                 .enviar("+573007080825", "Napa: tu codigo es \"123456\"");
 
-        assertEquals("skr_test", key.get());
-        assertEquals("{\"recipient\":\"+573007080825\",\"message\":\"Napa: tu codigo es \\\"123456\\\"\","
-                + "\"phone_id\":3}", body.get());
+        assertEquals("Basic dGVzdDpzZWNyZXQ=", key.get());
+        assertEquals("{\"textMessage\":{\"text\":\"Napa: tu codigo es \\\"123456\\\"\"},"
+                + "\"phoneNumbers\":[\"+573007080825\"]}", body.get());
     }
 
     @Test
-    void failsWhenTheDailyCreditsRunOut() throws IOException {
-        String baseUrl = start(402, "{\"error\":\"Daily send limit reached.\"}", new AtomicReference<>(),
+    void failsWhenTheGatewayRejectsTheCredentials() throws IOException {
+        String baseUrl = start(401, "{\"error\":\"Unauthorized\"}", new AtomicReference<>(),
                 new AtomicReference<>());
-        SmsReactorClient client = new SmsReactorClient(HttpClient.newHttpClient(), baseUrl, "skr_test", "");
+        SmsGateClient client = new SmsGateClient(HttpClient.newHttpClient(), baseUrl, "test", "secret");
 
         EnvioFallidoException exception = assertThrows(
                 EnvioFallidoException.class,
                 () -> client.enviar("+573007080825", "hola")
         );
-        assertTrue(exception.getMessage().contains("402"));
+        assertTrue(exception.getMessage().contains("401"));
     }
 
     @Test
-    void failsWithoutCallingTheApiWhenTheKeyIsMissing() {
-        SmsReactorClient client = new SmsReactorClient(HttpClient.newHttpClient(), "http://localhost:1", " ", "");
+    void failsWithoutCallingTheApiWhenCredentialsAreMissing() {
+        SmsGateClient client = new SmsGateClient(HttpClient.newHttpClient(), "http://localhost:1", "test", "");
 
         assertThrows(EnvioFallidoException.class, () -> client.enviar("+573007080825", "hola"));
     }
@@ -61,9 +61,9 @@ class SmsReactorClientTest {
     private String start(int status, String response, AtomicReference<String> body, AtomicReference<String> key)
             throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/smsapi/create-task", exchange -> {
+        server.createContext("/3rdparty/v1/messages", exchange -> {
             body.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-            key.set(exchange.getRequestHeaders().getFirst("X-API-Key"));
+            key.set(exchange.getRequestHeaders().getFirst("Authorization"));
             byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(status, bytes.length);
             exchange.getResponseBody().write(bytes);

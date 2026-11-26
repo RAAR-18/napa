@@ -11,13 +11,13 @@
 
 ## Summary
 
-Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dominio con outbox transaccional, autenticación por contraseña con verificación del celular mediante Twilio Verify (WhatsApp con respaldo SMS), JWT con versión de sesión, idempotencia (Redis + únicos en BD), PostGIS para geografía y una app Expo con cola de salida offline sobre SQLite.
+Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dominio con outbox transaccional, autenticación por contraseña con verificación de cuenta por SMS con SMS Gate o por correo con Brevo, JWT con versión de sesión, idempotencia (Redis + únicos en BD), PostGIS para geografía y una app Expo con cola de salida offline sobre SQLite.
 
 ## Decisiones (ADR resumido)
 
 | # | Decisión | Motivo |
 | ------ | ------ | ------ |
-| D1 | **Autenticación** : contraseña como credencial; código de un solo uso (Twilio Verify) solo para verificar el celular y recuperar la contraseña (RF-70). El administrador entra solo con contraseña (cuenta sembrada). | Limita el costo de mensajes (un código por alta, cambio de celular o recuperación, no por inicio de sesión), conserva el límite de intentos de RF-10 FR-004 y no depende de WhatsApp para entrar a vender. |
+| D1 | **Autenticación** : contraseña como credencial; código de un solo uso para verificar la cuenta o el número según el propósito y recuperar la contraseña (RF-70). El administrador entra solo con contraseña (cuenta sembrada). | Limita el costo de mensajes (un código por alta, cambio de celular o recuperación, no por inicio de sesión), conserva el límite de intentos de RF-10 FR-004 y no depende de WhatsApp para entrar a vender. |
 | D2 | Spring Boot  **4.1.x** , Java 21 LTS | 3.2 está sin soporte. Verificar parche y compatibilidad de Hibernate Spatial al iniciar. |
 | D3 | Se elimina "Cash-Only". Medios: efectivo o transferencia; domicilio solo digital | RNF29, RF-42, RF-63. |
 | D4 | Push con  **token FCM nativo**  (getDevicePushTokenAsync) + Firebase Admin, y  **development build**  de Expo | Expo Go no sirve para push remoto ni react-native-maps con claves propias. |
@@ -28,7 +28,7 @@ Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dom
 | D9 | Proveedor de rutas: OpenRouteService (perfil driving-car) tras RoutingPort, con caché en Redis de 24 h (coordenadas a 4 decimales) y respaldo de línea recta al calcular la tarifa (RF-45). Plan Standard gratuito: 2.000 solicitudes/día y 40/min. Si no alcanza, se autoaloja ORS cambiando napa.routing.ors.base-url. RNF19. | RNF19. Tarifa = distancia A–B (RF-45 FR-006) con piso RF-44. |
 | D10 | PostGIS con geography(Point,4326); cercanía con ST_DWithin/ST_Distance; índice GiST | RNF22. |
 | D11 | Límites entre módulos verificados con  **ArchUnit**  (dominio sin Spring/JPA; módulos solo se hablan por puertos) | RNF13, RNF25. |
-| D12 | Verificación del celular con  **Twilio Verify**  (WhatsApp con respaldo SMS) detrás de VerificarCelularPort | El equipo ya lo conoce y delega a Twilio la generación del código, su vigencia, los intentos y las plantillas aprobadas. Costo: 0,05 USD por verificación exitosa más la tarifa del canal (a confirmar para Colombia). Adaptador de consola para desarrollo y pruebas, sin gastar unidades. Cambiar de proveedor es cambiar un adaptador. |
+| D12 | Verificación por SMS con SMS Gate y por correo con Brevo detrás de VerificarCelularPort. | Ñapa genera y valida el código. SMS Gate encola el mensaje y el Android vinculado lo envía con su SIM. Brevo entrega el correo. El modo de consola sirve para desarrollo. |
 | D13 | El código de confirmación del domicilio se genera al asignarlo (6 dígitos aleatorios) y se guarda tal cual; solo lo ve el cliente. El domiciliario lo ingresa y, si coincide, el domicilio y el pedido pasan a ENTREGADO (única confirmación). Máximo 5 intentos y bloqueo de 15 min. | Es una decisión de simplicidad: el riesgo de guardarlo es bajo frente al resto de datos de la base y el límite de intentos lo mitiga. |
 | D14 | Contraseñas con Argon2id, longitud de 8–128 caracteres y sin reglas de composición; contraseñas nuevas con recuperación o cambio revocan las demás sesiones. | Decisión aprobada por el usuario; balancea compatibilidad con frases de contraseña y un mínimo explícito. |
 | D15 | Tras 5 fallos en 15 minutos por identificador normalizado y por IP, login responde `429` con `Retry-After`. | Decisión aprobada por el usuario para mitigar fuerza bruta sin revelar si existe la cuenta. |
@@ -39,7 +39,7 @@ Monorepo con backend Spring Boot hexagonal y modular por dominio, eventos de dom
 
 Ver `specs/templates/plan-template.md` (sección Technical Context ya completada; es la fuente de verdad del stack). Metas ajustadas respecto al borrador original:
 
-- "Autenticación OTP < 1,5 s" → **solicitar la verificación responde ≤ 1,5 s p95**; la entrega del código depende de Twilio y del canal.
+- "Autenticación OTP < 1,5 s" → **solicitar la verificación responde ≤ 1,5 s p95**; la entrega del código depende del canal y su proveedor.
 - "Despacho de eventos < 100 ms" → **commit → handler ≤ 1 s p95** (relay por sondeo cada 500 ms con `FOR UPDATE SKIP LOCKED`). Cumple de sobra los SC de notificación (< 1 min).
 - Verificación JWT ≤ 10 ms p95 incluye un `GET` a Redis (versión de sesión).
 
@@ -82,7 +82,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 | Flujo | Diseño |
 |---|---|
 | Registro (RF-07) | `POST /auth/register` crea cuenta `PENDIENTE_VERIFICACION` con celular único, contraseña (Argon2id/BCrypt) y rol; pide la verificación del celular (RF-70). `POST /auth/verify-phone` activa la cuenta y entrega tokens (cumple FR-004 "iniciar sesión de inmediato"). |
-| Verificación del celular (RF-70) | **Twilio Verify** detrás del puerto `VerificarCelularPort` (`iniciar(celular, canal)` y `confirmar(celular, codigo)`). Twilio genera y entrega el código por WhatsApp con respaldo SMS, controla su vigencia y el número de intentos; Ñapa nunca ve el código, así que no lo guarda ni lo hashea. Para limitar costo y abuso, Ñapa aplica en Redis 1 envío/minuto y 5/hora por celular, y 20/hora por IP. Estos límites internos no garantizan mantenerse dentro de una cuota gratuita del proveedor; F022 debe verificar las condiciones vigentes para Colombia y definir un tope mensual global con alerta antes de habilitar envíos reales. Cada solicitud se registra en la entidad `mensaje` (sin código). Adaptadores: `TwilioVerifyAdapter` (producción) y `ConsolaVerificacionAdapter` (desarrollo y pruebas; acepta un código fijo y no llama a Twilio). La verificación no usa el outbox: es una llamada directa al puerto y, si se pierde, el usuario pulsa "reenviar". |
+| Verificación (RF-70) | El adaptador sms-correo usa SMS Gate y Brevo. Ñapa genera y valida el código de un solo uso y aplica caducidad, intentos y cupos en Redis. Cada solicitud se registra en mensaje sin incluir el código. El adaptador de consola se usa en desarrollo. |
 | Login (RF-10) | `POST /auth/login` con celular o correo + contraseña; bloqueo temporal tras N fallos (contador en Redis); mensaje genérico sin indicar qué dato falló. Cuenta sin verificar → `ACCOUNT_NOT_VERIFIED` e invita a reenviar OTP. |
 | Cambio de contraseña (RF-09) | Con contraseña actual, o recuperación con OTP. Incrementa `sv`, revoca refresh tokens salvo el actual y devuelve tokens nuevos. |
 | Admin | Contraseña únicamente, cuenta sembrada por migración o variable de entorno; rate-limit estricto; evaluar TOTP después del MVP. |
@@ -139,20 +139,20 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 **Phase F2 – Identidad (RF-07, RF-09, RF-10, RF-11)**
 - [x] F020 Completar entidades `Usuario`, `Ubicacion`, `Sesion`, `DispositivoToken` y migración. Validación de persistencia en PostgreSQL/PostGIS en CI: `UsuarioPersistenceIntegrationTest`, 3 pruebas aprobadas, sin omisiones.
 - [x] F021 Completar el flujo de solicitud/confirmación sobre `VerificarCelularPort`, límites de envíos e intentos en Redis y adaptador `otp-console` (un único adaptador Redis, perfil y código configurados desde el README; pruebas de contexto y recorrido HTTP con Docker validadas localmente)
-- [ ] F022 Integrar Twilio Verify solo después de confirmar elegibilidad, tarifas y presupuesto para Colombia; no habilitar envíos reales antes de aprobar el tope mensual de gasto.
+- [x] F022 Integrar SMS Gate para la entrega por SMS. Validación local con Ñapa web, backend local y Android emisor: código recibido, confirmado e inicio de sesión exitoso.
 - [ ] F023 Endpoints register / verify-phone / login / refresh / logout / change-password / recover. Flujos de identidad validados en CI con `otp-console`; recuperación validada manualmente: actualización de contraseña, rechazo de la anterior y acceso con la nueva. Pendiente validación con proveedor real; sin proveedor configurado, OTP responde 503.
 - [x] F024 Filtro JWT con `sv` y bootstrap admin de un solo uso
 - [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado. Pruebas unitarias y suites Redis/PostgreSQL ejecutadas en CI sin fallos ni omisiones; `ConsoleIdentityIntegrationTest` pasó sus 9 pruebas. El recorrido HTTP verifica OTP agotado, consumo único, rotación y revocación. Pendiente validación del proveedor real; la recuperación manual no sustituye esas pruebas.
 
 **Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` selecciona un único `ConsolaVerificacionAdapter` basado en Redis; `NAPA_OTP_CONSOLE_CODE` exige seis dígitos y no tiene valor predeterminado. No puede activarse junto con `prod`. Sin proveedor configurado, solicitar o confirmar la verificación responde `503`; el registro conserva la cuenta pendiente con envío `FALLIDO`. Nunca se persiste ni registra el OTP. La ejecución local con Docker pasó 194 pruebas, sin omisiones, incluyendo el recorrido HTTP de identidad, los registros simultáneos con celular o correo duplicado, CORS para orígenes web explícitos y las integraciones Redis/PostgreSQL/PostGIS. La validación en CI de 287 pruebas, sin fallos ni omisiones, y la recuperación manual con `otp-console`. RF-11 ya está implementado y queda pendiente la validación de extremo a extremo. El recorrido de prueba está en [RF-11-plan.md](../RF-11-eliminacion-de-cuenta/RF-11-plan.md).
 
-**Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. El proveedor real de OTP y sus costos quedan diferidos hasta aprobar presupuesto.
+**Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. La entrega por correo con Brevo y por SMS con SMS Gate fue validada localmente. La prueba de SMS en Railway queda pendiente.
 
 **Phase F3 – Notificaciones (RF-38, RF-39)**
 - [x] F030 Tablas `Notificacion` y `PreferenciaNotificacion` en V4; `DispositivoToken` ya existe en V3. Esquema validado en PostgreSQL/PostGIS en CI: `NotificationSchemaIntegrationTest`, 2 pruebas aprobadas, sin omisiones.
 - [x] F031 Adaptador FCM opt-in (Firebase Admin), lotes máximos de 500, limpieza de tokens `UNREGISTERED` y resultado explícito de entrega. Pruebas unitarias aprobadas. Entrega real con Firebase y disponibilidad del historial con FCM deshabilitado verificadas en F042.
 - [x] F032 Caso de uso, endpoints feed/detalle/preferencias, job de retención y manejador multi-evento para E01–E12, E14–E19 con deduplicación por destinatario. Pruebas unitarias pasan; el esquema quedó validado en CI mediante F030.
-- [ ] F033 Entidad `mensaje` y adaptador Twilio Verify de producción (RF-70); fuera del alcance aprobado para desarrollo, que mantiene OTP real deshabilitado.
+- [ ] F033 Desplegar SMS Gate en Railway y repetir el flujo RF-70 por SMS desde Ñapa. El registro de envíos en mensaje ya existe. Configurar las credenciales en Railway y mantener activo el Android emisor.
 
 **Phase F4 – Frontend base**
 - [x] F040 Proyecto Expo con development build Android (`expo-dev-client` y perfil `development` en `frontend/eas.json`), navegación con Expo Router y cliente HTTP basado en `fetch` en `frontend/src/lib/api.ts`. APK instalada y cierre/nuevo inicio de sesión validados en Android físico.
@@ -174,7 +174,8 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [x] Reenvío offline sin duplicados y aislamiento de la cola al cambiar de cuenta.
 - [x] Equipo físico usado en el recorrido: Motorola Moto G22.
 - [x] APK Android `preview` 1.0.0 (1) probado en el Moto G22. [Build de EAS](https://expo.dev/accounts/raar-18/projects/napa/builds/86e6beed-3a77-47c0-a81d-38047c9affcf).
-- [ ] Validar el canal SMS de RF-70 con un proveedor operativo.
+- [x] Validar localmente el canal SMS de RF-70 con SMS Gate.
+- [ ] Repetir la validación del canal SMS con el backend desplegado en Railway (F033).
 
 **Avance de oferta (2026-11-11)**: primera entrega en línea de RF-54/RF-55, inventario manual de RF-57 y catálogo de RF-33. V7 crea productos; los endpoints derivan la propiedad del vendedor autenticado, rechazan nombres duplicados por emprendimiento, conservan decimales de cantidad y usan idempotencia y bloqueo de fila al fijar inventario. La app publica, lista, marca agotado y repone, y el cliente consulta el catálogo con la etiqueta Solo reserva. Pasaron 194 pruebas backend y 56 frontend, lint, TypeScript y exportaciones iOS/web; V7 aplicada en napa_dev. El usuario confirmó que la prueba manual de esta entrega funcionó correctamente. Pendientes caché y outbox de productos, RF-56/RF-58 y los puertos de descuento/consulta para RF-45/RF-53. Las reservas y los pedidos no están implementados.
 
@@ -200,8 +201,8 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 | Pregunta | Impacto | Decisión provisional | Responsable |
 |---|---|---|---|
 | Proveedor de rutas | Costo, cuotas y contratos de integración | Resuelto: OpenRouteService detrás de RoutingPort; la clave va en ORS_API_KEY | Equipo |
-| Activación de Twilio Verify y presupuesto mensual (WhatsApp + SMS de respaldo) | Costo y riesgo de habilitar envíos reales | **Diferido**: solo adaptador de consola en desarrollo/pruebas; no activar envíos reales ni desplegar credenciales hasta acordar presupuesto y canal para Colombia | Equipo |
-| ¿Verify cancela la verificación anterior al pedir otra para el mismo celular (RF-70 FR-005)? | Seguridad | Verificar el comportamiento del proveedor en F022 y garantizar en la aplicación que la solicitud nueva invalida la anterior; no almacenar el OTP | Equipo |
+| Operación del Android emisor de SMS Gate | Disponibilidad de RF-70 por SMS | Confirmar quién mantiene el dispositivo, la SIM y el servicio activos para el despliegue de Railway. | Equipo |
+| Invalidación del código anterior al reenviar (RF-70 FR-005) | Seguridad | Ñapa controla el desafío en Redis. Verificar el reenvío de extremo a extremo con el proveedor desplegado. | Equipo |
 | ¿Notificaciones críticas no silenciables (estado de domicilio)? | RF-39 | **Resuelto: no hay excepciones**; se respetan las preferencias para todo tipo de notificación | Equipo |
 | Vencimientos (pedido sin respuesta, pago sin hacer, llegada sin confirmar) | Varias specs | **Resuelto para MVP: no hay vencimiento automático**; permanecen en su estado actual hasta una acción permitida por las specs. Reabrir la decisión requiere actualizar las specs | Equipo y usuarios |
 
@@ -209,7 +210,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 *  [x] Spec Change Requests aplicados a las specs
 *  [x] Proveedor de rutas elegido (OpenRouteService)
 *  [x] ArchUnit y Testcontainers corren en CI (287 pruebas, 0 fallos y 0 omitidas).
-*  [x] Checkpoint de la base verificado en un Motorola Moto G22 con el APK `preview`. La verificación se realizó por correo con Brevo. La validación de SMS sigue pendiente en RF-70.
+*  [x] Checkpoint de la base verificado en un Motorola Moto G22 con el APK `preview`. La verificación se realizó por correo con Brevo. El SMS pasó la prueba local de RF-70 y queda pendiente en Railway.
 
 **idempotencia en curso:** `409 IDEMPOTENCY_IN_PROGRESS` conserva la acción pendiente y se reintenta con la misma clave y cuerpo usando retroceso exponencial (inicialmente 5 s). Los conflictos de negocio permanecen fallidos para revisión. La repetición de una operación terminada reproduce su respuesta guardada. Validación: 12 pruebas de idempotencia del backend aprobadas, incluidas 3 de integración con Redis; 33 suites y 212 pruebas del frontend aprobadas. En Android se comprobó que un reporte pendiente sobrevive al cierre completo de la app con el backend apagado y se envía al restablecerlo. El aislamiento entre cuentas cuenta con pruebas automatizadas; su comprobación manual sigue pendiente.
 

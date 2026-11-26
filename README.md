@@ -59,7 +59,7 @@ No se guardan datos de tarjetas ni billeteras electrónicas de terceros.
 
 ## Stack previsto
 
-Backend: Java 21, Spring Boot 4.1.x, Spring Security, JPA + Hibernate Spatial, PostgreSQL 16 + PostGIS, Redis 7, Firebase Admin (FCM), SMSReactor (SMS) y Brevo (correo) para verificación, con adaptador de consola para desarrollo. Frontend: React Native + Expo (development build), expo-sqlite. Detalle y decisiones en [`specs/foundations/plan.md`](specs/foundations/plan.md).
+Backend: Java 21, Spring Boot 4.1.x, Spring Security, JPA + Hibernate Spatial, PostgreSQL 16 + PostGIS, Redis 7, Firebase Admin (FCM), SMS Gate (SMS) y Brevo (correo) para verificación, con adaptador de consola para desarrollo. Frontend: React Native + Expo (development build), expo-sqlite. Detalle y decisiones en [`specs/foundations/plan.md`](specs/foundations/plan.md).
 
 ## Desarrollo local
 
@@ -103,7 +103,7 @@ Para usar los proveedores reales, inicia la API sin `otp-console` y configura `N
 
 | Canal | Configuración |
 |---|---|
-| SMS | `NAPA_SMSREACTOR_API_KEY`; opcionalmente `NAPA_SMSREACTOR_PHONE_ID`. La pasarela del equipo debe estar operativa. |
+| SMS | `NAPA_SMS_GATE_USERNAME` y `NAPA_SMS_GATE_PASSWORD`. Usa las credenciales de Cloud Server que genera SMS Gateway for Android y mantén el Android emisor conectado con el servicio activo. |
 | Correo | `NAPA_BREVO_API_KEY`, `NAPA_BREVO_SENDER_EMAIL`; opcionalmente `NAPA_BREVO_SENDER_NAME`. |
 | Cupos diarios | `NAPA_LIMITE_DIARIO_SMS` y `NAPA_LIMITE_DIARIO_CORREO`, según la configuración del equipo. |
 
