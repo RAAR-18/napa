@@ -2,7 +2,7 @@
   "expo": {
     "name": "Ñapa",
     "slug": "napa",
-    "owner": "raar-18",
+    "owner": "raar-18-2",
     "description": "Conecta a vendedores locales con clientes cercanos.",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,11 +12,10 @@
       "supportsTablet": true
     },
     "android": {
+      "icon": "./assets/napa-icono-monograma.png",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#321633",
+        "foregroundImage": "./assets/napa-icono-monograma.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -72,8 +71,9 @@
           "web": true
         }
       },
+      "mapasAndroidHabilitados": false,
       "eas": {
-        "projectId": "0b050cf7-a270-49d6-92e3-a6ff6191a6b2"
+        "projectId": "0886bc3e-582f-4281-a6a1-fa124e334a26"
       }
     }
   }
