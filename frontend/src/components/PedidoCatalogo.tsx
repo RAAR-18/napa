@@ -28,6 +28,7 @@ import {
   type CarritoPedido, type DatosCotizacionGuardada,
 } from '../lib/pedido-offline';
 import { requestDeviceLocation } from '../lib/location';
+import { obtenerMiPerfil } from '../lib/usuarios';
 import {
   type CotizacionPedido,
   cotizarPedido,
@@ -218,17 +219,29 @@ export function PedidoCatalogo({
         : await leerBorradorPedido(propietario, emprendimientoId);
       if (!active || generacion !== getSessionGeneration()) return;
       carritoCargado.current = true;
-      setBorradorListo(true);
       if (pendienteId && (!carrito || !accion || !pedido)) {
         setError('Este pedido ya no está disponible para revisión.');
         return;
       }
-      const ultimaDireccion = !carrito?.direccionBorrador && !pedido?.ubicacionEntrega
+      const direccionBorrador = carrito?.direccionBorrador;
+      const tieneDireccionBorrador = direccionBorrador && Object.values(direccionBorrador).some((valor) => valor.trim());
+      const ultimaDireccion = !tieneDireccionBorrador && !pedido?.ubicacionEntrega
         ? await leerUltimaDireccion(propietario).catch(() => null)
         : null;
       if (!active || generacion !== getSessionGeneration()) return;
       generacionCarrito.current = generacion;
-      const direccionGuardada = carrito?.direccionBorrador;
+      // Restaurar el carrito y habilitar su guardado no debe esperar a la consulta opcional del perfil.
+      if (carrito && !carritoEditado.current) {
+        setCart(carrito.items);
+        setModalidad(carrito.modalidad);
+        setReserve(carrito.reserva);
+        setReservationDate(carrito.fechaReserva);
+      }
+      setBorradorListo(true);
+      const perfil = !offline && !pendienteId && !tieneDireccionBorrador && !ultimaDireccion && !pedido?.ubicacionEntrega
+        ? await Promise.resolve().then(() => obtenerMiPerfil()).catch(() => null) : null;
+      if (!active || generacion !== getSessionGeneration()) return;
+      const direccionGuardada = tieneDireccionBorrador ? direccionBorrador : null;
       if (direccionEditada.current) {
         // La persona ya escribió una dirección mientras cargaba: no se reemplaza.
       } else if (direccionGuardada) {
@@ -244,15 +257,15 @@ export function PedidoCatalogo({
         setNeighborhood(ultimaDireccion.barrio ?? '');
         setReference(ultimaDireccion.referencia ?? '');
         setDireccionRecordada(true);
+      } else if (perfil?.id === propietario && perfil.ubicacion) {
+        setAddress(perfil.ubicacion.direccion);
+        setLatitude(String(perfil.ubicacion.latitud));
+        setLongitude(String(perfil.ubicacion.longitud));
+        setReference(perfil.ubicacion.referencia ?? '');
+        setDireccionRecordada(true);
       }
       setBorradorListo(true);
       if (!carrito) return;
-      if (!carritoEditado.current) {
-        setCart(carrito.items);
-        setModalidad(carrito.modalidad);
-        setReserve(carrito.reserva);
-        setReservationDate(carrito.fechaReserva);
-      }
       if (accion) {
         setRevision(accion);
         setMensajeLocal(accion.lastError ?? 'Requiere revisión. Vuelve a cotizar el pedido.');
@@ -272,7 +285,7 @@ export function PedidoCatalogo({
       else setMensajeLocal('No se pudo recuperar el carrito guardado. Reabre el catálogo para intentar de nuevo.');
     });
     return () => { active = false; };
-  }, [emprendimientoId, enabled, pendienteId]);
+  }, [emprendimientoId, enabled, pendienteId, offline]);
 
   useEffect(() => {
     if (!offline || !cuenta) return;
@@ -348,8 +361,8 @@ export function PedidoCatalogo({
     let cantidad: number;
     try {
       cantidad = parseCantidad(quantities[producto.id] ?? '1');
-      if (cantidad <= 0 || cantidad > 20) {
-        throw new Error('Cada producto debe tener una cantidad entre 0 y 20.');
+      if (cantidad <= 0 || cantidad > 99999999.99) {
+        throw new Error('La cantidad debe ser positiva y tener como máximo ocho enteros y dos decimales.');
       }
     } catch (cause) {
       setError(
@@ -358,11 +371,7 @@ export function PedidoCatalogo({
       return;
     }
 
-    const exists = cart.some((item) => item.producto.id === producto.id);
-    if (!exists && cart.length >= 20) {
-      setError('Un pedido puede incluir como máximo 20 productos distintos.');
-      return;
-    }
+
     carritoEditado.current = true;
     setCart((current) => [
       ...current.filter((item) => item.producto.id !== producto.id),
@@ -622,7 +631,7 @@ export function PedidoCatalogo({
       {step === 'cart' ? (
         <>
           <HelperText>
-            Puedes agregar hasta 20 productos. Las cantidades y la disponibilidad se validarán
+            Puedes agregar los productos que necesites. Las cantidades y la disponibilidad se validarán
             nuevamente antes de confirmar.
           </HelperText>
           <CardGrid>
@@ -745,7 +754,7 @@ export function PedidoCatalogo({
           ) : modalidad !== 'RECOGIDA' ? (
             <>
               <Text style={styles.subheading}>Ubicación de entrega</Text>
-              {direccionRecordada ? <HelperText>Completamos tu última dirección de entrega. Revísala y cámbiala si lo necesitas.</HelperText> : null}
+              {direccionRecordada ? <HelperText>Completamos tu dirección guardada. Revísala y cámbiala si lo necesitas.</HelperText> : null}
               <HelperText>
                 La ubicación se enviará al vendedor para calcular la entrega y llevar tu pedido.
               </HelperText>

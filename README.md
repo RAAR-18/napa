@@ -261,3 +261,16 @@ El entorno de Compose usa credenciales exclusivamente locales. No las reutilices
 ## Estado del proyecto
 
 La implementación cubrió las fundaciones F0–F1 y avanza en F2 (identidad). El estado de cada fase, las decisiones aprobadas y los bloqueos de proveedor están en [el plan de fundaciones](specs/foundations/plan.md).
+
+
+### Ubicación voluntaria del ambulante con la app en segundo plano
+
+En **Mi emprendimiento**, el vendedor puede activar **Ubicación en segundo plano** y permitir ubicación **Siempre / Permitir todo el tiempo**. El alta del negocio solo activa primer plano; compartir fuera de la app requiere esta elección separada. Android muestra una notificación permanente e iOS el indicador del sistema. El control general **Desactivar ubicación automática** detiene ambos modos; también se puede apagar solo segundo plano. Cerrar sesión o eliminar el negocio detiene su seguimiento.
+
+Requiere un **nuevo build nativo** con expo-task-manager y los permisos de app.json: actualizar JavaScript o usar Expo Go no basta. El navegador conserva solo primer plano. Para construir el perfil de pruebas existente, desde frontend:
+
+```bash
+npx eas-cli@latest build --platform android --profile preview
+```
+
+Instala el APK nuevo y valida: activar con permiso, pasar a otra app/bloquear pantalla, comprobar actualización al desplazarse, desactivar y comprobar que cesan nuevas actualizaciones, cerrar sesión y revocar permisos. Debe haber conexión con la API. El sistema y el fabricante controlan la frecuencia/supervivencia: forzar detención o cerrar la app desde recientes puede pararla. No se guarda ni reenvía un historial de recorridos.

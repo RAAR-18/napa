@@ -4,7 +4,7 @@ import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-nat
 import { Icon } from './NapaUI';
 import { fonts, palette } from './theme';
 
-export type ToastTone = 'error' | 'success';
+export type ToastTone = 'error' | 'success' | 'info';
 
 const DURACION_MS = 6000;
 // En la web la notificación queda fija arriba de la ventana aunque la página tenga scroll.
@@ -67,7 +67,7 @@ export function Toast({ message, tone = 'error' }: { message: string | null; ton
           <View style={[styles.icono, esError ? styles.iconoError : styles.iconoExito]}>
             <Icon
               color="#FFFFFF"
-              name={esError ? 'alert-circle' : 'check-circle'}
+              name={esError ? 'alert-circle' : tone === 'info' ? 'bell' : 'check-circle'}
               size={20}
             />
           </View>
@@ -76,7 +76,7 @@ export function Toast({ message, tone = 'error' }: { message: string | null; ton
               <Text style={styles.app}>ÑAPA</Text>
               <Text style={styles.hora}>ahora</Text>
             </View>
-            <Text style={styles.titulo}>{esError ? 'No se pudo completar' : 'Listo'}</Text>
+            <Text style={styles.titulo}>{esError ? 'No se pudo completar' : tone === 'info' ? 'Nueva notificación' : 'Listo'}</Text>
             <Text style={styles.mensaje}>{visible}</Text>
           </View>
         </Pressable>

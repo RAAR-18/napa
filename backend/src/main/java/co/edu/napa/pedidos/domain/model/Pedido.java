@@ -40,9 +40,9 @@ public record Pedido(
         Objects.requireNonNull(createdAt, "createdAt");
         Objects.requireNonNull(updatedAt, "updatedAt");
         items = List.copyOf(Objects.requireNonNull(items, "items"));
-        if (items.isEmpty() || items.size() > 20
+        if (items.isEmpty()
                 || new HashSet<>(items.stream().map(ItemPedido::productoId).toList()).size() != items.size()) {
-            throw new DomainException("VALIDATION_ERROR", "El pedido debe tener entre 1 y 20 productos distintos.");
+            throw new DomainException("VALIDATION_ERROR", "El pedido debe tener al menos un producto distinto.");
         }
         if (total < 0) throw new DomainException("VALIDATION_ERROR", "El total no puede ser negativo.");
         boolean hasLocation = ubicacionEntregaId != null;

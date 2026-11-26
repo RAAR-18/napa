@@ -5,10 +5,12 @@ import { PedidoCatalogo } from '../../components/PedidoCatalogo';
 import { readSession } from '../../lib/auth';
 import { borrarBorradorPedido, guardarBorradorPedido, leerBorradorPedido, leerUltimaDireccion } from '../../lib/pedido-offline';
 import { cotizarPedido, crearPedido } from '../../lib/pedidos';
+import { obtenerMiPerfil } from '../../lib/usuarios';
 import type { Producto } from '../../lib/productos';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('../../lib/auth', () => ({ readSession: jest.fn(), getSessionGeneration: () => 0 }));
+jest.mock('../../lib/usuarios', () => ({ obtenerMiPerfil: jest.fn(async () => null) }));
 jest.mock('../../lib/uuid', () => ({ randomUUID: () => 'test-key' }));
 jest.mock('../../hooks/useResumenesCalificacion', () => ({ useResumenesCalificacion: () => ({}) }));
 jest.mock('../../database/outbox', () => ({ outbox: {} }));
@@ -147,4 +149,17 @@ it('recuerda una dirección cotizada en otra tienda y la separa por cuenta', asy
   expect(vista.getByLabelText('Referencia (opcional)').props.value).toBe('Portón azul');
   expect(vista.getByLabelText('Latitud').props.value).toBe('11.24');
   expect(await leerUltimaDireccion('cliente-b')).toBeNull();
+});
+
+it('fills delivery data from the profile when the draft address is empty', async () => {
+  jest.mocked(obtenerMiPerfil).mockResolvedValue({ id: 'cliente-a', ubicacion: {
+    direccion: 'Calle del perfil', latitud: 11.24, longitud: -74.2, referencia: 'Portón del perfil',
+  } } as never);
+  const vista = await abrirTienda('tienda-perfil');
+  await fireEvent.press(vista.getByRole('button', { name: 'Agregar Mango al pedido' }));
+  await fireEvent.press(vista.getByRole('button', { name: 'Continuar con la entrega' }));
+  await fireEvent.press(vista.getByRole('radio', { name: 'Domicilio' }));
+  await waitFor(() => expect(vista.getByLabelText('Dirección de entrega').props.value).toBe('Calle del perfil'));
+  expect(vista.getByLabelText('Latitud').props.value).toBe('11.24');
+  expect(vista.getByLabelText('Referencia (opcional)').props.value).toBe('Portón del perfil');
 });

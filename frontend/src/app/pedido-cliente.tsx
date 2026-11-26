@@ -261,9 +261,9 @@ export default function PedidoClienteScreen() {
                 Pago: {pagoNombres[detail.pago.estado] ?? detail.pago.estado}
               </Text>
             ) : null}
-            {online && detail.modalidad === 'DOMICILIO' && detail.pago?.estado === 'PENDIENTE_CONFIRMACION' ? (
+            {online && (detail.modalidad === 'DOMICILIO' || (detail.reserva && 'medioPago' in detail && detail.medioPago === 'CUENTA_BANCARIA')) && detail.pago?.estado === 'PENDIENTE_CONFIRMACION' ? (
               <HelperText>
-                Transfiere {formatPrice(detail.total)} al vendedor. Cuando lo confirme, publicará tu domicilio.
+                Transfiere {formatPrice(detail.total)} al vendedor después de que acepte el pedido. El vendedor confirmará la recepción. Si es una reserva, el pago quedará registrado por anticipado.
               </HelperText>
             ) : null}
           </View>
