@@ -18,6 +18,22 @@ export async function leerUbicacionAutomatica(): Promise<Preferencia | null> {
 }
 
 
+/** Tope de una activación: si el vendedor olvida apagarla, deja de gastar batería al terminar la jornada. */
+export const DURACION_MAXIMA_UBICACION_MS = 12 * 60 * 60_000;
+export function ubicacionVencida(preferencia: Preferencia, ahora = Date.now()): boolean {
+  return typeof preferencia.iniciadaAt === 'number' && ahora - preferencia.iniciadaAt > DURACION_MAXIMA_UBICACION_MS;
+}
+
+/** Apaga la preferencia vencida solo si sigue siendo la misma activación. */
+export async function desactivarSiVencida(preferencia: Preferencia): Promise<boolean> {
+  if (!ubicacionVencida(preferencia)) return false;
+  if (mismaPreferencia(await leerUbicacionAutomatica(), preferencia)) {
+    await storage.deleteItemAsync(UBICACION_KEY);
+    oyentesUbicacion.forEach((oyente) => oyente());
+  }
+  return true;
+}
+
 export function mismaPreferencia(a: Preferencia | null, b: Preferencia): boolean {
   return a?.usuarioId === b.usuarioId && a.emprendimientoId === b.emprendimientoId && a.activacionId === b.activacionId;
 }

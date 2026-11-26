@@ -5,14 +5,15 @@ import * as Location from 'expo-location';
 import * as storage from './auth-storage';
 import { getSessionGeneration, readSession } from './auth';
 import { randomUUID } from './uuid';
-import { leerUbicacionAutomatica, mismaPreferencia, UBICACION_KEY, oyentesUbicacion, type Preferencia } from './ubicacion-preferencia';
-import { actualizarZonaAutomatica } from './ubicacion-publicacion';
+import { leerUbicacionAutomatica, mismaPreferencia, desactivarSiVencida, UBICACION_KEY, oyentesUbicacion, type Preferencia } from './ubicacion-preferencia';
+import { actualizarZonaAutomatica, UMBRAL_PUBLICACION_METROS } from './ubicacion-publicacion';
 import { solicitarPermisoSegundoPlano, iniciarSegundoPlano, detenerSegundoPlano, reconciliarSegundoPlano } from './ubicacion-segundo-plano';
 export { leerUbicacionAutomatica, suscribirUbicacionAutomatica } from './ubicacion-preferencia';
 export { actualizarZonaAutomatica } from './ubicacion-publicacion';
 
 const KEY = UBICACION_KEY;
-export const INTERVALO_UBICACION_MS = 15_000;
+/** Con la app abierta, Android entrega como mucho una posición por minuto y solo tras moverse el umbral. */
+export const INTERVALO_UBICACION_MS = 60_000;
 const oyentes = oyentesUbicacion;
 
 /** Desactiva primero la preferencia, de modo que una tarea pendiente no pueda volver a publicar. */
@@ -69,32 +70,67 @@ export async function configurarUbicacionAutomatica(
   } finally { oyentes.forEach((oyente) => oyente()); }
 }
 
+/**
+ * Con la app abierta y sin segundo plano, el sistema avisa al moverse (watchPositionAsync con filtro de
+ * distancia), en lugar de leer el GPS cada pocos segundos. Quieto, no hay lecturas ni peticiones.
+ */
 export function useUbicacionAutomatica() {
   useEffect(() => {
     let montado = true;
     let ejecutando = false;
+    let vigilancia: Location.LocationSubscription | null = null;
+    let sincronizando = false;
+    let pendiente = false;
     const vigente = () => montado && AppState.currentState === 'active';
-    async function actualizar() {
+
+    function soltarVigilancia() { vigilancia?.remove(); vigilancia = null; }
+
+    async function debeVigilar(): Promise<boolean> {
+      if (!vigente()) return false;
+      const preferencia = await leerUbicacionAutomatica();
+      if (!preferencia || preferencia.segundoPlano) return false;
+      if (await desactivarSiVencida(preferencia)) return false;
+      return (await Location.getForegroundPermissionsAsync()).status === 'granted';
+    }
+
+    async function sincronizarVigilancia() {
+      if (sincronizando) { pendiente = true; return; }
+      sincronizando = true;
+      try {
+        do {
+          pendiente = false;
+          if (!(await debeVigilar())) { soltarVigilancia(); continue; }
+          if (vigilancia) continue;
+          const nueva = await Location.watchPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+            distanceInterval: UMBRAL_PUBLICACION_METROS,
+            timeInterval: INTERVALO_UBICACION_MS,
+          }, (posicion) => { void actualizar(posicion); }, () => undefined);
+          if (vigente()) vigilancia = nueva; else nueva.remove();
+        } while (pendiente);
+      } catch { soltarVigilancia(); }
+      finally { sincronizando = false; }
+    }
+
+    async function actualizar(punto?: Location.LocationObject) {
       if (!vigente() || ejecutando) return;
       ejecutando = true;
       try {
-        if (!(await leerUbicacionAutomatica())?.segundoPlano) await actualizarZonaAutomatica(vigente);
+        if (!(await leerUbicacionAutomatica())?.segundoPlano) await actualizarZonaAutomatica(vigente, punto, false);
       }
       catch { /* La siguiente posición vigente se intentará al recuperar conexión. */ }
       finally { ejecutando = false; }
     }
-    const notificar = () => { void actualizar(); };
+    const notificar = () => { void sincronizarVigilancia(); void actualizar(); };
     oyentes.add(notificar);
-    const timer = setInterval(notificar, INTERVALO_UBICACION_MS);
     const subscription = AppState.addEventListener('change', (estado) => {
       if (estado === 'active') {
         void reconciliarSegundoPlano().catch(() => undefined);
         notificar();
-      }
+      } else soltarVigilancia();
     });
-    const reconciliar = () => { void reconciliarSegundoPlano().catch(() => undefined); };
-    reconciliar();
+    void reconciliarSegundoPlano().catch(() => undefined);
     notificar();
-    return () => { montado = false; oyentes.delete(notificar); clearInterval(timer); subscription.remove(); };
+    return () => { montado = false; oyentes.delete(notificar); soltarVigilancia(); subscription.remove(); };
   }, []);
 }

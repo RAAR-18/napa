@@ -73,3 +73,13 @@ El usuario autoriza revisar las reglas anteriores según el tester: (1) el ambul
 El usuario autoriza continuar actualizando la posición del ambulante sin tener Ñapa en primer plano y poder activarla/desactivarla. Consentimiento separado: crear el negocio conserva solo primer plano; desde Mi emprendimiento se solicita explícitamente permiso en segundo plano. Android muestra servicio/notificación persistente e iOS indicador de ubicación. No se pide permiso desde una tarea ni se reactiva un consentimiento revocado. Pausar/cerrar sesión invalida primero la preferencia y detiene la tarea. Sesión, cuenta, rol y negocio deben coincidir en cada envío; no publicar lotes históricos ni posiciones de más de dos minutos. No se promete funcionamiento tras forzar detención/cierre o restricciones del sistema. Web no admite este modo. Requiere expo-task-manager compatible SDK58 y nuevo build nativo; Expo Go no valida segundo plano.
 
 Diseño: preferencia y publicación sin React compartidas por el bucle visible y una tarea TaskManager definida en módulo global/importada desde _layout. La tarea procesa solo el punto más reciente, sin cola histórica. Configuración CNG habilita permisos/modos nativos y servicio. SecureStore mantiene cifradas la sesión y preferencia, disponibles tras el primer desbloqueo del dispositivo para permitir la tarea con pantalla bloqueada; solo esas claves usan AFTER_FIRST_UNLOCK. Escrituras nativas serializadas evitan que la adaptación de accesibilidad sobrescriba una renovación de sesión concurrente. Validar permisos denegados, activación/pausa/logout, otra cuenta, puntos antiguos, serialización, tipos/lint/config resuelta y exportación web; probar el APK en dispositivo por separado.
+
+## Consumo de batería y red de la ubicación del ambulante (2026-11-25)
+
+Para no agotar la batería del vendedor ni cargar el servidor con escrituras repetidas:
+
+- La posición se vuelve a publicar solo cuando el vendedor se movió al menos **50 m** desde el último punto enviado. Si sigue quieto, la app no lee el GPS de forma periódica ni hace peticiones.
+- Con la app abierta, el sistema avisa del movimiento (filtro de distancia). En segundo plano, las posiciones llegan agrupadas, como mucho una por minuto.
+- La precisión pedida es la equilibrada (~100 m, red Wi-Fi/antenas), suficiente para mostrar la zona del negocio.
+- Una activación se apaga sola a las **12 horas** si el vendedor no la desactiva; para volver a compartir debe activarla otra vez.
+- Sigue sin guardarse historial de recorridos: la app solo recuerda en memoria el último punto enviado.

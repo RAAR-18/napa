@@ -3,10 +3,12 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { ApiError } from './api';
 import { readSession } from './auth';
-import { leerUbicacionAutomatica, mismaPreferencia, deshabilitarSegundoPlano, registrarParadaUbicacion, type Preferencia } from './ubicacion-preferencia';
-import { actualizarZonaAutomatica } from './ubicacion-publicacion';
+import { leerUbicacionAutomatica, mismaPreferencia, deshabilitarSegundoPlano, desactivarSiVencida, registrarParadaUbicacion, type Preferencia } from './ubicacion-preferencia';
+import { actualizarZonaAutomatica, UMBRAL_PUBLICACION_METROS } from './ubicacion-publicacion';
 
 export const TAREA_UBICACION = 'napa-ubicacion-ambulante-v1';
+/** El sistema entrega posiciones agrupadas como máximo cada minuto: menos despertares de la radio y del GPS. */
+export const INTERVALO_SEGUNDO_PLANO_MS = 60_000;
 let recibiendo = false;
 
 /** Se define al importar el módulo, antes de montar React o navegar. */
@@ -19,6 +21,10 @@ if (!TaskManager.isTaskDefined(TAREA_UBICACION)) {
       preferencia = await leerUbicacionAutomatica();
       const sesion = await readSession();
       if (!preferencia?.segundoPlano || sesion?.usuarioId !== preferencia.usuarioId || sesion.rol !== 'VENDEDOR_AMBULANTE') {
+        await detenerSegundoPlano();
+        return;
+      }
+      if (await desactivarSiVencida(preferencia)) {
         await detenerSegundoPlano();
         return;
       }
@@ -60,10 +66,13 @@ export async function iniciarSegundoPlano(): Promise<void> {
     throw new Error('Se canceló la activación de ubicación.');
   }
   await Location.startLocationUpdatesAsync(TAREA_UBICACION, {
+    // Balanced (~100 m) evita el GPS fino; la zona del negocio no necesita más precisión.
     accuracy: Location.Accuracy.Balanced,
-    distanceInterval: 25,
-    timeInterval: 15_000,
-    deferredUpdatesInterval: 15_000,
+    distanceInterval: UMBRAL_PUBLICACION_METROS,
+    timeInterval: INTERVALO_SEGUNDO_PLANO_MS,
+    deferredUpdatesDistance: UMBRAL_PUBLICACION_METROS,
+    deferredUpdatesInterval: INTERVALO_SEGUNDO_PLANO_MS,
+    activityType: Location.ActivityType.Fitness,
     pausesUpdatesAutomatically: false,
     showsBackgroundLocationIndicator: true,
     foregroundService: {
@@ -87,6 +96,10 @@ export async function reconciliarSegundoPlano(): Promise<void> {
   const preferencia = await leerUbicacionAutomatica();
   const sesion = await readSession();
   if (!preferencia?.segundoPlano || sesion?.usuarioId !== preferencia.usuarioId || sesion.rol !== 'VENDEDOR_AMBULANTE') {
+    await detenerSegundoPlano();
+    return;
+  }
+  if (await desactivarSiVencida(preferencia)) {
     await detenerSegundoPlano();
     return;
   }

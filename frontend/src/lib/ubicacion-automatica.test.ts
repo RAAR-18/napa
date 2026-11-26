@@ -3,6 +3,7 @@ import { configurarUbicacionAutomatica, actualizarZonaAutomatica } from './ubica
 import { solicitarPermisoSegundoPlano, iniciarSegundoPlano, detenerSegundoPlano } from './ubicacion-segundo-plano';
 import { readSession } from './auth';
 import { editarMiEmprendimiento, obtenerMiEmprendimiento } from './emprendimientos';
+import { olvidarUltimaPublicacion } from './ubicacion-publicacion';
 
 const mockDatos = new Map<string, string>();
 jest.mock('./ubicacion-segundo-plano', () => ({
@@ -25,6 +26,7 @@ jest.mock('expo-location', () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockDatos.clear();
+  olvidarUltimaPublicacion();
   jest.mocked(readSession).mockResolvedValue({ usuarioId: 'A', rol: 'VENDEDOR_AMBULANTE' } as never);
   jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({ status: 'granted' } as never);
   jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({ status: 'granted' } as never);
@@ -88,4 +90,40 @@ it('invalidates the final HTTP guard immediately after deactivation', async () =
   expect(await validar()).toBe(true);
   await configurarUbicacionAutomatica('A', 'negocio', false);
   expect(await validar()).toBe(false);
+});
+
+it('does not use the network again while the vendor stays within the threshold', async () => {
+  await configurarUbicacionAutomatica('A', 'negocio', true);
+  await actualizarZonaAutomatica();
+  expect(obtenerMiEmprendimiento).toHaveBeenCalledTimes(1);
+  expect(editarMiEmprendimiento).toHaveBeenCalledTimes(1);
+  // ~20 m después: sin consulta ni envío.
+  jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({ coords: { latitude: 11.25018, longitude: -74.20 } } as never);
+  await actualizarZonaAutomatica();
+  expect(obtenerMiEmprendimiento).toHaveBeenCalledTimes(1);
+  expect(editarMiEmprendimiento).toHaveBeenCalledTimes(1);
+  // ~110 m después: se publica sin volver a consultar el negocio.
+  jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({ coords: { latitude: 11.251, longitude: -74.20 } } as never);
+  await actualizarZonaAutomatica();
+  expect(obtenerMiEmprendimiento).toHaveBeenCalledTimes(1);
+  expect(editarMiEmprendimiento).toHaveBeenCalledTimes(2);
+  expect(jest.mocked(editarMiEmprendimiento).mock.calls[1][0]).toEqual({ ubicacion: {
+    latitud: 11.251, longitud: -74.20, direccion: null, referencia: null,
+  } });
+});
+
+it('retries the publication after a failed request instead of assuming it was sent', async () => {
+  await configurarUbicacionAutomatica('A', 'negocio', true);
+  jest.mocked(editarMiEmprendimiento).mockRejectedValueOnce(new Error('Sin conexión'));
+  await expect(actualizarZonaAutomatica()).rejects.toThrow('Sin conexión');
+  await actualizarZonaAutomatica();
+  expect(editarMiEmprendimiento).toHaveBeenCalledTimes(2);
+});
+
+it('does not read GPS once the activation exceeded the maximum duration', async () => {
+  mockDatos.set('napa.ubicacion-automatica', JSON.stringify({ usuarioId: 'A', emprendimientoId: 'negocio',
+    activacionId: 'vieja', iniciadaAt: Date.now() - 13 * 60 * 60_000 }));
+  await actualizarZonaAutomatica();
+  expect(Location.getCurrentPositionAsync).not.toHaveBeenCalled();
+  expect(editarMiEmprendimiento).not.toHaveBeenCalled();
 });

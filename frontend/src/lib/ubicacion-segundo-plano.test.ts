@@ -7,15 +7,16 @@ import { ApiError } from './api';
 import { readSession } from './auth';
 
 jest.mock('expo-task-manager', () => ({ isTaskDefined: jest.fn(() => false), defineTask: jest.fn(), isAvailableAsync: jest.fn(async () => true) }));
-jest.mock('expo-location', () => ({ Accuracy: { Balanced: 3 },
+jest.mock('expo-location', () => ({ Accuracy: { Balanced: 3 }, ActivityType: { Fitness: 3 },
   requestBackgroundPermissionsAsync: jest.fn(), getBackgroundPermissionsAsync: jest.fn(),
   hasStartedLocationUpdatesAsync: jest.fn(), startLocationUpdatesAsync: jest.fn(async () => undefined),
   stopLocationUpdatesAsync: jest.fn(async () => undefined),
 }));
 jest.mock('./auth', () => ({ readSession: jest.fn() }));
-jest.mock('./ubicacion-publicacion', () => ({ actualizarZonaAutomatica: jest.fn(async () => undefined) }));
+jest.mock('./ubicacion-publicacion', () => ({ actualizarZonaAutomatica: jest.fn(async () => undefined), UMBRAL_PUBLICACION_METROS: 50 }));
 jest.mock('./ubicacion-preferencia', () => ({ registrarParadaUbicacion: jest.fn(), leerUbicacionAutomatica: jest.fn(),
   deshabilitarSegundoPlano: jest.fn(async () => undefined),
+  desactivarSiVencida: jest.fn(async (p: { iniciadaAt?: number }) => Date.now() - (p.iniciadaAt ?? Date.now()) > 12 * 60 * 60_000),
   mismaPreferencia: (a: { activacionId: string } | null, b: { activacionId: string }) => a?.activacionId === b.activacionId,
 }));
 const ejecutar = jest.mocked(TaskManager.defineTask).mock.calls[0][1];
@@ -82,4 +83,19 @@ it('stops background if the server no longer permits access to the business', as
   await recibir([punto()]);
   expect(deshabilitarSegundoPlano).toHaveBeenCalledWith(pref);
   expect(Location.stopLocationUpdatesAsync).toHaveBeenCalled();
+});
+
+it('stops the native task once the activation exceeded the maximum duration', async () => {
+  jest.mocked(leerUbicacionAutomatica).mockResolvedValue({ ...pref, iniciadaAt: Date.now() - 13 * 60 * 60_000 });
+  await recibir([punto()]);
+  expect(actualizarZonaAutomatica).not.toHaveBeenCalled();
+  expect(Location.stopLocationUpdatesAsync).toHaveBeenCalled();
+});
+
+it('starts the native task with batched, low-power options', async () => {
+  jest.mocked(Location.hasStartedLocationUpdatesAsync).mockResolvedValue(false);
+  await iniciarSegundoPlano();
+  expect(Location.startLocationUpdatesAsync).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+    accuracy: 3, distanceInterval: 50, timeInterval: 60_000, deferredUpdatesDistance: 50, deferredUpdatesInterval: 60_000,
+  }));
 });
