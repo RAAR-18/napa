@@ -1,6 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
+import { registrarParadaUbicacion } from './ubicacion-preferencia';
 
 import {
+  clearSession,
   changePassword,
   confirmRegistration,
   login,
@@ -12,7 +14,7 @@ import {
 } from './auth';
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'generated-id' }));
-jest.mock('expo-secure-store', () => ({
+jest.mock('expo-secure-store', () => ({ AFTER_FIRST_UNLOCK: 1,
   deleteItemAsync: jest.fn(),
   getItemAsync: jest.fn(),
   setItemAsync: jest.fn(),
@@ -47,7 +49,7 @@ describe('auth API contract', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(SecureStore.getItemAsync).mockResolvedValue('device-1');
+    jest.mocked(SecureStore.getItemAsync).mockImplementation(async (key) => key === 'napa.auth.device-id' ? 'device-1' : null);
     jest.mocked(SecureStore.setItemAsync).mockResolvedValue();
     fetchMock.mockResolvedValue(mockResponse());
     globalThis.fetch = fetchMock;
@@ -115,6 +117,7 @@ describe('auth API contract', () => {
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
       'napa.auth.session',
       expect.stringContaining('"accessToken":"access"'),
+      { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK },
     );
   });
 
@@ -181,4 +184,14 @@ describe('auth API contract', () => {
       }),
     );
   });
+});
+
+it('stops shared location when clearing a session with active consent', async () => {
+  jest.mocked(SecureStore.getItemAsync).mockImplementation(async (key) => key === 'napa.ubicacion-automatica' ? '{"usuarioId":"A"}' : null);
+  const parar = jest.fn(async () => {
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('napa.ubicacion-automatica');
+  });
+  const dejar = registrarParadaUbicacion(parar);
+  try { await clearSession(); expect(parar).toHaveBeenCalled(); }
+  finally { dejar(); }
 });

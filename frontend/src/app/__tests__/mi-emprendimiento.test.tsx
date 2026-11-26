@@ -1,4 +1,3 @@
-import * as Location from 'expo-location';
 import { selectDateTime } from '../../test-utils/select-date-time';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -104,23 +103,15 @@ describe('mi emprendimiento (RF-29, RF-30)', () => {
     await waitFor(() => expect(view.getByText('Cambios guardados. Los clientes ya los ven.')).toBeTruthy());
   });
 
-  it('a street seller updates the zone with the current position', async () => {
+  it('a street seller has location controls but no fixed address fields', async () => {
     jest.mocked(getValidSession).mockResolvedValue(session('VENDEDOR_AMBULANTE'));
     jest.mocked(obtenerMiEmprendimiento).mockResolvedValue({ ...mine, ubicacion: { ...mine.ubicacion, direccion: null } });
-    jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({ status: 'granted' } as never);
-    jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({
-      coords: { latitude: 11.25, longitude: -74.2 },
-    } as never);
-    jest.mocked(editarMiEmprendimiento).mockResolvedValue(mine);
     const view = await render(<MiEmprendimientoScreen />);
-
-    await fireEvent.press(await view.findByText('Estoy aquí'));
-    await waitFor(() => expect(view.getByLabelText('Latitud').props.value).toBe('11.250000'));
-    await fireEvent.press(view.getByText('Guardar cambios'));
-
-    expect(editarMiEmprendimiento).toHaveBeenCalledWith({
-      ubicacion: { latitud: 11.25, longitud: -74.2, direccion: null, referencia: null },
-    });
+    await waitFor(() => expect(view.getByText('Activar ubicación automática')).toBeTruthy());
+    expect(view.queryByLabelText('Latitud')).toBeNull();
+    expect(view.queryByLabelText('Longitud')).toBeNull();
+    expect(view.queryByLabelText('Dirección (opcional)')).toBeNull();
+    expect(editarMiEmprendimiento).not.toHaveBeenCalled();
   });
 
   it('does not send anything when nothing changed', async () => {

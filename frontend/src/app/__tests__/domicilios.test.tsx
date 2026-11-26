@@ -212,3 +212,13 @@ it('does not request deliveries for a street vendor', async () => {
   )).toBeTruthy());
   expect(listarDomiciliosVendedor).not.toHaveBeenCalled();
 });
+
+it('offers advance payment confirmation for an accepted pickup reservation', async () => {
+  jest.mocked(obtenerPedidoVendedor).mockResolvedValue({
+    ...paidOrder, modalidad: 'RECOGIDA', reserva: new Date(Date.now() + 86400000).toISOString(),
+    tarifaDomicilio: null, total: 3500, pago: { estado: 'PENDIENTE_CONFIRMACION' },
+  });
+  const view = await render(<PedidoVendedorScreen />);
+  await waitFor(() => expect(view.getByRole('button', { name: 'Confirmar pago recibido' })).toBeTruthy());
+  expect(view.queryByRole('button', { name: 'Publicar domicilio' })).toBeNull();
+});

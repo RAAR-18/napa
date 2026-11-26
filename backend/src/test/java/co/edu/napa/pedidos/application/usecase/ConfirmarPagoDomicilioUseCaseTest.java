@@ -70,6 +70,22 @@ class ConfirmarPagoDomicilioUseCaseTest {
         verify(payments, never()).confirmar(ORDER_ID, BUYER_ID, SELLER_ID, "DOMICILIO");
     }
 
+    @Test
+    void allowsAdvanceBankPaymentForAnAcceptedPickupReservation() {
+        var orders = mock(PedidoRepositoryPort.class);
+        var payments = mock(ConfirmarPagoPedidoPort.class);
+        var reservation = new Pedido(ORDER_ID, BUYER_ID, BUSINESS_ID, ModalidadEntrega.RECOGIDA,
+                EstadoPedido.ACEPTADO, NOW.plusSeconds(3600), MedioPagoPedido.CUENTA_BANCARIA,
+                null, 1000L, null, List.of(new ItemPedido(UUID.randomUUID(), UUID.randomUUID(), BigDecimal.ONE, 1000)), NOW, NOW);
+        when(orders.bloquearPorId(ORDER_ID)).thenReturn(Optional.of(reservation));
+        ConsultarEmprendimientoParaPedidoPort businesses = id -> Optional.of(
+                new ConsultarEmprendimientoParaPedidoPort.Referencia(BUSINESS_ID, SELLER_ID, "Prueba", null));
+        when(payments.confirmar(ORDER_ID, BUYER_ID, SELLER_ID, "RECOGIDA"))
+                .thenReturn(new ConfirmarPagoPedidoPort.PagoConfirmado(UUID.randomUUID(), "CONFIRMADO", "CUENTA_BANCARIA", 1000, NOW));
+        var result = new ConfirmarPagoDomicilioUseCase(orders, businesses, payments).confirmar(ORDER_ID, SELLER_ID);
+        assertEquals("CONFIRMADO", result.pago().estado());
+    }
+
     private static Pedido order(EstadoPedido state, ModalidadEntrega modality) {
         return new Pedido(ORDER_ID, BUYER_ID, BUSINESS_ID, modality, state, null, MedioPagoPedido.CUENTA_BANCARIA,
                 2_500L, 3_500L, UUID.randomUUID(),

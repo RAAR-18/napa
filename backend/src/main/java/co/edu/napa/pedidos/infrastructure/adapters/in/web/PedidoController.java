@@ -331,7 +331,7 @@ public class PedidoController {
     public record CotizarRequest(
             @NotNull java.util.UUID emprendimientoId,
             @NotNull ModalidadEntrega modalidad,
-            @NotEmpty @Size(max = 20) List<@NotNull @Valid ItemRequest> items,
+            @NotEmpty List<@NotNull @Valid ItemRequest> items,
             @Valid UbicacionRequest ubicacionEntrega,
             Instant reserva
     ) {}
@@ -339,18 +339,18 @@ public class PedidoController {
     public record RealizarPedidoRequest(
             @NotNull UUID emprendimientoId,
             @NotNull ModalidadEntrega modalidad,
-            @NotEmpty @Size(max = 20) List<@NotNull @Valid ItemRequest> items,
+            @NotEmpty List<@NotNull @Valid ItemRequest> items,
             @Valid UbicacionRequest ubicacionEntrega,
             Instant reserva,
             @NotBlank String medioPago,
             @PositiveOrZero Long totalEsperado,
-            @Size(max = 20) Map<UUID, @NotNull @PositiveOrZero Long> preciosUnitariosEsperados
+            Map<UUID, @NotNull @PositiveOrZero Long> preciosUnitariosEsperados
     ) {}
 
     public record ItemRequest(
             @NotNull java.util.UUID productoId,
-            @NotNull @DecimalMin(value = "0", inclusive = false) @DecimalMax("20")
-            @Digits(integer = 2, fraction = 2) BigDecimal cantidad
+            @NotNull @DecimalMin(value = "0", inclusive = false) @DecimalMax("99999999.99")
+            @Digits(integer = 8, fraction = 2) BigDecimal cantidad
     ) {}
 
     public record UbicacionRequest(

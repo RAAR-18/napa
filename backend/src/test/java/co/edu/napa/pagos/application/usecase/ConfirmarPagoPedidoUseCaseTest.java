@@ -51,4 +51,20 @@ class ConfirmarPagoPedidoUseCaseTest {
         assertEquals(orderId, eventCaptor.getValue().payload().get("pedidoId"));
         assertEquals("DOMICILIO", eventCaptor.getValue().payload().get("modalidad"));
     }
+    @Test
+    void reusesAnAdvancePaymentWithoutPublishingOrUpdatingItAgain() {
+        UUID orderId = UUID.randomUUID(), buyer = UUID.randomUUID(), seller = UUID.randomUUID();
+        Instant now = Instant.parse("2026-11-25T12:00:00Z");
+        PagoRepositoryPort payments = mock(PagoRepositoryPort.class);
+        EventPublisherPort events = mock(EventPublisherPort.class);
+        var paid = Pago.pedidoPendiente(orderId, buyer, seller, 5000, MedioPago.CUENTA_BANCARIA,
+                now.minusSeconds(60)).confirmar(now.minusSeconds(30));
+        when(payments.bloquearPorPedido(orderId)).thenReturn(Optional.of(paid));
+        var result = new ConfirmarPagoPedidoUseCase(payments, events, Clock.fixed(now, ZoneOffset.UTC))
+                .confirmar(orderId, buyer, seller, "RECOGIDA");
+        assertEquals(paid.confirmadoAt(), result.confirmadoAt());
+        org.mockito.Mockito.verifyNoInteractions(events);
+        verify(payments, org.mockito.Mockito.never()).actualizar(any());
+    }
+
 }

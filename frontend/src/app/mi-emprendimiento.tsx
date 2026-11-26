@@ -1,11 +1,11 @@
-import { configurarUbicacionAutomatica, leerUbicacionAutomatica } from '../lib/ubicacion-automatica';
+import { configurarUbicacionAutomatica, leerUbicacionAutomatica, suscribirUbicacionAutomatica } from '../lib/ubicacion-automatica';
 import { fonts } from '../components/theme';
 import { DateTimeField } from '../components/DateTimeField';
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -63,6 +63,7 @@ export default function MiEmprendimientoScreen() {
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
   const [ubicacionAutomatica, setUbicacionAutomatica] = useState(false);
+  const [ubicacionSegundoPlano, setUbicacionSegundoPlano] = useState(false);
   const [configurandoUbicacion, setConfigurandoUbicacion] = useState(false);
   const configuracionEnCurso = useRef(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -99,11 +100,16 @@ export default function MiEmprendimientoScreen() {
   useEffect(() => {
     let vigente = true;
     if (!ambulante || !actual) return;
-    void leerUbicacionAutomatica().then((preferencia) => {
-      if (vigente) setUbicacionAutomatica(preferencia?.emprendimientoId === actual.id
-        && preferencia.usuarioId === sesionForm.current?.cuenta);
-    }).catch(() => undefined);
-    return () => { vigente = false; };
+    const refrescar = () => { void leerUbicacionAutomatica().then((preferencia) => {
+      if (vigente) {
+        const coincide = preferencia?.emprendimientoId === actual.id && preferencia.usuarioId === sesionForm.current?.cuenta;
+        setUbicacionAutomatica(coincide);
+        setUbicacionSegundoPlano(Boolean(coincide && preferencia?.segundoPlano));
+      }
+    }).catch(() => undefined); };
+    refrescar();
+    const dejar = suscribirUbicacionAutomatica(refrescar);
+    return () => { vigente = false; dejar(); };
   }, [ambulante, actual]);
 
   async function cambiarUbicacionAutomatica() {
@@ -116,11 +122,31 @@ export default function MiEmprendimientoScreen() {
       if (!session.usuarioId) throw new Error('Inicia sesión nuevamente para continuar.');
       await configurarUbicacionAutomatica(session.usuarioId, actual.id, !ubicacionAutomatica);
       setUbicacionAutomatica(!ubicacionAutomatica);
+      setUbicacionSegundoPlano(false);
       setNotice(!ubicacionAutomatica
         ? 'Tu zona se actualizará mientras uses Ñapa y tengas conexión.'
         : 'La ubicación automática quedó desactivada.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo cambiar la ubicación automática.');
+    } finally { configuracionEnCurso.current = false; setConfigurandoUbicacion(false); }
+  }
+
+  async function cambiarUbicacionSegundoPlano() {
+    if (!actual || configuracionEnCurso.current) return;
+    configuracionEnCurso.current = true;
+    setConfigurandoUbicacion(true);
+    setError(null);
+    try {
+      const session = await getValidSession();
+      if (!session.usuarioId) throw new Error('Inicia sesión nuevamente para continuar.');
+      const activar = !ubicacionSegundoPlano;
+      await configurarUbicacionAutomatica(session.usuarioId, actual.id, true, activar);
+      setUbicacionAutomatica(true);
+      setUbicacionSegundoPlano(activar);
+      setNotice(activar ? 'Compartes ubicación también cuando no usas Ñapa. Puedes detenerla aquí cuando quieras.'
+        : 'Segundo plano desactivado. Solo se comparte mientras usas Ñapa.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo cambiar el seguimiento.');
     } finally { configuracionEnCurso.current = false; setConfigurandoUbicacion(false); }
   }
 
@@ -240,7 +266,7 @@ export default function MiEmprendimientoScreen() {
       lng !== actual.ubicacion.longitud ||
       direccion.trim() !== (actual.ubicacion.direccion ?? '') ||
       referencia.trim() !== (actual.ubicacion.referencia ?? '');
-    if (ubicacionCambio) {
+    if (ubicacionCambio && !ambulante) {
       if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
         return 'Revisa las coordenadas de la ubicación.';
       }
@@ -462,7 +488,7 @@ export default function MiEmprendimientoScreen() {
           <>
           <Text style={styles.section}>{ambulante ? 'Zona de venta' : 'Ubicación del punto'}</Text>
           {ambulante ? (
-            <HelperText>Cuando cambies de zona durante el día, toca «Estoy aquí» y guarda.</HelperText>
+            <HelperText>Tu negocio usa tu posición GPS mientras usas Ñapa. No tiene dirección fija; activa la ubicación en vivo para que se mueva contigo.</HelperText>
           ) : (
             <HelperText>No podrás moverla mientras tengas pedidos sin cerrar.</HelperText>
           )}
@@ -473,9 +499,20 @@ export default function MiEmprendimientoScreen() {
                 disabled={configurandoUbicacion || busy}
                 onPress={() => void cambiarUbicacionAutomatica()}
               />
-              <HelperText>Actualiza tu zona cada dos minutos mientras usas Ñapa. Se pausa al salir de la app; puedes desactivarla cuando quieras.</HelperText>
+              <HelperText>{ubicacionSegundoPlano
+                ? 'Compartes tu ubicación aunque uses otra app o bloquees la pantalla. Desactivar ubicación automática detiene ambos modos.'
+                : 'Compartes ubicación solo mientras usas Ñapa. Puedes desactivarla cuando quieras.'}</HelperText>
+              {Platform.OS !== 'web' ? (
+                <>
+                  <HelperText>Para compartir sin tener Ñapa abierta debes permitir ubicación «Siempre». Android mostrará una notificación permanente. El sistema controla la frecuencia y puede detenerla si fuerzas el cierre.</HelperText>
+                  <TextButton title={ubicacionSegundoPlano ? 'Desactivar ubicación en segundo plano' : 'Activar ubicación en segundo plano'}
+                    disabled={configurandoUbicacion || busy} onPress={() => void cambiarUbicacionSegundoPlano()} />
+                </>
+              ) : <HelperText>En el navegador la ubicación solo funciona con Ñapa abierta.</HelperText>}
             </>
           ) : null}
+          {!ambulante ? (
+            <>
           <TextButton
             title={ambulante ? 'Estoy aquí' : 'Usar mi ubicación actual'}
             disabled={locating || busy}
@@ -496,6 +533,8 @@ export default function MiEmprendimientoScreen() {
             maxLength={300}
           />
           <Field label="Referencia (opcional)" value={referencia} onChangeText={setReferencia} maxLength={300} />
+            </>
+          ) : null}
           </>
           ) : null}
           <PrimaryButton title={revisionId ? 'Confirmar y reenviar' : 'Guardar cambios'} busy={busy && !confirmDelete}

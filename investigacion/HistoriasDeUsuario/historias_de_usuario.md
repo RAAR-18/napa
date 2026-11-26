@@ -265,3 +265,15 @@
 > **Reserva** no es una cuarta modalidad: es un atributo del pedido (fecha y hora libremente acordadas con el vendedor) que puede aplicarse sobre cualquiera de las tres modalidades anteriores.
 
 ---
+
+## Criterios complementarios acordados tras testing en vivo (2026-11-25)
+
+- HU-53 / RF-28: el vendedor ambulante publica usando GPS con permiso, sin ubicación fija escrita; puede activar/pausar actualizaciones mientras usa Ñapa. La posición técnica sigue siendo necesaria para encontrarlo.
+- HU-72, HU-73, HU-74 y HU-76 / RF-45: carrito sin límite comercial de 20 ítems/unidades, respetando stock y precisión de cantidades. La dirección sugerida proviene de borrador no vacío, última entrega o perfil de la misma cuenta y permanece editable; no inferir destino del GPS actual.
+- HU-66 / RF-42: una reserva aceptada por transferencia puede pagarse anticipadamente y el vendedor confirma su recepción. Entregar/retirar reutiliza ese pago sin duplicar cobro ni evento; la app registra el pago, no mueve dinero.
+- HU-63 / RF-38: novedades muestran aviso flotante mientras se usa Ñapa, sin marcar leída la notificación ni avisar por todo el historial al iniciar. Las notificaciones con app cerrada mantienen sus requisitos push.
+
+Este acuerdo reemplaza criterios anteriores incompatibles sobre límite de 20, ubicación fija del ambulante y confirmación de reservas solo al entregar. Planes y specs RF-28/38/42/45 contienen los detalles y límites de esta entrega.
+
+
+HU-53 / RF-28 (2026-11-25): el ambulante puede activar explícitamente ubicación nativa en segundo plano y detenerla cuando quiera. El alta no concede ese consentimiento; se explican permisos y se muestra notificación/indicador. Pausa, cierre de sesión y revocación detienen el seguimiento; no se guarda un historial de rutas ni se promete sobrevivir a forzar detención. Requiere build nativo y aceptación en dispositivo.

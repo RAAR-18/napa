@@ -8,6 +8,7 @@ import co.edu.napa.pedidos.application.ports.in.ConfirmarPagoDomicilioPort.Pago;
 import co.edu.napa.pedidos.application.ports.out.PedidoRepositoryPort;
 import co.edu.napa.pedidos.domain.model.EstadoPedido;
 import co.edu.napa.pedidos.domain.model.ModalidadEntrega;
+import co.edu.napa.pedidos.domain.model.MedioPagoPedido;
 import co.edu.napa.shared.domain.DomainException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,9 +46,10 @@ public class ConfirmarPagoDomicilioUseCase implements ConfirmarPagoDomicilioPort
         if (!emprendimiento.vendedorId().equals(vendedorId)) {
             throw new DomainException("NOT_FOUND", "El pedido no está disponible.");
         }
-        if (pedido.modalidad() != ModalidadEntrega.DOMICILIO) {
+        if (pedido.modalidad() != ModalidadEntrega.DOMICILIO
+                && (pedido.reserva() == null || pedido.medioPago() != MedioPagoPedido.CUENTA_BANCARIA)) {
             throw new DomainException("BUSINESS_RULE",
-                    "En este pedido el cobro se confirma al registrar la entrega o el retiro.");
+                    "El anticipo requiere una reserva con transferencia; los demás cobros se confirman al entregar o retirar.");
         }
         if (pedido.estado() != EstadoPedido.ACEPTADO) {
             String message = pedido.estado() == EstadoPedido.PENDIENTE

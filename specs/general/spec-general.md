@@ -338,3 +338,11 @@ El catálogo completo está en [eventos.md](eventos.md).
 ### Complemento de categoría de emprendimiento (2026-11-24)
 
 `emprendimiento.categoria_personalizada`: VARCHAR(80) nullable, exclusivo de categoria=OTROS, texto sin espacios exteriores y de 1 a 80 caracteres si existe. En JSON: `categoriaPersonalizada`. No altera filtros, enumeraciones ni la inmutabilidad de categoría de RF-29. Migración V21. Negocios/cachés anteriores sin complemento siguen siendo válidos.
+
+
+## Acuerdo posterior a testing en vivo (2026-11-25)
+
+Para RF-28/38/42/45 prevalecen los criterios nuevos de sus specs: posición GPS móvil para ambulante sin dirección fija escrita, carrito sin límite comercial 20 manteniendo precisión NUMERIC(10,2), dirección de entrega sugerida editable y anticipo por transferencia en reservas aceptadas confirmado por el vendedor. La confirmación del pago se reutiliza al entregar sin duplicar E09; no hay procesamiento ni devolución automática de dinero. Los avisos internos en primer plano no marcan lectura ni sustituyen los requisitos de push con la app cerrada. No cambian roles, modalidades, propietarios, estados ni nombres de eventos existentes.
+
+
+RF-28 (2026-11-25): se autoriza compartir posición del negocio ambulante en segundo plano mediante consentimiento independiente por cuenta/dispositivo, con permiso del sistema, notificación/indicador y pausa. No modifica roles, privacidad de direcciones de clientes, estados de pedido o eventos. No hay historial de ruta ni garantía al forzar detención.

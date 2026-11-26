@@ -3,7 +3,7 @@ import { selectDateTime } from '../../test-utils/select-date-time';
 import { router } from 'expo-router';
 
 import EmprendimientoScreen from '../emprendimiento';
-import { getValidSession } from '../../lib/auth';
+import { getValidSession, readSession } from '../../lib/auth';
 import { createEmprendimiento } from '../../lib/emprendimientos';
 import type { Emprendimiento } from '../../lib/emprendimientos';
 import { ApiError } from '../../lib/api';
@@ -19,12 +19,14 @@ jest.mock('expo-router', () => ({
 
 jest.mock('../../lib/auth', () => ({
   clearSession: jest.fn(),
-  getValidSession: jest.fn(),
+  getValidSession: jest.fn(), getSessionGeneration: () => 0, readSession: jest.fn(),
 }));
 
 jest.mock('../../lib/emprendimientos', () => ({
   createEmprendimiento: jest.fn(),
 }));
+
+jest.mock('../../lib/ubicacion-automatica', () => ({ configurarUbicacionAutomatica: jest.fn(async () => undefined) }));
 
 jest.mock('../../lib/location', () => ({
   LocationPermissionDeniedError: class LocationPermissionDeniedError extends Error {
@@ -283,6 +285,26 @@ describe('EmprendimientoScreen', () => {
     await fireEvent.press(view.getByRole('button', { name: 'Publicar emprendimiento' }));
     await waitFor(() => expect(createEmprendimiento).toHaveBeenCalledWith(expect.objectContaining({
       categoria: 'OTROS', categoriaPersonalizada: 'Artesanías',
+    })));
+  });
+
+  it('publishes an ambulant business from GPS without address or coordinate fields', async () => {
+    const movil = { ...session, usuarioId: 'ambulante-A', rol: 'VENDEDOR_AMBULANTE' };
+    jest.mocked(getValidSession).mockResolvedValue(movil);
+    jest.mocked(readSession).mockResolvedValue(movil);
+    jest.mocked(requestDeviceLocation).mockResolvedValue({ latitude: 11.24, longitude: -74.21 });
+    jest.mocked(createEmprendimiento).mockResolvedValue({ id: 'movil-A', nombre: 'Negocio móvil' } as Emprendimiento);
+    const view = await render(<EmprendimientoScreen />);
+    await waitFor(() => expect(view.getByLabelText('Nombre del emprendimiento')).toBeTruthy());
+    expect(view.queryByLabelText('Latitud')).toBeNull();
+    expect(view.queryByLabelText('Referencia de ubicación')).toBeNull();
+    await fireEvent.changeText(view.getByLabelText('Nombre del emprendimiento'), 'Negocio móvil');
+    await fireEvent.changeText(view.getByLabelText('Descripción'), 'Venta móvil');
+    await selectDateTime(view, 'Hora de apertura', '08:00');
+    await selectDateTime(view, 'Hora de cierre', '18:00');
+    await fireEvent.press(view.getByRole('button', { name: 'Publicar emprendimiento' }));
+    await waitFor(() => expect(createEmprendimiento).toHaveBeenCalledWith(expect.objectContaining({
+      ubicacion: { latitud: 11.24, longitud: -74.21, direccion: null, referencia: null },
     })));
   });
 

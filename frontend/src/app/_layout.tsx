@@ -1,3 +1,5 @@
+import '../lib/ubicacion-segundo-plano';
+import { AvisosNovedades } from '../components/AvisosNovedades';
 import { useUbicacionAutomatica } from '../lib/ubicacion-automatica';
 import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
@@ -38,6 +40,7 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <NapaNavigationProvider>
         <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
+        <AvisosNovedades />
       </NapaNavigationProvider>
     </>
   );
