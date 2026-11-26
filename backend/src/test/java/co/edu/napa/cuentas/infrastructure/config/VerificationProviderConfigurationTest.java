@@ -7,7 +7,7 @@ import co.edu.napa.cuentas.domain.model.PropositoVerificacion;
 import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.ConsolaVerificacionAdapter;
 import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.BrevoCorreoClient;
 import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.SmsCorreoVerificacionAdapter;
-import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.SmsReactorClient;
+import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.SmsGateClient;
 import co.edu.napa.cuentas.infrastructure.adapters.out.messaging.UnavailableVerificarCelularAdapter;
 import co.edu.napa.shared.domain.DomainException;
 import org.junit.jupiter.api.Test;
@@ -104,7 +104,7 @@ class VerificationProviderConfigurationTest {
     @Import({
             ConsolaVerificacionAdapter.class,
             BrevoCorreoClient.class,
-            SmsReactorClient.class,
+            SmsGateClient.class,
             SmsCorreoVerificacionAdapter.class,
             UnavailableVerificarCelularAdapter.class
     })

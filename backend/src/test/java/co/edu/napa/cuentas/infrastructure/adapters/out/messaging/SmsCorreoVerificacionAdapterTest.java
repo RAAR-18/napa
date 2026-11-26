@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 @SuppressWarnings("unchecked")
 class SmsCorreoVerificacionAdapterTest {
     private final StringRedisTemplate redis = mock(StringRedisTemplate.class);
-    private final SmsReactorClient sms = mock(SmsReactorClient.class);
+    private final SmsGateClient sms = mock(SmsGateClient.class);
     private final BrevoCorreoClient correo = mock(BrevoCorreoClient.class);
     private final SmsCorreoVerificacionAdapter adapter = new SmsCorreoVerificacionAdapter(
             redis, sms, correo, 25, 300,

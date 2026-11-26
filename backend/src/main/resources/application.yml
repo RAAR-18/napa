@@ -80,13 +80,13 @@ napa:
   verification:
     provider: ${NAPA_VERIFICATION_PROVIDER:unavailable}   # unavailable | console | sms-correo
     console-code: ${NAPA_OTP_CONSOLE_CODE:}
-    # Cupos diarios de los proveedores: SMSReactor gratis 25-30 SMS, Brevo gratis 300 correos.
+    # Topes diarios que aplica Ñapa por canal.
     limite-diario-sms: ${NAPA_LIMITE_DIARIO_SMS:25}
     limite-diario-correo: ${NAPA_LIMITE_DIARIO_CORREO:300}
-    smsreactor:
-      api-key: ${NAPA_SMSREACTOR_API_KEY:}
-      base-url: ${NAPA_SMSREACTOR_BASE_URL:https://smsreactor.com}
-      phone-id: ${NAPA_SMSREACTOR_PHONE_ID:}
+    sms-gate:
+      username: ${NAPA_SMS_GATE_USERNAME:}
+      password: ${NAPA_SMS_GATE_PASSWORD:}
+      base-url: ${NAPA_SMS_GATE_BASE_URL:https://api.sms-gate.app}
     brevo:
       api-key: ${NAPA_BREVO_API_KEY:}
       base-url: ${NAPA_BREVO_BASE_URL:https://api.brevo.com}

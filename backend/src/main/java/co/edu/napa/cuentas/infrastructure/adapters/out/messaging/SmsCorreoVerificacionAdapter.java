@@ -82,7 +82,7 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
             """, Long.class);
 
     private final StringRedisTemplate redisTemplate;
-    private final SmsReactorClient sms;
+    private final SmsGateClient sms;
     private final BrevoCorreoClient correo;
     private final SecureRandom random = new SecureRandom();
     private final int limiteDiarioSms;
@@ -92,7 +92,7 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
     @Autowired
     public SmsCorreoVerificacionAdapter(
             StringRedisTemplate redisTemplate,
-            SmsReactorClient sms,
+            SmsGateClient sms,
             BrevoCorreoClient correo,
             @Value("${napa.verification.limite-diario-sms:25}") int limiteDiarioSms,
             @Value("${napa.verification.limite-diario-correo:300}") int limiteDiarioCorreo
@@ -102,7 +102,7 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
 
     SmsCorreoVerificacionAdapter(
             StringRedisTemplate redisTemplate,
-            SmsReactorClient sms,
+            SmsGateClient sms,
             BrevoCorreoClient correo,
             int limiteDiarioSms,
             int limiteDiarioCorreo,
@@ -174,7 +174,7 @@ public class SmsCorreoVerificacionAdapter implements VerificarCelularPort {
         }
     }
 
-    /** Cupo diario de la cuenta del proveedor (SMSReactor: 25 SMS; Brevo: 300 correos). */
+    /** Aplica el tope diario configurado por Ñapa para cada canal. */
     private void reservarCupo(String key, int limite, boolean porCorreo) {
         Long usados;
         try {
