@@ -144,9 +144,9 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [x] F024 Filtro JWT con `sv` y bootstrap admin de un solo uso
 - [ ] F025 Completar pruebas de seguridad: fuerza bruta, OTP agotado, token revocado. Pruebas unitarias y suites Redis/PostgreSQL ejecutadas en CI sin fallos ni omisiones; `ConsoleIdentityIntegrationTest` pasó sus 9 pruebas. El recorrido HTTP verifica OTP agotado, consumo único, rotación y revocación. Pendiente validación del proveedor real; la recuperación manual no sustituye esas pruebas.
 
-**Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` selecciona un único `ConsolaVerificacionAdapter` basado en Redis; `NAPA_OTP_CONSOLE_CODE` exige seis dígitos y no tiene valor predeterminado. No puede activarse junto con `prod`. Sin proveedor configurado, solicitar o confirmar la verificación responde `503`; el registro conserva la cuenta pendiente con envío `FALLIDO`. Nunca se persiste ni registra el OTP. La ejecución local con Docker pasó 194 pruebas, sin omisiones, incluyendo el recorrido HTTP de identidad, los registros simultáneos con celular o correo duplicado, CORS para orígenes web explícitos y las integraciones Redis/PostgreSQL/PostGIS. La validación en CI de 287 pruebas, sin fallos ni omisiones, y la recuperación manual con `otp-console`. RF-11 se difiere hasta que existan pedidos, emprendimientos y domicilios para comprobar operaciones pendientes.
+**Avance F2**: Argon2id, validación de contraseñas, JWT HS256, refresh opaco rotativo, revocación de sesiones, rate-limits, bootstrap administrativo y flujos/endpoints de identidad están implementados. El perfil `otp-console` selecciona un único `ConsolaVerificacionAdapter` basado en Redis; `NAPA_OTP_CONSOLE_CODE` exige seis dígitos y no tiene valor predeterminado. No puede activarse junto con `prod`. Sin proveedor configurado, solicitar o confirmar la verificación responde `503`; el registro conserva la cuenta pendiente con envío `FALLIDO`. Nunca se persiste ni registra el OTP. La ejecución local con Docker pasó 194 pruebas, sin omisiones, incluyendo el recorrido HTTP de identidad, los registros simultáneos con celular o correo duplicado, CORS para orígenes web explícitos y las integraciones Redis/PostgreSQL/PostGIS. La validación en CI de 287 pruebas, sin fallos ni omisiones, y la recuperación manual con `otp-console`. RF-11 ya está implementado y queda pendiente la validación de extremo a extremo. El recorrido de prueba está en [RF-11-plan.md](../RF-11-eliminacion-de-cuenta/RF-11-plan.md).
 
-**Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. El proveedor real de OTP y sus costos quedan diferidos hasta aprobar presupuesto. RF-11 se implementará después de los módulos de pedidos, emprendimientos y domicilios, porque aún no existen sus tablas para comprobar operaciones pendientes.
+**Decisiones aprobadas para F2**: contraseñas Argon2id, de 8–128 caracteres sin reglas de composición; límite de 5 intentos fallidos cada 15 minutos por identificador normalizado y por IP; bootstrap administrativo de un solo uso con secretos de entorno. El proveedor real de OTP y sus costos quedan diferidos hasta aprobar presupuesto.
 
 **Phase F3 – Notificaciones (RF-38, RF-39)**
 - [x] F030 Tablas `Notificacion` y `PreferenciaNotificacion` en V4; `DispositivoToken` ya existe en V3. Esquema validado en PostgreSQL/PostGIS en CI: `NotificationSchemaIntegrationTest`, 2 pruebas aprobadas, sin omisiones.
@@ -158,13 +158,23 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 - [x] F040 Proyecto Expo con development build Android (`expo-dev-client` y perfil `development` en `frontend/eas.json`), navegación con Expo Router y cliente HTTP basado en `fetch` en `frontend/src/lib/api.ts`. APK instalada y cierre/nuevo inicio de sesión validados en Android físico.
 - [x] F041 Outbox SQLite + reintentos + `Idempotency-Key` en `frontend/src/database/outbox/`. Tabla `outbox_por_cuenta` en `napa.db` con clave única por usuario e `Idempotency-Key`; reenvío en orden con retroceso exponencial (5 s a 5 min); fallo de red, 401, 408, 429 y 5xx se reintentan (5xx hasta 8 veces); `CONFLICT` se conserva como fallida para revisión y reintento manual, sin asumir éxito; otro 4xx queda `FALLIDA` para reintentar o descartar. Se procesa al abrir la app, al volver a primer plano y cada minuto, y conserva las acciones por propietario al cerrar sesión. Usada por RF-01 (calificar) y RF-60 (reportar); pantalla "Pendientes de envío".
 - [x] F042 Validar push real en Android físico. Con Firebase habilitado, el development build recibió el aviso de un pedido nuevo en segundo plano y abrió la pantalla de notificaciones al tocarlo. Con FCM deshabilitado, otro pedido quedó visible en el historial de la app.
+  - [x] Validación en el APK `preview` conectado a Railway. Un pedido nuevo generó un aviso en la bandeja de Android con Ñapa en segundo plano.
 - [x] F043 Pruebas Jest de outbox (sin red, reintento, duplicado) en `frontend/src/database/outbox/outbox.test.ts` y `sqlite-store.test.ts`, más la pantalla de reporte sin conexión.
 
 **Decisión — cliente HTTP**: se conserva `fetch` centralizado en `frontend/src/lib/api.ts`, que ya maneja errores y cabeceras de autenticación e idempotencia. Sustituye la previsión inicial de Axios; no cambia los contratos de la API.
 
 **Validación F040**: se reportó Expo Doctor 20/20, lint y TypeScript sin errores y Jest con 90 pruebas aprobadas en 17 suites. Se instaló el development build en Android físico, se confirmó cierre y nuevo inicio de sesión contra el backend local. [Compilación Android](https://expo.dev/accounts/raar-18/projects/napa/builds/cda665c6-350e-49e7-bdc5-cd7b42cb1206). 
 
-**Checkpoint**: se puede registrar un usuario, verificar su celular, iniciar sesión, recibir una notificación push y reenviar una acción creada sin conexión sin duplicarla.
+**Checkpoint**: se puede registrar un usuario, verificar su cuenta por un canal habilitado, iniciar sesión, recibir una notificación push y reenviar una acción creada sin conexión sin duplicarla.
+
+**Evidencia del recorrido en Android**
+
+- [x] Verificación de cuenta por correo con Brevo.
+- [x] Recepción de push en el APK `preview` conectado a Railway.
+- [x] Reenvío offline sin duplicados y aislamiento de la cola al cambiar de cuenta.
+- [x] Equipo físico usado en el recorrido: Motorola Moto G22.
+- [x] APK Android `preview` 1.0.0 (1) probado en el Moto G22. [Build de EAS](https://expo.dev/accounts/raar-18/projects/napa/builds/86e6beed-3a77-47c0-a81d-38047c9affcf).
+- [ ] Validar el canal SMS de RF-70 con un proveedor operativo.
 
 **Avance de oferta (2026-11-11)**: primera entrega en línea de RF-54/RF-55, inventario manual de RF-57 y catálogo de RF-33. V7 crea productos; los endpoints derivan la propiedad del vendedor autenticado, rechazan nombres duplicados por emprendimiento, conservan decimales de cantidad y usan idempotencia y bloqueo de fila al fijar inventario. La app publica, lista, marca agotado y repone, y el cliente consulta el catálogo con la etiqueta Solo reserva. Pasaron 194 pruebas backend y 56 frontend, lint, TypeScript y exportaciones iOS/web; V7 aplicada en napa_dev. El usuario confirmó que la prueba manual de esta entrega funcionó correctamente. Pendientes caché y outbox de productos, RF-56/RF-58 y los puertos de descuento/consulta para RF-45/RF-53. Las reservas y los pedidos no están implementados.
 
@@ -199,7 +209,7 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 *  [x] Spec Change Requests aplicados a las specs
 *  [x] Proveedor de rutas elegido (OpenRouteService)
 *  [x] ArchUnit y Testcontainers corren en CI (287 pruebas, 0 fallos y 0 omitidas).
-*  [ ] Checkpoint de la base verificado en un móvil de gama baja
+*  [x] Checkpoint de la base verificado en un Motorola Moto G22 con el APK `preview`. La verificación se realizó por correo con Brevo. La validación de SMS sigue pendiente en RF-70.
 
 **idempotencia en curso:** `409 IDEMPOTENCY_IN_PROGRESS` conserva la acción pendiente y se reintenta con la misma clave y cuerpo usando retroceso exponencial (inicialmente 5 s). Los conflictos de negocio permanecen fallidos para revisión. La repetición de una operación terminada reproduce su respuesta guardada. Validación: 12 pruebas de idempotencia del backend aprobadas, incluidas 3 de integración con Redis; 33 suites y 212 pruebas del frontend aprobadas. En Android se comprobó que un reporte pendiente sobrevive al cierre completo de la app con el backend apagado y se envía al restablecerlo. El aislamiento entre cuentas cuenta con pruebas automatizadas; su comprobación manual sigue pendiente.
 
