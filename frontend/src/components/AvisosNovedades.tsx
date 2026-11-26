@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { usePathname } from 'expo-router';
 import { getSessionGeneration, readSession } from '../lib/auth';
 import { listarNotificaciones } from '../lib/notificaciones';
 import { escucharNovedades } from '../lib/push';
@@ -8,8 +7,8 @@ import { Toast } from './Toast';
 
 export const INTERVALO_AVISOS_MS = 15_000;
 /** Avisos globales en primer plano: la bandeja conserva su estado de lectura. */
+/** Se monta una vez en el layout: navegar no dispara consultas extra; el sondeo, volver a primer plano y el push sí. */
 export function AvisosNovedades() {
-  const pathname = usePathname();
   const [aviso, setAviso] = useState<{ id: string; mensaje: string; generacion: number } | null>(null);
   const conocidas = useRef<{ cuenta: string; generacion: number; ids: Set<string> } | null>(null);
   const consultando = useRef(false);
@@ -50,7 +49,7 @@ export function AvisosNovedades() {
     const listener = AppState.addEventListener('change', (estado) => { if (estado === 'active') void consultar(); });
     const dejarPush = escucharNovedades(() => { void consultar(); });
     return () => { activo = false; clearInterval(timer); listener.remove(); dejarPush(); };
-  }, [pathname]);
+  }, []);
   if (!aviso || aviso.generacion !== getSessionGeneration()) return null;
   return <Toast key={aviso.id} message={aviso.mensaje} tone="info" />;
 }

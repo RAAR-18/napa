@@ -185,7 +185,7 @@ export default function PedidoVendedorScreen() {
     detail?.domicilio && detail.domicilio.estado !== 'CANCELADO' ? detail.domicilio : null;
   const pagoDomicilioPendiente =
     sellerRoles.includes(userRole ?? '') && detail?.estado === 'ACEPTADO' &&
-    (detail.modalidad === 'DOMICILIO' || Boolean(detail.reserva)) && estadoPago === 'PENDIENTE_CONFIRMACION';
+    (detail.modalidad === 'DOMICILIO' || (Boolean(detail.reserva) && detail.medioPago === 'CUENTA_BANCARIA')) && estadoPago === 'PENDIENTE_CONFIRMACION';
   const datosTransferencia = !!detail && Number.isFinite(detail.total) && detail.total >= 0 &&
     detail.medioPago === 'CUENTA_BANCARIA';
   const canConfirmPayment = pagoDomicilioPendiente && datosTransferencia && !pago.pendiente && !pagoConfirmado;
