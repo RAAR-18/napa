@@ -18,6 +18,15 @@ El vendedor ambulante abre un mapa con la ubicación que el cliente indicó al h
 
 ## Estado actual del código
 
+### Acceso directo al mapa (2026-11-26)
+
+El detalle del pedido ofrece «Ver ubicación en Google Maps» al vendedor
+ambulante en entrega directa aceptada o en camino, con datos recuperados del
+servidor. Abre directamente la ubicación autorizada mediante `GoogleMapsButton`
+y un enlace HTTPS de Maps URLs; no exige pasar por `/ubicacion-entrega`.
+La pantalla interna se conserva para enlaces existentes y el respaldo de
+dirección. Un error al abrir la aplicación externa se muestra en la interfaz.
+
 No existe `entregas` ni la consulta. El pedido y su `Ubicacion` de entrega los crea RF-45; el estado `ACEPTADO` lo produce RF-53. El componente `MapaUbicacionEntrega` lo crea RF-51 y este plan lo amplía.
 
 ## Actors

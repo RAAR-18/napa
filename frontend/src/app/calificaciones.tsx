@@ -1,7 +1,7 @@
 import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -109,7 +109,6 @@ export default function CalificacionesScreen() {
       {hayMas && !loading ? (
         <TextButton title="Ver más" onPress={() => setPage((p) => p + 1)} />
       ) : null}
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }
@@ -173,7 +172,7 @@ function TarjetaCalificacion({ item, onCambio }: { item: CalificacionPublica; on
           />
           <ErrorBanner message={error} />
           <PrimaryButton title="Guardar cambios" busy={busy} onPress={() => void guardar()} />
-          <TextButton title="Cancelar" disabled={busy} onPress={() => setEditando(false)} />
+          <TextButton variant="danger" icon="x" title="Cancelar" disabled={busy} onPress={() => setEditando(false)} />
         </>
       ) : (
         <>
@@ -190,8 +189,8 @@ function TarjetaCalificacion({ item, onCambio }: { item: CalificacionPublica; on
                 </>
               ) : (
                 <View style={styles.actions}>
-                  <TextButton title="Editar" onPress={() => setEditando(true)} />
-                  <TextButton title="Eliminar" onPress={() => setConfirmarBorrado(true)} />
+                  <TextButton icon="edit-2" title="Editar" onPress={() => setEditando(true)} />
+                  <TextButton variant="danger" icon="trash-2" title="Eliminar" onPress={() => setConfirmarBorrado(true)} />
                 </View>
               )}
             </>

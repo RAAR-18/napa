@@ -172,13 +172,12 @@ function ProductoEditor({ id, pendienteId }: { id?: string; pendienteId?: string
         </>
       ) : null}
       {sinAcceso && rechazada ? (
-        <TextButton title="Descartar edición" onPress={() => {
+        <TextButton variant="danger" icon="x-circle" title="Descartar edición" onPress={() => {
           void outbox.descartar(rechazada.id).then(() => router.replace('/mis-productos'))
             .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'No se pudo descartar la edición.'));
         }} />
       ) : null}
-      {error && !sinAcceso ? <TextButton title="Recargar datos del producto" disabled={busy || loading} onPress={reload} /> : null}
-      <TextButton title="Cancelar y volver a mis productos" disabled={busy} onPress={() => router.replace('/mis-productos')} />
+      {error && !sinAcceso ? <TextButton icon="refresh-cw" title="Recargar datos del producto" disabled={busy || loading} onPress={reload} /> : null}
     </AuthPage>
   );
 }

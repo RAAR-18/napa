@@ -78,7 +78,6 @@ export default function PendientesEnvioScreen() {
       {pendientes.length > 0 ? (
         <PrimaryButton title="Enviar ahora" busy={busy} onPress={() => void enviarAhora()} />
       ) : null}
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }
@@ -114,7 +113,7 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
                 pathname: '/catalogo', params: paramsRevisionPedido(accion, pedido),
               })} />
             ) : productoPendiente(accion) ? (
-              <TextButton title="Corregir y reenviar" onPress={() => router.push({
+              <TextButton icon="edit-2" title="Corregir y reenviar" onPress={() => router.push({
                 pathname: '/nuevo-producto', params: { pendienteId: accion.id },
               })} />
             ) : edicionEmprendimientoPendiente(accion) ? (
@@ -128,9 +127,9 @@ function Tarjeta({ accion }: { accion: AccionPendiente }) {
                 })} />
               ) : null
             ) : (
-              <TextButton title="Reintentar" onPress={() => void outbox.reintentar(accion.id)} />
+              <TextButton icon="refresh-cw" title="Reintentar" onPress={() => void outbox.reintentar(accion.id)} />
             )}
-            {!pedidoVendedorId && !confirmacion ? <TextButton title="Descartar" onPress={() => void outbox.descartar(accion.id).then(() => {
+            {!pedidoVendedorId && !confirmacion ? <TextButton variant="danger" icon="x-circle" title="Descartar" onPress={() => void outbox.descartar(accion.id).then(() => {
               if (pedido) return borrarCarritoEncolado(accion.usuarioId, accion.idempotencyKey);
             }).catch(() => undefined)} /> : null}
           </View>

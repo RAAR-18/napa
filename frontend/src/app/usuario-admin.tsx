@@ -88,7 +88,7 @@ export default function UsuarioAdminScreen() {
             <Text style={styles.detail}>Registrado: {new Date(usuario.createdAt).toLocaleDateString('es-CO', { dateStyle: 'medium' })}</Text>
           </View>
           {usuario.rol === 'CLIENTE' || usuario.rol === 'DOMICILIARIO' ? (
-            <TextButton
+            <TextButton variant="gold" icon="star"
               title="Ver sus calificaciones"
               onPress={() =>
                 router.push({
@@ -112,7 +112,6 @@ export default function UsuarioAdminScreen() {
           ) : null}
         </>
       ) : null}
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }
@@ -210,7 +209,7 @@ function EliminarUsuario({ usuario, onEliminado }: { usuario: PerfilUsuario; onE
     <View style={[styles.card, styles.danger]}>
       <Text style={styles.section}>Eliminar cuenta</Text>
       {!confirmando ? (
-        <TextButton title="Eliminar esta cuenta" onPress={() => setConfirmando(true)} />
+        <TextButton variant="danger" icon="trash-2" title="Eliminar esta cuenta" onPress={() => setConfirmando(true)} />
       ) : pendientes ? (
         <>
           <HelperText>Este usuario tiene actividad en curso:</HelperText>
@@ -220,14 +219,14 @@ function EliminarUsuario({ usuario, onEliminado }: { usuario: PerfilUsuario; onE
           <HelperText>Si continúas, su emprendimiento activo también se eliminará.</HelperText>
           <ErrorBanner message={error} />
           <PrimaryButton title="Eliminar de todas formas" busy={busy} onPress={() => void eliminar(true)} />
-          <TextButton title="Cancelar" disabled={busy} onPress={() => { setConfirmando(false); setPendientes(null); }} />
+          <TextButton variant="danger" icon="x" title="Cancelar" disabled={busy} onPress={() => { setConfirmando(false); setPendientes(null); }} />
         </>
       ) : (
         <>
           <HelperText>Se cerrarán sus sesiones y no podrá volver a ingresar. No se puede deshacer.</HelperText>
           <ErrorBanner message={error} />
           <PrimaryButton title="Sí, eliminar" busy={busy} onPress={() => void eliminar(false)} />
-          <TextButton title="Cancelar" disabled={busy} onPress={() => setConfirmando(false)} />
+          <TextButton variant="danger" icon="x" title="Cancelar" disabled={busy} onPress={() => setConfirmando(false)} />
         </>
       )}
     </View>

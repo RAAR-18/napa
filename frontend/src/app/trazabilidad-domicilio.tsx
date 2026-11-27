@@ -9,7 +9,6 @@ import {
   HelperText,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import MapaPunto from '../components/MapaPunto';
@@ -152,7 +151,6 @@ export default function TrazabilidadDomicilioScreen() {
         </>
       ) : null}
       <PrimaryButton title="Actualizar" disabled={loading} onPress={() => setLoadAttempt((a) => a + 1)} />
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }

@@ -93,8 +93,15 @@ describe('supervisión de domicilios (RF-12)', () => {
     expect(view.getByText('Cliente: Ana Pérez')).toBeTruthy();
     expect(listarDomiciliosAdmin).toHaveBeenCalledWith({ page: 0, size: 20 });
 
+    expect(view.queryByRole('radio', { name: 'Cancelados' })).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Estado: Todos' }));
     await fireEvent.press(view.getByRole('radio', { name: 'Cancelados' }));
     await waitFor(() => expect(listarDomiciliosAdmin).toHaveBeenLastCalledWith({ page: 0, size: 20, estado: 'CANCELADO' }));
+    expect(view.getByRole('button', { name: 'Estado: Cancelados' }).props.accessibilityState.expanded).toBe(false);
+    expect(view.queryByRole('radio', { name: 'Cancelados' })).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Estado: Cancelados' }));
+    await fireEvent.press(view.getByRole('radio', { name: 'Todos' }));
+    await waitFor(() => expect(listarDomiciliosAdmin).toHaveBeenLastCalledWith({ page: 0, size: 20 }));
   });
 
   it('shows the empty message and filters by the person passed from the detail', async () => {

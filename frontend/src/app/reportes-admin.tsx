@@ -91,9 +91,9 @@ export default function ReportesAdminScreen() {
       {!loading && pagina && pagina.content.length === 0 ? <HelperText>No hay reportes con este filtro.</HelperText> : null}
       {pagina && pagina.totalElements > pagina.size ? (
         <View style={styles.pager}>
-          <TextButton title="Anterior" disabled={page === 0} onPress={() => setPage((p) => p - 1)} />
+          <TextButton icon="chevron-left" title="Anterior" disabled={page === 0} onPress={() => setPage((p) => p - 1)} />
           <Text style={styles.detail}>{`${page + 1} de ${totalPaginas}`}</Text>
-          <TextButton title="Siguiente" disabled={page + 1 >= totalPaginas} onPress={() => setPage((p) => p + 1)} />
+          <TextButton icon="chevron-right" title="Siguiente" disabled={page + 1 >= totalPaginas} onPress={() => setPage((p) => p + 1)} />
         </View>
       ) : null}
     </AuthPage>

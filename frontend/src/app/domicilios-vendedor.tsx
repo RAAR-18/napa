@@ -195,7 +195,7 @@ export default function DomiciliosVendedorScreen() {
         onChangeText={setHastaInput}
       />
       <ErrorBanner message={dateError} />
-      <TextButton title="Aplicar fechas" disabled={loading} onPress={applyDates} />
+      <TextButton icon="calendar" title="Aplicar fechas" variant="soft" disabled={loading} onPress={applyDates} />
       <ErrorBanner message={error} />
       {loading ? (
         <ActivityIndicator accessibilityLabel="Cargando domicilios" color={palette.green} />
@@ -204,7 +204,7 @@ export default function DomiciliosVendedorScreen() {
         filtered ? (
           <>
             <HelperText>Sin resultados.</HelperText>
-            <TextButton title="Limpiar filtros" onPress={clearFilters} />
+            <TextButton icon="x" title="Limpiar filtros" onPress={clearFilters} />
           </>
         ) : (
           <HelperText>Aún no tienes domicilios.</HelperText>
@@ -213,7 +213,7 @@ export default function DomiciliosVendedorScreen() {
       {!loading ? data?.content.map((item) => <DomicilioRow key={item.id} item={item} />) : null}
       {data && data.totalElements > 0 ? (
         <View style={styles.pagination}>
-          <TextButton
+          <TextButton icon="chevron-left"
             title="Página anterior"
             disabled={loading || page === 0}
             onPress={() => changePage(page - 1)}
@@ -221,7 +221,7 @@ export default function DomiciliosVendedorScreen() {
           <Text style={styles.pageText}>
             {page + 1} de {Math.ceil(data.totalElements / data.size)}
           </Text>
-          <TextButton
+          <TextButton icon="chevron-right"
             title="Página siguiente"
             disabled={loading || (page + 1) * data.size >= data.totalElements}
             onPress={() => changePage(page + 1)}
@@ -233,7 +233,6 @@ export default function DomiciliosVendedorScreen() {
         disabled={loading}
         onPress={() => setLoadAttempt((attempt) => attempt + 1)}
       />
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

@@ -11,7 +11,6 @@ import {
   OptionButton,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import { ApiError } from '../lib/api';
@@ -146,7 +145,6 @@ export default function CuentaDomiciliarioScreen() {
           <PrimaryButton busy={saving} title="Guardar cuenta" onPress={() => void save()} />
         </>
       ) : null}
-      <TextButton title="Volver" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

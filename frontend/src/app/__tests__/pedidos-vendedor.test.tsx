@@ -1,6 +1,7 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import * as Crypto from 'expo-crypto';
+import { Linking } from 'react-native';
 
 import PedidoVendedorScreen from '../pedido-vendedor';
 import PedidosVendedorScreen from '../pedidos-vendedor';
@@ -133,7 +134,7 @@ it('shows seller orders, filters by reservation, and opens the selected order', 
   const view = await render(<PedidosVendedorScreen />);
 
   await waitFor(() => expect(view.getByText('Ana Pérez')).toBeTruthy());
-  expect(view.getByText('Recogida')).toBeTruthy();
+  expect(view.getByText('Recogida · Inmediato')).toBeTruthy();
   await fireEvent.press(view.getByRole('radio', { name: 'Reservas' }));
   await waitFor(() => expect(listarPedidosVendedor).toHaveBeenLastCalledWith({
     page: 0,
@@ -145,6 +146,49 @@ it('shows seller orders, filters by reservation, and opens the selected order', 
     pathname: '/pedido-vendedor',
     params: { pedidoId: 'order-id' },
   });
+});
+
+it('abre la ubicación del cliente en Google Maps con un solo toque', async () => {
+  jest.mocked(getValidSession).mockResolvedValue({ ...seller, rol: 'VENDEDOR_AMBULANTE' });
+  jest.mocked(obtenerPedidoVendedor).mockResolvedValue({ ...pendingOrder, estado: 'ACEPTADO' });
+  const abrir = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+  try {
+    const view = await render(<PedidoVendedorScreen />);
+    await fireEvent.press(await view.findByRole('button', { name: 'Ver ubicación en Google Maps' }));
+    expect(new URL(abrir.mock.calls[0][0]).searchParams.get('destination')).toBe('4.711,-74.0721');
+    expect(router.push).not.toHaveBeenCalled();
+  } finally { abrir.mockRestore(); }
+});
+
+it('combina los desplegables con el tipo de pedido y vuelve a la primera página', async () => {
+  jest.mocked(listarPedidosVendedor).mockResolvedValue({ ...page, totalElements: 61 });
+  const view = await render(<PedidosVendedorScreen />);
+  await view.findByText('Ana Pérez');
+  expect(view.queryByRole('radio', { name: 'Pendientes' })).toBeNull();
+  await fireEvent.press(view.getByRole('button', { name: 'Página siguiente' }));
+  await waitFor(() => expect(listarPedidosVendedor).toHaveBeenLastCalledWith({ page: 1, size: 20 }));
+
+  await fireEvent.press(view.getByRole('button', { name: 'Estado: Todos' }));
+  await fireEvent.press(view.getByRole('radio', { name: 'Pendientes' }));
+  await waitFor(() => expect(listarPedidosVendedor).toHaveBeenLastCalledWith({ page: 0, size: 20, estado: 'PENDIENTE' }));
+  expect(view.queryByRole('radio', { name: 'Pendientes' })).toBeNull();
+  expect(view.getByRole('button', { name: 'Estado: Pendientes' })).toBeTruthy();
+
+  await fireEvent.press(view.getByRole('button', { name: 'Estado: Pendientes' }));
+  await fireEvent.press(view.getByRole('button', { name: 'Modalidad: Todas' }));
+  expect(view.queryByRole('radio', { name: 'Pendientes' })).toBeNull();
+  await fireEvent.press(view.getByRole('radio', { name: 'Domicilio' }));
+  await fireEvent.press(view.getByRole('radio', { name: 'Reservas' }));
+  await waitFor(() => expect(listarPedidosVendedor).toHaveBeenLastCalledWith({
+    page: 0, size: 20, estado: 'PENDIENTE', modalidad: 'DOMICILIO', reserva: true,
+  }));
+  expect(view.getByRole('button', { name: 'Modalidad: Domicilio' })).toBeTruthy();
+
+  await fireEvent.press(view.getByRole('button', { name: 'Estado: Pendientes' }));
+  await fireEvent.press(view.getAllByRole('radio', { name: 'Todos' })[0]);
+  await fireEvent.press(view.getByRole('button', { name: 'Modalidad: Domicilio' }));
+  await fireEvent.press(view.getByRole('radio', { name: 'Todas' }));
+  await waitFor(() => expect(listarPedidosVendedor).toHaveBeenLastCalledWith({ page: 0, size: 20, reserva: true }));
 });
 
 it('shows an empty state and does not request the list for a client', async () => {
@@ -181,6 +225,7 @@ it('requires confirmation, reuses the idempotency key after a network failure, a
   const view = await render(<PedidoVendedorScreen />);
 
   await waitFor(() => expect(view.getByText('Carrera 7 # 10-20')).toBeTruthy());
+  expect(view.queryByText(/4\.711.*-74\.0721/)).toBeNull();
   await fireEvent.press(view.getByRole('button', { name: 'Aceptar pedido' }));
   expect(aceptarPedido).not.toHaveBeenCalled();
   await waitFor(() => expect(view.getByRole('button', { name: 'Confirmar aceptación' })).toBeTruthy());
@@ -236,7 +281,7 @@ it('confirms a home-delivery payment only after an explicit seller confirmation'
   jest.mocked(obtenerPedidoVendedor).mockResolvedValue(acceptedOrder);
   const view = await render(<PedidoVendedorScreen />);
 
-  await waitFor(() => expect(view.getByText('Estado del pago: PENDIENTE_CONFIRMACION')).toBeTruthy());
+  await waitFor(() => expect(view.getByText('Estado del pago: Pendiente de confirmación')).toBeTruthy());
   await fireEvent.press(view.getByRole('button', { name: 'Confirmar pago recibido' }));
   expect(confirmarPagoPedido).not.toHaveBeenCalled();
   await waitFor(() => expect(view.getByText(/verificaste la transferencia por \$9\.450 COP/)).toBeTruthy());
@@ -310,7 +355,7 @@ it('queues a bank transfer confirmation from the saved order and keeps publicati
     })));
     expect(outbox.encolar).toHaveBeenCalledTimes(1);
     expect(confirmarPagoPedido).not.toHaveBeenCalled();
-    expect(view.getByText(/Estado del pago: PENDIENTE_CONFIRMACION/)).toBeTruthy();
+    expect(view.getByText(/Estado del pago: Pendiente de confirmación/)).toBeTruthy();
     expect(view.queryByRole('button', { name: 'Publicar domicilio' })).toBeNull();
   } finally {
     jest.mocked(readSession).mockResolvedValue(null);
@@ -351,7 +396,7 @@ it('queues a single delivery and payment confirmation from the saved order', asy
     })));
     expect(confirmarEntregaDirecta).not.toHaveBeenCalled();
     expect(view.getByText('En camino')).toBeTruthy();
-    expect(view.getByText(/Estado del pago: PENDIENTE_CONFIRMACION/)).toBeTruthy();
+    expect(view.getByText(/Estado del pago: Pendiente de confirmación/)).toBeTruthy();
   } finally {
     jest.mocked(readSession).mockResolvedValue(null);
     jest.mocked(leerConsultaPedidos).mockResolvedValue(null);

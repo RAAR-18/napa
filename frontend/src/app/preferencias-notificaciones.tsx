@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { AuthPage, ErrorBanner, HelperText, PageHeading, PrimaryButton, TextButton, palette } from '../components/AuthUI';
+import { AuthPage, ErrorBanner, HelperText, PageHeading, PrimaryButton, palette } from '../components/AuthUI';
 import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
 import {
@@ -115,7 +115,6 @@ export default function PreferenciasNotificacionesScreen() {
       {visibles.length > 0 ? (
         <HelperText>Si desactivas un aviso, tampoco aparecerá en tu lista de notificaciones.</HelperText>
       ) : null}
-      <TextButton title="Volver a mis notificaciones" onPress={() => router.replace('/notificaciones')} />
     </AuthPage>
   );
 }

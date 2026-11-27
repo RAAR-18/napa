@@ -907,13 +907,13 @@ export function PedidoCatalogo({
                 </>
               ) : <HelperText>Conéctate para cotizar y confirmar este pedido.</HelperText>}
               {!catalogoOffline ? (
-                <TextButton title="Reintentar conexión" disabled={creating} onPress={() => {
+                <TextButton icon="refresh-cw" title="Reintentar conexión" disabled={creating} onPress={() => {
                   setSinConexion(false);
                   invalidateQuote();
                 }} />
               ) : null}
               {!pendienteId ? (
-                <TextButton title="Guardar borrador" disabled={creating || !cuenta}
+                <TextButton icon="save" title="Guardar borrador" disabled={creating || !cuenta}
                   onPress={() => void guardarOffline(false)} />
               ) : null}
             </>
@@ -921,7 +921,7 @@ export function PedidoCatalogo({
             <PrimaryButton title="Cotizar pedido" busy={quoting}
               disabled={Boolean(pendienteId && !revision)} onPress={() => void reviewQuote()} />
           )}
-          <TextButton
+          <TextButton icon="chevron-left"
             title="Volver a los productos"
             onPress={() => {
               setStep('cart');
@@ -990,7 +990,7 @@ export function PedidoCatalogo({
             disabled={offline || quote.mediosPagoDisponibles.length === 0 || !paymentMethod}
             onPress={() => void confirmOrder()}
           />
-          <TextButton
+          <TextButton icon="chevron-left"
             title="Volver a revisar entrega"
             disabled={creating}
             onPress={() => {

@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
 
 import {
   AuthPage,
   ErrorBanner,
   Field,
-  FormFooter,
   HelperText,
   PageHeading,
   PrimaryButton,
-  TextButton,
 } from '../components/AuthUI';
+import { AuthAction as LoginAction } from '../components/AuthAction';
 import { ApiError } from '../lib/api';
 import { login } from '../lib/auth';
+import { replaceAuthHistory } from '../lib/auth-navigation';
 import { homeForRole } from '../components/AppShell';
 
 export default function LoginScreen() {
@@ -27,7 +28,7 @@ export default function LoginScreen() {
     setBusy(true);
     try {
       const session = await login(identificador.trim(), password);
-      router.replace(homeForRole(session.rol));
+      replaceAuthHistory(homeForRole(session.rol));
     } catch (cause) {
       if (
         cause instanceof ApiError &&
@@ -87,27 +88,36 @@ export default function LoginScreen() {
         showPasswordToggle
         value={password}
       />
-      <TextButton
-        title="Olvidé mi contraseña"
-        onPress={() => router.push('/recover')}
-      />
+      <View style={styles.recovery}>
+        <LoginAction
+          title="Olvidé mi contraseña"
+          icon="key"
+          onPress={() => router.push('/recover')}
+        />
+      </View>
       <PrimaryButton
         busy={busy}
         disabled={!identificador.trim() || !password}
         title="Iniciar sesión"
         onPress={submit}
       />
-      <FormFooter>
-        <TextButton
+      <View style={styles.secondaryActions}>
+        <LoginAction
           title="¿Tienes problemas para iniciar sesión? Verifica tu cuenta aquí"
+          icon="shield"
           onPress={() => router.push({ pathname: '/verify', params: { proposito: 'REGISTRO' } })}
         />
-        <TextButton
+        <LoginAction
           title="Crear cuenta"
+          icon="user-plus"
           onPress={() => router.push('/register')}
         />
-        <TextButton title="Volver" onPress={() => router.replace('/')} />
-      </FormFooter>
+      </View>
     </AuthPage>
   );
 }
+
+const styles = StyleSheet.create({
+  recovery: { alignItems: 'center', marginBottom: 18 },
+  secondaryActions: { alignItems: 'center', marginTop: 21, gap: 18 },
+});

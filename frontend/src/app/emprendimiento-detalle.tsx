@@ -155,7 +155,7 @@ export default function EmprendimientoDetalleScreen() {
               })
             }
           />
-          <TextButton
+          <TextButton variant="gold" icon="star"
             title="Ver calificaciones"
             onPress={() =>
               router.push({
@@ -166,7 +166,6 @@ export default function EmprendimientoDetalleScreen() {
           />
         </>
       ) : null}
-      <TextButton title="Volver a emprendimientos" onPress={() => router.replace('/emprendimientos')} />
     </AuthPage>
   );
 }

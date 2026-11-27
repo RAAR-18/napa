@@ -61,12 +61,12 @@ export default function CatalogoScreen() {
         <HelperText>No se pudo identificar la modalidad de este emprendimiento. Vuelve al listado y selecciónalo de nuevo.</HelperText>
       ) : null}
       {!busy && !data && anteriorGuardada !== undefined ? (
-        <TextButton title="Página guardada anterior" onPress={() => setPage(anteriorGuardada)} />
+        <TextButton icon="chevron-left" title="Página guardada anterior" onPress={() => setPage(anteriorGuardada)} />
       ) : null}
       {!busy && !data && siguienteGuardada !== undefined ? (
-        <TextButton title="Página guardada siguiente" onPress={() => setPage(siguienteGuardada)} />
+        <TextButton icon="chevron-right" title="Página guardada siguiente" onPress={() => setPage(siguienteGuardada)} />
       ) : null}
-      <TextButton title="Actualizar catálogo" disabled={busy} onPress={refresh} />
+      <TextButton icon="refresh-cw" title="Actualizar catálogo" disabled={busy} onPress={refresh} />
     </AuthPage>
   );
 }

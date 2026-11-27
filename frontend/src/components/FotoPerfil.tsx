@@ -93,11 +93,13 @@ export default function FotoPerfil({
       <View style={styles.row}>
         <TextButton
           title={foto ? 'Cambiar foto' : 'Elegir foto'}
+          variant="soft"
+          icon="camera"
           disabled={busy}
           onPress={() => void elegir('galeria')}
         />
         {Platform.OS !== 'web' ? (
-          <TextButton title="Tomar foto" disabled={busy} onPress={() => void elegir('camara')} />
+          <TextButton title="Tomar foto" variant="soft" icon="camera" disabled={busy} onPress={() => void elegir('camara')} />
         ) : null}
       </View>
       <ErrorBanner message={error} />
@@ -110,5 +112,5 @@ const styles = StyleSheet.create({
   photo: { borderRadius: 48, height: 96, width: 96 },
   initials: { alignItems: 'center', backgroundColor: palette.green, justifyContent: 'center' },
   initialsText: { color: palette.white, fontFamily: fonts.sans, fontSize: 36, fontWeight: '800' },
-  row: { flexDirection: 'row', gap: 16 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, marginTop: 12 },
 });

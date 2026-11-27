@@ -2,7 +2,6 @@ import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -19,6 +18,7 @@ import FotoPerfil from '../components/FotoPerfil';
 import { Icon } from '../components/NapaUI';
 import { ApiError, NetworkError } from '../lib/api';
 import { clearSession, getSessionGeneration, readSession } from '../lib/auth';
+import { replaceAuthHistory } from '../lib/auth-navigation';
 import { manejarError, mensajeDeCampo } from '../lib/errores';
 import { borrarPerfilGuardado, guardarPerfil, leerPerfilGuardado } from '../lib/perfil-cache';
 import {
@@ -137,7 +137,7 @@ export default function PerfilScreen() {
         </>
       ) : null}
       {!loading && (copia || error) ? (
-        <TextButton title="Actualizar perfil" onPress={() => setIntento((actual) => actual + 1)} />
+        <TextButton icon="refresh-cw" title="Actualizar perfil" onPress={() => setIntento((actual) => actual + 1)} />
       ) : null}
     </AuthPage>
   );
@@ -216,6 +216,8 @@ function DatosBasicos({ perfil, onGuardado }: { perfil: PerfilUsuario; onGuardad
       </Text>
       <TextButton
         title={locating ? 'Obteniendo ubicación…' : 'Usar mi ubicación actual'}
+        variant="soft"
+        icon="map-pin"
         disabled={locating || busy}
         onPress={() => void usarUbicacionActual()}
       />
@@ -311,7 +313,7 @@ function EliminarCuenta({ cuentaId }: { cuentaId: string }) {
       await clearSession();
       await borrarPerfilGuardado(cuentaId)
         .catch((cause: unknown) => console.warn('No se pudo borrar el perfil guardado.', cause));
-      router.replace('/');
+      replaceAuthHistory('/');
     } catch (cause) {
       key.current = null;
       if (cause instanceof ApiError && cause.code === 'HAS_PENDING_OPERATIONS') {
@@ -353,7 +355,7 @@ function EliminarCuenta({ cuentaId }: { cuentaId: string }) {
             <Text key={p} style={styles.detail}>• Tienes {p}</Text>
           ))}
           <PrimaryButton title="Sí, eliminar mi cuenta" busy={busy} onPress={() => void eliminar()} />
-          <TextButton title="Cancelar" disabled={busy} onPress={() => setConfirmando(false)} />
+          <TextButton variant="danger" icon="x" title="Cancelar" disabled={busy} onPress={() => setConfirmando(false)} />
         </>
       )}
     </View>
