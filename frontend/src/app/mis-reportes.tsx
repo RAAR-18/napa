@@ -9,7 +9,6 @@ import {
   HelperText,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import { manejarError } from '../lib/errores';
@@ -69,7 +68,6 @@ export default function MisReportesScreen() {
         title="Reportar un problema de la aplicación"
         onPress={() => router.push('/reportar')}
       />
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }

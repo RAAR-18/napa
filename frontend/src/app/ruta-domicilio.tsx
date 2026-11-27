@@ -10,10 +10,10 @@ import {
   HelperText,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import MapaRutaDomicilio from '../components/MapaRutaDomicilio';
+import { GoogleMapsButton } from '../components/GoogleMapsButton';
 import { ApiError } from '../lib/api';
 import { clearSession, getSessionGeneration, readSession } from '../lib/auth';
 import {
@@ -173,6 +173,11 @@ export default function RutaDomicilioScreen() {
           </View>
           <Direccion titulo="Recogida (A)" punto={ruta.origen} />
           <Direccion titulo="Entrega (B)" punto={ruta.destino} />
+          <GoogleMapsButton
+            title="Ver ruta en Google Maps"
+            destino={ruta.destino}
+            parada={ruta.estado === 'ASIGNADO' ? ruta.origen : undefined}
+          />
         </>
       ) : null}
       <PrimaryButton
@@ -180,12 +185,6 @@ export default function RutaDomicilioScreen() {
         disabled={loading}
         onPress={() => setAttempt((value) => value + 1)}
       />
-      {domicilioId ? (
-        <TextButton
-          title="Volver al domicilio"
-          onPress={() => router.replace({ pathname: '/domicilio-domiciliario', params: { domicilioId } })}
-        />
-      ) : null}
     </AuthPage>
   );
 }

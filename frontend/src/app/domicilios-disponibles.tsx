@@ -273,7 +273,7 @@ export default function DomiciliosDisponiblesScreen() {
       </CardGrid>
       {data && data.totalElements > data.size ? (
         <View style={styles.pagination}>
-          <TextButton
+          <TextButton icon="chevron-left"
             title="Página anterior"
             disabled={page === 0}
             onPress={() => changePage(page - 1)}
@@ -281,7 +281,7 @@ export default function DomiciliosDisponiblesScreen() {
           <Text style={styles.pageText}>
             {page + 1} de {Math.ceil(data.totalElements / data.size)}
           </Text>
-          <TextButton
+          <TextButton icon="chevron-right"
             title="Página siguiente"
             disabled={(page + 1) * data.size >= data.totalElements}
             onPress={() => changePage(page + 1)}

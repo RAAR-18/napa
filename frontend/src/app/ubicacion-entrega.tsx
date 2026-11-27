@@ -130,7 +130,7 @@ export default function UbicacionEntregaScreen() {
               </Text>
             ) : null}
           </View>
-          <TextButton
+          <TextButton icon="map-pin"
             title="Abrir en Google Maps"
             onPress={() =>
               void Linking.openURL(
@@ -138,15 +138,9 @@ export default function UbicacionEntregaScreen() {
               )
             }
           />
-          <TextButton title="Actualizar mi posición" disabled={loading} onPress={() => setAttempt((value) => value + 1)} />
+          <TextButton icon="refresh-cw" title="Actualizar mi posición" disabled={loading} onPress={() => setAttempt((value) => value + 1)} />
         </>
       ) : null}
-      <TextButton
-        title="Volver al pedido"
-        onPress={() =>
-          pedidoId ? router.replace({ pathname: '/pedido-vendedor', params: { pedidoId } }) : router.back()
-        }
-      />
     </AuthPage>
   );
 }

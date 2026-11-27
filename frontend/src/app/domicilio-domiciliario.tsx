@@ -1,4 +1,5 @@
 import { fonts } from '../components/theme';
+import { GoogleMapsButton } from '../components/GoogleMapsButton';
 import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { randomUUID } from '../lib/uuid';
@@ -74,15 +75,13 @@ function Punto({ title, punto }: { title: string; punto: PuntoDomiciliario }) {
       <Text style={styles.sectionTitle}>{title}</Text>
       {punto.aproximado ? (
         <Text style={styles.detailText}>
-          {punto.barrio ? `Barrio ${punto.barrio}. ` : ''}Zona aproximada ({punto.latitud.toFixed(2)},{' '}
-          {punto.longitud.toFixed(2)}). Verás la dirección exacta al aceptar.
+          {punto.barrio ? `Barrio ${punto.barrio}. ` : ''}Zona aproximada. Verás la dirección exacta al aceptar.
         </Text>
       ) : (
         <>
           <Text style={styles.detailText}>{punto.direccion ?? 'Sin dirección escrita'}</Text>
           {punto.barrio ? <Text style={styles.detailText}>Barrio: {punto.barrio}</Text> : null}
           {punto.referencia ? <Text style={styles.detailText}>Referencia: {punto.referencia}</Text> : null}
-          <Text style={styles.detailText}>{punto.latitud}, {punto.longitud}</Text>
         </>
       )}
     </View>
@@ -308,7 +307,7 @@ export default function DomicilioDomiciliarioScreen() {
         cerrarRevision={enLinea && recogida.pendiente?.status === 'FALLIDA' ? () => {
           void outbox.descartar(recogida.pendiente!.id).catch((cause) => setError(actionError(cause)));
         } : undefined} />
-      {domicilioId ? <TextButton title="Actualizar domicilio" disabled={loading || busy}
+      {domicilioId ? <TextButton icon="refresh-cw" title="Actualizar domicilio" variant="soft" disabled={loading || busy}
         onPress={() => setLoadAttempt((intento) => intento + 1)} /> : null}
       {notice ? <Text aria-live="polite" style={styles.notice}>{notice}</Text> : null}
       {detail && !unavailable ? (
@@ -339,7 +338,9 @@ export default function DomicilioDomiciliarioScreen() {
         <>
           <HelperText>Aceptar o rechazar requiere conexión a internet.</HelperText>
           <PrimaryButton title="Aceptar domicilio" onPress={() => setPendingAction('accept')} />
-          <TextButton title="Rechazar domicilio" onPress={() => setPendingAction('reject')} />
+          <View style={{ marginTop: 12 }}>
+            <TextButton icon="x-circle" title="Rechazar domicilio" variant="danger" onPress={() => setPendingAction('reject')} />
+          </View>
         </>
       ) : null}
       {pendingAction && detail ? (
@@ -354,7 +355,7 @@ export default function DomicilioDomiciliarioScreen() {
             busy={busy}
             onPress={() => void confirm()}
           />
-          <TextButton
+          <TextButton variant="danger" icon="x"
             title="Cancelar"
             disabled={busy}
             onPress={() => {
@@ -364,11 +365,19 @@ export default function DomicilioDomiciliarioScreen() {
           />
         </View>
       ) : null}
-      {enLinea && mine && detail && 'rutaDisponible' in detail && detail.rutaDisponible && !loading ? (
-        <PrimaryButton
-          title="Ver ruta en el mapa"
-          onPress={() => router.push({ pathname: '/ruta-domicilio', params: { domicilioId: detail.id } })}
-        />
+      {enLinea && detail && 'origen' in detail && !loading &&
+        (canDecide || (mine && ['ASIGNADO', 'RECOGIDO', 'EN_CAMINO'].includes(estado ?? ''))) ? (
+        <View style={styles.mapActions}>
+          <GoogleMapsButton
+            title={mine ? 'Ver ruta en Google Maps' : 'Ver recogida en Google Maps'}
+            destino={mine ? detail.destino : detail.origen}
+            parada={mine && estado === 'ASIGNADO' ? detail.origen : undefined}
+          />
+          {mine && detail.rutaDisponible ? (
+            <TextButton icon="map-pin" title="Ver detalle de la ruta" variant="soft"
+              onPress={() => router.push({ pathname: '/ruta-domicilio', params: { domicilioId: detail.id } })} />
+          ) : null}
+        </View>
       ) : null}
       {mine && estado === 'ASIGNADO' && !recogida.pendiente && !confirmada && !loading ? (
         <>
@@ -415,24 +424,28 @@ export default function DomicilioDomiciliarioScreen() {
           />
         </>
       ) : null}
-      {mine && detail ? (
-        <TextButton
-          title="Reportar un problema con este domicilio"
-          onPress={() => router.push({ pathname: '/reportar', params: { domicilioId: detail.id } })}
-        />
-      ) : null}
       {!loading && error && !detail && !unavailable ? (
         <PrimaryButton title="Reintentar carga" onPress={() => setLoadAttempt((attempt) => attempt + 1)} />
       ) : null}
       {mine ? (
-        <TextButton title="Mis domicilios en curso" onPress={() => router.replace('/domicilios-en-curso')} />
+        <View style={styles.secondaryActions}>
+          {detail ? (
+            <TextButton icon="alert-triangle"
+              title="Reportar un problema con este domicilio"
+              variant="danger"
+              onPress={() => router.push({ pathname: '/reportar', params: { domicilioId: detail.id } })}
+            />
+          ) : null}
+          <TextButton title="Mis domicilios en curso" variant="soft" onPress={() => router.replace('/domicilios-en-curso')} />
+        </View>
       ) : null}
-      <TextButton title="Volver a disponibles" onPress={() => router.replace('/domicilios-disponibles')} />
     </AuthPage>
   );
 }
 
 const styles = StyleSheet.create({
+  mapActions: { marginVertical: 16, gap: 12 },
+  secondaryActions: { alignItems: 'center', marginTop: 24, gap: 14 },
   card: {
     backgroundColor: palette.white,
     borderColor: palette.border,

@@ -26,8 +26,8 @@ export function ReservationDateTimeField({ value, onChange, disabled = false }: 
       <HelperText>{seleccionada
         ? seleccionada.toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })
         : 'Selecciona el día y la hora de tu reserva.'}</HelperText>
-      <TextButton title="Elegir fecha de reserva" disabled={disabled} onPress={() => setModo('date')} />
-      <TextButton title="Elegir hora de reserva" disabled={disabled} onPress={() => setModo('time')} />
+      <TextButton icon="calendar" title="Elegir fecha de reserva" disabled={disabled} onPress={() => setModo('date')} />
+      <TextButton icon="clock" title="Elegir hora de reserva" disabled={disabled} onPress={() => setModo('time')} />
       {modo && !disabled ? (
         <DateTimePicker
           testID="selector-reserva"
@@ -41,7 +41,7 @@ export function ReservationDateTimeField({ value, onChange, disabled = false }: 
         />
       ) : null}
       {modo && Platform.OS === 'ios'
-        ? <TextButton title="Listo" onPress={() => setModo(null)} /> : null}
+        ? <TextButton icon="check" title="Listo" onPress={() => setModo(null)} /> : null}
     </View>
   );
 }

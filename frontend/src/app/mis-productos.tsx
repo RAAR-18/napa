@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, Text } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import {
   AuthPage,
@@ -20,6 +20,7 @@ import {
 import { useProductosPage } from '../hooks/useProductosPage';
 import { useResumenesCalificacion } from '../hooks/useResumenesCalificacion';
 import { CardGrid, GridCard } from '../components/NapaUI';
+import { AuthAction } from '../components/AuthAction';
 import { outbox } from '../database/outbox';
 import { useAccionesPendientes } from '../hooks/useOutbox';
 import { edicionDescartableSinRevision, cambioPendienteProducto, productoPendiente } from '../lib/productos-pendientes';
@@ -76,7 +77,12 @@ export default function MisProductosScreen() {
         </>
       ) : null}
       {data?.emprendimiento ? (
-        <TextButton title="Editar mi emprendimiento" onPress={() => router.push('/mi-emprendimiento')} />
+        <View style={{ marginTop: 8, marginBottom: 20 }}>
+          <AuthAction
+            title="Editar mi emprendimiento"
+            onPress={() => router.push('/mi-emprendimiento')}
+          />
+        </View>
       ) : null}
       <OrdenProductosControl value={sort} onChange={changeSort} />
       {notice ? <Text aria-live="polite" style={productStyles.status}>{notice}</Text> : null}
@@ -96,10 +102,10 @@ export default function MisProductosScreen() {
               {accion.status === 'FALLIDA' ? (
                 <>
                   <HelperText>{accion.lastError ?? 'El servidor rechazó el registro.'}</HelperText>
-                  <TextButton title="Corregir y reenviar" onPress={() => router.push({
+                  <TextButton icon="edit-2" title="Corregir y reenviar" onPress={() => router.push({
                     pathname: '/nuevo-producto', params: { pendienteId: accion.id },
                   })} />
-                  <TextButton title="Descartar" onPress={() => {
+                  <TextButton variant="danger" icon="x-circle" title="Descartar" onPress={() => {
                     setErrorPendiente(null);
                     void outbox.descartar(accion.id).catch((cause: unknown) => {
                       setErrorPendiente(cause instanceof Error ? cause.message : 'No se pudo descartar el registro.');
@@ -133,7 +139,7 @@ export default function MisProductosScreen() {
                       pathname: '/editar-producto', params: { productoId, pendienteId: accion.id },
                     })} />
                   ) : null}
-                  <TextButton title="Descartar" onPress={() => {
+                  <TextButton variant="danger" icon="x-circle" title="Descartar" onPress={() => {
                     void outbox.descartar(accion.id).catch((cause: unknown) => {
                       setErrorPendiente(cause instanceof Error ? cause.message : 'No se pudo descartar la edición.');
                     });
@@ -178,7 +184,7 @@ export default function MisProductosScreen() {
           : null}
       </CardGrid>
       {data ? <ProductosPagination data={data} busy={busy} onPage={setPage} /> : null}
-      <TextButton title="Actualizar listado" disabled={busy} onPress={refresh} />
+      <TextButton icon="refresh-cw" title="Actualizar listado" disabled={busy} onPress={refresh} />
     </AuthPage>
   );
 }

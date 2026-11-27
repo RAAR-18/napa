@@ -185,7 +185,7 @@ export function ProductoCard({
               {textoPromedio(resumen)}
             </Text>
             {resumen.total > 0 ? (
-              <TextButton
+              <TextButton variant="gold" icon="star"
                 title={`Ver opiniones de ${producto.nombre}`}
                 onPress={() =>
                   router.push({
@@ -329,7 +329,7 @@ export function ProductosPagination({
   const pages = Math.ceil(data.totalElements / data.size);
   return (
     <View style={productStyles.pagination}>
-      <TextButton
+      <TextButton icon="chevron-left"
         title="Página anterior"
         disabled={busy || data.page === 0}
         onPress={() => onPage(data.page - 1)}
@@ -337,7 +337,7 @@ export function ProductosPagination({
       <HelperText>
         {data.page + 1} de {pages}
       </HelperText>
-      <TextButton
+      <TextButton icon="chevron-right"
         title="Página siguiente"
         disabled={busy || data.page + 1 >= pages}
         onPress={() => onPage(data.page + 1)}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Text, View } from 'react-native';
 
-import { AuthPage, ErrorBanner, Field, HelperText, OptionButton, PageHeading, PrimaryButton, TextButton, palette } from '../components/AuthUI';
+import { AuthPage, ErrorBanner, Field, HelperText, OptionButton, PageHeading, PrimaryButton, palette } from '../components/AuthUI';
 import { productStyles } from '../components/ProductosUI';
 import { outbox, type AccionPendiente } from '../database/outbox';
 import { NetworkError } from '../lib/api';
@@ -133,7 +133,6 @@ export default function NuevoProductoScreen() {
           <PrimaryButton title={pendienteId ? 'Corregir y reenviar' : 'Publicar producto'} busy={busy} onPress={() => void submit()} />
         </>
       ) : null}
-      <TextButton title="Volver a mis productos" disabled={busy} onPress={() => router.replace('/mis-productos')} />
     </AuthPage>
   );
 }

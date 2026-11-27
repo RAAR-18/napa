@@ -150,14 +150,13 @@ export default function HistorialPagosScreen() {
       {data?.content.map((pago) => <FilaPago key={pago.id} pago={pago} admin={admin} />)}
       {data && data.totalElements > PAGE_SIZE ? (
         <View style={styles.pager}>
-          <TextButton title="Anterior" disabled={page === 0 || loading} onPress={() => setPage(page - 1)} />
+          <TextButton icon="chevron-left" title="Anterior" disabled={page === 0 || loading} onPress={() => setPage(page - 1)} />
           <Text style={styles.detailText}>
             Página {page + 1} de {lastPage + 1}
           </Text>
-          <TextButton title="Siguiente" disabled={page >= lastPage || loading} onPress={() => setPage(page + 1)} />
+          <TextButton icon="chevron-right" title="Siguiente" disabled={page >= lastPage || loading} onPress={() => setPage(page + 1)} />
         </View>
       ) : null}
-      <TextButton title="Volver" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

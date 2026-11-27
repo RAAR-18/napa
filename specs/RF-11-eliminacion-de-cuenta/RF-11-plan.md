@@ -18,6 +18,16 @@ El usuario elimina su propia cuenta con `POST /usuarios/me/eliminar` (cuerpo `{ 
 
 ## Estado actual del código
 
+### Historial tras eliminar la cuenta (2026-11-26)
+
+Solo tras una eliminación confirmada y la limpieza de la sesión local se llama
+a `replaceAuthHistory('/')`: se descartan todas las pantallas anteriores y se
+reemplaza la raíz por la bienvenida. Un rechazo por operaciones pendientes no
+cierra la sesión ni altera el historial. La misma función se utiliza al cerrar
+sesión y al detectar una sesión inválida en Mi cuenta. Las pruebas del Stack
+comprueban que no quedan entradas privadas a las que regresar con Atrás;
+el recorrido físico en una APK con esta corrección requiere validación del equipo.
+
 `Usuario` ya tiene el estado `ELIMINADA` en spec-general y RF-10 responde `401 INVALID_CREDENTIALS` para esas cuentas. RF-09 ya revoca sesiones e incrementa la versión de sesión (`sv:{userId}` en Redis); este plan reutiliza ese mecanismo. RF-38 ya decidió no enviar push a cuentas `ELIMINADA`. No existe aún ninguna consulta de operaciones pendientes en los módulos `pedidos`, `domicilios` ni `emprendimientos`: este plan agrega un puerto `in` en cada uno.
 
 ## Actors

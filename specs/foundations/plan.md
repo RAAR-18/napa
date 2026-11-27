@@ -163,6 +163,27 @@ Se combinan las dos propuestas: **un paquete por módulo** (los 12 de `funcional
 
 **Decisión — cliente HTTP**: se conserva `fetch` centralizado en `frontend/src/lib/api.ts`, que ya maneja errores y cabeceras de autenticación e idempotencia. Sustituye la previsión inicial de Axios; no cambia los contratos de la API.
 
+**Ajuste de presentación Android (2026-11-26)**: `AppFonts` espera la carga de
+Fraunces, DM Sans y Feather antes de montar las pantallas, evitando medirlas con
+fuentes provisionales. El logo no usa espaciado negativo, reserva espacio para
+los adornos y se adapta a su contenedor en una sola línea. `Icon` conserva
+márgenes laterales, altura de línea suficiente y evita encogerse en filas.
+La comprobación del recorte en dispositivos Android y escalas de pantalla
+distintas requiere una APK que incluya estos cambios; las pruebas automatizadas
+no sustituyen esa revisión visual.
+
+**Unificación de acciones y filtros (2026-11-26)**: los botones secundarios
+usan por defecto fondo crema, borde y texto naranja sin subrayado, con espacio
+vertical y ajuste de texto. Las variantes de WhatsApp, cancelación/rechazo o
+eliminación y calificaciones usan verde, rojo y dorado respectivamente; los
+iconos acompañan al texto y no sustituyen las etiquetas accesibles. Se retiran
+los enlaces inferiores de regreso redundantes y se conserva la navegación de
+cabecera y los pasos internos del pedido. El menú móvil vuelve a mostrar el
+acceso al perfil. Los filtros de estado de pedidos del cliente, pedidos del
+vendedor y supervisión de domicilios, y el de modalidad del vendedor, usan
+un desplegable compartido: mantienen los valores de consulta, vuelven a la
+primera página y se cierran al seleccionar una opción.
+
 **Validación F040**: se reportó Expo Doctor 20/20, lint y TypeScript sin errores y Jest con 90 pruebas aprobadas en 17 suites. Se instaló el development build en Android físico, se confirmó cierre y nuevo inicio de sesión contra el backend local. [Compilación Android](https://expo.dev/accounts/raar-18/projects/napa/builds/cda665c6-350e-49e7-bdc5-cd7b42cb1206). 
 
 **Checkpoint**: se puede registrar un usuario, verificar su cuenta por un canal habilitado, iniciar sesión, recibir una notificación push y reenviar una acción creada sin conexión sin duplicarla.

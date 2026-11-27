@@ -8,7 +8,6 @@ import {
   ErrorBanner,
   OptionButton,
   PageHeading,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import {
@@ -401,7 +400,11 @@ export default function EmprendimientosScreen() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Ver detalle de ${item.nombre}`}
-                      style={styles.detailButton}
+                      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                        styles.detailButton,
+                        hovered && { backgroundColor: '#FFE5D3' },
+                        pressed && { opacity: 0.75 },
+                      ]}
                       onPress={() =>
                         router.push({
                           pathname: '/emprendimiento-detalle',
@@ -448,7 +451,6 @@ export default function EmprendimientosScreen() {
           </Pressable>
         </View>
       ) : null}
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }
@@ -498,13 +500,16 @@ const styles = StyleSheet.create({
   },
   cardBody: { padding: 18, flex: 1 },
   openBadge: { position: 'absolute', top: 12, right: 12 },
-  detailButton: { minHeight: 35, alignItems: 'center', justifyContent: 'center', marginTop: 5 },
+  detailButton: {
+    minHeight: 35, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', maxWidth: '100%',
+    marginTop: 14, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10,
+    backgroundColor: '#FFF1E6', borderColor: '#F3BDA9', borderWidth: 1,
+  },
   detailButtonText: {
     fontFamily: fonts.sans,
-    color: palette.dark,
+    color: palette.coralDark,
     fontSize: 13,
     fontWeight: '700',
-    textDecorationLine: 'underline',
   },
   proximity: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -11,7 +11,6 @@ import {
   HelperText,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import Estrellas from '../components/Estrellas';
@@ -127,7 +126,6 @@ export default function CalificarPedidoScreen() {
       {data && data.estadoPedido === 'ENTREGADO' && data.opciones.length > 0 && pendientes.length === 0 ? (
         <HelperText>¡Gracias! Ya calificaste todo en este pedido.</HelperText>
       ) : null}
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }

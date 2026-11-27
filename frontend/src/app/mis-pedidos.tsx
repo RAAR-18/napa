@@ -7,7 +7,6 @@ import {
   AuthPage,
   ErrorBanner,
   HelperText,
-  OptionButton,
   PageHeading,
   TextButton,
   palette,
@@ -19,6 +18,7 @@ import { clearSession, getSessionGeneration } from '../lib/auth';
 import { escucharNovedades } from '../lib/push';
 import { consultarListadoCliente } from '../lib/pedidos-cliente-consulta';
 import { FilterPanel, FilterRow, Icon, RefreshButton, StatusBadge } from '../components/NapaUI';
+import { FilterSelect } from '../components/FilterSelect';
 import {
   estadoPedidoNombres,
   modalidadPedidoNombres,
@@ -29,8 +29,8 @@ import {
 
 const PAGE_SIZE = 20;
 export const REFRESCO_MIS_PEDIDOS_MS = 15_000;
-const filtrosEstado: { value: EstadoPedido | null; label: string }[] = [
-  { value: null, label: 'Todos' },
+const filtrosEstado: { value: EstadoPedido | ''; label: string }[] = [
+  { value: '', label: 'Todos' },
   { value: 'PENDIENTE', label: 'Pendientes' },
   { value: 'ACEPTADO', label: 'Aceptados' },
   { value: 'EN_CAMINO', label: 'En camino' },
@@ -100,6 +100,7 @@ export default function MisPedidosScreen() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [page, setPage] = useState(0);
   const [estado, setEstado] = useState<EstadoPedido | null>(null);
+  const [estadoAbierto, setEstadoAbierto] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -204,17 +205,18 @@ export default function MisPedidosScreen() {
       ))}
       <FilterPanel>
         <FilterRow label="Estado">
-          {filtrosEstado.map((option) => (
-            <OptionButton
-              key={option.label}
-              label={option.label}
-              selected={estado === option.value}
-              onPress={() => {
-                setPage(0);
-                setEstado(option.value);
-              }}
-            />
-          ))}
+          <FilterSelect
+            label="Estado"
+            value={estado ?? ''}
+            options={filtrosEstado}
+            expanded={estadoAbierto}
+            onToggle={() => setEstadoAbierto((abierto) => !abierto)}
+            onSelect={(value) => {
+              setPage(0);
+              setEstado(value || null);
+              setEstadoAbierto(false);
+            }}
+          />
         </FilterRow>
       </FilterPanel>
       <ErrorBanner message={error} />
@@ -239,7 +241,7 @@ export default function MisPedidosScreen() {
       {!loading ? data?.content.map((item) => <PedidoRow key={item.id} item={item} />) : null}
       {data && totalPages > 1 ? (
         <View style={styles.pagination}>
-          <TextButton
+          <TextButton icon="chevron-left"
             title="Página anterior"
             disabled={page === 0}
             onPress={() => setPage(page - 1)}
@@ -247,7 +249,7 @@ export default function MisPedidosScreen() {
           <Text style={styles.pageText}>
             {page + 1} de {totalPages}
           </Text>
-          <TextButton
+          <TextButton icon="chevron-right"
             title="Página siguiente"
             disabled={page + 1 >= totalPages}
             onPress={() => setPage(page + 1)}
@@ -255,10 +257,10 @@ export default function MisPedidosScreen() {
         </View>
       ) : null}
       {!loading && !data && anterior !== undefined ? (
-        <TextButton title="Página guardada anterior" onPress={() => setPage(anterior)} />
+        <TextButton icon="chevron-left" title="Página guardada anterior" onPress={() => setPage(anterior)} />
       ) : null}
       {!loading && !data && siguiente !== undefined ? (
-        <TextButton title="Página guardada siguiente" onPress={() => setPage(siguiente)} />
+        <TextButton icon="chevron-right" title="Página guardada siguiente" onPress={() => setPage(siguiente)} />
       ) : null}
     </AuthPage>
   );

@@ -7,7 +7,6 @@ import {
   AuthPage,
   ErrorBanner,
   HelperText,
-  OptionButton,
   PageHeading,
   PrimaryButton,
   TextButton,
@@ -23,6 +22,7 @@ import {
   useContentWidth,
 } from '../components/NapaUI';
 import { art, fonts } from '../components/theme';
+import { FilterSelect } from '../components/FilterSelect';
 import { ApiError } from '../lib/api';
 import { clearSession, getValidSession } from '../lib/auth';
 import {
@@ -159,6 +159,7 @@ export default function DomiciliosAdminScreen() {
   const [attempt, setAttempt] = useState(0);
   const [page, setPage] = useState(0);
   const [estado, setEstado] = useState<EstadoDomicilio | ''>('');
+  const [estadoAbierto, setEstadoAbierto] = useState(false);
   const [desdeInput, setDesdeInput] = useState('');
   const [hastaInput, setHastaInput] = useState('');
   const [desde, setDesde] = useState('');
@@ -231,6 +232,7 @@ export default function DomiciliosAdminScreen() {
   function clearFilters() {
     setPage(0);
     setEstado('');
+    setEstadoAbierto(false);
     setDesdeInput('');
     setHastaInput('');
     setDesde('');
@@ -272,17 +274,18 @@ export default function DomiciliosAdminScreen() {
       ) : null}
       <FilterPanel>
         <FilterRow label="Estado">
-          {statuses.map((item) => (
-            <OptionButton
-              key={item.value}
-              label={item.label}
-              selected={estado === item.value}
-              onPress={() => {
-                setPage(0);
-                setEstado(item.value);
-              }}
-            />
-          ))}
+          <FilterSelect
+            label="Estado"
+            value={estado}
+            options={statuses}
+            expanded={estadoAbierto}
+            onToggle={() => setEstadoAbierto((abierto) => !abierto)}
+            onSelect={(value) => {
+              setPage(0);
+              setEstado(value);
+              setEstadoAbierto(false);
+            }}
+          />
         </FilterRow>
         <View
           style={[styles.dateFilters, wide && { flexDirection: 'row', alignItems: 'flex-end' }]}
@@ -320,7 +323,7 @@ export default function DomiciliosAdminScreen() {
         filtered ? (
           <>
             <HelperText>No hay domicilios con esos filtros.</HelperText>
-            <TextButton title="Limpiar filtros" onPress={clearFilters} />
+            <TextButton icon="x" title="Limpiar filtros" onPress={clearFilters} />
           </>
         ) : (
           <HelperText>No hay domicilios registrados.</HelperText>
@@ -331,7 +334,7 @@ export default function DomiciliosAdminScreen() {
       ))}
       {data && data.totalElements > PAGE_SIZE ? (
         <View style={styles.pagination}>
-          <TextButton
+          <TextButton icon="chevron-left"
             title="Anterior"
             disabled={loading || page === 0}
             onPress={() => setPage(page - 1)}
@@ -339,7 +342,7 @@ export default function DomiciliosAdminScreen() {
           <Text style={styles.pageText}>
             Página {page + 1} de {lastPage + 1}
           </Text>
-          <TextButton
+          <TextButton icon="chevron-right"
             title="Siguiente"
             disabled={loading || page >= lastPage}
             onPress={() => setPage(page + 1)}

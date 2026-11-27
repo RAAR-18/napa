@@ -6,7 +6,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
-import { useFonts } from 'expo-font';
+import { AppFonts } from '../components/AppFonts';
 
 import { useProcesarOutbox } from '../hooks/useOutbox';
 import { useRegistroPush } from '../hooks/useRegistroPush';
@@ -16,11 +16,6 @@ import { NapaNavigationProvider } from '../components/AppShell';
 configurarAvisosEnPrimerPlano();
 
 export default function RootLayout() {
-  useFonts({
-    NapaDisplay: require('../../assets/fonts/Fraunces.ttf'),
-    NapaSans: require('../../assets/fonts/DMSans.ttf'),
-    NapaIcons: require('../../assets/fonts/Feather.ttf'),
-  });
   // F041: las acciones guardadas sin conexión se envían solas cuando vuelve la señal.
   useProcesarOutbox();
   useUbicacionAutomatica();
@@ -38,10 +33,12 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="dark" />
-      <NapaNavigationProvider>
-        <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
-        <AvisosNovedades />
-      </NapaNavigationProvider>
+      <AppFonts>
+        <NapaNavigationProvider>
+          <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
+          <AvisosNovedades />
+        </NapaNavigationProvider>
+      </AppFonts>
     </>
   );
 }

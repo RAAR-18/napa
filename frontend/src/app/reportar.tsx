@@ -124,7 +124,6 @@ export default function ReportarScreen() {
           description="Se enviará solo cuando vuelva la conexión. Puedes verlo en Pendientes de envío."
         />
         <PrimaryButton title="Ver pendientes de envío" onPress={() => router.replace('/pendientes-envio')} />
-        <TextButton title="Volver" onPress={() => router.back()} />
       </AuthPage>
     );
   }
@@ -142,7 +141,6 @@ export default function ReportarScreen() {
           <Text style={styles.detail}>{creado.descripcion}</Text>
         </View>
         <PrimaryButton title="Ver mis reportes" onPress={() => router.replace('/mis-reportes')} />
-        <TextButton title="Volver" onPress={() => router.back()} />
       </AuthPage>
     );
   }
@@ -177,7 +175,9 @@ export default function ReportarScreen() {
         disabled={!motivo || !descripcionValida}
         onPress={() => void enviar()}
       />
-      <TextButton title="Cancelar" disabled={busy} onPress={() => router.back()} />
+      <View style={{ marginTop: 18 }}>
+        <TextButton icon="x" title="Cancelar" variant="danger" disabled={busy} onPress={() => router.back()} />
+      </View>
     </AuthPage>
   );
 }

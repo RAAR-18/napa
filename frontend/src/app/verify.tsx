@@ -1,4 +1,5 @@
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
+import { replaceAuthHistory } from '../lib/auth-navigation';
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -123,14 +124,14 @@ export default function VerifyScreen() {
     try {
       if (isRecovery) {
         await resetPassword(celular, codigo, contrasenaNueva);
-        router.replace({
+        replaceAuthHistory({
           pathname: "/login",
           params: { passwordReset: "true" },
         });
       } else {
         const session = await confirmRegistration(celular, codigo);
         const esVendedor = session.rol === "VENDEDOR_PUNTO_FIJO" || session.rol === "VENDEDOR_AMBULANTE";
-        router.replace(esVendedor ? "/emprendimiento" : "/session");
+        replaceAuthHistory(esVendedor ? "/emprendimiento" : "/session");
       }
     } catch (cause) {
       const attempts =
@@ -257,12 +258,6 @@ export default function VerifyScreen() {
           }
           onPress={send}
         />
-        <FormFooter>
-          <TextButton
-            title="Volver al inicio de sesión"
-            onPress={() => router.replace("/login")}
-          />
-        </FormFooter>
       </AuthPage>
     );
   }
@@ -335,10 +330,6 @@ export default function VerifyScreen() {
               : `Enviar otro código por ${describirCanal(canal)}`
           }
           onPress={send}
-        />
-        <TextButton
-          title="Volver al inicio de sesión"
-          onPress={() => router.replace("/login")}
         />
       </FormFooter>
     </AuthPage>

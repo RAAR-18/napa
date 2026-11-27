@@ -236,12 +236,15 @@ export default function PedidoClienteScreen() {
                   Buscando domiciliario. Tu código aparecerá cuando uno acepte el domicilio.
                 </Text>
               ) : null}
-              <TextButton
-                title="Ver trazabilidad"
-                onPress={() =>
-                  router.push({ pathname: '/trazabilidad-domicilio', params: { domicilioId: delivery.id } })
-                }
-              />
+              <View style={{ marginTop: 18 }}>
+                <TextButton icon="map-pin"
+                  title="Ver trazabilidad"
+                  variant="soft"
+                  onPress={() =>
+                    router.push({ pathname: '/trazabilidad-domicilio', params: { domicilioId: delivery.id } })
+                  }
+                />
+              </View>
             </View>
           ) : null}
           <View style={styles.card}>
@@ -275,19 +278,23 @@ export default function PedidoClienteScreen() {
           {!PEDIDO_CERRADO.includes(detail.estado) ? (
             <ContactarPedido pedidoId={detail.id} destinatario="VENDEDOR" />
           ) : null}
-          <TextButton
-            title="Ver calificaciones del emprendimiento"
-            onPress={() =>
-              router.push({
-                pathname: '/calificaciones',
-                params: {
-                  tipoEntidad: 'EMPRENDIMIENTO',
-                  entidadId: detail.emprendimiento.id,
-                  titulo: detail.emprendimiento.nombre,
-                },
-              })
-            }
-          />
+          <View style={{ marginTop: 18 }}>
+            <TextButton
+              title="Ver calificaciones del emprendimiento"
+              variant="gold"
+              icon="star"
+              onPress={() =>
+                router.push({
+                  pathname: '/calificaciones',
+                  params: {
+                    tipoEntidad: 'EMPRENDIMIENTO',
+                    entidadId: detail.emprendimiento.id,
+                    titulo: detail.emprendimiento.nombre,
+                  },
+                })
+              }
+            />
+          </View>
         </View>
       ) : null}
       {puedeCalificar && detail ? (
@@ -299,6 +306,8 @@ export default function PedidoClienteScreen() {
       {online && detail ? (
         <TextButton
           title="Reportar un problema"
+          variant="danger"
+          icon="alert-triangle"
           onPress={() =>
             router.push({
               pathname: '/reportar',
@@ -310,7 +319,9 @@ export default function PedidoClienteScreen() {
         />
       ) : null}
       <PrimaryButton title="Actualizar" disabled={loading} onPress={() => setLoadAttempt((a) => a + 1)} />
-      <TextButton title="Mis pedidos" onPress={() => router.replace('/mis-pedidos')} />
+      <View style={{ marginTop: 18 }}>
+        <TextButton title="Mis pedidos" variant="soft" onPress={() => router.replace('/mis-pedidos')} />
+      </View>
     </AuthPage>
   );
 }

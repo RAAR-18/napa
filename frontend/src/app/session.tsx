@@ -11,6 +11,7 @@ import {
   palette,
 } from '../components/AuthUI';
 import { ApiError, NetworkError } from '../lib/api';
+import { replaceAuthHistory } from '../lib/auth-navigation';
 import {
   clearSession,
   getValidSession,
@@ -42,7 +43,7 @@ export default function SessionScreen() {
   const handleLoadError = useCallback(async (cause: unknown) => {
     if (cause instanceof ApiError && cause.status === 401) {
       await clearSession();
-      router.replace('/login');
+      replaceAuthHistory('/login');
       return;
     }
     setError(cause instanceof Error ? cause.message : 'No se pudo recuperar la sesión.');
@@ -104,11 +105,11 @@ export default function SessionScreen() {
       await borrarTodasLasRutas().catch(() => undefined);
       // Los pendientes se conservan por propietario; otra cuenta no puede enviarlos.
       setSession(null);
-      router.replace('/');
+      replaceAuthHistory('/');
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) {
         await clearSession();
-        router.replace('/login');
+        replaceAuthHistory('/login');
         return;
       }
       setError(cause instanceof Error ? cause.message : 'No se pudo cerrar la sesión.');

@@ -5,11 +5,9 @@ import {
   AuthPage,
   ErrorBanner,
   Field,
-  FormFooter,
   HelperText,
   PageHeading,
   PrimaryButton,
-  TextButton,
 } from '../components/AuthUI';
 import { ApiError } from '../lib/api';
 import {
@@ -86,12 +84,6 @@ export default function ChangePasswordScreen() {
         title="Actualizar contraseña"
         onPress={submit}
       />
-      <FormFooter>
-        <TextButton
-          title="Volver a mi sesión"
-          onPress={() => router.replace('/session')}
-        />
-      </FormFooter>
     </AuthPage>
   );
 }

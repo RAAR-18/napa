@@ -26,6 +26,19 @@ El domiciliario con un domicilio asignado abre el mapa con `GET /domicilios/{id}
 - **App**: pantalla `ruta-domicilio.tsx` con `react-native-maps` (`MapaRutaDomicilio`; en web solo texto). Un tramo aproximado se dibuja punteado. La última ruta se guarda en SQLite (`lib/ruta-cache.ts`, tabla `cache_lectura`) y se borra al entregar, al recibir `403/404/409` y al cerrar sesión. Se abre con "Ver ruta en el mapa" desde el detalle del domicilio asignado.
 - **Pendiente**: en un build propio de Android, `react-native-maps` exige una clave de Google Maps (`android.config.googleMaps.apiKey`); en Expo Go no hace falta.
 
+## Accesos externos de navegación (2026-11-26)
+
+En el detalle conectado del domicilio hay un acceso directo a Google Maps:
+en `DISPONIBLE` solo abre la recogida, que ya es exacta en RF-18; no exporta el
+destino aproximado. Para el domiciliario asignado en `ASIGNADO`, el destino es
+la entrega y la recogida se incluye como parada. En `RECOGIDO`/`EN_CAMINO` se
+omite esa parada. El origen lo determina Google Maps con la ubicación actual.
+No se ofrecen estos accesos después de entregar/cancelar ni desde el detalle
+offline resumido, que no contiene coordenadas. Se rechazan puntos aproximados
+o inválidos. El acceso «Ver detalle de la ruta» conserva la pantalla interna y
+sus controles de autorización. Los enlaces externos no dependen de que el build
+tenga habilitado `react-native-maps`.
+
 ## Actors
 
 | Actor | Participación en esta feature |

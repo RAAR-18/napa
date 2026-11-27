@@ -1,6 +1,7 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import * as Crypto from 'expo-crypto';
+import { Linking } from 'react-native';
 
 import DomicilioDomiciliarioScreen from '../domicilio-domiciliario';
 import MisPedidosScreen, { REFRESCO_MIS_PEDIDOS_MS } from '../mis-pedidos';
@@ -80,6 +81,13 @@ jest.mock('../../lib/pedidos', () => ({
   obtenerDomiciliarioPedido: jest.fn(),
   obtenerPedidoCliente: jest.fn(),
   obtenerPedidoVendedor: jest.fn(),
+}));
+jest.mock('../../lib/pagos', () => ({
+  ...jest.requireActual('../../lib/pagos'),
+  consultarPagoTarifa: jest.fn().mockResolvedValue({
+    domicilioId: 'delivery-id', pagoId: 'payment-id', estado: 'CONFIRMADO', monto: 4500,
+    medio: 'CUENTA_BANCARIA', registradoAt: null, confirmadoAt: null, cuentaDomiciliario: null,
+  }),
 }));
 
 function session(rol: string) {
@@ -166,6 +174,43 @@ beforeEach(() => {
 describe('domiciliario', () => {
   beforeEach(() => {
     jest.mocked(getValidSession).mockResolvedValue(session('DOMICILIARIO'));
+  });
+
+  it.each(['ASIGNADO', 'RECOGIDO', 'EN_CAMINO'] as const)('abre Google Maps directamente para un domicilio %s', async (estado) => {
+    jest.mocked(obtenerDomicilioDomiciliario).mockResolvedValue({ ...mine, estado });
+    const abrir = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    try {
+      const view = await render(<DomicilioDomiciliarioScreen />);
+      await fireEvent.press(await view.findByRole('button', { name: 'Ver ruta en Google Maps' }));
+      const url = new URL(abrir.mock.calls[0][0]);
+      expect(url.searchParams.get('destination')).toBe(`${mine.destino.latitud},${mine.destino.longitud}`);
+      expect(url.searchParams.has('waypoints')).toBe(estado === 'ASIGNADO');
+      expect(router.push).not.toHaveBeenCalled();
+    } finally { abrir.mockRestore(); }
+  });
+
+  it('antes de aceptar solo abre la recogida, sin compartir el destino aproximado', async () => {
+    jest.mocked(obtenerDomicilioDomiciliario).mockResolvedValue({
+      ...mine, estado: 'DISPONIBLE', asignadoAMi: false, rutaDisponible: false,
+      destino: { ...mine.destino, aproximado: true, latitud: 11.2, longitud: -74.1, direccion: null },
+    });
+    const abrir = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    try {
+      const view = await render(<DomicilioDomiciliarioScreen />);
+      await fireEvent.press(await view.findByRole('button', { name: 'Ver recogida en Google Maps' }));
+      const url = new URL(abrir.mock.calls[0][0]);
+      expect(url.searchParams.get('destination')).toBe(`${mine.origen.latitud},${mine.origen.longitud}`);
+      expect(url.searchParams.has('waypoints')).toBe(false);
+      expect(view.queryByRole('button', { name: 'Ver ruta en Google Maps' })).toBeNull();
+    } finally { abrir.mockRestore(); }
+  });
+
+  it.each(['ENTREGADO', 'CANCELADO'] as const)('no ofrece ruta para un domicilio %s', async (estado) => {
+    jest.mocked(obtenerDomicilioDomiciliario).mockResolvedValue({ ...mine, estado, rutaDisponible: false });
+    const view = await render(<DomicilioDomiciliarioScreen />);
+    await view.findByText(`Estado: ${estado === 'ENTREGADO' ? 'Entregado' : 'Cancelado'}`);
+    expect(view.queryByRole('button', { name: 'Ver ruta en Google Maps' })).toBeNull();
+    expect(view.queryByRole('button', { name: 'Ver recogida en Google Maps' })).toBeNull();
   });
 
   it('confirms the pickup of an assigned delivery', async () => {
@@ -291,6 +336,7 @@ describe('cliente', () => {
       await act(async () => { jest.advanceTimersByTime(REFRESCO_MIS_PEDIDOS_MS); });
       expect(vista.getByRole('button', { name: 'Ver pedido a Tienda de prueba, En camino' })).toBeTruthy();
       expect(vista.queryByLabelText('Cargando pedidos')).toBeNull();
+      await fireEvent.press(vista.getByRole('button', { name: 'Estado: Todos' }));
       await fireEvent.press(vista.getByRole('radio', { name: 'En camino' }));
       await vista.findByRole('button', { name: 'Ver pedido a Tienda de prueba, En camino' });
       await act(async () => { jest.advanceTimersByTime(REFRESCO_MIS_PEDIDOS_MS); });
@@ -334,12 +380,21 @@ describe('cliente', () => {
     const view = await render(<MisPedidosScreen />);
 
     await waitFor(() => expect(view.getByText(/Aún no has hecho pedidos/)).toBeTruthy());
+    expect(view.queryByRole('radio', { name: 'Entregados' })).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Estado: Todos' }));
     await fireEvent.press(view.getByRole('radio', { name: 'Entregados' }));
 
     await waitFor(() => expect(listarPedidosCliente).toHaveBeenLastCalledWith({
       estado: 'ENTREGADO', page: 0, size: 20,
     }));
     await waitFor(() => expect(view.getByText('No tienes pedidos con ese estado.')).toBeTruthy());
+    expect(view.getByRole('button', { name: 'Estado: Entregados' }).props.accessibilityState.expanded).toBe(false);
+    expect(view.queryByRole('radio', { name: 'Entregados' })).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Estado: Entregados' }));
+    await fireEvent.press(view.getByRole('radio', { name: 'Todos' }));
+    await waitFor(() => expect(listarPedidosCliente).toHaveBeenLastCalledWith({
+      estado: undefined, page: 0, size: 20,
+    }));
   });
 
   it('shows the delivery code once a courier accepted', async () => {

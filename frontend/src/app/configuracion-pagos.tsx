@@ -7,7 +7,6 @@ import {
   AuthPage,
   ErrorBanner,
   Field,
-  FormFooter,
   HelperText,
   OptionButton,
   PageHeading,
@@ -246,7 +245,7 @@ export default function ConfiguracionPagosScreen() {
             </View>
           ) : null}
           {configuration?.cuentaBancaria ? (
-            <TextButton
+            <TextButton variant="danger" icon="x-circle"
               disabled={saving}
               title="Quitar cuenta bancaria"
               onPress={() => {
@@ -263,12 +262,6 @@ export default function ConfiguracionPagosScreen() {
           />
         </>
       ) : null}
-      <FormFooter>
-        <TextButton
-          title="Volver a mi cuenta"
-          onPress={() => router.replace('/session')}
-        />
-      </FormFooter>
     </AuthPage>
   );
 }

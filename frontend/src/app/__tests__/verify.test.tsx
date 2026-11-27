@@ -7,7 +7,7 @@ import { confirmRegistration, requestVerification } from '../../lib/auth';
 const mockParams: Record<string, string> = {};
 
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn() },
+  router: { push: jest.fn(), replace: jest.fn(), dismissAll: jest.fn() },
   useLocalSearchParams: () => mockParams,
 }));
 
@@ -41,6 +41,7 @@ describe('VerifyScreen', () => {
         rol.startsWith('VENDEDOR') ? '/emprendimiento' : '/session',
       ));
       expect(confirmRegistration).toHaveBeenCalledWith('+573007080825', '123456');
+      expect(router.dismissAll).toHaveBeenCalledTimes(1);
     },
   );
 

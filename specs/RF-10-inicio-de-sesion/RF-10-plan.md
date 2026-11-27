@@ -16,6 +16,16 @@
 
 Inicio de sesión con celular o correo y contraseña: valida credenciales, limita intentos fallidos con contadores en Redis, rechaza cuentas no verificadas, entrega JWT de acceso (15 min, claim `sv`) y refresh rotativo por dispositivo, e indica el panel según el rol. El administrador (sembrado desde la BD) entra con correo y contraseña.
 
+## Historial de navegación tras autenticar (2026-11-26)
+
+Tras guardar una sesión de login o de registro verificado, `auth-navigation.ts`
+vacía el stack raíz con `router.dismissAll()` y reemplaza su primera pantalla
+con el destino del rol (o la creación del emprendimiento tras el registro).
+Así el botón Atrás de Android y el de la cabecera no recuperan login/registro.
+Un login rechazado conserva la navegación para corregir o verificar la cuenta.
+Las pruebas de navegación usan un Stack real de Expo Router y comprueban que
+queda una sola entrada y que `canGoBack()` es falso tras la transición.
+
 ## Actors
 
 | Actor | Participación en esta feature |
