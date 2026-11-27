@@ -42,7 +42,7 @@ class SmsCorreoVerificacionAdapterRedisIntegrationTest {
     private static LettuceConnectionFactory factory;
     private static StringRedisTemplate template;
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-24T15:00:00Z"), ZoneOffset.UTC);
-    private final SmsReactorClient sms = mock(SmsReactorClient.class);
+    private final SmsGateClient sms = mock(SmsGateClient.class);
     private final BrevoCorreoClient correo = mock(BrevoCorreoClient.class);
     private SmsCorreoVerificacionAdapter adapter() {
         return new SmsCorreoVerificacionAdapter(template, sms, correo, 25, 300, CLOCK);

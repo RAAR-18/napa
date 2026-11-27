@@ -457,7 +457,7 @@ export default function MiEmprendimientoScreen() {
               <>
                 <HelperText>{accion.lastError ?? 'El servidor rechazó la edición.'}</HelperText>
                 {revisarDisponible ? <TextButton title="Revisar propuesta" disabled={busy} onPress={() => void revisar(pendiente)} /> : null}
-                <TextButton title="Descartar" disabled={busy} onPress={() => {
+                <TextButton variant="danger" icon="x-circle" title="Descartar" disabled={busy} onPress={() => {
                   void outbox.descartar(accion.id).then(() => setRevisionId(null)).catch((cause: unknown) => {
                     setError(errorMessage(cause, 'No se pudo descartar la propuesta.'));
                   });
@@ -496,6 +496,7 @@ export default function MiEmprendimientoScreen() {
             <>
               <TextButton
                 title={ubicacionAutomatica ? 'Desactivar ubicación automática' : 'Activar ubicación automática'}
+                icon="map-pin"
                 disabled={configurandoUbicacion || busy}
                 onPress={() => void cambiarUbicacionAutomatica()}
               />
@@ -506,6 +507,7 @@ export default function MiEmprendimientoScreen() {
                 <>
                   <HelperText>Para compartir sin tener Ñapa abierta debes permitir ubicación «Siempre». Android mostrará una notificación permanente. El sistema controla la frecuencia y puede detenerla si fuerzas el cierre.</HelperText>
                   <TextButton title={ubicacionSegundoPlano ? 'Desactivar ubicación en segundo plano' : 'Activar ubicación en segundo plano'}
+                    icon="map-pin"
                     disabled={configurandoUbicacion || busy} onPress={() => void cambiarUbicacionSegundoPlano()} />
                 </>
               ) : <HelperText>En el navegador la ubicación solo funciona con Ñapa abierta.</HelperText>}
@@ -513,7 +515,7 @@ export default function MiEmprendimientoScreen() {
           ) : null}
           {!ambulante ? (
             <>
-          <TextButton
+          <TextButton icon="map-pin"
             title={ambulante ? 'Estoy aquí' : 'Usar mi ubicación actual'}
             disabled={locating || busy}
             onPress={() => void tomarUbicacionActual()}
@@ -541,6 +543,8 @@ export default function MiEmprendimientoScreen() {
             disabled={bloqueado} onPress={() => void save()} />
           <TextButton
             title="Ver la reputación de mi emprendimiento"
+            variant="gold"
+            icon="star"
             onPress={() =>
               router.push({
                 pathname: '/calificaciones',
@@ -559,22 +563,21 @@ export default function MiEmprendimientoScreen() {
               <>
                 <Text style={styles.confirm}>¿Seguro que quieres eliminar {actual.nombre}? No se puede deshacer.</Text>
                 <PrimaryButton title="Sí, eliminar" busy={busy} onPress={() => void remove()} />
-                <TextButton title="Cancelar" disabled={busy} onPress={() => setConfirmDelete(false)} />
+                <TextButton variant="danger" icon="x" title="Cancelar" disabled={busy} onPress={() => setConfirmDelete(false)} />
               </>
             ) : (
-              <TextButton title="Eliminar emprendimiento" disabled={busy} onPress={() => setConfirmDelete(true)} />
+              <TextButton variant="danger" icon="trash-2" title="Eliminar emprendimiento" disabled={busy} onPress={() => setConfirmDelete(true)} />
             )}
           </View>
           ) : null}
         </>
       ) : null}
       {actual ? (
-        <TextButton title="Actualizar datos" disabled={busy || loading || Boolean(revisionId)} onPress={() => {
+        <TextButton icon="refresh-cw" title="Actualizar datos" disabled={busy || loading || Boolean(revisionId)} onPress={() => {
           borradorTocado.current = false;
           setAttempt((valor) => valor + 1);
         }} />
       ) : null}
-      <TextButton title="Volver a mi cuenta" onPress={() => router.replace('/session')} />
     </AuthPage>
   );
 }

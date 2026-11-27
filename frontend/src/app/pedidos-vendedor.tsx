@@ -23,6 +23,7 @@ import {
   useContentWidth,
 } from '../components/NapaUI';
 import { art, fonts } from '../components/theme';
+import { FilterSelect } from '../components/FilterSelect';
 import { guardarConsultaPedidos, leerConsultaPedidos } from '../lib/pedidos-cliente-cache';
 import { ApiError, NetworkError } from '../lib/api';
 import { clearSession, getValidSession, readSession } from '../lib/auth';
@@ -146,6 +147,7 @@ export default function PedidosVendedorScreen() {
   const [estado, setEstado] = useState<EstadoPedido | ''>('');
   const [modalidad, setModalidad] = useState<ModalidadPedido | ''>('');
   const [reserva, setReserva] = useState<'' | 'true' | 'false'>('');
+  const [openFilter, setOpenFilter] = useState<'estado' | 'modalidad' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -239,24 +241,24 @@ export default function PedidosVendedorScreen() {
       />
       <FilterPanel>
         <FilterRow label="Estado">
-          {statuses.map((item) => (
-            <OptionButton
-              key={item.value}
-              label={item.label}
-              selected={estado === item.value}
-              onPress={() => changeFilter(() => setEstado(item.value))}
-            />
-          ))}
+          <FilterSelect
+            label="Estado"
+            value={estado}
+            options={statuses}
+            expanded={openFilter === 'estado'}
+            onToggle={() => setOpenFilter((current) => current === 'estado' ? null : 'estado')}
+            onSelect={(value) => { changeFilter(() => setEstado(value)); setOpenFilter(null); }}
+          />
         </FilterRow>
         <FilterRow label="Modalidad">
-          {modalities.map((item) => (
-            <OptionButton
-              key={item.value}
-              label={item.label}
-              selected={modalidad === item.value}
-              onPress={() => changeFilter(() => setModalidad(item.value))}
-            />
-          ))}
+          <FilterSelect
+            label="Modalidad"
+            value={modalidad}
+            options={modalities}
+            expanded={openFilter === 'modalidad'}
+            onToggle={() => setOpenFilter((current) => current === 'modalidad' ? null : 'modalidad')}
+            onSelect={(value) => { changeFilter(() => setModalidad(value)); setOpenFilter(null); }}
+          />
         </FilterRow>
         <FilterRow label="Tipo de pedido">
           {reservationOptions.map((item) => (
@@ -286,7 +288,7 @@ export default function PedidosVendedorScreen() {
       {!loading ? data?.content.map((item) => <PedidoRow key={item.id} item={item} />) : null}
       {data && data.totalElements > 0 ? (
         <View style={styles.pagination}>
-          <TextButton
+          <TextButton icon="chevron-left"
             title="Página anterior"
             disabled={loading || page === 0}
             onPress={() => changePage(page - 1)}
@@ -294,7 +296,7 @@ export default function PedidosVendedorScreen() {
           <Text style={styles.pageText}>
             {page + 1} de {Math.ceil(data.totalElements / data.size)}
           </Text>
-          <TextButton
+          <TextButton icon="chevron-right"
             title="Página siguiente"
             disabled={loading || (page + 1) * data.size >= data.totalElements}
             onPress={() => changePage(page + 1)}

@@ -42,8 +42,8 @@ export default function ContactarPedido({
     <View style={styles.box}>
       <Text style={styles.label}>Contactar {nombres[destinatario]}</Text>
       <View style={styles.row}>
-        <TextButton title={busy === 'LLAMADA' ? 'Abriendo…' : 'Llamar'} disabled={busy !== null} onPress={() => void contactar('LLAMADA')} />
-        <TextButton title={busy === 'MENSAJE' ? 'Abriendo…' : 'WhatsApp'} disabled={busy !== null} onPress={() => void contactar('MENSAJE')} />
+        <TextButton icon="phone" title={busy === 'LLAMADA' ? 'Abriendo…' : 'Llamar'} variant="soft" disabled={busy !== null} onPress={() => void contactar('LLAMADA')} />
+        <TextButton icon="message-circle" title={busy === 'MENSAJE' ? 'Abriendo…' : 'WhatsApp'} variant="whatsapp" disabled={busy !== null} onPress={() => void contactar('MENSAJE')} />
       </View>
       <ErrorBanner message={error} />
     </View>
@@ -53,5 +53,5 @@ export default function ContactarPedido({
 const styles = StyleSheet.create({
   box: { marginTop: 8 },
   label: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, fontWeight: '700' },
-  row: { flexDirection: 'row', gap: 16 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 10 },
 });

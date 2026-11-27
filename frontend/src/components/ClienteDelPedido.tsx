@@ -35,9 +35,10 @@ export default function ClienteDelPedido({ pedidoId, estado }: { pedidoId: strin
         <>
           <Text style={styles.detail}>{cliente.celular}</Text>
           <View style={styles.row}>
-            <TextButton title="Llamar" onPress={() => void Linking.openURL(`tel:${cliente.celular}`)} />
-            <TextButton
+            <TextButton icon="phone" title="Llamar" variant="soft" onPress={() => void Linking.openURL(`tel:${cliente.celular}`)} />
+            <TextButton icon="message-circle"
               title="WhatsApp"
+              variant="whatsapp"
               onPress={() => void Linking.openURL(`https://wa.me/${cliente.celular?.replace('+', '')}`)}
             />
           </View>
@@ -61,5 +62,5 @@ const styles = StyleSheet.create({
   label: { color: palette.muted, fontFamily: fonts.sans, fontSize: 13, fontWeight: '700' },
   name: { color: palette.dark, fontFamily: fonts.sans, fontSize: 17, fontWeight: '800', marginTop: 2 },
   detail: { color: palette.muted, fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, marginTop: 4 },
-  row: { flexDirection: 'row', gap: 16 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 10 },
 });

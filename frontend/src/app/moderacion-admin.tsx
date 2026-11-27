@@ -1,7 +1,6 @@
 import { fonts } from '../components/theme';
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from '../lib/uuid';
-import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -85,12 +84,11 @@ export default function ModeracionAdminScreen() {
       {!loading && pagina && pagina.content.length === 0 ? <HelperText>No hay calificaciones con este filtro.</HelperText> : null}
       {pagina && pagina.totalElements > pagina.size ? (
         <View style={styles.pager}>
-          <TextButton title="Anterior" disabled={page === 0} onPress={() => setPage((p) => p - 1)} />
+          <TextButton icon="chevron-left" title="Anterior" disabled={page === 0} onPress={() => setPage((p) => p - 1)} />
           <Text style={styles.detail}>{`${page + 1} de ${totalPaginas}`}</Text>
-          <TextButton title="Siguiente" disabled={page + 1 >= totalPaginas} onPress={() => setPage((p) => p + 1)} />
+          <TextButton icon="chevron-right" title="Siguiente" disabled={page + 1 >= totalPaginas} onPress={() => setPage((p) => p + 1)} />
         </View>
       ) : null}
-      <TextButton title="Volver" onPress={() => router.back()} />
     </AuthPage>
   );
 }
@@ -138,8 +136,8 @@ function TarjetaModeracion({ item, onCambio }: { item: CalificacionSupervisada; 
       </Text>
       {moderable && !accion ? (
         <View style={styles.actions}>
-          <TextButton title="Editar texto" onPress={() => setAccion('EDITAR')} />
-          <TextButton title="Eliminar" onPress={() => setAccion('ELIMINAR')} />
+          <TextButton icon="edit-2" title="Editar texto" onPress={() => setAccion('EDITAR')} />
+          <TextButton variant="danger" icon="trash-2" title="Eliminar" onPress={() => setAccion('ELIMINAR')} />
         </View>
       ) : null}
       {accion ? (
@@ -157,7 +155,7 @@ function TarjetaModeracion({ item, onCambio }: { item: CalificacionSupervisada; 
             disabled={motivo.trim().length < 5 || (accion === 'EDITAR' && !texto.trim())}
             onPress={() => void aplicar()}
           />
-          <TextButton title="Cancelar" disabled={busy} onPress={() => setAccion(null)} />
+          <TextButton variant="danger" icon="x" title="Cancelar" disabled={busy} onPress={() => setAccion(null)} />
         </>
       ) : null}
     </View>

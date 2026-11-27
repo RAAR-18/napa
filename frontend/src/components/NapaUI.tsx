@@ -29,7 +29,20 @@ export function Icon({
       accessible={false}
       aria-hidden
       allowFontScaling={false}
-      style={{ fontFamily: fonts.icons, fontSize: size, lineHeight: size + 3, color }}
+      style={{
+        fontFamily: fonts.icons,
+        fontWeight: 'normal',
+        fontStyle: 'normal',
+        fontSize: size,
+        lineHeight: Math.ceil(size * 1.4),
+        minWidth: size + 6,
+        paddingHorizontal: 2,
+        includeFontPadding: true,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        flexShrink: 0,
+        color,
+      }}
     >
       {String.fromCodePoint(glyphs[name])}
     </Text>

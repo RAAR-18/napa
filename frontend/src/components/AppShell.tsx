@@ -162,18 +162,24 @@ export function Brand({ light = false, large = false }: { light?: boolean; large
   return (
     <View style={styles.brandWrap}>
       <Text
+        allowFontScaling={false}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
         style={{
           color: light ? '#FFF9F1' : palette.dark,
           fontFamily: fonts.display,
           fontSize: large ? 65 : 32,
           lineHeight: large ? 82 : 42,
           fontWeight: '700',
-          letterSpacing: -2,
+          letterSpacing: 0,
+          paddingHorizontal: 3,
+          includeFontPadding: true,
         }}
       >
         Ñapa
       </Text>
-      <View style={[styles.brandSpark, { right: large ? 9 : -6, top: large ? 12 : 0 }]}>
+      <View style={[styles.brandSpark, { right: 6, top: large ? 12 : 0 }]}>
         <View style={styles.spark} />
         <View style={[styles.spark, { transform: [{ rotate: '43deg' }], left: 13, top: 8 }]} />
         <View
@@ -349,7 +355,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
           transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-244, 0] }) }],
         }}
       >
-        <Sidebar onNavigate={onClose} showProfile={false} />
+        <Sidebar onNavigate={onClose} />
       </Animated.View>
     </View>
   );
@@ -504,7 +510,7 @@ const styles = StyleSheet.create({
   sidebar: { width: 244, backgroundColor: palette.plum, height: '100%' },
   sidebarInner: { paddingHorizontal: 16, paddingTop: 25, paddingBottom: 22, flexGrow: 1 },
   logoBlock: { paddingHorizontal: 17, marginBottom: 22 },
-  brandWrap: { alignSelf: 'flex-start', position: 'relative', paddingRight: 15 },
+  brandWrap: { alignSelf: 'flex-start', position: 'relative', paddingRight: 34, maxWidth: '100%', flexShrink: 1 },
   brandSpark: { position: 'absolute', width: 20, height: 30 },
   spark: {
     width: 4,

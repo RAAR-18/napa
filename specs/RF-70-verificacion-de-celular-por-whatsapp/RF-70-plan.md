@@ -6,11 +6,21 @@
 **Requerimiento funcional**: RF-70
 **Historias de usuario**: HU-105
 **Prioridad (la mayor de la spec)**: P1
-**Depende de**: foundations F0–F2 (Redis, Usuario, Sesion, JWT), F022 (cuenta Twilio Verify), RF-07
+**Depende de**: Foundations F0–F2 (Redis, Usuario, Sesion, JWT), F022 (SMS Gate), RF-07
 **Habilita a**: RF-07 (activación), RF-09 (recuperación), RF-08 (cambio de celular)
 
 > Define **CÓMO** se implementa la spec. No redefine el **QUÉ**: si algo cambia de comportamiento, se corrige primero la spec.
 > No se implementa nada hasta cumplir la sección "Plan Review Checklist".
+
+## Integración vigente (2026-11-26)
+
+- SMS Gate sustituye a SMSReactor para el canal SMS. El backend solicita el envío y el Android vinculado en modo Cloud Server entrega el mensaje desde su SIM. Brevo sigue siendo el proveedor de correo.
+- Ñapa genera y valida el código en Redis. Se conservan el contrato con el frontend y los límites de verificación. HTTP 202 de SMS Gate confirma que el mensaje quedó en cola. La recepción se verifica en el dispositivo destinatario.
+- Configuración del backend: NAPA_VERIFICATION_PROVIDER=sms-correo, NAPA_SMS_GATE_USERNAME y NAPA_SMS_GATE_PASSWORD. Configurar las credenciales como secretos en Railway. Mantener conectado el Android emisor.
+- [x] Validación local con Ñapa web: solicitar por SMS, recibir el código, confirmar la cuenta e iniciar sesión. Las 18 pruebas dirigidas del cliente SMS, el adaptador y la configuración pasaron sin fallos ni omisiones.
+- [ ] Desplegar el backend en Railway y repetir ese recorrido con el Android emisor activo.
+
+> El diseño original que sigue describe la propuesta histórica con Twilio Verify. Para la configuración y los proveedores actuales aplica la integración documentada arriba.
 
 ## Summary
 
@@ -367,7 +377,7 @@ frontend/__tests__/auth/verificar-celular.test.tsx
 
 El código actual permite elegir SMS o correo; se conserva esa elección y el correo opcional. Al llegar desde un registro con correo conocido se recomienda CORREO, sin enviar automáticamente y manteniendo SMS como alternativa. Se evita disparar envío y confirmación simultáneos mediante un bloqueo compartido en la pantalla. Si no hay correo, se mantiene SMS. No se cambió el propósito CAMBIO de celular: sigue requiriendo demostrar acceso al número nuevo.
 
-La entrega externa sigue requiriendo configurar SMSReactor o Brevo. Ningún cambio de UI garantiza que un proveedor sin credenciales, cuota o dispositivo operativo envíe mensajes. No se enviaron mensajes reales ni se tocaron secretos. No se convierte la verificación por correo en prueba de posesión del celular; la sustitución de canales ya existía y debe revisarse como decisión de producto aparte.
+En la fecha de esta auditoría, la entrega externa requería configurar SMSReactor o Brevo. Ningún cambio de UI garantiza que un proveedor sin credenciales, cuota o dispositivo operativo envíe mensajes. No se enviaron mensajes reales ni se tocaron secretos. No se convierte la verificación por correo en prueba de posesión del celular; la sustitución de canales ya existía y debe revisarse como decisión de producto aparte.
 
 ## Corrección de concurrencia y disponibilidad (P0-05, 2026-11-24)
 

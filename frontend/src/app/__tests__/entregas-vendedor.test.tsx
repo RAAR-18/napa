@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { Linking } from 'react-native';
 
 import PedidoVendedorScreen from '../pedido-vendedor';
 import UbicacionEntregaScreen from '../ubicacion-entrega';
@@ -139,11 +140,17 @@ describe('entrega directa (RF-36, RF-37)', () => {
   });
 
   it('opens the customer location only for an active direct delivery', async () => {
+    const abrir = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
     jest.mocked(obtenerPedidoVendedor).mockResolvedValue(order({}));
     const view = await render(<PedidoVendedorScreen />);
 
-    await fireEvent.press(await view.findByText('Ver ubicación en el mapa'));
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/ubicacion-entrega', params: { pedidoId: 'order-id' } });
+    try {
+      await fireEvent.press(await view.findByRole('button', { name: 'Ver ubicación en Google Maps' }));
+      expect(abrir).toHaveBeenCalledWith('https://www.google.com/maps/dir/?api=1&destination=4.711%2C-74.0721&dir_action=navigate');
+      expect(router.push).not.toHaveBeenCalled();
+    } finally {
+      abrir.mockRestore();
+    }
   });
 });
 

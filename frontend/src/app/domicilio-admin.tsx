@@ -217,10 +217,9 @@ export default function DomicilioAdminScreen() {
               }}
             />
           ) : null}
-          <TextButton title="Actualizar" disabled={loading} onPress={() => setAttempt((value) => value + 1)} />
+          <TextButton icon="refresh-cw" title="Actualizar" disabled={loading} onPress={() => setAttempt((value) => value + 1)} />
         </>
       ) : null}
-      <TextButton title="Volver a los domicilios" onPress={() => router.replace('/domicilios-admin')} />
     </AuthPage>
   );
 }

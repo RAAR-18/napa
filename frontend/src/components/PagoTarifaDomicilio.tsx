@@ -146,7 +146,7 @@ export default function PagoTarifaDomicilio({ domicilioId, rol }: Props) {
               : `¿Ya te llegaron ${precio.format(data.monto)} a tu cuenta?`}
           </Text>
           <PrimaryButton title="Sí, confirmar" busy={busy} onPress={() => void act()} />
-          <TextButton title="Cancelar" disabled={busy} onPress={() => setConfirming(false)} />
+          <TextButton variant="danger" icon="x" title="Cancelar" disabled={busy} onPress={() => setConfirming(false)} />
         </View>
       ) : null}
     </View>

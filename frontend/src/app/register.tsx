@@ -7,15 +7,14 @@ import {
   AuthPage,
   ErrorBanner,
   Field,
-  FormFooter,
   HelperText,
   OptionButton,
   PageHeading,
   PrimaryButton,
-  TextButton,
   palette,
 } from '../components/AuthUI';
 import { CelularField } from '../components/CelularField';
+import { AuthAction } from '../components/AuthAction';
 import { register, type UserRole } from '../lib/auth';
 import { validarCorreo } from '../lib/correo';
 
@@ -159,22 +158,24 @@ export default function RegisterScreen() {
         title="Crear cuenta y verificar celular"
         onPress={submit}
       />
-      <FormFooter>
-        <TextButton
+      <View style={styles.secondaryActions}>
+        <AuthAction
           title="¿Tienes problemas para iniciar sesión? Verifica tu cuenta aquí"
+          icon="shield"
           onPress={() => router.push({ pathname: '/verify', params: { proposito: 'REGISTRO' } })}
         />
-        <TextButton
+        <AuthAction
           title="¿Ya tienes cuenta? Inicia sesión"
+          icon="log-in"
           onPress={() => router.replace('/login')}
         />
-        <TextButton title="Volver" onPress={() => router.replace('/')} />
-      </FormFooter>
+      </View>
     </AuthPage>
   );
 }
 
 const styles = StyleSheet.create({
+  secondaryActions: { alignItems: 'center', marginTop: 21, gap: 18 },
   label: {
     color: palette.dark,
     fontFamily: fonts.sans, fontSize: 14,

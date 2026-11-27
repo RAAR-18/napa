@@ -15,6 +15,7 @@ import {
   palette,
 } from '../components/AuthUI';
 import ClienteDelPedido from '../components/ClienteDelPedido';
+import { GoogleMapsButton } from '../components/GoogleMapsButton';
 import DomiciliarioAsignado from '../components/DomiciliarioAsignado';
 import PagoTarifaDomicilio from '../components/PagoTarifaDomicilio';
 import { EstadoConfirmacionDomicilio } from '../components/EstadoConfirmacionDomicilio';
@@ -27,6 +28,7 @@ import { outbox } from '../database/outbox';
 import { guardarConsultaPedidos, leerConsultaPedidos, quitarDetalleVendedorGuardado } from '../lib/pedidos-cliente-cache';
 import { respuestaPedidoPendiente, rutaRespuestaPedido } from '../lib/respuesta-pedido-pendiente';
 import { ApiError, NetworkError } from '../lib/api';
+import { estadoPagoNombres } from '../lib/pagos';
 import { clearSession, getValidSession, readSession } from '../lib/auth';
 import {
   confirmarSalida,
@@ -488,13 +490,13 @@ export default function PedidoVendedorScreen() {
           {decision.status === 'FALLIDA' && decision.lastError ? <HelperText>{decision.lastError}</HelperText> : null}
           {(decision.status === 'PENDIENTE' && decision.attempts === 0) ||
            (decision.status === 'FALLIDA' && consultaServidor && !loading) ? (
-            <TextButton title={decision.status === 'FALLIDA' ? 'Cerrar revisión' : 'Descartar decisión'}
+            <TextButton variant="soft" title={decision.status === 'FALLIDA' ? 'Cerrar revisión' : 'Descartar decisión'}
               onPress={descartarDecision} />
           ) : null}
         </>
       ) : null}
       {pedidoId ? (
-        <TextButton title="Actualizar pedido" disabled={loading || busy} onPress={() => setLoadAttempt((a) => a + 1)} />
+        <TextButton icon="refresh-cw" variant="soft" title="Actualizar pedido" disabled={loading || busy} onPress={() => setLoadAttempt((a) => a + 1)} />
       ) : null}
       <EstadoConfirmacionDomicilio paso="confirmar-pago" pendiente={pago.pendiente}
         confirmada={pagoConfirmado ? { updatedAt: pagoConfirmado.pago.confirmadoAt } : null}
@@ -540,27 +542,28 @@ export default function PedidoVendedorScreen() {
                 {detail.ubicacionEntrega.referencia ? (
                   <Text style={styles.detailText}>Referencia: {detail.ubicacionEntrega.referencia}</Text>
                 ) : null}
-                <Text style={styles.detailText}>
-                  {detail.ubicacionEntrega.latitud}, {detail.ubicacionEntrega.longitud}
-                </Text>
               </>
             ) : (
               <Text style={styles.detailText}>No requiere ubicación de entrega.</Text>
             )}
-            {canSeeCustomerOnMap && consultaServidor ? (
-              <TextButton
-                title="Ver ubicación en el mapa"
-                onPress={() => router.push({ pathname: '/ubicacion-entrega', params: { pedidoId: detail.id } })}
-              />
+            {canSeeCustomerOnMap && consultaServidor && detail.ubicacionEntrega ? (
+              <View style={{ marginTop: 18, marginBottom: 18 }}>
+                <GoogleMapsButton
+                  title="Ver ubicación en Google Maps"
+                  destino={detail.ubicacionEntrega}
+                />
+              </View>
             ) : null}
-            <Text style={styles.detailText}>Medio: {detail.medioPago}</Text>
+            <Text style={styles.detailText}>Medio: {detail.medioPago === 'CUENTA_BANCARIA' ? 'CUENTA BANCARIA' : 'EFECTIVO'}</Text>
             <Text style={styles.detailText}>Subtotal: {formatPrice(detail.subtotal)}</Text>
             {detail.tarifaDomicilio !== null ? (
               <Text style={styles.detailText}>Domicilio: {formatPrice(detail.tarifaDomicilio)}</Text>
             ) : null}
             <Text style={styles.total}>Total: {formatPrice(detail.total)}</Text>
             <Text style={styles.detailText}>
-              Estado del pago: {estadoPago ?? 'Aún no creado'}
+              Estado del pago: {estadoPago
+                ? estadoPagoNombres[estadoPago as keyof typeof estadoPagoNombres] ?? 'Estado no disponible'
+                : 'Aún no creado'}
             </Text>
           </View>
           {detail.domicilio ? (
@@ -590,7 +593,7 @@ export default function PedidoVendedorScreen() {
                   El domiciliario confirmó la recogida. Confirma su salida cuando se vaya con el pedido.
                 </Text>
               ) : null}
-              <TextButton
+              <TextButton icon="map-pin" variant="soft"
                 title="Ver trazabilidad"
                 onPress={() =>
                   router.push({
@@ -609,7 +612,7 @@ export default function PedidoVendedorScreen() {
             <>
               {fechaGuardada !== null ? <HelperText>La decisión se enviará al recuperar conexión.</HelperText> : null}
               <PrimaryButton title="Aceptar pedido" onPress={() => setPendingAction('accept')} />
-              <TextButton title="Rechazar pedido" onPress={() => setPendingAction('reject')} />
+              <TextButton icon="x-circle" variant="danger" title="Rechazar pedido" onPress={() => setPendingAction('reject')} />
             </>
           ) : null}
           {pagoDomicilioPendiente && !datosTransferencia && !loading ? (
@@ -705,13 +708,13 @@ export default function PedidoVendedorScreen() {
                                 : `¿Publicar el domicilio? Los domiciliarios verán el pedido con una tarifa de ${formatPrice(detail.tarifaDomicilio ?? 0)} y no podrás editarlo.`}
               </Text>
               {error === 'Registra una cuenta bancaria antes de aceptar un pedido a domicilio.' ? (
-                <TextButton
+                <TextButton variant="soft"
                   title="Configurar métodos de pago"
                   onPress={() => router.push('/configuracion-pagos')}
                 />
               ) : null}
               {error?.startsWith('No hay inventario suficiente') ? (
-                <TextButton title="Revisar mis productos" onPress={() => router.push('/mis-productos')} />
+                <TextButton variant="soft" title="Revisar mis productos" onPress={() => router.push('/mis-productos')} />
               ) : null}
               <PrimaryButton
                 title={
@@ -736,7 +739,7 @@ export default function PedidoVendedorScreen() {
                 busy={busy}
                 onPress={() => void respond()}
               />
-              <TextButton title="Cancelar" disabled={busy} onPress={cancelResponse} />
+              <TextButton icon="x" variant="danger" title="Cancelar" disabled={busy} onPress={cancelResponse} />
             </View>
           ) : null}
         </>
@@ -748,22 +751,23 @@ export default function PedidoVendedorScreen() {
         />
       ) : null}
       {detail ? (
-        <TextButton
-          title="Reportar un problema con este pedido"
-          onPress={() =>
-            router.push({
-              pathname: '/reportar',
-              params: detail.domicilio
-                ? { domicilioId: detail.domicilio.id, contexto: `Pedido de ${detail.cliente.nombre}` }
-                : { pedidoId: detail.id, contexto: `Pedido de ${detail.cliente.nombre}` },
-            })
-          }
-        />
+        <View style={{ marginTop: 24 }}>
+          <TextButton icon="alert-triangle" variant="danger"
+            title="Reportar un problema con este pedido"
+            onPress={() =>
+              router.push({
+                pathname: '/reportar',
+                params: detail.domicilio
+                  ? { domicilioId: detail.domicilio.id, contexto: `Pedido de ${detail.cliente.nombre}` }
+                  : { pedidoId: detail.id, contexto: `Pedido de ${detail.cliente.nombre}` },
+              })
+            }
+          />
+        </View>
       ) : null}
       {!loading && error && !detail ? (
         <PrimaryButton title="Reintentar carga" onPress={() => setLoadAttempt((attempt) => attempt + 1)} />
       ) : null}
-      <TextButton title="Volver a pedidos" onPress={() => router.replace('/pedidos-vendedor')} />
     </AuthPage>
   );
 }

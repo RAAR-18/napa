@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { AppShell, Brand, useNapaNavigation } from './AppShell';
-import { Hero, Icon, SectionHeading, heroContent } from './NapaUI';
+import { Hero, Icon, SectionHeading, heroContent, type IconName } from './NapaUI';
 import { fonts, palette } from './theme';
 import { Toast } from './Toast';
 
@@ -155,10 +155,14 @@ export function TextButton({
   title,
   onPress,
   disabled = false,
+  variant = 'soft',
+  icon,
 }: {
   title: string;
   onPress: () => void;
   disabled?: boolean;
+  variant?: 'link' | 'soft' | 'whatsapp' | 'danger' | 'gold';
+  icon?: IconName;
 }) {
   return (
     <Pressable
@@ -167,12 +171,19 @@ export function TextButton({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
         styles.textButton,
-        hovered && { backgroundColor: '#F2E7DE' },
+        variant !== 'link' && styles.textButtonSoft,
+        variant === 'whatsapp' && styles.textButtonWhatsApp,
+        variant === 'danger' && styles.textButtonDanger,
+        variant === 'gold' && styles.textButtonGold,
+        icon && { flexDirection: 'row', gap: 8 },
+        hovered && { backgroundColor: variant === 'whatsapp' ? '#126C38' : variant === 'danger' ? '#FFE0D9' : variant === 'gold' ? '#FFDC84' : variant === 'soft' ? '#FFE5D3' : '#F2E7DE' },
+        variant !== 'link' && pressed && { opacity: 0.75 },
       ]}
     >
-      <Text style={[styles.textButtonLabel, disabled && styles.disabledText]}>{title}</Text>
+      {icon ? <Icon name={icon} size={18} color={variant === 'gold' ? '#805400' : variant === 'whatsapp' ? '#FFFFFF' : variant === 'danger' ? palette.error : palette.coralDark} /> : null}
+      <Text style={[styles.textButtonLabel, variant !== 'link' && styles.textButtonSoftLabel, variant === 'whatsapp' && styles.textButtonWhatsAppLabel, variant === 'danger' && styles.textButtonDangerLabel, variant === 'gold' && styles.textButtonGoldLabel, icon && { flexShrink: 1 }, disabled && styles.disabledText]}>{title}</Text>
     </Pressable>
   );
 }
@@ -311,8 +322,9 @@ const styles = StyleSheet.create({
     minHeight: 42,
     justifyContent: 'center',
     paddingHorizontal: 13,
+    paddingVertical: 8,
     borderRadius: 10,
-    marginTop: 4,
+    marginTop: 12,
   },
   textButtonLabel: {
     color: palette.dark,
@@ -322,6 +334,19 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     textAlign: 'center',
   },
+  textButtonSoft: {
+    backgroundColor: '#FFF1E6',
+    borderWidth: 1,
+    borderColor: '#F3BDA9',
+    paddingHorizontal: 12,
+  },
+  textButtonSoftLabel: { color: palette.coralDark, textDecorationLine: 'none' },
+  textButtonWhatsApp: { backgroundColor: '#168544', borderColor: '#168544' },
+  textButtonWhatsAppLabel: { color: '#FFFFFF' },
+  textButtonDanger: { backgroundColor: palette.errorBackground, borderColor: '#EBC1B7' },
+  textButtonDangerLabel: { color: palette.error },
+  textButtonGold: { backgroundColor: '#FFE4A1', borderColor: '#D6A33F' },
+  textButtonGoldLabel: { color: '#805400' },
   disabledText: { opacity: 0.35 },
   errorBanner: {
     flexDirection: 'row',

@@ -4,10 +4,8 @@ import { router } from 'expo-router';
 import {
   AuthPage,
   ErrorBanner,
-  FormFooter,
   PageHeading,
   PrimaryButton,
-  TextButton,
 } from '../components/AuthUI';
 import { CelularField } from '../components/CelularField';
 import { CanalVerificacionSelector } from '../components/CanalVerificacionSelector';
@@ -61,12 +59,6 @@ export default function RecoverScreen() {
         title="Enviar código"
         onPress={submit}
       />
-      <FormFooter>
-        <TextButton
-          title="Volver al inicio de sesión"
-          onPress={() => router.replace('/login')}
-        />
-      </FormFooter>
     </AuthPage>
   );
 }

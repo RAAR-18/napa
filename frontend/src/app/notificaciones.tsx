@@ -246,18 +246,18 @@ export default function NotificacionesScreen() {
       })}
       {data && data.totalElements > PAGE_SIZE ? (
         <View style={styles.pager}>
-          <TextButton title="Anterior" disabled={page === 0 || loading} onPress={() => setPage(page - 1)} />
+          <TextButton icon="chevron-left" title="Anterior" disabled={page === 0 || loading} onPress={() => setPage(page - 1)} />
           <Text style={styles.date}>
             Página {page + 1} de {lastPage + 1}
           </Text>
-          <TextButton title="Siguiente" disabled={page >= lastPage || loading} onPress={() => setPage(page + 1)} />
+          <TextButton icon="chevron-right" title="Siguiente" disabled={page >= lastPage || loading} onPress={() => setPage(page + 1)} />
         </View>
       ) : null}
       {!loading && !data && anterior !== undefined ? (
-        <TextButton title="Página guardada anterior" onPress={() => setPage(anterior)} />
+        <TextButton icon="chevron-left" title="Página guardada anterior" onPress={() => setPage(anterior)} />
       ) : null}
       {!loading && !data && siguiente !== undefined ? (
-        <TextButton title="Página guardada siguiente" onPress={() => setPage(siguiente)} />
+        <TextButton icon="chevron-right" title="Página guardada siguiente" onPress={() => setPage(siguiente)} />
       ) : null}
       <View style={styles.actions}>
         <Pressable
