@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ñapa: comercio de cercanía y domicilios</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{--ink:#12323A;--sea:#1F7A8C;--mango:#F4A81D;--mist:#DCE8E6;--paper:#F5F7F6;--muted:#4C6469;--coral:#D9583B}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--paper);color:var(--ink);font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;font-size:clamp(15px,1.55vw,23px);line-height:1.45}
+h1,h2,h3{font-family:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;line-height:1.08}
+.slide{position:absolute;inset:0;display:none;padding:6vh 7vw 9vh;flex-direction:column;justify-content:center;gap:2.6vh;overflow:auto}
+.slide.on{display:flex}
+h2{font-size:2.3em;font-weight:800;max-width:20em;letter-spacing:-.015em}
+h3{font-size:1.15em;font-weight:700;margin-bottom:.25em}
+p,li{max-width:46em}
+.sub{color:var(--muted);font-size:1.05em}
+.grid{display:grid;gap:2.2vw}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.box{border-left:.3em solid var(--sea);padding:.2em 0 .2em 1em}
+.box.m{border-color:var(--mango)}.box.c{border-color:var(--coral)}
+.big{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;font-size:3.1em;line-height:1;color:var(--sea)}
+.big.m{color:#B97A00}.big.c{color:var(--coral)}
+.lab{color:var(--muted);font-size:.95em;margin-top:.25em}
+ul{padding-left:1.15em;display:grid;gap:.5em}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{text-align:left;padding:.55em .8em;border-bottom:1px solid var(--mist);vertical-align:top}
+th{font-weight:600;color:var(--muted);border-bottom:2px solid var(--ink)}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+tr.t td{font-weight:700;border-bottom:2px solid var(--ink)}
+.note{background:var(--mist);padding:.8em 1.1em;border-radius:.4em;max-width:46em;font-size:.95em}
+.note.w{background:#FCEBC4}
+.flow{display:flex;gap:.6em;align-items:stretch;flex-wrap:wrap}
+.step{flex:1 1 9em;background:#fff;border:2px solid var(--mist);border-top:.35em solid var(--sea);padding:.7em .9em;border-radius:.3em;font-size:.95em}
+.step b{display:block;font-family:'Bricolage Grotesque',system-ui,sans-serif;margin-bottom:.2em}
+.cover{background:var(--ink);color:#fff;justify-content:flex-end}
+.cover h1{font-size:7em;font-weight:800;color:var(--mango);letter-spacing:-.03em}
+.cover .tag{font-size:1.6em;max-width:20em;font-family:'Bricolage Grotesque',system-ui,sans-serif}
+.cover .meta{color:var(--mist);font-size:.95em;max-width:40em}
+.cover .sub{color:var(--mist)}
+.hud{position:fixed;left:0;right:0;bottom:0;height:5vh;min-height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 3vw;z-index:5;font-size:.8em;color:var(--muted)}
+.hud.dark{color:var(--mist)}
+.bar{position:fixed;top:0;left:0;height:.5vh;min-height:4px;background:var(--mango);z-index:6;transition:width .25s}
+.hud button{background:none;border:1px solid currentColor;color:inherit;width:2.4em;height:2.4em;border-radius:50%;cursor:pointer;font-size:1em}
+.hud button:focus-visible{outline:3px solid var(--mango)}
+.hud span{margin:0 .8em}
+@media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr}.cover h1{font-size:4.5em}h2{font-size:1.8em}}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+
+<section class="slide cover">
+<p class="meta">Experiencia Final de Ingeniería de Sistemas · Universidad del Magdalena · 2026-2</p>
+<h1>Ñapa</h1>
+<p class="tag">Plataforma de comercio de cercanía y domicilios para vendedores informales y pequeños comerciantes de Santa Marta</p>
+<p class="meta">Iván Marchena, Eduardo Vergara, Steven Navarro, Camilo Jiménez y Rafael Acuña<br>Semestre 9 · Proyecto en equipo · 4 meses · 4 créditos</p>
+</section>
+
+<section class="slide">
+<h2>Una economía local donde la informalidad es la norma</h2>
+<div class="grid g3">
+<div><div class="big">56,9 %</div><p class="lab">informalidad laboral en Santa Marta, trimestre marzo-mayo de 2026 (DANE, GEIH)</p></div>
+<div><div class="big m">97,2 %</div><p class="lab">de los comerciantes trabaja por cuenta propia (EMICRON)</p></div>
+<div><div class="big">88,0 %</div><p class="lab">está a cargo de su negocio sin otro trabajador</p></div>
+</div>
+<p class="box m">El 58,2 % inició su negocio por falta de otra alternativa de ingresos.</p>
+<p class="note w">El dato de 84,5 % para micronegocios queda pendiente de verificación: no se conoce su operación estadística, edición ni tabla.</p>
+</section>
+
+<section class="slide">
+<h2>Así se vende hoy: efectivo, sin registros y en la calle</h2>
+<div class="grid g4">
+<div><div class="big c">82,4 %</div><p class="lab">de los micronegocios de calle no lleva registros contables</p></div>
+<div><div class="big">99,8 %</div><p class="lab">de las transacciones es en efectivo</p></div>
+<div><div class="big m">19,4 %</div><p class="lab">de los negocios acepta transferencias o pagos por internet</p></div>
+<div><div class="big">546</div><p class="lab">vendedores informales censados en la Carrera 5.ª (SETP)</p></div>
+</div>
+<p class="box">Entre los vendedores del espacio público, 59,3 % son móviles y 40,7 % estacionarios.</p>
+<p class="note">Estas cifras dan contexto general. Se complementan con cinco entrevistas semiestructuradas del equipo, y deben validarse con comerciantes de los barrios del piloto.</p>
+</section>
+
+<section class="slide">
+<h2>Los clientes no saben qué hay cerca, y el vendedor no puede anticipar</h2>
+<div class="grid g3">
+<div class="box"><h3>Sin vitrina compartida</h3><p>Se vende con atención presencial, carteles, llamadas o WhatsApp. El cliente no sabe qué se ofrece, el precio ni las existencias.</p></div>
+<div class="box m"><h3>Pérdida de perecederos</h3><p>Lo que no se vende en la jornada se deteriora y es una pérdida directa.</p></div>
+<div class="box c"><h3>Puesto desatendido</h3><p>El vendedor de punto fijo que sale a entregar deja su puesto sin atención.</p></div>
+</div>
+<p class="note"><b>Necesidad:</b> un canal sencillo para publicar productos y disponibilidad, gestionar pedidos y coordinar la entrega o recogida sin obligar al vendedor a dejar su punto de venta. Las entrevistas muestran que ya existen pedidos anticipados coordinados de manera informal.</p>
+</section>
+
+<section class="slide">
+<h2>Ñapa conecta oferta cercana con tres modalidades de entrega</h2>
+<table>
+<tr><th>Modalidad</th><th>Quién la ofrece</th><th>Cómo se completa</th></tr>
+<tr><td><b>Entrega directa</b></td><td>Vendedor ambulante</td><td>El vendedor lleva el pedido al cliente.</td></tr>
+<tr><td><b>Recogida en punto fijo</b></td><td>Vendedor de punto fijo</td><td>El cliente retira el pedido en el puesto o local.</td></tr>
+<tr><td><b>Domicilio</b></td><td>Vendedor de punto fijo</td><td>Un domiciliario acepta el envío y lo lleva al cliente.</td></tr>
+</table>
+<p class="note">Una <b>reserva</b> es un pedido con fecha y hora acordadas con el vendedor, no una modalidad adicional. El vendedor decide si la acepta.</p>
+</section>
+
+<section class="slide">
+<h2>Cinco tipos de usuario, cada uno con una necesidad clara</h2>
+<table>
+<tr><th>Usuario</th><th>Necesidad principal</th></tr>
+<tr><td><b>Cliente</b></td><td>Encontrar productos cercanos, hacer pedidos y consultar su estado.</td></tr>
+<tr><td><b>Vendedor ambulante</b></td><td>Publicar productos y atender pedidos con entrega directa.</td></tr>
+<tr><td><b>Vendedor de punto fijo</b></td><td>Administrar su negocio, atender recogidas y solicitar domiciliarios.</td></tr>
+<tr><td><b>Domiciliario</b></td><td>Ver domicilios disponibles, conocer la tarifa y aceptar o rechazar el envío.</td></tr>
+<tr><td><b>Administrador</b></td><td>Supervisar cuentas, reportes, comentarios y domicilios; configurar la tarifa mínima.</td></tr>
+</table>
+</section>
+
+<section class="slide">
+<h2>Siete capacidades principales cubren el ciclo completo</h2>
+<div class="grid g2">
+<div class="box"><h3>Cuenta y acceso</h3><p>Crear cuenta, iniciar sesión y verificar el celular.</p></div>
+<div class="box"><h3>Emprendimiento</h3><p>Perfil del negocio, productos, precios y existencias.</p></div>
+<div class="box"><h3>Oferta cercana</h3><p>El cliente consulta emprendimientos y productos de su entorno.</p></div>
+<div class="box"><h3>Pedidos</h3><p>Elegir productos y modalidad, solicitar reserva, aceptar o rechazar.</p></div>
+<div class="box m"><h3>Entrega</h3><p>Coordinar entrega directa, recogida o domicilio; actualizar estados y confirmar recepción.</p></div>
+<div class="box m"><h3>Pagos y reputación</h3><p>Registrar confirmación de pagos; calificar y comentar tras la interacción.</p></div>
+<div class="box c"><h3>Moderación</h3><p>El administrador gestiona reportes, comentarios, usuarios y domicilios.</p></div>
+</div>
+</section>
+
+<section class="slide">
+<h2>Del pedido a la entrega: la plataforma registra, no cobra</h2>
+<div class="flow">
+<div class="step"><b>1. Cliente</b>Elige productos y la forma de recibir.</div>
+<div class="step"><b>2. Vendedor</b>Acepta o rechaza el pedido.</div>
+<div class="step"><b>3. Modalidad</b>Entrega directa, recogida o domicilio.</div>
+<div class="step"><b>4. Entrega</b>Se confirma la recepción.</div>
+</div>
+<div class="grid g2">
+<div class="box"><h3>Directa y recogida</h3><p>Efectivo o transferencia, según los medios que acepte el vendedor.</p></div>
+<div class="box m"><h3>Domicilio</h3><p>El cliente transfiere al vendedor el pedido y la tarifa. Al confirmar la recepción, el vendedor publica el domicilio. Tras la entrega, paga al domiciliario y ambos lo registran.</p></div>
+</div>
+<p class="note"><b>Ñapa no procesa ni custodia dinero</b> y no verifica transferencias: conserva el registro. Así se evitan comisiones por transacción.</p>
+</section>
+
+<section class="slide">
+<h2>Un análisis amplio y trazable</h2>
+<div class="grid g4">
+<div><div class="big">98</div><p class="lab">historias de usuario (97 MVP y 1 mejora futura)</p></div>
+<div><div class="big m">67</div><p class="lab">requerimientos funcionales (66 del MVP)</p></div>
+<div><div class="big">12</div><p class="lab">módulos</p></div>
+<div><div class="big c">31</div><p class="lab">requerimientos no funcionales</p></div>
+</div>
+<p class="box">Las historias se agrupan en requerimientos verificables, organizados en doce módulos y validados con escenarios de aceptación, casos límite y criterios de éxito.</p>
+<p class="box m">Los módulos cubren cuentas, emprendimientos, productos, pedidos, las tres modalidades, pagos, notificaciones, comentarios y calificaciones, reportes y administración de usuarios. La predicción de demanda es la mejora posterior.</p>
+</section>
+
+<section class="slide">
+<h2>Requisitos no funcionales: lo que hace viable el uso real</h2>
+<div class="grid g3">
+<div class="box"><h3>Seguridad y privacidad</h3><p>Autenticación, permisos por rol y protección de datos y ubicación según la Ley 1581 de 2012.</p></div>
+<div class="box"><h3>Integridad y continuidad</h3><p>Consistencia de inventario, pedidos, pagos y estados; auditoría y recuperación ante fallos.</p></div>
+<div class="box m"><h3>Rendimiento</h3><p>Operaciones principales en máximo 3 s. Estados y ubicación de domicilios en máximo 30 s.</p></div>
+<div class="box m"><h3>Usabilidad y conectividad</h3><p>Flujos breves, uso móvil y tolerancia a conexiones intermitentes con sincronización al recuperar señal.</p></div>
+<div class="box c"><h3>Evolución e integración</h3><p>Arquitectura modular e integración con mapas y servicios de comunicación.</p></div>
+</div>
+</section>
+
+<section class="slide">
+<h2>Diseñado para las condiciones reales de los usuarios</h2>
+<p class="sub">Conectividad irregular, teléfonos de capacidad limitada, poco tiempo para aprender y necesidad de evitar comisiones.</p>
+<div class="grid g2">
+<ul>
+<li>El vendedor elige perfil <b>ambulante</b> o <b>punto fijo</b>; cada uno tiene modalidades distintas.</li>
+<li>El domiciliario acepta la tarifa publicada o la rechaza; <b>no negocia</b>. La tarifa depende de la distancia y tiene un mínimo.</li>
+<li>El domicilio publicado no se edita y avanza por estados.</li>
+</ul>
+<ul>
+<li>La entrega se confirma con un <b>código que aporta el cliente</b>.</li>
+<li>Reservas acordadas con el vendedor; la predicción de demanda queda fuera del MVP.</li>
+<li>Contraseña y celular verificado por WhatsApp, con SMS de respaldo.</li>
+</ul>
+</div>
+<p class="note">La ubicación y los datos personales solo se ven entre usuarios autorizados de un pedido activo.</p>
+</section>
+
+<section class="slide">
+<h2>Qué falta definir antes de una operación productiva</h2>
+<div class="grid g2">
+<ul>
+<li>Plazos para pedidos aceptados que no se pagan.</li>
+<li>Vencimientos por falta de respuesta.</li>
+<li>Manejo de disputas por el pago al domiciliario.</li>
+</ul>
+<ul>
+<li>Momento en que se comparte la dirección exacta del cliente.</li>
+<li>Límite de domicilios simultáneos.</li>
+<li>Costo y soporte del envío de códigos por WhatsApp o SMS.</li>
+</ul>
+</div>
+<p class="note w">También debe confirmarse cómo se verifica una transferencia, ya que la aplicación no la procesa.</p>
+</section>
+
+<section class="slide">
+<h2>Inversión estimada: el equipo es el mayor costo</h2>
+<p class="sub">Estimación de planeación en COP para 4 meses, con 5 personas a tiempo completo. No son cotizaciones ni nómina acordada.</p>
+<table>
+<tr><th>Perfil</th><th class="r">Cant.</th><th class="r">Mensual supuesto</th><th class="r">4 meses</th></tr>
+<tr><td>Análisis y coordinación</td><td class="r">1</td><td class="r">$4.000.000</td><td class="r">$16.000.000</td></tr>
+<tr><td>Diseño de experiencia e interfaz</td><td class="r">1</td><td class="r">$3.500.000</td><td class="r">$14.000.000</td></tr>
+<tr><td>Desarrollo de software</td><td class="r">2</td><td class="r">$4.500.000 c/u</td><td class="r">$36.000.000</td></tr>
+<tr><td>Pruebas y despliegue</td><td class="r">1</td><td class="r">$3.800.000</td><td class="r">$15.200.000</td></tr>
+<tr><td>Subtotal honorarios</td><td class="r">5</td><td class="r">$20.300.000</td><td class="r">$81.200.000</td></tr>
+<tr><td>Cargas de contratación (30 %, provisional)</td><td></td><td></td><td class="r">$24.360.000</td></tr>
+<tr class="t"><td>Costo del equipo</td><td></td><td></td><td class="r">$105.560.000</td></tr>
+</table>
+</section>
+
+<section class="slide">
+<h2>Servicios, contingencia y total de referencia</h2>
+<div class="grid g2">
+<table>
+<tr><th>Servicio</th><th class="r">Mensual</th><th class="r">4 meses</th></tr>
+<tr><td>Servidor, base de datos y copias</td><td class="r">$450.000</td><td class="r">$1.800.000</td></tr>
+<tr><td>Mapas y geolocalización</td><td class="r">$250.000</td><td class="r">$1.000.000</td></tr>
+<tr><td>Mensajes WhatsApp/SMS</td><td class="r">$250.000</td><td class="r">$1.000.000</td></tr>
+<tr><td>Dominio, monitoreo y pruebas</td><td class="r">$175.000</td><td class="r">$700.000</td></tr>
+<tr class="t"><td>Subtotal</td><td class="r">$1.125.000</td><td class="r">$4.500.000</td></tr>
+</table>
+<div style="display:grid;gap:1.4vh;align-content:start">
+<div class="box"><div class="lab">Equipo + servicios</div><b>$110.060.000</b> · contingencia 10 %: $11.006.000</div>
+<div><div class="big m">≈ $121,1 M</div><p class="lab">inversión total de referencia (COP, 4 meses)</p></div>
+<div><div class="big">≈ $4,95 M</div><p class="lab">si el equipo aporta su trabajo sin pago: solo servicios con contingencia</p></div>
+</div>
+</div>
+<p class="note">Tras el piloto, los servicios cuestan cerca de $1.125.000 mensuales, sin salarios de mantenimiento. No incluye teléfonos ni comisión de pasarela. Debe confirmarse con cotizaciones.</p>
+</section>
+
+<section class="slide">
+<h2>Fuentes y qué debe validarse</h2>
+<table>
+<tr><th>Fuente</th><th>Estado</th></tr>
+<tr><td>DANE, GEIH: 56,9 % en Santa Marta (mar-may 2026)</td><td>Respaldada</td></tr>
+<tr><td>DANE, EMICRON: cuenta propia, registros, medios de pago</td><td>Asociar cada cifra a edición y tabla exactas</td></tr>
+<tr><td>DANE, espacio público: 59,3 % móviles y 40,7 % estacionarios</td><td>Título y año por confirmar</td></tr>
+<tr><td>SETP Santa Marta: 546 vendedores en la Carrera 5.ª</td><td>Fecha y ficha pública por identificar</td></tr>
+<tr><td>Ley 1581 de 2012: protección de datos personales</td><td>Respaldada</td></tr>
+<tr><td>Dato de 84,5 % en micronegocios</td><td>Pendiente de verificación</td></tr>
+</table>
+<p class="note">Las cifras de inversión son supuestos de planeación, no estadísticas de estas fuentes.</p>
+</section>
+
+<section class="slide cover">
+<p class="meta">Resumen</p>
+<h1 style="font-size:4.6em">Ñapa lleva la vitrina al barrio</h1>
+<p class="tag">Un canal simple para publicar, pedir y entregar sin comisiones, sin custodiar dinero y sin que el vendedor abandone su puesto.</p>
+<p class="meta">MVP: 66 requerimientos funcionales · 12 módulos · inversión de referencia ≈ $121,1 M COP en 4 meses<br>¿Preguntas?</p>
+</section>
+
+<div class="hud" id="hud">
+<span id="cnt"></span>
+<div><button id="prev" aria-label="Diapositiva anterior">‹</button><span>← →</span><button id="next" aria-label="Diapositiva siguiente">›</button></div>
+</div>
+
+<script>
+const S=[...document.querySelectorAll('.slide')],hud=document.getElementById('hud');
+let i=Math.max(0,Math.min(S.length-1,(parseInt(location.hash.slice(1))||1)-1));
+function show(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('on',k===i));
+document.getElementById('cnt').textContent=(i+1)+' / '+S.length;
+document.getElementById('bar').style.width=((i+1)/S.length*100)+'%';
+hud.classList.toggle('dark',S[i].classList.contains('cover'));
+history.replaceState(null,'','#'+(i+1))}
+document.getElementById('prev').onclick=()=>show(i-1);
+document.getElementById('next').onclick=()=>show(i+1);
+addEventListener('keydown',e=>{
+if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();show(i+1)}
+if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();show(i-1)}
+if(e.key==='Home')show(0);if(e.key==='End')show(S.length-1);
+if(e.key==='f')document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()});
+let x0=null;addEventListener('touchstart',e=>x0=e.touches[0].clientX);
+addEventListener('touchend',e=>{if(x0===null)return;const d=e.changedTouches[0].clientX-x0;if(Math.abs(d)>50)show(i+(d<0?1:-1));x0=null});
+show(i);
+</script>
+</body>
+</html>
